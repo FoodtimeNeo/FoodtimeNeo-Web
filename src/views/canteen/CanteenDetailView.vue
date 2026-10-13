@@ -1,0 +1,122 @@
+<script setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import { useAsyncData } from '@/composables/useAsyncData.js';
+import { fetchCanteen, fetchStalls } from '@/api/canteen.api.js';
+import StallEntryCard from '@/components/canteen/StallEntryCard.vue';
+import LoadingState from '@/components/base/LoadingState.vue';
+import EmptyState from '@/components/base/EmptyState.vue';
+import ErrorState from '@/components/base/ErrorState.vue';
+
+const route = useRoute();
+const canteenId = computed(() => String(route.params.canteenId));
+
+const {
+  data: canteen,
+  error: canteenError,
+  loading: canteenLoading,
+  load: loadCanteen,
+} = useAsyncData(() => fetchCanteen(canteenId.value));
+
+const {
+  data: stalls,
+  error: stallsError,
+  loading: stallsLoading,
+  load: loadStalls,
+} = useAsyncData(() => fetchStalls(canteenId.value), { initial: [] });
+</script>
+
+<template>
+  <main class="canteen-detail">
+    <nav class="canteen-detail__back">
+      <RouterLink :to="{ name: 'canteenList' }">← 返回食堂列表</RouterLink>
+    </nav>
+
+    <LoadingState v-if="canteenLoading" message="正在打开食堂…" />
+    <ErrorState
+      v-else-if="canteenError"
+      :title="canteenError.code === 'NOT_FOUND' ? '食堂不存在' : '暂时无法加载'"
+      :description="canteenError.message"
+      @retry="loadCanteen"
+    />
+    <template v-else-if="canteen">
+      <header class="canteen-detail__header">
+        <h1 class="section-title">{{ canteen.name }}</h1>
+        <p v-if="canteen.summary" class="canteen-detail__summary">
+          {{ canteen.summary }}
+        </p>
+      </header>
+
+      <section aria-labelledby="stalls-title">
+        <h2 id="stalls-title" class="canteen-detail__subtitle">
+          档口<span class="zine-highlight">们</span>
+        </h2>
+
+        <LoadingState v-if="stallsLoading" message="正在清点档口…" />
+        <ErrorState
+          v-else-if="stallsError"
+          :description="stallsError.message"
+          @retry="loadStalls"
+        />
+        <EmptyState
+          v-else-if="!stalls.length"
+          title="这个食堂还没有档口"
+          description="管理员添加后会显示在这里。"
+        />
+        <ul v-else class="canteen-detail__grid">
+          <li v-for="stall in stalls" :key="stall.id">
+            <StallEntryCard :stall="stall" :canteen-id="canteenId" />
+          </li>
+        </ul>
+      </section>
+    </template>
+  </main>
+</template>
+
+<style scoped lang="scss">
+.canteen-detail {
+  width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));
+  margin: var(--ft-space-5) auto;
+
+  &__back {
+    margin-bottom: var(--ft-space-3);
+
+    a {
+      color: var(--ft-color-primary);
+      font-weight: 700;
+      text-decoration: none;
+    }
+  }
+
+  &__summary {
+    margin: var(--ft-space-2) 0 0;
+    color: var(--ft-color-text-muted);
+  }
+
+  &__subtitle {
+    margin: var(--ft-space-4) 0 0;
+    font-family: var(--ft-font-family-title);
+    font-size: var(--ft-font-size-xl);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--ft-space-3);
+    margin: var(--ft-space-3) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .canteen-detail {
+    width: calc(100% - var(--zine-page-padding-mobile) * 2);
+
+    &__grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: var(--ft-space-2);
+    }
+  }
+}
+</style>
