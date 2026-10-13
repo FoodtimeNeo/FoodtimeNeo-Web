@@ -1,0 +1,36 @@
+.content-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--ft-space-1);
+  padding: var(--ft-space-5) var(--ft-space-2);
+  border: 1px dashed var(--zine-paper-edge);
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text);
+  text-align: center;
+}
+
+.content-state__mark {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 2px solid var(--zine-stamp-red);
+  border-radius: 50%;
+  color: var(--zine-stamp-red);
+  font-family: var(--ft-font-family-note);
+  font-size: var(--ft-font-size-lg);
+}
+
+.content-state h2,
+.content-state p {
+  margin: 0;
+}
+
+.content-state h2 {
+  font-family: var(--ft-font-family-title);
+  font-size: var(--ft-font-size-lg);
+}
+
+.content-state p {
+  color: var(--ft-color-text-muted);
+}
