@@ -10,6 +10,18 @@ export const routes = [
     meta: { title: '首页', layout: 'default' },
   },
   {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/auth/LoginView.vue'),
+    meta: { title: '登录', layout: 'blank' },
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/views/auth/RegisterView.vue'),
+    meta: { title: '注册', layout: 'blank' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'notFound',
     component: () => import('@/views/error/NotFoundView.vue'),
