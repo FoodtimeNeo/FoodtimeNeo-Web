@@ -1,3 +1,13 @@
+<script setup>
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { navigationItems, resolveActiveNavigation } from './navigation.js';
+
+const route = useRoute();
+const router = useRouter();
+const activeName = computed(() => resolveActiveNavigation(route));
+</script>
+
 <template>
   <header class="app-header">
     <div class="app-header__inner">
@@ -7,8 +17,19 @@
       </RouterLink>
 
       <nav class="app-header__nav" aria-label="主导航">
-        <RouterLink :to="{ name: 'home' }" active-class="is-active">
-          <span aria-hidden="true">01</span> 首页
+        <RouterLink
+          v-for="(item, index) in navigationItems.filter((entry) =>
+            router.hasRoute(entry.name),
+          )"
+          :key="item.name"
+          :to="{ name: item.name }"
+          :class="{ 'is-active': activeName === item.name }"
+          :aria-current="activeName === item.name ? 'location' : undefined"
+        >
+          <span aria-hidden="true">{{
+            String(index + 1).padStart(2, '0')
+          }}</span>
+          {{ item.label }}
         </RouterLink>
       </nav>
 

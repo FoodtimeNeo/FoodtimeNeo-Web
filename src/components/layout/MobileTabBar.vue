@@ -1,25 +1,22 @@
 <script setup>
-import { useRouter } from 'vue-router';
+import { computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { navigationItems, resolveActiveNavigation } from './navigation.js';
 
+const route = useRoute();
 const router = useRouter();
-
-const items = [
-  { name: 'home', label: '首页', icon: '⌂' },
-  { name: 'canteenList', label: '食堂', icon: '▤' },
-  { name: 'reviewCreate', label: '点评', icon: '✎' },
-  { name: 'rantWall', label: '吐槽', icon: '✺' },
-  { name: 'profile', label: '我的', icon: '◯' },
-];
+const activeName = computed(() => resolveActiveNavigation(route));
 </script>
 
 <template>
   <nav class="mobile-tab-bar" aria-label="底部导航">
-    <template v-for="item in items" :key="item.name">
+    <template v-for="item in navigationItems" :key="item.name">
       <RouterLink
         v-if="router.hasRoute(item.name)"
         class="mobile-tab-bar__item"
         :to="{ name: item.name }"
-        active-class="is-active"
+        :class="{ 'is-active': activeName === item.name }"
+        :aria-current="activeName === item.name ? 'location' : undefined"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">{{
           item.icon

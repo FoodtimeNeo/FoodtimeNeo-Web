@@ -3,13 +3,10 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import MobileTabBar from '@/components/layout/MobileTabBar.vue';
+import { resolveBreadcrumbs } from '@/components/layout/navigation.js';
 
 const route = useRoute();
-const breadcrumbs = computed(() =>
-  route.matched
-    .filter((record) => record.meta.title)
-    .map((record) => ({ name: record.name, title: record.meta.title })),
-);
+const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 </script>
 
 <template>
