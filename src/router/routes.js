@@ -10,6 +10,24 @@ export const routes = [
     meta: { title: '首页', layout: 'default' },
   },
   {
+    path: '/canteens',
+    name: 'canteenList',
+    component: () => import('@/views/canteen/CanteenListView.vue'),
+    meta: { title: '食堂', layout: 'default' },
+  },
+  {
+    path: '/canteens/:canteenId',
+    name: 'canteenDetail',
+    component: () => import('@/views/canteen/CanteenDetailView.vue'),
+    meta: { title: '食堂详情', layout: 'default' },
+  },
+  {
+    path: '/canteens/:canteenId/stalls/:stallId',
+    name: 'stallDetail',
+    component: () => import('@/views/canteen/StallDetailView.vue'),
+    meta: { title: '档口', layout: 'default' },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/auth/LoginView.vue'),
