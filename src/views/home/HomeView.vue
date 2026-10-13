@@ -1,7 +1,13 @@
 <script setup>
 import { useAsyncData } from '@/composables/useAsyncData.js';
-import { fetchCanteens } from '@/api/canteen.api.js';
+import {
+  fetchCanteens,
+  fetchDailyRecommendations,
+  fetchRankings,
+} from '@/api/canteen.api.js';
 import CanteenEntryCard from '@/components/home/CanteenEntryCard.vue';
+import DailyRecommendList from '@/components/home/DailyRecommendList.vue';
+import RankingList from '@/components/home/RankingList.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -12,6 +18,20 @@ const {
   loading,
   load,
 } = useAsyncData(fetchCanteens, { initial: [] });
+
+const {
+  data: recommendations,
+  error: recommendError,
+  loading: recommendLoading,
+  load: loadRecommend,
+} = useAsyncData(fetchDailyRecommendations, { initial: [] });
+
+const {
+  data: rankings,
+  error: rankingError,
+  loading: rankingLoading,
+  load: loadRankings,
+} = useAsyncData(fetchRankings, { initial: [] });
 </script>
 
 <template>
@@ -47,6 +67,52 @@ const {
           <CanteenEntryCard :canteen="canteen" />
         </li>
       </ul>
+    </section>
+
+    <section class="home-page__section" aria-labelledby="recommend-title">
+      <div class="section-rule" aria-hidden="true">
+        <span class="section-rule__index">02</span>
+        <span class="section-rule__line"></span>
+      </div>
+      <h2 id="recommend-title" class="section-title">
+        今日<span class="zine-highlight">推荐</span>
+      </h2>
+
+      <LoadingState v-if="recommendLoading" message="正在挑今天的菜…" />
+      <ErrorState
+        v-else-if="recommendError"
+        :description="recommendError.message"
+        @retry="loadRecommend"
+      />
+      <EmptyState
+        v-else-if="!recommendations.length"
+        title="今天还没有推荐"
+        description="管理员刷新推荐后会显示在这里。"
+      />
+      <DailyRecommendList v-else :items="recommendations" />
+    </section>
+
+    <section class="home-page__section" aria-labelledby="ranking-title">
+      <div class="section-rule" aria-hidden="true">
+        <span class="section-rule__index">03</span>
+        <span class="section-rule__line"></span>
+      </div>
+      <h2 id="ranking-title" class="section-title">
+        人气<span class="zine-highlight">榜单</span>
+      </h2>
+
+      <LoadingState v-if="rankingLoading" message="正在统计榜单…" />
+      <ErrorState
+        v-else-if="rankingError"
+        :description="rankingError.message"
+        @retry="loadRankings"
+      />
+      <EmptyState
+        v-else-if="!rankings.length"
+        title="还没有榜单数据"
+        description="有足够评分后会生成榜单。"
+      />
+      <RankingList v-else :items="rankings" />
     </section>
   </main>
 </template>
