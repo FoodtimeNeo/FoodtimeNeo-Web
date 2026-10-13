@@ -1,3 +1,7 @@
+<script setup>
+import foodSketch from '@/assets/images/decoration/手绘美食01.png';
+</script>
+
 <template>
   <main class="style-preview">
     <div class="style-preview__meta">
@@ -10,6 +14,13 @@
     </p>
     <h1>北交干饭吧</h1>
     <p class="style-preview__intro">把每天的一餐，写成一页有温度的食堂手账。</p>
+    <img
+      class="style-preview__illustration"
+      :src="foodSketch"
+      alt=""
+      width="800"
+      height="800"
+    />
 
     <section class="style-preview__sample" aria-labelledby="sample-title">
       <div class="section-rule" aria-hidden="true">
@@ -76,6 +87,16 @@
     font-size: var(--ft-font-size-lg);
   }
 
+  &__illustration {
+    position: absolute;
+    top: 90px;
+    right: var(--ft-space-5);
+    width: 180px;
+    height: auto;
+    filter: drop-shadow(6px 8px 0 rgb(58 36 24 / 12%));
+    transform: rotate(7deg);
+  }
+
   &__sample {
     padding: var(--ft-space-4);
     border: 1px dashed var(--zine-paper-edge);
@@ -106,6 +127,13 @@
 
     &__intro {
       font-size: var(--ft-font-size-md);
+    }
+
+    &__illustration {
+      position: static;
+      width: 120px;
+      margin: calc(-1 * var(--ft-space-4)) 0 var(--ft-space-2) auto;
+      transform: none;
     }
 
     &__sample {
