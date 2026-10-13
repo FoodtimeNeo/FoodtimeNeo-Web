@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AppHeader from '@/components/layout/AppHeader.vue';
+import MobileTabBar from '@/components/layout/MobileTabBar.vue';
 
 const route = useRoute();
 const breadcrumbs = computed(() =>
@@ -32,6 +33,7 @@ const breadcrumbs = computed(() =>
         <slot />
       </main>
     </div>
+    <MobileTabBar />
   </div>
 </template>
 
@@ -76,6 +78,12 @@ const breadcrumbs = computed(() =>
     margin: 0;
     border: 0;
     box-shadow: none;
+  }
+
+  .default-layout {
+    padding-bottom: calc(
+      var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom)
+    );
   }
 
   .breadcrumbs {
