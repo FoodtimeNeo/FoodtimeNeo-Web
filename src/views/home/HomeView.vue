@@ -11,9 +11,9 @@
   width: min(100% - 32px, 760px);
   margin: 12vh auto;
   padding: clamp(24px, 5vw, 48px);
-  border: 1px solid var(--ft-color-ink);
-  background: var(--ft-color-paper);
-  box-shadow: 8px 8px 0 var(--ft-color-ink);
+  border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
+  box-shadow: 8px 8px 0 var(--ft-color-secondary);
 
   &__eyebrow {
     color: var(--ft-color-primary);
@@ -23,7 +23,7 @@
 
   h1 {
     margin: 16px 0;
-    font-family: var(--ft-font-title);
+    font-family: var(--ft-font-family-title);
     font-size: clamp(40px, 8vw, 72px);
   }
 }
