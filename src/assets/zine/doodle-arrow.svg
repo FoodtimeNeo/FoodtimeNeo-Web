@@ -1,0 +1,6 @@
+<!-- @author XXXXX -->
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="72" viewBox="0 0 150 72">
+  <path d="M9 45c23-19 49-26 79-19 16 4 27 11 39 23" fill="none" stroke="#b42a17" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M116 18c4 11 9 21 22 31-15-1-27 2-40 8" fill="none" stroke="#b42a17" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M27 25l6-9M43 18l4-11M63 16l2-10" stroke="#3a2418" stroke-opacity="0.36" stroke-width="2" stroke-linecap="round" />
+</svg>

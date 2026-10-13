@@ -1,0 +1,5 @@
+<!-- @author XXXXX -->
+<svg xmlns="http://www.w3.org/2000/svg" width="54" height="118" viewBox="0 0 54 118">
+  <path d="M29 9c-10 0-18 8-18 19v60c0 14 11 25 25 25 12 0 22-10 22-22V31c0-9-7-16-16-16-10 0-18 8-18 18v55c0 5 4 9 9 9s9-4 9-9V36" fill="none" stroke="#4d83a4" stroke-width="5" stroke-linecap="round" opacity="0.72" />
+  <path d="M34 10c-10 0-18 8-18 19v59" fill="none" stroke="#fff8ec" stroke-width="1.5" stroke-linecap="round" opacity="0.7" />
+</svg>
