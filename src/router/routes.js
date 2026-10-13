@@ -28,6 +28,18 @@ export const routes = [
     meta: { title: '档口', layout: 'default' },
   },
   {
+    path: '/canteens/:canteenId/dishes/:dishId',
+    name: 'dishDetail',
+    component: () => import('@/views/dish/DishDetailView.vue'),
+    meta: { title: '菜品', layout: 'default' },
+  },
+  {
+    path: '/canteens/:canteenId/dishes/:dishId/gallery',
+    name: 'dishGallery',
+    component: () => import('@/views/dish/DishGalleryView.vue'),
+    meta: { title: '图册', layout: 'default' },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/auth/LoginView.vue'),
