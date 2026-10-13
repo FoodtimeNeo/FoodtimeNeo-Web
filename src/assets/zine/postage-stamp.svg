@@ -1,0 +1,26 @@
+<!-- @author XXXXX -->
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="132" viewBox="0 0 160 132">
+  <defs>
+    <mask id="perforated">
+      <rect width="160" height="132" fill="white" />
+      <g fill="black">
+        <circle cx="8" cy="8" r="5" />
+        <circle cx="32" cy="8" r="5" />
+        <circle cx="56" cy="8" r="5" />
+        <circle cx="80" cy="8" r="5" />
+        <circle cx="104" cy="8" r="5" />
+        <circle cx="128" cy="8" r="5" />
+        <circle cx="152" cy="8" r="5" />
+        <circle cx="8" cy="124" r="5" />
+        <circle cx="32" cy="124" r="5" />
+        <circle cx="56" cy="124" r="5" />
+        <circle cx="80" cy="124" r="5" />
+        <circle cx="104" cy="124" r="5" />
+        <circle cx="128" cy="124" r="5" />
+        <circle cx="152" cy="124" r="5" />
+      </g>
+    </mask>
+  </defs>
+  <rect x="2" y="2" width="156" height="128" rx="4" fill="#fdfaf2" mask="url(#perforated)" />
+  <rect x="17" y="17" width="126" height="98" fill="none" stroke="#3a2418" stroke-opacity="0.44" stroke-width="3" stroke-dasharray="7 5" />
+</svg>

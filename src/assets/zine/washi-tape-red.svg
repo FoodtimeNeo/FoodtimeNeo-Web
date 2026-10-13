@@ -1,0 +1,9 @@
+<!-- @author XXXXX -->
+<svg xmlns="http://www.w3.org/2000/svg" width="168" height="44" viewBox="0 0 168 44">
+  <filter id="roughen">
+    <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="2" seed="9" />
+    <feDisplacementMap in="SourceGraphic" scale="1.6" />
+  </filter>
+  <path d="M4 7c18 4 29-3 45 0 20 4 38 0 57 2 20 2 38-4 58 1l-3 27c-18-4-36 2-55-1-24-4-41 2-62-2-15-3-26 3-43-1z" fill="#d65a42" opacity="0.68" filter="url(#roughen)" />
+  <path d="M20 11l-3 19M51 9l-2 24M83 12l-1 20M120 10l-3 24M148 11l-2 20" stroke="#fff4d7" stroke-opacity="0.42" stroke-width="2" />
+</svg>
