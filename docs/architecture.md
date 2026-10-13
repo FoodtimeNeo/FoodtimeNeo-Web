@@ -33,10 +33,17 @@ FoodtimeNeo-Web/
 │   ├── views/<domain>/         # 路由页面 XxxView.vue
 │   ├── App.vue
 │   └── main.js
-└── 配置：vite / vitest / eslint / prettier / .nvmrc / .env.example
+├── CLAUDE.md                   # 开发入口规则，AI 编码工具自动读取
+├── README.md
+├── index.html                  # Vite 页面入口
+├── package.json                # 依赖、脚本、Prettier 配置
+├── package-lock.json
+├── vite.config.js              # 构建、代理、别名、Vitest 配置
+├── eslint.config.js
+└── .nvmrc / .env.example / .gitignore / .gitattributes / .prettierignore
 ```
 
-空目录用 `.gitkeep` 占位，首个真实文件加入后删除。
+空目录用 `.gitkeep` 占位，首个真实文件加入后删除。根目录只放工具要求必须在根目录读取的文件；能合并的配置合并进 `package.json` 或 `vite.config.js`，不新增独立配置文件。`.prettierignore` 只保留 `package-lock.json`，其余忽略项由 Prettier 默认读取 `.gitignore` 处理。
 
 ## 2. 分层与依赖方向
 
