@@ -10,9 +10,9 @@
   width: min(100% - 32px, 560px);
   margin: 12vh auto;
   padding: 32px;
-  border: 1px solid var(--ft-color-ink);
-  background: var(--ft-color-paper);
-  box-shadow: 6px 6px 0 var(--ft-color-ink);
+  border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
+  box-shadow: 6px 6px 0 var(--ft-color-secondary);
 
   a {
     color: var(--ft-color-primary);

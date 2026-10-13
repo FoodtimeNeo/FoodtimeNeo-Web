@@ -1,8 +1,123 @@
 :root {
-  --ft-color-desk: #d8c08b;
-  --ft-color-paper: #fffaf0;
-  --ft-color-ink: #3a2418;
+  --ft-color-bg: #f2efe6;
+  --ft-color-bg-soft: #faf7f0;
+  --ft-color-surface: #f8f5ee;
+  --ft-color-surface-ink: #f1ece2;
   --ft-color-primary: #c9341e;
-  --ft-font-title: 'Noto Serif SC', 'Source Han Serif SC', serif;
-  --ft-font-body: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  --ft-color-primary-strong: #ab1f0b;
+  --ft-color-secondary: #3a2418;
+  --ft-color-secondary-soft: #6a4b3a;
+  --ft-color-accent: #5b7a3a;
+  --ft-color-text: #3a2418;
+  --ft-color-text-muted: #6e5547;
+  --ft-color-border: #d5ccbc;
+  --ft-color-danger: #c9341e;
+
+  --ft-radius-sm: 4px;
+  --ft-radius-md: 10px;
+  --ft-radius-lg: 16px;
+  --ft-radius-pill: 999px;
+
+  --ft-space-1: 8px;
+  --ft-space-2: 16px;
+  --ft-space-3: 24px;
+  --ft-space-4: 32px;
+  --ft-space-5: 40px;
+  --ft-space-6: 48px;
+
+  --ft-font-family-title: 'Noto Serif SC', 'Source Han Serif SC', serif;
+  --ft-font-family:
+    'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    sans-serif;
+  --ft-font-family-note: 'Ma Shan Zheng', 'KaiTi', cursive;
+  --ft-font-size-xs: 12px;
+  --ft-font-size-sm: 14px;
+  --ft-font-size-md: 16px;
+  --ft-font-size-lg: 20px;
+  --ft-font-size-xl: 32px;
+  --ft-font-size-2xl: clamp(52px, 10vw, 116px);
+
+  --ft-shadow-sm: 0 6px 0 rgb(58 36 24 / 10%);
+  --ft-shadow-md: 0 10px 0 rgb(58 36 24 / 16%);
+  --ft-shadow-lg: 0 14px 0 rgb(58 36 24 / 22%);
+  --ft-transition-fast: 180ms cubic-bezier(0.37, 0, 0.63, 1);
+  --ft-transition-base: 320ms cubic-bezier(0.22, 1, 0.36, 1);
+
+  --page-max-width: 1180px;
+  --zine-page-padding: 32px;
+  --zine-page-padding-mobile: 14px;
+  --app-mobile-tabbar-height: 72px;
+  --app-mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --app-mobile-section-gap: 20px;
+  --app-mobile-card-padding: 16px;
+  --app-mobile-shadow: 0 4px 0 rgb(58 36 24 / 10%);
+
+  --zine-paper-bg: #d8c08b;
+  --zine-paper-bg-soft: #eadbbb;
+  --zine-paper-card: #fffaf0;
+  --zine-paper-card-alt: #f7efd9;
+  --zine-paper-shadow: rgb(58 36 24 / 18%);
+  --zine-paper-edge: rgb(58 36 24 / 34%);
+  --zine-stamp-red: #b72f1c;
+  --zine-stamp-red-soft: rgb(183 47 28 / 14%);
+  --zine-stamp-blue: #3f7291;
+  --zine-stamp-blue-soft: rgb(63 114 145 / 16%);
+  --zine-foil-gold: #b88924;
+  --zine-foil-gold-soft: #f4df97;
+  --zine-foil-silver: #8e969d;
+  --zine-foil-silver-soft: #e6e6df;
+  --zine-foil-bronze: #b06a36;
+  --zine-foil-bronze-soft: #edd2b5;
+  --zine-highlight-yellow: rgb(238 197 63 / 42%);
+
+  --zine-handwriting-font: var(--ft-font-family-note);
+  --zine-title-font: var(--ft-font-family-title);
+  --zine-body-font: var(--ft-font-family);
+  --zine-section-index-size: clamp(32px, 5vw, 62px);
+  --zine-card-title-size: 30px;
+  --zine-card-note-size: 22px;
+  --zine-card-width: clamp(240px, 24vw, 280px);
+  --zine-card-height: clamp(340px, 35vw, 398px);
+  --zine-rank-image-width: clamp(260px, 26vw, 340px);
+  --zine-radius-paper: 5px;
+  --zine-rotate-left: -1.2deg;
+  --zine-rotate-right: 1.1deg;
+  --zine-rotate-stamp: -8deg;
+
+  --zine-texture-kraft: url('../zine/kraft-paper.svg');
+  --zine-texture-grain: url('../zine/noise-grain.svg');
+  --zine-decor-tape-red: url('../zine/washi-tape-red.svg');
+  --zine-decor-tape-blue: url('../zine/washi-tape-blue.svg');
+  --zine-decor-arrow: url('../zine/doodle-arrow.svg');
+  --zine-decor-coffee: url('../zine/coffee-stain.svg');
+  --zine-decor-paper-clip: url('../zine/paper-clip.svg');
+  --zine-decor-postage: url('../zine/postage-stamp.svg');
+  --zine-decor-torn-edge: url('../zine/torn-edge.svg');
+  --zine-decor-sticky-note: url('../zine/sticky-note.svg');
+  --zine-decor-sticky-note-alt: url('../zine/sticky-note-alt.svg');
+  --zine-decor-wow: url('../zine/wow.svg');
+  --zine-decor-food-sketch: url('../images/decoration/food-sketch.png');
+  --zine-decor-food-sketch-2: var(--zine-decor-food-sketch);
+  --zine-decor-food-sketch-3: var(--zine-decor-food-sketch);
+  --zine-decor-food-sketch-4: var(--zine-decor-food-sketch);
+  --zine-decor-food-sketch-5: var(--zine-decor-food-sketch);
+  --zine-decor-stamp-round: url('../images/decoration/round-stamp.png');
+  --zine-decor-stamp-flavor: var(--zine-decor-stamp-round);
+  --zine-decor-stamp-recommend: url('../zine/stamp-recommend.svg');
+  --zine-decor-stamp-premium: url('../zine/stamp-premium.svg');
+  --zine-decor-stamp-chinese: url('../zine/stamp-chinese.svg');
+  --zine-decor-opacity-bg: 0.38;
+  --zine-decor-opacity-quiet: 0.22;
+  --zine-decor-rotate-left: -8deg;
+  --zine-decor-rotate-right: 7deg;
+
+  --el-color-primary: var(--ft-color-primary);
+  --el-color-success: var(--ft-color-accent);
+  --el-color-danger: var(--ft-color-danger);
+  --el-bg-color: var(--zine-paper-card);
+  --el-border-color: var(--ft-color-border);
+  --el-border-radius-base: 0;
+  --el-font-family: var(--ft-font-family);
+  --el-text-color-primary: var(--ft-color-text);
+  --el-text-color-regular: var(--ft-color-secondary-soft);
 }

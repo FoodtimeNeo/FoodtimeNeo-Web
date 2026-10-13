@@ -7,12 +7,12 @@ export const routes = [
     path: '/',
     name: 'home',
     component: () => import('@/views/home/HomeView.vue'),
-    meta: { title: '首页' },
+    meta: { title: '首页', layout: 'default' },
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'notFound',
     component: () => import('@/views/error/NotFoundView.vue'),
-    meta: { title: '页面不存在' },
+    meta: { title: '页面不存在', layout: 'default' },
   },
 ];
