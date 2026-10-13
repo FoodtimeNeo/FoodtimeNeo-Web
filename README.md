@@ -2,7 +2,7 @@
 
 FoodTime 前端重建项目。视觉效果参照食堂手账风格，页面按食堂、档口、菜品、图册重新组织。
 
-项目总规划见本地 `../FoodtimeNeo-Web-开发规划.md`；仓库内的开发约定见 [docs/development-rules.md](docs/development-rules.md)，视觉基线见 [docs/design-style-web.md](docs/design-style-web.md)。
+项目总规划见本地 `../FoodtimeNeo-Web-开发规划.md`；开发入口规则见 [rules.md](rules.md)，详细约定见 [docs/development-rules.md](docs/development-rules.md)，视觉基线见 [docs/design-style-web.md](docs/design-style-web.md)。
 
 ## 本地开发
 
