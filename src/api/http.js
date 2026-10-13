@@ -38,11 +38,25 @@ const STATUS_CODES = {
 let unauthorizedHandler = null;
 
 /**
+ * 权限不足回调。由应用层注入统一提示，避免 api 层直接依赖 UI 组件库。
+ * @type {((error: ApiError) => void) | null}
+ */
+let forbiddenHandler = null;
+
+/**
  * 注册 401 处理器（清理会话后跳转登录）。
  * @param {() => void} handler
  */
 export function setUnauthorizedHandler(handler) {
   unauthorizedHandler = handler;
+}
+
+/**
+ * 注册 403 处理器（统一提示权限不足）。
+ * @param {(error: ApiError) => void} handler
+ */
+export function setForbiddenHandler(handler) {
+  forbiddenHandler = handler;
 }
 
 /**
@@ -107,6 +121,8 @@ http.interceptors.response.use(
     if (apiError.status === 401) {
       clearSession();
       if (unauthorizedHandler) unauthorizedHandler();
+    } else if (apiError.status === 403) {
+      if (forbiddenHandler) forbiddenHandler(apiError);
     }
     return Promise.reject(apiError);
   },
