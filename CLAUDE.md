@@ -1,6 +1,6 @@
 # FoodtimeNeo-Web 开发规则
 
-本文档是项目开发的入口规则，适用于人工开发和 VibeCoding。详细目录约定见 [docs/development-rules.md](docs/development-rules.md)，视觉要求见 [docs/design-style-web.md](docs/design-style-web.md)。规则与工程配置冲突时，以当前 `package.json`、ESLint、Prettier、Vitest、Vite 和 CI 的可执行结果为准，并同步修正文档。
+本文档是项目开发的入口规则，适用于人工开发和 VibeCoding。架构与分层见 [docs/architecture.md](docs/architecture.md)，编码细则见 [docs/development-rules.md](docs/development-rules.md)，视觉要求见 [docs/design-style-web.md](docs/design-style-web.md)。规则与工程配置冲突时，以当前 `package.json`、ESLint、Prettier、Vitest、Vite 和 CI 的可执行结果为准，并同步修正文档。
 
 ## 1. 技术基线
 
@@ -73,17 +73,16 @@ src/
 npm run check
 ```
 
-该命令必须通过 ESLint、Prettier、Vitest 和生产构建。新增或修改业务逻辑时必须补充能验证行为的测试；不得只复制实现细节写无意义测试。初始化阶段暂时允许没有测试文件，首个业务功能落地时必须移除 `--passWithNoTests`。
+该命令必须通过 ESLint、Prettier、Vitest 和生产构建。新增或修改业务逻辑时必须补充能验证行为的测试；不得只复制实现细节写无意义测试。`test:unit` 不允许空测试集通过。
 
 ## 8. Git 工作流
 
-- `main`：可发布版本。
-- `develop`：集成并通过检查的功能。
-- `feat/<范围>`：从最新 `develop` 创建的功能分支。
-- `fix/<问题>`：从对应基线创建的缺陷分支。
-- 功能分支通过检查和人工验收后合入 `develop`；发布时再由 `develop` 合入 `main`。
-- 提交信息使用 Conventional Commits，例如 `feat(canteen): 实现食堂列表`。
-- 一个提交对应一个可解释、可验证的改动。提交说明必须来自实际差异，不宣称未执行的测试或联调。
+完整规范见 [docs/git-workflow.md](docs/git-workflow.md)，要点：
+
+- `main` 可发布，`develop` 集成，二者只能通过 PR 合入，CI 在 PR 与合并时运行。
+- 一个功能一个分支 `feature/<kebab-name>`，缺陷用 `fix/<kebab-name>`，都合入 `develop`。
+- 开始开发统一执行 `npm run feature -- <name>`：分支不存在则从最新 `develop` 创建；已存在则先指向 `develop` 最新状态再继续开发。
+- 提交信息使用 Conventional Commits，例如 `feat(canteen): 实现食堂列表`。一个提交对应一个可解释、可验证的改动，说明必须来自实际差异。
 
 ## 9. 完成标准
 

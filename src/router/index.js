@@ -1,14 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import { routes } from './routes.js';
+import { installGuards } from './guards.js';
 
-const routes = [
-  {
-    path: '/',
-    name: 'home',
-    component: () => import('../views/home/HomeView.vue'),
-  },
-];
-
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior: () => ({ top: 0 }),
 });
+
+installGuards(router);
+
+export default router;
