@@ -1,0 +1,20 @@
+@use './tokens.scss';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ft-color-ink);
+  background: var(--ft-color-desk);
+  font-family: var(--ft-font-body);
+  line-height: 1.6;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 1px 0;
+}
