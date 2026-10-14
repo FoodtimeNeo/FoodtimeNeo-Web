@@ -2,9 +2,11 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { navigationItems, resolveActiveNavigation } from './navigation.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 const activeName = computed(() => resolveActiveNavigation(route));
 </script>
 
@@ -33,7 +35,16 @@ const activeName = computed(() => resolveActiveNavigation(route));
         </RouterLink>
       </nav>
 
-      <span class="app-header__account">访客模式</span>
+      <RouterLink
+        v-if="auth.isAdmin"
+        class="app-header__admin"
+        :to="{ name: 'adminAudit' }"
+      >
+        管理台
+      </RouterLink>
+      <span class="app-header__account">
+        {{ auth.isAuthenticated ? auth.displayName : '访客模式' }}
+      </span>
     </div>
   </header>
 </template>
@@ -104,6 +115,16 @@ const activeName = computed(() => resolveActiveNavigation(route));
   font-size: var(--ft-font-size-sm);
 }
 
+.app-header__admin {
+  flex: none;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--ft-color-text);
+  color: var(--ft-color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
 @media (max-width: 768px) {
   .app-header,
   .app-header__inner {
@@ -120,7 +141,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
   }
 
   .app-header__brand span,
-  .app-header__nav {
+  .app-header__nav,
+  .app-header__account {
     display: none;
   }
 }

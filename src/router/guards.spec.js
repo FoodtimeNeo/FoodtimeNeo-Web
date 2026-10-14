@@ -66,6 +66,19 @@ describe('resolveNavigation', () => {
       ),
     ).toBe(true);
   });
+
+  it('实际审核路由只允许管理员和超级管理员进入', () => {
+    const audit = routes.find((route) => route.name === 'adminAudit');
+    expect(audit?.meta.requiresAdmin).toBe(true);
+    const to = { ...audit, fullPath: audit.path };
+    expect(resolveNavigation(to, GUEST)).toEqual({
+      name: 'login',
+      query: { redirect: '/admin/audit' },
+    });
+    expect(resolveNavigation(to, USER)).toEqual({ name: 'home' });
+    expect(resolveNavigation(to, ADMIN)).toBe(true);
+    expect(resolveNavigation(to, SUPER)).toBe(true);
+  });
 });
 
 describe('resolveDocumentTitle', () => {
