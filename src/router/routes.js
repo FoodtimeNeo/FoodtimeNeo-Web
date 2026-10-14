@@ -4,6 +4,50 @@
  */
 export const routes = [
   {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/views/profile/ProfileView.vue'),
+    meta: {
+      title: '我的',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/reviews',
+    name: 'myReviews',
+    component: () => import('@/views/profile/MyReviewsView.vue'),
+    meta: {
+      title: '我的评论',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/submissions',
+    name: 'mySubmissions',
+    component: () => import('@/views/profile/MySubmissionsView.vue'),
+    meta: {
+      title: '我的提交',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/password',
+    name: 'changePassword',
+    component: () => import('@/views/profile/ChangePasswordView.vue'),
+    meta: {
+      title: '修改密码',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/',
     name: 'home',
     component: () => import('@/views/home/HomeView.vue'),
