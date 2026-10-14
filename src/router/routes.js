@@ -63,7 +63,6 @@ export const routes = [
     },
   },
   {
-
     path: '/superadmin',
     name: 'superadmin',
     component: () => import('@/views/superadmin/SuperadminView.vue'),
@@ -72,7 +71,17 @@ export const routes = [
       layout: 'admin',
       requiresAuth: true,
       requiresSuperadmin: true,
-
+    },
+  },
+  {
+    path: '/superadmin/users',
+    name: 'superadminUsers',
+    component: () => import('@/views/superadmin/SuperadminUsersView.vue'),
+    meta: {
+      title: '用户与邀请码管理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
     },
   },
   {

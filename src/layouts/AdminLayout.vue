@@ -9,9 +9,13 @@ const auth = useAuthStore();
 
 const links = computed(() => [
   { name: 'adminAudit', label: '内容审核' },
-  ...(auth.isSuperadmin ? [{ name: 'superadmin', label: '超管看板' }] : []),
+  ...(auth.isSuperadmin
+    ? [
+        { name: 'superadmin', label: '超管看板' },
+        { name: 'superadminUsers', label: '用户管理' },
+      ]
+    : []),
 ]);
-
 </script>
 
 <template>
