@@ -31,4 +31,10 @@ npm run feature -- canteen-list
 
 分支不存在时从最新 `develop` 创建 `feature/canteen-list`；已存在时先指向 `develop` 最新状态再继续开发。详见 [docs/git-workflow.md](docs/git-workflow.md)。
 
-当前只提供可运行骨架、工具链和基础页面占位。业务页面、设计素材、接口对接由后续分支完成。
+已接通现有 Backend 的 Cookie/CSRF 认证、真实食堂/档口/菜品浏览、分页图册和点评、图片/菜品/档口投稿、个人记录、内容审核、目录与正式评论管理，以及平台管理员用户管理。邀请码、吐槽、推荐/避雷、今日推荐和排行榜没有对应后端接口，页面不提供这些入口。
+
+本地浏览器使用 `http://localhost:5173`；后端默认代理到 `http://127.0.0.1:8080`。可通过 `VITE_API_PROXY_TARGET` 指定另一本机后端，并使用 `npm run dev -- --port 3000`，浏览器仍使用 localhost。当前 Backend 的开发来源白名单只包含 localhost 的 5173 和 3000 端口。前端固定从同站 `/api/v1` 请求，生产环境须配置 HTTPS 与同站反向代理。
+
+本轮经确认复用隔离联调库，验收地址为 `http://localhost:3000`，对应未修改的 Backend 程序在 18080 端口。运行参数和样例凭据只留在本地忽略目录，不进入代码仓库。邮箱投递暂未接通；注册页面保留真实验证码流程及服务端错误，不提供模拟验证码。
+
+接口映射、权限及字段边界见 [docs/backend-integration.md](docs/backend-integration.md)，验收范围见 [docs/verification.md](docs/verification.md)。
