@@ -39,6 +39,10 @@ const dishes = computed(() =>
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="data">
       <h1 class="section-title">{{ data.stall.name }}</h1>
+      <RouterLink
+        :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"
+        >投稿菜品</RouterLink
+      >
       <label>搜索菜品<input v-model="query" type="search" /></label>
       <EmptyState
         v-if="!dishes.length"

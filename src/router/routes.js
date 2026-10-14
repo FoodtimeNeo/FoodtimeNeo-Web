@@ -3,6 +3,37 @@
  * 约定：path 使用 kebab-case，name 使用 camelCase，页面组件一律懒加载。
  */
 export const routes = [
+  ...[
+    [
+      'photo',
+      '/canteens/:canteenId/stalls/:stallId/dishes/:dishId/images/new',
+      'photoSubmission',
+      '上传菜品图片',
+    ],
+    [
+      'dish',
+      '/canteens/:canteenId/stalls/:stallId/submissions/new',
+      'dishSubmission',
+      '投稿菜品',
+    ],
+    [
+      'stall',
+      '/canteens/:canteenId/submissions/new',
+      'stallSubmission',
+      '投稿档口',
+    ],
+  ].map(([kind, path, name, title]) => ({
+    path,
+    name,
+    component: () => import('@/views/submission/SubmissionCreateView.vue'),
+    meta: {
+      title,
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+      submissionKind: kind,
+    },
+  })),
   {
     path: '/profile',
     name: 'profile',

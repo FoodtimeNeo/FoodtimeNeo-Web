@@ -42,6 +42,9 @@ const {
     <template v-else-if="canteen">
       <header class="canteen-detail__header">
         <h1 class="section-title">{{ canteen.name }}</h1>
+        <RouterLink :to="{ name: 'stallSubmission', params: { canteenId } }"
+          >投稿档口</RouterLink
+        >
       </header>
 
       <section aria-labelledby="stalls-title">
