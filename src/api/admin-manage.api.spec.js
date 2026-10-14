@@ -1,65 +1,55 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const { get, post, put, del } = vi.hoisted(() => ({
+import { expect, it, vi } from 'vitest';
+const api = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
-  del: vi.fn(),
+  delete: vi.fn(),
 }));
-vi.mock('./http.js', () => ({ http: { get, post, put, delete: del } }));
-
+vi.mock('./http.js', async (original) => ({
+  ...(await original()),
+  http: api,
+}));
 import {
-  deleteCanteen,
-  deleteDish,
-  deleteStall,
-  fetchManagedCanteens,
-  fetchManagedStalls,
-  saveCanteen,
-  saveDish,
-  saveStall,
+  fetchManagedItems,
+  saveManagedItem,
+  deleteManagedReview,
+  catalogPayload,
 } from './admin-manage.api.js';
-
-describe('食堂内容管理接口', () => {
-  beforeEach(() => {
-    get.mockReset();
-    post.mockReset();
-    put.mockReset();
-    del.mockReset();
+it('目录字段按真实类型投影，不发送 floor、分类、菜品封面或虚构属性', async () => {
+  const input = {
+    parentId: 'stall',
+    name: '面',
+    description: null,
+    price: 0,
+    coverImageUrl: 'ref',
+    status: 'active',
+    sortOrder: 4,
+    floor: 1,
+    summary: 'fake',
+    category: 'fake',
+  };
+  expect(catalogPayload('dishes', input)).toEqual({
+    parentId: 'stall',
+    name: '面',
+    description: null,
+    price: 0,
+    status: 'active',
   });
-
-  it('食堂和档口列表使用现有读取接口', async () => {
-    await fetchManagedCanteens();
-    await fetchManagedStalls('a/b');
-    expect(get.mock.calls).toEqual([['/canteens'], ['/canteens/a%2Fb/stalls']]);
+  await saveManagedItem('stalls', 's', input);
+  expect(api.put).toHaveBeenLastCalledWith('/admin/catalog/stalls/s', {
+    parentId: 'stall',
+    name: '面',
+    description: null,
+    coverImageUrl: 'ref',
+    status: 'active',
+    sortOrder: 4,
   });
-
-  it('新增与编辑使用对应 POST/PUT 地址', async () => {
-    await saveCanteen('', { name: '一食堂' });
-    await saveCanteen('c1', { name: '一食堂' });
-    await saveStall('c1', '', { name: '面档' });
-    await saveStall('c1', 's1', { name: '面档' });
-    await saveDish('', { name: '牛肉面' });
-    await saveDish('d1', { name: '牛肉面' });
-    expect(post.mock.calls).toEqual([
-      ['/canteens', { name: '一食堂' }],
-      ['/canteens/c1/stalls', { name: '面档' }],
-      ['/dishes', { name: '牛肉面' }],
-    ]);
-    expect(put.mock.calls).toEqual([
-      ['/canteens/c1', { name: '一食堂' }],
-      ['/stalls/s1', { name: '面档' }],
-      ['/dishes/d1', { name: '牛肉面' }],
-    ]);
+  await fetchManagedItems('dishes', 2, 'stall');
+  expect(api.get).toHaveBeenLastCalledWith('/admin/catalog/dishes', {
+    params: { page: 2, size: 20, parentId: 'stall' },
   });
-
-  it('删除使用各资源地址', async () => {
-    await deleteCanteen('c1');
-    await deleteStall('s1');
-    await deleteDish('d1');
-    expect(del.mock.calls).toEqual([
-      ['/canteens/c1'],
-      ['/stalls/s1'],
-      ['/dishes/d1'],
-    ]);
+  await deleteManagedReview('r', '原因');
+  expect(api.delete).toHaveBeenLastCalledWith('/admin/reviews/r', {
+    data: { reason: '原因' },
   });
 });

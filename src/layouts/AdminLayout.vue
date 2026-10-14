@@ -10,6 +10,7 @@ const auth = useAuthStore();
 const links = computed(() => [
   { name: 'adminAudit', label: '内容审核' },
   { name: 'adminManage', label: '内容管理' },
+  { name: 'managedReviews', label: '正式评论' },
   { name: 'moderationLogs', label: '审核日志' },
   ...(auth.isSuperadmin
     ? [
