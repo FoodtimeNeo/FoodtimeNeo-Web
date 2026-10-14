@@ -67,44 +67,30 @@ describe('resolveNavigation', () => {
     ).toBe(true);
   });
 
-  it('实际审核路由只允许管理员和超级管理员进入', () => {
-    const audit = routes.find((route) => route.name === 'adminAudit');
-    expect(audit?.meta.requiresAdmin).toBe(true);
-    const to = { ...audit, fullPath: audit.path };
-    expect(resolveNavigation(to, GUEST)).toEqual({
-      name: 'login',
-      query: { redirect: '/admin/audit' },
-    });
-    expect(resolveNavigation(to, USER)).toEqual({ name: 'home' });
-    expect(resolveNavigation(to, ADMIN)).toBe(true);
-    expect(resolveNavigation(to, SUPER)).toBe(true);
-  });
-
-  it('实际超管路由仅允许超级管理员进入', () => {
-    const superadmin = routes.find((route) => route.name === 'superadmin');
-    expect(superadmin?.meta.requiresSuperadmin).toBe(true);
-    const to = { ...superadmin, fullPath: superadmin.path };
-    expect(resolveNavigation(to, GUEST)).toEqual({
-      name: 'login',
-      query: { redirect: '/superadmin' },
-    });
-    expect(resolveNavigation(to, USER)).toEqual({ name: 'home' });
-    expect(resolveNavigation(to, ADMIN)).toEqual({ name: 'home' });
-
-    expect(resolveNavigation(to, SUPER)).toBe(true);
-  });
-
-  it('用户管理路由仅允许超级管理员进入', () => {
-    const users = routes.find((route) => route.name === 'superadminUsers');
-    expect(users?.meta.requiresSuperadmin).toBe(true);
-    const to = { ...users, fullPath: users.path };
-    expect(resolveNavigation(to, GUEST)).toEqual({
-      name: 'login',
-      query: { redirect: '/superadmin/users' },
-    });
-    expect(resolveNavigation(to, ADMIN)).toEqual({ name: 'home' });
-    expect(resolveNavigation(to, SUPER)).toBe(true);
-  });
+  it.each([
+    ['adminAudit', '/admin/audit', 'requiresAdmin'],
+    ['adminManage', '/admin/manage', 'requiresAdmin'],
+    ['superadmin', '/superadmin', 'requiresSuperadmin'],
+    ['superadminUsers', '/superadmin/users', 'requiresSuperadmin'],
+  ])(
+    '%s 路由按访客、用户、管理员和超管的权限放行',
+    (name, path, roleRequirement) => {
+      const route = routes.find((item) => item.name === name);
+      expect(route?.path).toBe(path);
+      expect(route?.meta.requiresAuth).toBe(true);
+      expect(route?.meta[roleRequirement]).toBe(true);
+      const to = { ...route, fullPath: path };
+      expect(resolveNavigation(to, GUEST)).toEqual({
+        name: 'login',
+        query: { redirect: path },
+      });
+      expect(resolveNavigation(to, USER)).toEqual({ name: 'home' });
+      expect(resolveNavigation(to, ADMIN)).toEqual(
+        roleRequirement === 'requiresAdmin' ? true : { name: 'home' },
+      );
+      expect(resolveNavigation(to, SUPER)).toBe(true);
+    },
+  );
 });
 
 describe('resolveDocumentTitle', () => {
