@@ -58,6 +58,11 @@ defineProps({
     font-weight: 700;
   }
 
+  .zine-rating-stamp {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
   &__comment {
     margin: var(--ft-space-1) 0 0;
     white-space: pre-wrap;
