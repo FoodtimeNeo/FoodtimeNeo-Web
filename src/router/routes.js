@@ -157,10 +157,15 @@ export const routes = [
     },
   },
   {
-    path: '/reviews/new',
-    name: 'reviewCreate',
-    component: () => import('@/views/review/ReviewCreateView.vue'),
-    meta: { title: '写点评', layout: 'default', requiresAuth: true },
+    path: '/canteens/:canteenId/stalls/:stallId/dishes/:dishId/reviews/new',
+    name: 'dishReviewCreate',
+    component: () => import('@/views/dish/DishReviewCreateView.vue'),
+    meta: {
+      title: '写点评',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
   },
   {
     path: '/login',

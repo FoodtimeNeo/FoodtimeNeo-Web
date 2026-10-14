@@ -21,7 +21,7 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
           <span v-if="index === breadcrumbs.length - 1" aria-current="page">
             {{ crumb.title }}
           </span>
-          <RouterLink v-else :to="{ name: crumb.name }">{{
+          <RouterLink v-else :to="{ name: crumb.name, params: crumb.params }">{{
             crumb.title
           }}</RouterLink>
         </template>
@@ -50,6 +50,7 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 
 .breadcrumbs {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--ft-space-1);
   min-height: 44px;

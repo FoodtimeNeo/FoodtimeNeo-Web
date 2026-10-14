@@ -43,6 +43,19 @@ beforeEach(() => {
   });
 });
 describe('菜品真实详情', () => {
+  it('写点评按钮进入当前菜品子页面，不使用选择目标的查询参数', async () => {
+    const wrapper = mount(DishDetailView, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    });
+    await flushPromises();
+    const link = wrapper
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.text() === '写点评');
+    expect(link.props('to')).toEqual({
+      name: 'dishReviewCreate',
+      params: { canteenId: 'c1', stallId: 's1', dishId: 'd1' },
+    });
+  });
   it('评分取服务器快照，评论显示ID与正文，隐藏投票', async () => {
     const wrapper = mount(DishDetailView, {
       global: { stubs: { RouterLink: RouterLinkStub } },
