@@ -61,6 +61,12 @@ const params = computed(() => ({
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="data">
       <div class="dish-detail__hero">
+        <RouterLink
+          class="dish-detail__upload-link"
+          :to="{ name: 'photoSubmission', params }"
+          aria-label="上传菜品图片"
+          >＋</RouterLink
+        >
         <MediaImage
           :src="data.images[0]?.imageUrl || ''"
           :alt="data.dish.name"
@@ -134,6 +140,19 @@ const params = computed(() => ({
 
   &__hero {
     position: relative;
+    .dish-detail__upload-link {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      z-index: 1;
+      min-width: 44px;
+      min-height: 44px;
+      display: grid;
+      place-items: center;
+      background: var(--zine-paper-card);
+      border: 1px solid var(--ft-color-text);
+      font-size: 24px;
+    }
     aspect-ratio: 16 / 9;
     overflow: hidden;
     .dish-detail__gallery-link {
