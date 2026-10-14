@@ -13,10 +13,7 @@ const links = computed(() => [
   { name: 'managedReviews', label: '正式评论' },
   { name: 'moderationLogs', label: '审核日志' },
   ...(auth.isSuperadmin
-    ? [
-        { name: 'superadmin', label: '超管看板' },
-        { name: 'superadminUsers', label: '用户管理' },
-      ]
+    ? [{ name: 'superadminUsers', label: '用户管理' }]
     : []),
 ]);
 </script>

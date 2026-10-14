@@ -199,9 +199,9 @@ export const routes = [
   {
     path: '/superadmin',
     name: 'superadmin',
-    component: () => import('@/views/superadmin/SuperadminView.vue'),
+    redirect: { name: 'superadminUsers' },
     meta: {
-      title: '超级管理员看板',
+      title: '用户管理',
       layout: 'admin',
       requiresAuth: true,
       requiresSuperadmin: true,
@@ -212,7 +212,7 @@ export const routes = [
     name: 'superadminUsers',
     component: () => import('@/views/superadmin/SuperadminUsersView.vue'),
     meta: {
-      title: '用户与邀请码管理',
+      title: '用户管理',
       layout: 'admin',
       requiresAuth: true,
       requiresSuperadmin: true,
