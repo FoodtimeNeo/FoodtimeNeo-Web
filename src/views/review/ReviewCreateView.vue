@@ -1,213 +1,192 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { fetchCanteens, fetchStalls } from '@/api/canteen.api.js';
+import {
+  fetchCanteens,
+  fetchStalls,
+  fetchStallDishes,
+} from '@/api/canteen.api.js';
 import { createReview } from '@/api/review.api.js';
 import ReviewTargetPicker from '@/components/review/ReviewTargetPicker.vue';
 import StarRatingInput from '@/components/review/StarRatingInput.vue';
 import InkButton from '@/components/base/InkButton.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
-
 const route = useRoute();
 const router = useRouter();
-
 const canteens = ref([]);
 const stalls = ref([]);
-const targetLoading = ref(true);
+const dishes = ref([]);
+const targetLoading = ref(false);
 const targetError = ref(null);
 const submitting = ref(false);
 const validationMessage = ref('');
 const target = ref({ canteenId: '', stallId: '', dishId: '' });
-const form = reactive({ rating: 0, comment: '' });
-
-const selectedStall = computed(
-  () =>
-    stalls.value.find(
-      (stall) => String(stall.id) === String(target.value.stallId),
-    ) ?? null,
+const form = reactive({ rating: 0, content: '' });
+const formElement = ref(null);
+let selectionVersion = 0;
+const selectedCanteen = computed(() =>
+  canteens.value.find((item) => item.id === target.value.canteenId),
 );
-const dishes = computed(() => selectedStall.value?.dishes ?? []);
-const selectedDish = computed(
-  () =>
-    dishes.value.find(
-      (dish) => String(dish.id) === String(target.value.dishId),
-    ) ?? null,
+const selectedStall = computed(() =>
+  stalls.value.find((item) => item.id === target.value.stallId),
 );
-const selectedCanteen = computed(
-  () =>
-    canteens.value.find(
-      (canteen) => String(canteen.id) === String(target.value.canteenId),
-    ) ?? null,
+const selectedDish = computed(() =>
+  dishes.value.find((item) => item.id === target.value.dishId),
 );
-
-async function loadStalls(canteenId, preferred = {}) {
-  stalls.value = [];
-  if (!canteenId) return;
+async function loadSelection(preferred = {}) {
+  const version = ++selectionVersion;
   targetLoading.value = true;
   targetError.value = null;
   try {
-    stalls.value = await fetchStalls(canteenId);
-    const preferredDishId = String(preferred.dishId ?? '');
-    const matchedStall = preferredDishId
-      ? stalls.value.find((stall) =>
-          (stall.dishes ?? []).some(
-            (dish) => String(dish.id) === preferredDishId,
-          ),
-        )
-      : stalls.value.find(
-          (stall) => String(stall.id) === String(preferred.stallId ?? ''),
-        );
-    if (matchedStall) {
-      target.value = {
-        canteenId: String(canteenId),
-        stallId: String(matchedStall.id),
-        dishId: preferredDishId,
-      };
+    const halls = await fetchCanteens();
+    if (version !== selectionVersion) return;
+    canteens.value = halls;
+    if (!halls.some((hall) => hall.id === target.value.canteenId)) {
+      target.value = { canteenId: '', stallId: '', dishId: '' };
+      stalls.value = [];
+      dishes.value = [];
+      return;
     }
+    const loadedStalls = await fetchStalls(target.value.canteenId);
+    if (version !== selectionVersion) return;
+    stalls.value = loadedStalls;
+    const wanted = preferred.stallId || target.value.stallId;
+    if (!loadedStalls.some((stall) => stall.id === wanted)) {
+      target.value.stallId = '';
+      target.value.dishId = '';
+      dishes.value = [];
+      return;
+    }
+    target.value.stallId = wanted;
+    const loadedDishes = await fetchStallDishes(wanted);
+    if (version !== selectionVersion) return;
+    dishes.value = loadedDishes;
+    const wantedDish = preferred.dishId || target.value.dishId;
+    target.value.dishId = loadedDishes.some(
+      (dish) => dish.id === wantedDish && dish.stallId === wanted,
+    )
+      ? wantedDish
+      : '';
   } catch (error) {
-    targetError.value = error;
+    if (version === selectionVersion) targetError.value = error;
   } finally {
-    targetLoading.value = false;
+    if (version === selectionVersion) targetLoading.value = false;
   }
 }
-
-async function loadTargets() {
-  targetLoading.value = true;
-  targetError.value = null;
-  try {
-    canteens.value = await fetchCanteens();
-    const canteenId = String(route.query.canteenId ?? '');
-    if (canteenId) {
-      target.value = { canteenId, stallId: '', dishId: '' };
-      await loadStalls(canteenId, {
-        stallId: route.query.stallId,
-        dishId: route.query.dishId,
-      });
-    }
-  } catch (error) {
-    targetError.value = error;
-  } finally {
-    targetLoading.value = false;
-  }
-}
-
-async function updateTarget(nextTarget) {
-  validationMessage.value = '';
-  const canteenChanged = nextTarget.canteenId !== target.value.canteenId;
-  target.value = nextTarget;
-  if (canteenChanged) await loadStalls(nextTarget.canteenId);
-}
-
-function validate() {
-  const comment = form.comment.trim();
-  if (!selectedDish.value) return '请先选择要点评的食堂、档口和菜品。';
-  if (form.rating < 1 || form.rating > 5) return '请选择 1–5 星评分。';
-  if (!comment) return '请填写文字点评。';
-  return '';
-}
-
-async function submitReview() {
+async function updateTarget(next) {
   if (submitting.value) return;
-  validationMessage.value = validate();
-  if (validationMessage.value) return;
-
+  const previous = target.value;
+  target.value = { ...next };
+  validationMessage.value = '';
+  if (
+    previous.canteenId !== next.canteenId ||
+    previous.stallId !== next.stallId
+  ) {
+    dishes.value = [];
+    if (previous.canteenId !== next.canteenId) stalls.value = [];
+    await loadSelection();
+  }
+}
+async function submitReview() {
+  if (submitting.value || targetLoading.value) return;
+  validationMessage.value = !selectedDish.value
+    ? '请先选择食堂、档口和菜品'
+    : !Number.isInteger(form.rating) || form.rating < 1 || form.rating > 5
+      ? '请选择 1–5 星评分'
+      : !form.content.trim()
+        ? '请填写文字点评'
+        : '';
+  if (validationMessage.value) {
+    await nextTick();
+    formElement.value?.querySelector('[role="alert"]')?.focus();
+    return;
+  }
   submitting.value = true;
+  const submittedTarget = { ...target.value };
   try {
     await createReview({
-      dishId: target.value.dishId,
+      dishId: submittedTarget.dishId,
       rating: form.rating,
-      comment: form.comment.trim(),
+      content: form.content.trim(),
     });
-    ElMessage.success('点评已提交，审核通过后将公开展示');
-    await router.push({
-      name: 'dishDetail',
-      params: {
-        canteenId: target.value.canteenId,
-        dishId: target.value.dishId,
-      },
-    });
+    form.content = '';
+    ElMessage.success('点评已提交，审核通过后展示');
+    await router.push({ name: 'dishDetail', params: submittedTarget });
   } catch (error) {
-    validationMessage.value = error.message || '提交失败，请稍后重试。';
+    validationMessage.value = error.message || '提交失败，请先查看个人记录再试';
   } finally {
     submitting.value = false;
   }
 }
-
-onMounted(loadTargets);
+onMounted(() => {
+  target.value = {
+    canteenId: String(route.query.canteenId || ''),
+    stallId: String(route.query.stallId || ''),
+    dishId: String(route.query.dishId || ''),
+  };
+  loadSelection({ ...target.value });
+});
 </script>
-
 <template>
-  <main class="review-create">
+  <div class="review-create">
     <header class="review-create__header">
-      <span class="stamp">点评投稿</span>
-      <h1 class="section-title">写下这口的真实感受</h1>
-      <p>评分与文字点评提交后需要审核，审核通过后才会公开展示。</p>
+      <h1 class="section-title">写点评</h1>
+      <p>审核通过后展示。</p>
     </header>
-
-    <LoadingState
-      v-if="targetLoading && !canteens.length"
-      message="正在翻菜单…"
-    />
+    <LoadingState v-if="targetLoading && !canteens.length" />
     <ErrorState
       v-else-if="targetError"
-      title="暂时无法加载菜单"
       :description="targetError.message"
-      @retry="loadTargets"
+      @retry="loadSelection(target)"
     />
-    <form v-else class="review-create__paper" @submit.prevent="submitReview">
+    <form
+      v-else
+      ref="formElement"
+      class="review-create__paper"
+      @submit.prevent="submitReview"
+    >
       <ReviewTargetPicker
         :model-value="target"
         :canteens="canteens"
         :stalls="stalls"
         :dishes="dishes"
-        :loading="targetLoading"
+        :loading="targetLoading || submitting"
         @update:model-value="updateTarget"
       />
-
       <div v-if="selectedDish" class="review-create__target">
-        <strong>{{ selectedDish.name }}</strong>
-        <span>{{ selectedCanteen?.name }} · {{ selectedStall?.name }}</span>
+        <strong>{{ selectedDish.name }}</strong
+        ><span>{{ selectedCanteen?.name }} · {{ selectedStall?.name }}</span>
       </div>
-
       <StarRatingInput v-model="form.rating" :disabled="submitting" />
-
-      <label class="review-create__comment">
-        <span>文字点评</span>
-        <textarea
-          v-model="form.comment"
-          rows="6"
-          maxlength="220"
-          placeholder="可以写味道、分量、出餐速度和排队情况。"
-          :disabled="submitting"
-        />
-        <small>{{ form.comment.length }} / 220</small>
+      <label class="review-create__comment"
+        ><span>文字点评</span
+        ><textarea v-model="form.content" rows="6" :disabled="submitting" />
       </label>
-
-      <p v-if="validationMessage" class="review-create__message" role="alert">
+      <p
+        v-if="validationMessage"
+        class="review-create__message"
+        role="alert"
+        tabindex="-1"
+      >
         {{ validationMessage }}
       </p>
-
       <div class="review-create__actions">
-        <InkButton type="submit" variant="primary" :disabled="submitting">
-          {{ submitting ? '提交中…' : '提交点评' }}
-        </InkButton>
-        <RouterLink
-          v-if="target.canteenId && target.dishId"
-          :to="{
-            name: 'dishDetail',
-            params: {
-              canteenId: target.canteenId,
-              dishId: target.dishId,
-            },
-          }"
+        <InkButton
+          type="submit"
+          variant="primary"
+          :disabled="submitting || targetLoading"
+          >{{ submitting ? '提交中…' : '提交点评' }}</InkButton
         >
-          返回菜品详情
-        </RouterLink>
+        <RouterLink
+          v-if="selectedDish"
+          :to="{ name: 'dishDetail', params: target }"
+          >返回菜品</RouterLink
+        >
       </div>
     </form>
-  </main>
+  </div>
 </template>
 
 <style scoped lang="scss">
