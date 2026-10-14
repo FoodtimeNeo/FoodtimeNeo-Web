@@ -5,7 +5,10 @@ import DefaultLayout from './DefaultLayout.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
-const links = [{ name: 'adminAudit', label: '内容审核' }];
+const links = [
+  { name: 'adminAudit', label: '内容审核' },
+  { name: 'adminManage', label: '内容管理' },
+];
 </script>
 
 <template>

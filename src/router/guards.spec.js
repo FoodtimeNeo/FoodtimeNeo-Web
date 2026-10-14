@@ -79,6 +79,19 @@ describe('resolveNavigation', () => {
     expect(resolveNavigation(to, ADMIN)).toBe(true);
     expect(resolveNavigation(to, SUPER)).toBe(true);
   });
+
+  it('实际内容管理路由只允许管理员和超级管理员进入', () => {
+    const manage = routes.find((route) => route.name === 'adminManage');
+    expect(manage?.meta.requiresAdmin).toBe(true);
+    const to = { ...manage, fullPath: manage.path };
+    expect(resolveNavigation(to, GUEST)).toEqual({
+      name: 'login',
+      query: { redirect: '/admin/manage' },
+    });
+    expect(resolveNavigation(to, USER)).toEqual({ name: 'home' });
+    expect(resolveNavigation(to, ADMIN)).toBe(true);
+    expect(resolveNavigation(to, SUPER)).toBe(true);
+  });
 });
 
 describe('resolveDocumentTitle', () => {

@@ -63,6 +63,17 @@ export const routes = [
     },
   },
   {
+    path: '/admin/manage',
+    name: 'adminManage',
+    component: () => import('@/views/admin/AdminManageView.vue'),
+    meta: {
+      title: '内容管理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'notFound',
     component: () => import('@/views/error/NotFoundView.vue'),
