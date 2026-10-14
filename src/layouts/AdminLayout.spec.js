@@ -40,7 +40,7 @@ describe('管理导航权限', () => {
     const wrapper = await mountForRole('superadmin');
     expect(wrapper.text()).toContain('内容审核');
     expect(wrapper.text()).toContain('内容管理');
-    expect(wrapper.text()).toContain('超管看板');
+    expect(wrapper.text()).not.toContain('超管看板');
     expect(wrapper.text()).toContain('用户管理');
   });
 });
