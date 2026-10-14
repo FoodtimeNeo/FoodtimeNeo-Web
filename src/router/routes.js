@@ -40,6 +40,17 @@ export const routes = [
     meta: { title: '注册', layout: 'blank' },
   },
   {
+    path: '/admin/audit',
+    name: 'adminAudit',
+    component: () => import('@/views/admin/AdminAuditView.vue'),
+    meta: {
+      title: '内容审核',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'notFound',
     component: () => import('@/views/error/NotFoundView.vue'),
