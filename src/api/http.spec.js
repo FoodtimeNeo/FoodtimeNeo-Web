@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   ApiError,
   http,
+  getCsrf,
   invalidateSession,
   setUnauthorizedHandler,
   setForbiddenHandler,
@@ -32,6 +33,19 @@ afterEach(() => {
   http.defaults.adapter = originalAdapter;
 });
 describe('真实HTTP契约', () => {
+  it('等待已有CSRF期间切换会话，旧写请求不会进入传输层', async () => {
+    await getCsrf();
+    const task = http.post('/dishes/d/reviews', {
+      rating: 5,
+      content: '旧账号草稿',
+    });
+    await Promise.resolve();
+    invalidateSession();
+    await expect(task).rejects.toMatchObject({ code: 'SESSION_CHANGED' });
+    expect(
+      received.filter((config) => config.url !== '/auth/csrf'),
+    ).toHaveLength(0);
+  });
   it('仅按OK解包，Cookie凭据启用且不发送旧Bearer', async () => {
     expect(
       await http.get('/dining-halls', {
