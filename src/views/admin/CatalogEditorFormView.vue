@@ -1,10 +1,10 @@
 <script setup>
 import { onUnmounted, reactive, ref } from 'vue';
-import { saveManagedItem } from '@/api/admin-manage.api.js';
+import { saveManagedItem, fetchManagedItems } from '@/api/admin-manage.api.js';
 import { uploadImage } from '@/api/submission.api.js';
 import { validatePrice } from '@/utils/submissionValidation.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
-import ParentPicker from './ParentPicker.vue';
+import ParentPicker from '@/components/admin/ParentPicker.vue';
 import ImageFileField from '@/components/submission/ImageFileField.vue';
 import MediaImage from '@/components/base/MediaImage.vue';
 const props = defineProps({
@@ -13,6 +13,13 @@ const props = defineProps({
 });
 const emit = defineEmits(['saved', 'cancel']);
 const auth = useAuthStore();
+const loadParents = (page, options) =>
+  fetchManagedItems(
+    props.type === 'stalls' ? 'dining-halls' : 'stalls',
+    page,
+    '',
+    options,
+  );
 const form = reactive({
   parentId: props.item?.parentId || '',
   name: props.item?.name || '',
@@ -104,7 +111,7 @@ async function submit() {
     <ParentPicker
       v-else-if="type !== 'dining-halls'"
       v-model="form.parentId"
-      :type="type === 'stalls' ? 'dining-halls' : 'stalls'"
+      :loader="loadParents"
       :disabled="writing"
     />
     <label

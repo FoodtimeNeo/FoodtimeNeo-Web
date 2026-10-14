@@ -8,7 +8,7 @@ import {
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatPrice } from '@/utils/mediaUrl.js';
 import { statusLabels } from '@/utils/recordLabels.js';
-import CatalogEditor from '@/components/admin/CatalogEditor.vue';
+import CatalogEditor from './CatalogEditorFormView.vue';
 import ParentPicker from '@/components/admin/ParentPicker.vue';
 import MediaImage from '@/components/base/MediaImage.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -17,6 +17,13 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 const type = ref('dining-halls');
 const parent = ref('');
+const loadParents = (page, options) =>
+  fetchManagedItems(
+    type.value === 'stalls' ? 'dining-halls' : 'stalls',
+    page,
+    '',
+    options,
+  );
 const { items, page, total, size, loading, error, load } = usePagedData(
   (page, options) => fetchManagedItems(type.value, page, parent.value, options),
 );
@@ -85,7 +92,7 @@ async function remove() {
       v-if="type !== 'dining-halls'"
       :key="type"
       v-model="parent"
-      :type="type === 'stalls' ? 'dining-halls' : 'stalls'"
+      :loader="loadParents"
       label="按所属记录筛选"
       optional
       :disabled="writing || !!editor"

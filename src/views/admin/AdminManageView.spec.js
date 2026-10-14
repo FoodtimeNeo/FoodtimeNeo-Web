@@ -11,7 +11,7 @@ vi.mock('@/store/useAuthStore.js', () => ({
   useAuthStore: () => ({ user: { id: 'admin' } }),
 }));
 import AdminManageView from './AdminManageView.vue';
-import CatalogEditor from '@/components/admin/CatalogEditor.vue';
+import CatalogEditor from './CatalogEditorFormView.vue';
 beforeEach(() => {
   vi.clearAllMocks();
   api.fetchManagedItems.mockResolvedValue({
