@@ -1,7 +1,11 @@
 <script setup>
 import { onUnmounted, ref, useId } from 'vue';
 import { validateImageFile } from '@/utils/submissionValidation.js';
-const props = defineProps({ disabled: Boolean });
+const props = defineProps({
+  disabled: Boolean,
+  required: { type: Boolean, default: true },
+  publicationHint: { type: String, default: '审核通过后公开。' },
+});
 const emit = defineEmits(['change']);
 const id = useId();
 const preview = ref('');
@@ -45,7 +49,7 @@ async function choose(event) {
 </script>
 <template>
   <div class="image-field">
-    <label :for="id">图片（必填）</label>
+    <label :for="id">图片{{ props.required ? '（必填）' : '（选填）' }}</label>
     <input
       :id="id"
       type="file"
@@ -55,7 +59,7 @@ async function choose(event) {
       @change="choose"
     />
     <p :id="id + '-help'">
-      JPEG / PNG，最多 10MB、2000 万像素。审核通过后公开。
+      JPEG / PNG，最多 10MB、2000 万像素。{{ props.publicationHint }}
     </p>
     <p v-if="checking" role="status">正在检查图片…</p>
     <p v-if="error" role="alert">{{ error }}</p>

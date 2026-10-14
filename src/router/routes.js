@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/admin/reviews',
+    name: 'managedReviews',
+    component: () => import('@/views/admin/ManagedReviewsView.vue'),
+    meta: {
+      title: '正式评论管理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
     path: '/admin/moderation/logs',
     name: 'moderationLogs',
     component: () => import('@/views/admin/ModerationLogsView.vue'),
