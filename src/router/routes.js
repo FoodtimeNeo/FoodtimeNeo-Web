@@ -63,6 +63,7 @@ export const routes = [
     },
   },
   {
+
     path: '/superadmin',
     name: 'superadmin',
     component: () => import('@/views/superadmin/SuperadminView.vue'),
@@ -71,6 +72,7 @@ export const routes = [
       layout: 'admin',
       requiresAuth: true,
       requiresSuperadmin: true,
+
     },
   },
   {
