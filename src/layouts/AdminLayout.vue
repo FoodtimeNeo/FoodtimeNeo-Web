@@ -1,14 +1,17 @@
 <script setup>
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import DefaultLayout from './DefaultLayout.vue';
 
 const route = useRoute();
 const auth = useAuthStore();
-const links = [
+
+const links = computed(() => [
   { name: 'adminAudit', label: '内容审核' },
-  { name: 'adminManage', label: '内容管理' },
-];
+  ...(auth.isSuperadmin ? [{ name: 'superadmin', label: '超管看板' }] : []),
+]);
+
 </script>
 
 <template>

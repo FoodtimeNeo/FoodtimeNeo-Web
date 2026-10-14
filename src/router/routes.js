@@ -63,14 +63,16 @@ export const routes = [
     },
   },
   {
-    path: '/admin/manage',
-    name: 'adminManage',
-    component: () => import('@/views/admin/AdminManageView.vue'),
+
+    path: '/superadmin',
+    name: 'superadmin',
+    component: () => import('@/views/superadmin/SuperadminView.vue'),
     meta: {
-      title: '内容管理',
+      title: '超级管理员看板',
       layout: 'admin',
       requiresAuth: true,
-      requiresAdmin: true,
+      requiresSuperadmin: true,
+
     },
   },
   {
