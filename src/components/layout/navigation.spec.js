@@ -1,11 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import { resolveActiveNavigation, resolveBreadcrumbs } from './navigation.js';
+import { createRouter, createMemoryHistory } from 'vue-router';
+import { routes } from '@/router/routes.js';
+import {
+  navigationItems,
+  resolveActiveNavigation,
+  resolveBreadcrumbs,
+} from './navigation.js';
 
 const home = { name: 'home', meta: { title: '首页' } };
 const canteens = { name: 'canteenList', meta: { title: '食堂' } };
 const detail = { name: 'canteenDetail', meta: { title: '第一食堂' } };
 
 describe('布局导航', () => {
+  it('主导航不再包含独立点评入口，旧点评地址不匹配业务页面', () => {
+    expect(navigationItems.map((item) => item.name)).toEqual([
+      'home',
+      'canteenList',
+      'profile',
+    ]);
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    expect(router.resolve('/reviews/new').name).toBe('notFound');
+  });
+  it('点评地址必须保留菜品上下文，并使用食堂栏目及完整父级面包屑', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    const route = router.resolve({
+      name: 'dishReviewCreate',
+      params: { canteenId: 'c1', stallId: 's1', dishId: 'd1' },
+    });
+    expect(route.path).toBe('/canteens/c1/stalls/s1/dishes/d1/reviews/new');
+    expect(route.meta.requiresAuth).toBe(true);
+    expect(resolveActiveNavigation(route)).toBe('canteenList');
+    const crumbs = resolveBreadcrumbs(route);
+    expect(crumbs.map((crumb) => crumb.name)).toEqual([
+      'home',
+      'canteenList',
+      'canteenDetail',
+      'stallDetail',
+      'dishDetail',
+      'dishReviewCreate',
+    ]);
+    expect(
+      router.resolve({ name: crumbs[4].name, params: crumbs[4].params }).path,
+    ).toBe('/canteens/c1/stalls/s1/dishes/d1');
+  });
   it('首页只有一个面包屑并高亮首页', () => {
     const route = { matched: [home], meta: home.meta };
     expect(resolveBreadcrumbs(route)).toEqual([

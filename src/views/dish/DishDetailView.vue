@@ -94,12 +94,8 @@ const params = computed(() => ({
       <RouterLink
         class="dish-detail__review-link"
         :to="{
-          name: 'reviewCreate',
-          query: {
-            canteenId: params.canteenId,
-            stallId: params.stallId,
-            dishId,
-          },
+          name: 'dishReviewCreate',
+          params,
         }"
         >写点评</RouterLink
       >

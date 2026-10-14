@@ -73,7 +73,7 @@ views ──► components ──► components/base
 /canteens/:canteenId/stalls/:stallId                 stallDetail
 /canteens/:canteenId/stalls/:stallId/dishes/:dishId  dishDetail
   …/dishes/:dishId/gallery                           dishGallery
-/reviews/new                                         点评投稿
+…/dishes/:dishId/reviews/new                          当前菜品点评（无独立导航入口）
 …/dishes/:dishId/images/new                           图片投稿
 …/stalls/:stallId/submissions/new                     菜品投稿
 …/:canteenId/submissions/new                          档口投稿
