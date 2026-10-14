@@ -1,12 +1,11 @@
 <script setup>
 import { useId } from 'vue';
-import { fetchManagedItems } from '@/api/admin-manage.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { statusLabels } from '@/utils/recordLabels.js';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 const props = defineProps({
-  type: { type: String, required: true },
+  loader: { type: Function, required: true },
   modelValue: { type: String, default: '' },
   disabled: Boolean,
   label: { type: String, default: '所属记录' },
@@ -15,7 +14,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 const id = useId();
 const { items, page, total, size, loading, error, load } = usePagedData(
-  (page, options) => fetchManagedItems(props.type, page, '', options),
+  (page, options) => props.loader(page, options),
 );
 </script>
 <template>
