@@ -1,17 +1,8 @@
-/**
- * 菜品点评接口。后端会从登录 token 中识别用户，前端不传 user_id。
- */
 import { http } from './http.js';
-
-/**
- * 提交一条待审核点评。
- * @param {{ dishId: string, rating: number, comment: string }} review
- * @returns {Promise<object>}
- */
-export function createReview({ dishId, rating, comment }) {
-  return http.post('/reviews', {
-    dish_id: dishId,
+// 提交人由Cookie会话确定；只发送数据库已有的评分和正文。
+export function createReview({ dishId, rating, content }) {
+  return http.post(`/dishes/${encodeURIComponent(dishId)}/reviews`, {
     rating,
-    comment,
+    content,
   });
 }
