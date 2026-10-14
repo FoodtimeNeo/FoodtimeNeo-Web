@@ -3,6 +3,17 @@
  * 约定：path 使用 kebab-case，name 使用 camelCase，页面组件一律懒加载。
  */
 export const routes = [
+  {
+    path: '/admin/moderation/logs',
+    name: 'moderationLogs',
+    component: () => import('@/views/admin/ModerationLogsView.vue'),
+    meta: {
+      title: '审核日志',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
   ...[
     [
       'photo',

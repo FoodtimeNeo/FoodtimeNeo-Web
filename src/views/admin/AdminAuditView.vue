@@ -1,273 +1,215 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ref, watch } from 'vue';
 import { fetchAuditItems, submitAudit } from '@/api/admin-audit.api.js';
-import { useAuthStore } from '@/store/useAuthStore.js';
+import { usePagedData } from '@/composables/usePagedData.js';
+import { formatTime, statusLabels } from '@/utils/recordLabels.js';
+import { formatPrice } from '@/utils/mediaUrl.js';
+import { validatePrice } from '@/utils/submissionValidation.js';
+import MediaImage from '@/components/base/MediaImage.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
-import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
-import InkButton from '@/components/base/InkButton.vue';
-
-const auth = useAuthStore();
-const kinds = [
-  { id: 'submissions', label: '菜品投稿' },
-  { id: 'reviews', label: '菜品点评' },
-  { id: 'rants', label: '吐槽' },
-];
-const kind = ref('submissions');
-const items = ref([]);
-const loading = ref(false);
-const error = ref(null);
-const selectedId = ref('');
-const decision = ref('');
+import EmptyState from '@/components/base/EmptyState.vue';
+import PaginationControls from '@/components/base/PaginationControls.vue';
+const status = ref('pending');
+const labels = { review: '点评', dish: '菜品', stall: '档口', photo: '图片' };
+const { items, page, total, size, loading, error, load } = usePagedData(
+  (page, options) => fetchAuditItems(status.value, page, options),
+);
+const selected = ref(null);
 const reason = ref('');
-const formError = ref('');
-const submitting = ref(false);
-const pendingItems = computed(() =>
-  items.value.filter((item) => (item.status || 'pending') === 'pending'),
-);
-const selectedItem = computed(() =>
-  pendingItems.value.find((item) => String(item.id) === selectedId.value),
-);
-
-async function load() {
-  loading.value = true;
-  error.value = null;
-  selectedId.value = '';
-  const requestedKind = kind.value;
-  try {
-    const data = await fetchAuditItems(requestedKind);
-    if (requestedKind === kind.value)
-      items.value = Array.isArray(data) ? data : [];
-  } catch (caught) {
-    if (requestedKind === kind.value) error.value = caught;
-  } finally {
-    if (requestedKind === kind.value) loading.value = false;
-  }
-}
-
-function choose(item, status) {
-  selectedId.value = String(item.id);
-  decision.value = status;
+const price = ref('');
+const writing = ref(false);
+const failure = ref('');
+const notice = ref('');
+watch(status, () => {
+  selected.value = null;
+  notice.value = '';
+  if (page.value !== 1) page.value = 1;
+  else load();
+});
+function choose(row, action) {
+  selected.value = { ...row, action };
   reason.value = '';
-  formError.value = '';
+  price.value = row.price === null ? '' : String(row.price ?? '');
+  failure.value = '';
+  notice.value = '';
 }
-
-async function confirmAudit() {
-  if (submitting.value || !selectedItem.value) return;
-  formError.value = '';
-  const trimmedReason = reason.value.trim();
-  if (!trimmedReason) {
-    formError.value = '请填写审核原因或意见。';
+async function submit() {
+  if (writing.value || !selected.value) return;
+  const row = selected.value;
+  failure.value = '';
+  if (row.action === 'reject' && !reason.value.trim()) {
+    failure.value = '驳回须填写审核原因';
     return;
   }
-  submitting.value = true;
+  if (
+    row.type === 'dish' &&
+    row.action === 'approve' &&
+    validatePrice(price.value, { required: true })
+  ) {
+    failure.value = validatePrice(price.value, { required: true });
+    return;
+  }
+  writing.value = true;
   try {
-    await submitAudit(
-      kind.value,
-      selectedId.value,
-      decision.value,
-      trimmedReason,
-      auth.user?.account || '',
-    );
-    ElMessage.success(decision.value === 'approved' ? '已通过' : '已驳回');
-    await load();
-  } catch (caught) {
-    formError.value = caught.message || '审核失败，请稍后重试。';
+    await submitAudit(row.type, row.id, {
+      action: row.action,
+      reason: reason.value.trim() || null,
+      ...(row.type === 'dish' && row.action === 'approve'
+        ? { price: Number(price.value) }
+        : {}),
+    });
+    selected.value = null;
+    notice.value = row.action === 'approve' ? '审核已通过' : '已驳回';
+    if (items.value.length === 1 && page.value > 1) page.value--;
+    else await load();
+  } catch (error) {
+    failure.value = error.message || '审核失败，请确认结果后再试';
   } finally {
-    submitting.value = false;
+    writing.value = false;
   }
 }
-
-watch(kind, load, { immediate: true });
 </script>
-
 <template>
-  <section class="admin-audit" aria-labelledby="audit-title">
-    <div class="admin-audit__intro">
-      <div>
-        <h2 id="audit-title">待审核内容</h2>
-        <p>逐条核对内容，填写意见后通过或驳回。</p>
-      </div>
-      <button type="button" class="admin-audit__refresh" @click="load">
-        刷新列表
-      </button>
-    </div>
-
-    <div class="admin-audit__tabs" role="group" aria-label="审核类型">
-      <button
-        v-for="option in kinds"
-        :key="option.id"
-        type="button"
-        :aria-pressed="kind === option.id"
-        @click="kind = option.id"
-      >
-        {{ option.label }}
-      </button>
-    </div>
-
-    <LoadingState v-if="loading" message="正在读取审核列表…" />
-    <ErrorState v-else-if="error" :description="error.message" @retry="load" />
-    <EmptyState
-      v-else-if="!pendingItems.length"
-      title="目前没有待审核内容"
-      description="新的投稿、点评或吐槽会出现在对应栏目。"
-    />
-    <ul v-else class="admin-audit__list">
-      <li v-for="item in pendingItems" :key="item.id" class="admin-audit__card">
-        <div class="admin-audit__card-head">
-          <strong>{{
-            item.dish_name || item.canteenName || '菜品点评'
-          }}</strong>
-          <span class="stamp">待审核</span>
-        </div>
-        <p v-if="kind === 'submissions'">
-          {{ item.canteen_name }} · {{ item.stall_name }} · 投稿人：{{
-            item.submitter_account
-          }}
-        </p>
-        <p v-else-if="kind === 'reviews'">
-          {{ item.canteen_name }} · {{ item.stall_name }} ·
-          {{ item.dish_name }} · {{ item.rating }} 星
-        </p>
-        <p v-else>{{ item.author }} · {{ item.tag }}</p>
-        <p class="admin-audit__content">
-          {{ item.comment || item.content || item.description || '未填写说明' }}
-        </p>
-        <div class="admin-audit__actions">
-          <InkButton @click="choose(item, 'approved')">通过</InkButton>
-          <InkButton @click="choose(item, 'rejected')">驳回</InkButton>
-        </div>
-      </li>
-    </ul>
-
-    <form
-      v-if="selectedItem"
-      class="admin-audit__decision"
-      @submit.prevent="confirmAudit"
-    >
-      <h3>
-        {{ decision === 'approved' ? '通过' : '驳回' }}：{{
-          selectedItem.dish_name || selectedItem.canteenName || '菜品点评'
-        }}
-      </h3>
-      <label for="audit-reason">审核意见</label>
-      <textarea
-        id="audit-reason"
-        v-model="reason"
-        rows="3"
-        maxlength="500"
-        :disabled="submitting"
-        placeholder="说明审核依据"
-      />
-      <p v-if="formError" role="alert">{{ formError }}</p>
-      <div class="admin-audit__actions">
-        <InkButton type="submit" variant="primary" :disabled="submitting">
-          {{ submitting ? '处理中…' : '确认审核' }}
-        </InkButton>
-        <InkButton :disabled="submitting" @click="selectedId = ''"
-          >取消</InkButton
+  <section class="audit">
+    <h2 class="section-title">内容审核</h2>
+    <label
+      >审核状态<select v-model="status" :disabled="writing">
+        <option
+          v-for="key in ['pending', 'approved', 'rejected']"
+          :key="key"
+          :value="key"
         >
-      </div>
-    </form>
+          {{ statusLabels[key] }}
+        </option>
+      </select></label
+    >
+    <p v-if="notice" role="status">{{ notice }}</p>
+    <LoadingState v-if="loading" /><ErrorState
+      v-else-if="error"
+      :description="error.message"
+      @retry="load"
+    /><EmptyState v-else-if="!items.length" title="暂无审核记录" />
+    <template v-else>
+      <article v-for="row in items" :key="row.type + row.id">
+        <h3>{{ labels[row.type] }} · {{ row.name || row.id }}</h3>
+        <p>{{ statusLabels[row.status] }}</p>
+        <p>ID：{{ row.id }}</p>
+        <p>目标 ID：{{ row.targetId }} · 投稿者 ID：{{ row.userId }}</p>
+        <p>提交时间：{{ formatTime(row.createdAt) }}</p>
+        <p v-if="row.rating">评分：{{ row.rating }} / 5</p>
+        <p v-if="row.content" class="text">{{ row.content }}</p>
+        <p v-if="row.type === 'dish'">{{ formatPrice(row.price) }}</p>
+        <MediaImage
+          v-if="row.imageUrl"
+          :src="row.imageUrl"
+          alt="待审核图片"
+          class="photo"
+        />
+        <p v-if="row.reason" class="text">审核说明：{{ row.reason }}</p>
+        <div v-if="row.status === 'pending'">
+          <form
+            v-if="selected?.id === row.id && selected?.type === row.type"
+            @submit.prevent="submit"
+          >
+            <strong
+              >{{ selected.action === 'approve' ? '通过' : '驳回' }}这条{{
+                labels[row.type]
+              }}投稿</strong
+            >
+            <label v-if="row.type === 'dish' && selected.action === 'approve'"
+              >正式价格<input
+                v-model="price"
+                inputmode="decimal"
+                :disabled="writing"
+            /></label>
+            <label
+              >审核说明{{
+                selected.action === 'reject' ? '（必填）' : '（选填）'
+              }}<textarea v-model="reason" :disabled="writing" rows="3" />
+            </label>
+            <p v-if="failure" role="alert">{{ failure }}</p>
+            <div>
+              <button
+                type="button"
+                :disabled="writing"
+                @click="selected = null"
+              >
+                取消</button
+              ><button type="submit" :disabled="writing">
+                {{ writing ? '审核中…' : '确认审核' }}
+              </button>
+            </div>
+          </form>
+          <div v-else>
+            <button :disabled="writing" @click="choose(row, 'approve')">
+              通过</button
+            ><button :disabled="writing" @click="choose(row, 'reject')">
+              驳回
+            </button>
+          </div>
+        </div>
+      </article>
+    </template>
+    <PaginationControls
+      :page="page"
+      :total="total"
+      :size="size"
+      :disabled="loading || writing"
+      @change="
+        selected = null;
+        page = $event;
+      "
+    />
   </section>
 </template>
-
-<style scoped lang="scss">
-.admin-audit {
-  &__intro,
-  &__card-head,
-  &__actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--ft-space-1);
-  }
-
-  &__intro h2 {
-    margin: 0;
-    font-family: var(--ft-font-family-title);
-  }
-
-  &__intro p,
-  &__card p {
-    color: var(--ft-color-text-muted);
-  }
-
-  &__refresh,
-  &__tabs button {
-    min-height: 44px;
-    padding: 8px 12px;
-    border: 1px solid var(--ft-color-text);
-    background: var(--zine-paper-card);
-    color: var(--ft-color-text);
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-  }
-
-  &__tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--ft-space-1);
-    margin: var(--ft-space-3) 0;
-
-    button[aria-pressed='true'] {
-      background: var(--ft-color-text);
-      color: var(--zine-paper-card);
-    }
-  }
-
-  &__list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-    gap: var(--ft-space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__card,
-  &__decision {
-    padding: var(--ft-space-2);
-    border: 2px solid var(--ft-color-text);
-    background: var(--zine-paper-card-alt);
-    box-shadow: 4px 4px 0 var(--ft-color-text);
-  }
-
-  &__content {
-    min-height: 3em;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
-
-  &__actions {
-    justify-content: start;
-  }
-
-  &__decision {
-    display: grid;
-    gap: var(--ft-space-1);
-    margin-top: var(--ft-space-3);
-
-    h3,
-    p {
-      margin: 0;
-    }
-
-    p {
-      color: var(--ft-color-danger);
-    }
-
-    textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid var(--ft-color-text);
-      background: var(--zine-paper-card);
-      color: var(--ft-color-text);
-      font: inherit;
-    }
-  }
+<style scoped>
+.audit {
+  max-width: 1000px;
+  margin: auto;
+  overflow-wrap: anywhere;
+}
+article {
+  padding: 20px;
+  margin: 20px 0;
+  background: var(--zine-paper-card);
+  border: 1px solid var(--ft-color-text);
+  box-shadow: 3px 3px 0 var(--ft-color-text);
+}
+h3 {
+  font-family: var(--ft-font-family-title);
+  font-size: 24px;
+}
+.text {
+  white-space: pre-wrap;
+}
+.photo {
+  width: min(100%, 480px);
+  height: 270px;
+  margin: 16px 0;
+}
+form,
+label {
+  display: grid;
+  gap: 8px;
+}
+form {
+  gap: 16px;
+}
+button,
+select,
+input,
+textarea {
+  padding: 10px;
+  min-height: 44px;
+  border: 1px solid var(--ft-color-text);
+  background: var(--zine-paper-card);
+}
+button {
+  margin: 8px 12px 0 0;
+  cursor: pointer;
+}
+[role='alert'] {
+  color: var(--ft-color-danger);
 }
 </style>
