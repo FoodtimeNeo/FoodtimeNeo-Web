@@ -127,6 +127,15 @@ async function vote(kind) {
         >
           查看图册 →
         </RouterLink>
+        <RouterLink
+          class="dish-detail__review-link"
+          :to="{
+            name: 'reviewCreate',
+            query: { canteenId, dishId },
+          }"
+        >
+          写点评 →
+        </RouterLink>
       </div>
 
       <section aria-labelledby="reviews-title">
@@ -206,7 +215,8 @@ async function vote(kind) {
     margin: var(--ft-space-3) 0;
   }
 
-  &__gallery-link {
+  &__gallery-link,
+  &__review-link {
     color: var(--ft-color-primary);
     font-weight: 700;
     text-decoration: none;
