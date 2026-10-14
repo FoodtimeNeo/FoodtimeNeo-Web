@@ -63,6 +63,17 @@ export const routes = [
     },
   },
   {
+    path: '/superadmin',
+    name: 'superadmin',
+    component: () => import('@/views/superadmin/SuperadminView.vue'),
+    meta: {
+      title: '超级管理员看板',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'notFound',
     component: () => import('@/views/error/NotFoundView.vue'),

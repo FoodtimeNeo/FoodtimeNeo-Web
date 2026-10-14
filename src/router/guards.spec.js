@@ -79,6 +79,19 @@ describe('resolveNavigation', () => {
     expect(resolveNavigation(to, ADMIN)).toBe(true);
     expect(resolveNavigation(to, SUPER)).toBe(true);
   });
+
+  it('实际超管路由仅允许超级管理员进入', () => {
+    const superadmin = routes.find((route) => route.name === 'superadmin');
+    expect(superadmin?.meta.requiresSuperadmin).toBe(true);
+    const to = { ...superadmin, fullPath: superadmin.path };
+    expect(resolveNavigation(to, GUEST)).toEqual({
+      name: 'login',
+      query: { redirect: '/superadmin' },
+    });
+    expect(resolveNavigation(to, USER)).toEqual({ name: 'home' });
+    expect(resolveNavigation(to, ADMIN)).toEqual({ name: 'home' });
+    expect(resolveNavigation(to, SUPER)).toBe(true);
+  });
 });
 
 describe('resolveDocumentTitle', () => {
