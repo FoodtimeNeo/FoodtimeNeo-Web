@@ -15,6 +15,7 @@ FoodtimeNeo-Web/
 │   ├── development-rules.md    # 编码约定细则
 │   └── design-style-web.md     # 视觉规范
 ├── scripts/git/                # 分支脚本与 CI 校验（Node，无第三方依赖）
+├── scripts/dev/                # 开发代理目标检查（仅允许本机后端来源）
 ├── src/
 │   ├── api/                    # HTTP 客户端与按领域划分的接口模块
 │   ├── assets/                 # 图片、字体、styles/（tokens + global）

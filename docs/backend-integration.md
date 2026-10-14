@@ -5,6 +5,8 @@
 ## 认证与请求
 
 - 本地开发使用 `/api/v1` 同站请求，Vite 将 `/api` 代理至 `http://127.0.0.1:8080`。生产需将同站 `/api/v1` 代理至 Backend，并使用 HTTPS；不能把开发服务器当作生产部署。
+- Web 浏览器地址使用 `http://localhost:5173`，或空闲的 `http://localhost:3000`。当前 Backend 开发白名单只接受这两个来源，浏览器使用 `127.0.0.1:5173` 会被拒绝。开发代理仅接受本机、不含凭据的后端来源，保留浏览器原始 Origin，由后端继续验证。
+- 经用户确认，本轮真实验收复用此前隔离联调库：Web 为 `localhost:3000`，进程环境的 `VITE_API_PROXY_TARGET` 指向 `http://127.0.0.1:18080`。现有 `8080` 服务和另一套数据库保持原状态；Backend 启动程序与源码未修改。
 - Cookie 由浏览器和服务端管理，前端不读取 HttpOnly Cookie、不保存 Token/角色/密码。重新打开页面通过 `/auth/me` 获取当前身份，管理路由重新校验服务端角色。
 - 写请求先获取 `/auth/csrf`，令牌只在内存中保留。登录更换会话后重新获取；CSRF 失效不自动重放写请求。
 - 登录使用 `account/password`；注册仅使用 `email/password/verificationCode`。客户端角色、昵称、邀请码不参与注册授权。
