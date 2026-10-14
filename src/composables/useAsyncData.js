@@ -1,19 +1,4 @@
-import { ref, shallowRef } from 'vue';
-
-/**
- * 统一的异步取数状态机。页面与组件用它承载加载 / 成功 / 空 / 错误四态，
- * 避免每个页面各写一套 loading/error 布尔量。
- *
- * @template T
- * @param {() => Promise<T>} loader 取数函数，抛出的错误应为 ApiError
- * @param {{ immediate?: boolean, initial?: T }} [options]
- * @returns {{
- *   data: import('vue').ShallowRef<T>,
- *   error: import('vue').Ref<import('@/api/http.js').ApiError | null>,
- *   loading: import('vue').Ref<boolean>,
- *   load: () => Promise<void>,
- * }}
- */
+import { getCurrentScope, onScopeDispose, ref, shallowRef } from 'vue';
 export function useAsyncData(
   loader,
   { immediate = true, initial = null } = {},
@@ -21,20 +6,36 @@ export function useAsyncData(
   const data = shallowRef(initial);
   const error = ref(null);
   const loading = ref(false);
-
+  let generation = 0;
+  let active = true;
+  let controller;
   async function load() {
+    const current = ++generation;
+    controller?.abort();
+    controller = new AbortController();
     loading.value = true;
     error.value = null;
     try {
-      data.value = await loader();
-    } catch (err) {
-      error.value = err;
+      const result = await loader({ signal: controller.signal });
+      if (active && current === generation) data.value = result;
+    } catch (failure) {
+      if (
+        active &&
+        current === generation &&
+        failure.code !== 'CANCELLED' &&
+        failure.name !== 'AbortError'
+      )
+        error.value = failure;
     } finally {
-      loading.value = false;
+      if (active && current === generation) loading.value = false;
     }
   }
-
+  if (getCurrentScope())
+    onScopeDispose(() => {
+      active = false;
+      generation += 1;
+      controller?.abort();
+    });
   if (immediate) load();
-
   return { data, error, loading, load };
 }

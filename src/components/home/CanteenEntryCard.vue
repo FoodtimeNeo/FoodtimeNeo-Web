@@ -1,6 +1,7 @@
 <script setup>
+import MediaImage from '@/components/base/MediaImage.vue';
 /**
- * 食堂入口卡片：封面 + 名称 + 概要，点击进入食堂详情。
+ * 食堂入口卡片：封面 + 名称，点击进入食堂详情。
  * 纯展示，数据与跳转由父级决定（通过 RouterLink 的 to）。
  */
 defineProps({
@@ -17,8 +18,8 @@ defineProps({
     :to="{ name: 'canteenDetail', params: { canteenId: canteen.id } }"
   >
     <div class="canteen-entry__cover">
-      <img
-        :src="canteen.imageUrl"
+      <MediaImage
+        :src="canteen.coverImageUrl || ''"
         :alt="canteen.name"
         loading="lazy"
         width="400"
@@ -27,9 +28,6 @@ defineProps({
     </div>
     <div class="canteen-entry__body">
       <h3 class="canteen-entry__name">{{ canteen.name }}</h3>
-      <p v-if="canteen.summary" class="canteen-entry__summary">
-        {{ canteen.summary }}
-      </p>
     </div>
   </RouterLink>
 </template>

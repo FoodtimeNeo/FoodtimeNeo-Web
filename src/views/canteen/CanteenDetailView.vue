@@ -42,15 +42,10 @@ const {
     <template v-else-if="canteen">
       <header class="canteen-detail__header">
         <h1 class="section-title">{{ canteen.name }}</h1>
-        <p v-if="canteen.summary" class="canteen-detail__summary">
-          {{ canteen.summary }}
-        </p>
       </header>
 
       <section aria-labelledby="stalls-title">
-        <h2 id="stalls-title" class="canteen-detail__subtitle">
-          档口<span class="zine-highlight">们</span>
-        </h2>
+        <h2 id="stalls-title" class="canteen-detail__subtitle">档口</h2>
 
         <LoadingState v-if="stallsLoading" message="正在清点档口…" />
         <ErrorState

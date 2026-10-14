@@ -1,58 +1,54 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils';
-
-const fetchStalls = vi.fn();
-vi.mock('@/api/canteen.api.js', () => ({
-  fetchStalls: (...args) => fetchStalls(...args),
+const api = vi.hoisted(() => ({
+  fetchStalls: vi.fn(),
+  fetchStallDishes: vi.fn(),
 }));
-
-let routeParams = { canteenId: 'c1', stallId: 's1' };
+vi.mock('@/api/canteen.api.js', () => api);
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: routeParams }),
+  useRoute: () => ({ params: { canteenId: 'c1', stallId: 's1' } }),
   RouterLink: RouterLinkStub,
 }));
-
 import StallDetailView from './StallDetailView.vue';
-
-function mountView() {
-  return mount(StallDetailView, {
-    global: { stubs: { RouterLink: RouterLinkStub } },
-  });
-}
-
-describe('StallDetailView', () => {
-  beforeEach(() => {
-    fetchStalls.mockReset();
-    routeParams = { canteenId: 'c1', stallId: 's1' };
-  });
-
-  it('定位当前档口并展示菜名与价格', async () => {
-    fetchStalls.mockResolvedValue([
-      {
-        id: 's1',
-        name: '面档',
-        dishes: [{ id: 'd1', name: '牛肉面', price: 15 }],
-      },
-      { id: 's2', name: '饭档', dishes: [] },
+beforeEach(() => {
+  api.fetchStalls.mockReset();
+  api.fetchStallDishes.mockReset();
+  api.fetchStallDishes.mockResolvedValue([]);
+});
+describe('真实档口层级', () => {
+  it('单独获取当前档口菜品，零价格可显示', async () => {
+    api.fetchStalls.mockResolvedValue([
+      { id: 's1', name: '面档', diningHallId: 'c1' },
     ]);
-    const wrapper = mountView();
+    api.fetchStallDishes.mockResolvedValue([
+      { id: 'd1', stallId: 's1', name: '例汤', price: 0 },
+    ]);
+    const wrapper = mount(StallDetailView, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    });
     await flushPromises();
-    expect(wrapper.text()).toContain('面档');
-    expect(wrapper.text()).toContain('牛肉面');
-    expect(wrapper.text()).toContain('¥15');
+    expect(api.fetchStallDishes.mock.calls[0][0]).toBe('s1');
+    expect(wrapper.text()).toContain('¥0.00');
+    expect(wrapper.getComponent(RouterLinkStub).props('to').name).toBe(
+      'canteenDetail',
+    );
+    await wrapper.get('input').setValue('不存在');
+    expect(wrapper.text()).toContain('没有匹配的菜品');
   });
-
-  it('档口不存在时显示错误态', async () => {
-    routeParams = { canteenId: 'c1', stallId: 'missing' };
-    fetchStalls.mockResolvedValue([{ id: 's1', name: '面档', dishes: [] }]);
-    const wrapper = mountView();
+  it('URL中的档口不属于该食堂时不请求其菜品', async () => {
+    api.fetchStalls.mockResolvedValue([{ id: 's2', name: '其他档口' }]);
+    const wrapper = mount(StallDetailView, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    });
     await flushPromises();
     expect(wrapper.text()).toContain('档口不存在');
+    expect(api.fetchStallDishes).not.toHaveBeenCalled();
   });
-
-  it('档口无菜品时显示空态', async () => {
-    fetchStalls.mockResolvedValue([{ id: 's1', name: '面档', dishes: [] }]);
-    const wrapper = mountView();
+  it('空菜品与加载失败分别显示', async () => {
+    api.fetchStalls.mockResolvedValue([{ id: 's1', name: '面档' }]);
+    const wrapper = mount(StallDetailView, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    });
     await flushPromises();
     expect(wrapper.text()).toContain('这个档口还没有菜品');
   });

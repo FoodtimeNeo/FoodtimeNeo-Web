@@ -1,57 +1,60 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils';
-
-const fetchDish = vi.fn();
-vi.mock('@/api/dish.api.js', () => ({
-  fetchDish: (...a) => fetchDish(...a),
-}));
-
+import { beforeEach, expect, it, vi } from 'vitest';
+import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils';
+const fetchDishImages = vi.hoisted(() => vi.fn());
+const fetchDish = vi.hoisted(() => vi.fn());
+vi.mock('@/api/dish.api.js', () => ({ fetchDishImages, fetchDish }));
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: { canteenId: 'c1', dishId: 'd1' } }),
+  useRoute: () => ({
+    params: { canteenId: 'c1', stallId: 's1', dishId: 'd1' },
+  }),
   RouterLink: RouterLinkStub,
 }));
-
 import DishGalleryView from './DishGalleryView.vue';
-
-function mountView() {
-  return mount(DishGalleryView, {
+beforeEach(() => {
+  fetchDishImages.mockReset();
+  fetchDish.mockReset();
+  fetchDish.mockResolvedValue({ id: 'd1', diningHallId: 'c1', stallId: 's1' });
+});
+it('图册只展示分页接口批准的图片，翻页不沿用上页选中索引', async () => {
+  const first = '/api/v1/media/00000000-0000-4000-8000-000000000001';
+  const second = '/api/v1/media/00000000-0000-4000-8000-000000000002';
+  fetchDishImages
+    .mockResolvedValueOnce({
+      items: [
+        { id: '1', imageUrl: first },
+        { id: '2', imageUrl: second },
+      ],
+      total: 21,
+      page: 1,
+      size: 20,
+    })
+    .mockResolvedValueOnce({
+      items: [{ id: '3', imageUrl: first }],
+      total: 21,
+      page: 2,
+      size: 20,
+    });
+  const wrapper = mount(DishGalleryView, {
     global: { stubs: { RouterLink: RouterLinkStub } },
   });
-}
-
-describe('DishGalleryView', () => {
-  beforeEach(() => {
-    fetchDish.mockReset();
+  await flushPromises();
+  await wrapper.findAll('.dish-gallery__thumb')[1].trigger('click');
+  expect(wrapper.get('.dish-gallery__stage img').attributes('src')).toBe(
+    second,
+  );
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text() === '下一页')
+    .trigger('click');
+  await flushPromises();
+  expect(wrapper.get('.dish-gallery__stage img').attributes('src')).toBe(first);
+  expect(fetchDishImages.mock.calls.at(-1).slice(0, 2)).toEqual(['d1', 2]);
+});
+it('没有approved图片时展示空态', async () => {
+  fetchDishImages.mockResolvedValue({ items: [], total: 0, page: 1, size: 20 });
+  const wrapper = mount(DishGalleryView, {
+    global: { stubs: { RouterLink: RouterLinkStub } },
   });
-
-  it('合并主图与图册并去重，点击缩略图切换大图', async () => {
-    fetchDish.mockResolvedValue({
-      id: 'd1',
-      name: '红烧牛肉面',
-      imageUrl: '/d1.jpg',
-      gallery: ['/d1.jpg', '/d2.jpg'],
-    });
-    const wrapper = mountView();
-    await flushPromises();
-    const thumbs = wrapper.findAll('.dish-gallery__thumb');
-    // 主图 /d1.jpg 与 gallery 的 /d1.jpg 去重后共 2 张
-    expect(thumbs).toHaveLength(2);
-    const stage = () =>
-      wrapper.find('.dish-gallery__stage img').attributes('src');
-    expect(stage()).toBe('/d1.jpg');
-    await thumbs[1].trigger('click');
-    expect(stage()).toBe('/d2.jpg');
-  });
-
-  it('无图片时显示空态', async () => {
-    fetchDish.mockResolvedValue({
-      id: 'd1',
-      name: '面',
-      imageUrl: '',
-      gallery: [],
-    });
-    const wrapper = mountView();
-    await flushPromises();
-    expect(wrapper.text()).toContain('还没有图片');
-  });
+  await flushPromises();
+  expect(wrapper.text()).toContain('还没有图片');
 });

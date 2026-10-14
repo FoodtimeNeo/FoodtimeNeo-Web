@@ -16,16 +16,21 @@ describe('DishPriceCard', () => {
     expect(wrapper.text()).toContain('¥15');
   });
 
-  it('价格缺失时显示占位符', () => {
+  it('零价格按真实金额显示', () => {
     const wrapper = mountCard({ id: 'd2', name: '例汤', price: 0 });
-    expect(wrapper.text()).toContain('—');
+    expect(wrapper.text()).toContain('¥0.00');
   });
 
   it('链接指向菜品详情', () => {
-    const wrapper = mountCard({ id: 'd1', name: '面', price: 10 });
+    const wrapper = mountCard({
+      id: 'd1',
+      stallId: 's1',
+      name: '面',
+      price: 10,
+    });
     expect(wrapper.getComponent(RouterLinkStub).props('to')).toEqual({
       name: 'dishDetail',
-      params: { canteenId: 'c1', dishId: 'd1' },
+      params: { canteenId: 'c1', stallId: 's1', dishId: 'd1' },
     });
   });
 });

@@ -1,4 +1,5 @@
 <script setup>
+import { formatPrice } from '@/utils/mediaUrl.js';
 /**
  * 档口页的菜品条目：菜名 + 价格，点击进入菜品详情。
  * 字段对齐后端菜品序列化：{ id, name, price, canteenId }。
@@ -12,10 +13,6 @@ defineProps({
  * @param {number|string} price
  * @returns {string}
  */
-function formatPrice(price) {
-  const value = Number(price);
-  return Number.isFinite(value) && value > 0 ? `¥${value}` : '—';
-}
 </script>
 
 <template>
@@ -23,7 +20,7 @@ function formatPrice(price) {
     class="dish-price"
     :to="{
       name: 'dishDetail',
-      params: { canteenId, dishId: dish.id },
+      params: { canteenId, stallId: dish.stallId, dishId: dish.id },
     }"
   >
     <span class="dish-price__name">{{ dish.name }}</span>

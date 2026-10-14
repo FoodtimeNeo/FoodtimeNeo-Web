@@ -2,7 +2,6 @@ export const navigationItems = [
   { name: 'home', label: '首页', icon: '⌂' },
   { name: 'canteenList', label: '食堂', icon: '▤' },
   { name: 'reviewCreate', label: '点评', icon: '✎' },
-  { name: 'rantWall', label: '吐槽', icon: '✺' },
   { name: 'profile', label: '我的', icon: '◯' },
 ];
 

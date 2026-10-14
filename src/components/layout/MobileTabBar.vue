@@ -51,7 +51,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     min-height: calc(
       var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom)
     );

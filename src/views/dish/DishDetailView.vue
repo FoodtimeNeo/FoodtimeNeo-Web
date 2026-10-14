@@ -1,163 +1,120 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
 import { useAsyncData } from '@/composables/useAsyncData.js';
+import { usePagedData } from '@/composables/usePagedData.js';
 import {
-  avoidDish,
   fetchDish,
   fetchDishReviews,
-  recommendDish,
+  fetchDishImages,
+  fetchDishRating,
 } from '@/api/dish.api.js';
-import { useAuthStore } from '@/store/useAuthStore.js';
-import InkButton from '@/components/base/InkButton.vue';
+import { ApiError } from '@/api/http.js';
+import { formatPrice } from '@/utils/mediaUrl.js';
+import MediaImage from '@/components/base/MediaImage.vue';
+import PaginationControls from '@/components/base/PaginationControls.vue';
 import DishReviewList from '@/components/dish/DishReviewList.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
-
 const route = useRoute();
-const auth = useAuthStore();
-const canteenId = computed(() => String(route.params.canteenId));
 const dishId = computed(() => String(route.params.dishId));
-
+const { data, error, loading, load } = useAsyncData(async (options) => {
+  const dish = await fetchDish(dishId.value, options);
+  if (
+    dish.diningHallId !== route.params.canteenId ||
+    dish.stallId !== route.params.stallId
+  )
+    throw new ApiError('菜品与当前食堂或档口不匹配', {
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+  const [images, rating] = await Promise.all([
+    fetchDishImages(dish.id, 1, options),
+    fetchDishRating(dish.id, options),
+  ]);
+  return { dish, images: images.items, rating };
+});
 const {
-  data: dish,
-  error,
-  loading,
-  load,
-} = useAsyncData(() => fetchDish(dishId.value));
-
-const {
-  data: reviews,
+  items: reviews,
+  page,
+  total,
+  size,
   error: reviewError,
   loading: reviewLoading,
   load: loadReviews,
-} = useAsyncData(() => fetchDishReviews(dishId.value), { initial: [] });
-
-// 本地票数，乐观更新；失败回滚。voting 防重复点击。
-const recommendVotes = ref(0);
-const avoidVotes = ref(0);
-const voting = ref(false);
-
-// 详情加载完成后，把后端票数同步到本地状态。
-watch(dish, (value) => {
-  if (value) {
-    recommendVotes.value = value.recommendVotes ?? 0;
-    avoidVotes.value = value.avoidVotes ?? 0;
-  }
-});
-
-async function vote(kind) {
-  if (voting.value) return;
-  if (!auth.isAuthenticated) {
-    ElMessage.warning('登录后才能投票');
-    return;
-  }
-  voting.value = true;
-  const target = kind === 'recommend' ? recommendVotes : avoidVotes;
-  target.value += 1; // 乐观更新
-  try {
-    await (kind === 'recommend' ? recommendDish : avoidDish)(dishId.value);
-    ElMessage.success(kind === 'recommend' ? '已推荐' : '已避雷');
-  } catch (err) {
-    target.value -= 1; // 回滚
-    ElMessage.error(err.message || '操作失败');
-  } finally {
-    voting.value = false;
-  }
-}
+} = usePagedData((page, options) =>
+  fetchDishReviews(dishId.value, page, options),
+);
+const params = computed(() => ({
+  canteenId: route.params.canteenId,
+  stallId: route.params.stallId,
+  dishId: dishId.value,
+}));
 </script>
-
 <template>
-  <main class="dish-detail">
+  <div class="dish-detail">
     <nav class="dish-detail__back">
-      <RouterLink :to="{ name: 'canteenDetail', params: { canteenId } }">
-        ← 返回食堂
-      </RouterLink>
+      <RouterLink :to="{ name: 'stallDetail', params }">← 返回档口</RouterLink>
     </nav>
-
-    <LoadingState v-if="loading" message="正在端上这道菜…" />
-    <ErrorState
-      v-else-if="error"
-      :title="error.code === 'NOT_FOUND' ? '菜品不存在' : '暂时无法加载'"
-      :description="error.message"
-      @retry="load"
-    />
-    <template v-else-if="dish">
+    <LoadingState v-if="loading" />
+    <ErrorState v-else-if="error" :description="error.message" @retry="load" />
+    <template v-else-if="data">
       <div class="dish-detail__hero">
-        <img
-          class="dish-detail__image"
-          :src="dish.imageUrl"
-          :alt="dish.name"
-          width="960"
-          height="540"
+        <MediaImage
+          :src="data.images[0]?.imageUrl || ''"
+          :alt="data.dish.name"
+          empty="暂未上传菜品图片"
         />
-      </div>
-
-      <header class="dish-detail__head">
-        <h1 class="section-title">{{ dish.name }}</h1>
-        <span class="zine-rating-stamp dish-detail__rating">
-          {{ (dish.rating ?? 0).toFixed(1) }}
-        </span>
-      </header>
-
-      <p v-if="dish.price" class="dish-detail__price">¥{{ dish.price }}</p>
-      <p v-if="dish.description" class="dish-detail__desc">
-        {{ dish.description }}
-      </p>
-
-      <div class="dish-detail__actions">
-        <InkButton
-          variant="primary"
-          :disabled="voting"
-          @click="vote('recommend')"
-        >
-          推荐 · {{ recommendVotes }}
-        </InkButton>
-        <InkButton :disabled="voting" @click="vote('avoid')">
-          避雷 · {{ avoidVotes }}
-        </InkButton>
         <RouterLink
           class="dish-detail__gallery-link"
-          :to="{
-            name: 'dishGallery',
-            params: { canteenId, dishId },
-          }"
+          :to="{ name: 'dishGallery', params }"
+          >图册</RouterLink
         >
-          查看图册 →
-        </RouterLink>
-        <RouterLink
-          class="dish-detail__review-link"
-          :to="{
-            name: 'reviewCreate',
-            query: { canteenId, dishId },
-          }"
-        >
-          写点评 →
-        </RouterLink>
       </div>
-
-      <section aria-labelledby="reviews-title">
-        <h2 id="reviews-title" class="dish-detail__subtitle">
-          大家的<span class="zine-highlight">点评</span>
-        </h2>
-
-        <LoadingState v-if="reviewLoading" message="正在翻点评…" />
-        <ErrorState
-          v-else-if="reviewError"
-          :description="reviewError.message"
-          @retry="loadReviews"
-        />
-        <EmptyState
-          v-else-if="!reviews.length"
-          title="还没有点评"
-          description="成为第一个点评这道菜的人。"
-        />
-        <DishReviewList v-else :reviews="reviews" />
-      </section>
+      <h1 class="section-title">{{ data.dish.name }}</h1>
+      <p>{{ data.dish.diningHallName }} · {{ data.dish.stallName }}</p>
+      <p class="dish-detail__price">{{ formatPrice(data.dish.price) }}</p>
+      <p v-if="data.dish.description">{{ data.dish.description }}</p>
+      <h2>评分</h2>
+      <p>
+        {{
+          data.rating.averageScore === null
+            ? '暂无评分'
+            : Number(data.rating.averageScore).toFixed(2) + ' / 5'
+        }}
+      </p>
+      <p>{{ data.rating.reviewCount }} 条评价 · 每日更新</p>
+      <RouterLink
+        class="dish-detail__review-link"
+        :to="{
+          name: 'reviewCreate',
+          query: {
+            canteenId: params.canteenId,
+            stallId: params.stallId,
+            dishId,
+          },
+        }"
+        >写点评</RouterLink
+      >
+      <h2 id="reviews-title">评论</h2>
+      <LoadingState v-if="reviewLoading" />
+      <ErrorState
+        v-else-if="reviewError"
+        :description="reviewError.message"
+        @retry="loadReviews"
+      />
+      <EmptyState v-else-if="!reviews.length" title="暂无评论" />
+      <DishReviewList v-else :reviews="reviews" />
+      <PaginationControls
+        :page="page"
+        :total="total"
+        :size="size"
+        :disabled="reviewLoading"
+        @change="page = $event"
+      />
     </template>
-  </main>
+  </div>
 </template>
 
 <style scoped lang="scss">
@@ -176,8 +133,17 @@ async function vote(kind) {
   }
 
   &__hero {
+    position: relative;
     aspect-ratio: 16 / 9;
     overflow: hidden;
+    .dish-detail__gallery-link {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      padding: 12px;
+      background: var(--zine-paper-card);
+      border: 1px solid var(--ft-color-text);
+    }
     border: 2px solid var(--ft-color-text);
     box-shadow: 6px 6px 0 var(--ft-color-text);
   }
