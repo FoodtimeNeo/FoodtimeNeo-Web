@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { mount, RouterLinkStub } from '@vue/test-utils';
 import StallEntryCard from './StallEntryCard.vue';
 
-const stall = { id: 's1', name: '面档', imageUrl: '/img/s1.jpg' };
+const stall = {
+  id: 's1',
+  name: '面档',
+  coverImageUrl: '/api/v1/media/00000000-0000-4000-8000-000000000001',
+};
 
 function mountCard() {
   return mount(StallEntryCard, {

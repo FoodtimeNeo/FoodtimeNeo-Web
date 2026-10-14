@@ -1,85 +1,76 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { useAsyncData } from '@/composables/useAsyncData.js';
-import { fetchDish } from '@/api/dish.api.js';
+import { usePagedData } from '@/composables/usePagedData.js';
+import { fetchDish, fetchDishImages } from '@/api/dish.api.js';
+import { ApiError } from '@/api/http.js';
+import MediaImage from '@/components/base/MediaImage.vue';
+import PaginationControls from '@/components/base/PaginationControls.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
-
 const route = useRoute();
-const canteenId = computed(() => String(route.params.canteenId));
-const dishId = computed(() => String(route.params.dishId));
-
+const params = computed(() => route.params);
 const {
-  data: dish,
+  items: images,
+  page,
+  total,
+  size,
   error,
   loading,
   load,
-} = useAsyncData(() => fetchDish(dishId.value));
-
-// 后端暂无独立图册接口，这里用菜品已有图片。上传/删除待后端接口（见开发规划 1.3）。
-const images = computed(() => {
-  if (!dish.value) return [];
-  const list = Array.isArray(dish.value.gallery) ? dish.value.gallery : [];
-  const all = [dish.value.imageUrl, ...list].filter(Boolean);
-  return [...new Set(all)];
+} = usePagedData(async (page, options) => {
+  const dish = await fetchDish(String(route.params.dishId), options);
+  if (
+    dish.diningHallId !== route.params.canteenId ||
+    dish.stallId !== route.params.stallId
+  )
+    throw new ApiError('菜品与当前食堂或档口不匹配', {
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+  return fetchDishImages(dish.id, page, options);
 });
-
 const activeIndex = ref(0);
-
-function show(index) {
-  if (index < 0 || index >= images.value.length) return;
-  activeIndex.value = index;
-}
+watch(page, () => {
+  activeIndex.value = 0;
+});
 </script>
-
 <template>
-  <main class="dish-gallery">
+  <div class="dish-gallery">
     <nav class="dish-gallery__back">
-      <RouterLink :to="{ name: 'dishDetail', params: { canteenId, dishId } }">
-        ← 返回菜品
-      </RouterLink>
+      <RouterLink :to="{ name: 'dishDetail', params }">← 返回菜品</RouterLink>
     </nav>
-
-    <LoadingState v-if="loading" message="正在整理图册…" />
+    <h1 class="section-title">图册</h1>
+    <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
-    <EmptyState
-      v-else-if="!images.length"
-      title="还没有图片"
-      description="图册上传能力待后端接口接入后开放。"
-    />
+    <EmptyState v-else-if="!images.length" title="还没有图片" />
     <template v-else>
-      <h1 class="section-title">{{ dish?.name }} · 图册</h1>
-      <p class="dish-gallery__note">
-        当前展示菜品已有图片；图册上传与删除待后端接口。
-      </p>
-
       <figure class="dish-gallery__stage">
-        <img
-          :src="images[activeIndex]"
-          :alt="`${dish?.name} 第 ${activeIndex + 1} 张`"
-          width="960"
-          height="640"
-        />
+        <MediaImage :src="images[activeIndex]?.imageUrl || ''" alt="菜品图片" />
       </figure>
-
       <ul v-if="images.length > 1" class="dish-gallery__thumbs">
-        <li v-for="(src, index) in images" :key="src">
+        <li v-for="(image, index) in images" :key="image.id">
           <button
-            type="button"
             class="dish-gallery__thumb"
-            :class="{ 'is-active': index === activeIndex }"
-            :aria-label="`查看第 ${index + 1} 张`"
+            type="button"
+            :aria-label="'查看第 ' + (index + 1) + ' 张'"
             :aria-current="index === activeIndex"
-            @click="show(index)"
+            @click="activeIndex = index"
           >
-            <img :src="src" alt="" width="120" height="90" />
+            <MediaImage :src="image.imageUrl" alt="" />
           </button>
         </li>
       </ul>
     </template>
-  </main>
+    <PaginationControls
+      :page="page"
+      :total="total"
+      :size="size"
+      :disabled="loading"
+      @change="page = $event"
+    />
+  </div>
 </template>
 
 <style scoped lang="scss">

@@ -1,60 +1,48 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
-import { fetchStalls } from '@/api/canteen.api.js';
+import { fetchStalls, fetchStallDishes } from '@/api/canteen.api.js';
+import { ApiError } from '@/api/http.js';
 import DishPriceCard from '@/components/canteen/DishPriceCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
-
 const route = useRoute();
 const canteenId = computed(() => String(route.params.canteenId));
 const stallId = computed(() => String(route.params.stallId));
-
-// 后端档口序列化已内嵌 dishes，这里取食堂的档口列表再定位当前档口，
-// 避免为单档口再加一个尚不存在的接口。
-const {
-  data: stalls,
-  error,
-  loading,
-  load,
-} = useAsyncData(() => fetchStalls(canteenId.value), { initial: [] });
-
-const stall = computed(
-  () => stalls.value.find((item) => String(item.id) === stallId.value) ?? null,
+const query = ref('');
+const { data, error, loading, load } = useAsyncData(async (options) => {
+  const stalls = await fetchStalls(canteenId.value, options);
+  const stall = stalls.find((item) => item.id === stallId.value);
+  if (!stall)
+    throw new ApiError('档口不存在或已停用', {
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+  return { stall, dishes: await fetchStallDishes(stall.id, options) };
+});
+const dishes = computed(() =>
+  (data.value?.dishes || []).filter((dish) =>
+    dish.name.includes(query.value.trim()),
+  ),
 );
-const dishes = computed(() => stall.value?.dishes ?? []);
 </script>
-
 <template>
-  <main class="stall-detail">
+  <div class="stall-detail">
     <nav class="stall-detail__back">
-      <RouterLink :to="{ name: 'canteenDetail', params: { canteenId } }">
-        ← 返回食堂
-      </RouterLink>
+      <RouterLink :to="{ name: 'canteenDetail', params: { canteenId } }"
+        >← 返回食堂</RouterLink
+      >
     </nav>
-
-    <LoadingState v-if="loading" message="正在走到档口前…" />
+    <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
-    <ErrorState
-      v-else-if="!stall"
-      title="档口不存在"
-      description="它可能已被下架，返回食堂看看其他档口。"
-      @retry="load"
-    />
-    <template v-else>
-      <header class="stall-detail__header">
-        <h1 class="section-title">{{ stall.name }}</h1>
-        <p v-if="stall.summary" class="stall-detail__summary">
-          {{ stall.summary }}
-        </p>
-      </header>
-
+    <template v-else-if="data">
+      <h1 class="section-title">{{ data.stall.name }}</h1>
+      <label>搜索菜品<input v-model="query" type="search" /></label>
       <EmptyState
         v-if="!dishes.length"
-        title="这个档口还没有菜品"
-        description="管理员添加后会显示在这里。"
+        :title="data.dishes.length ? '没有匹配的菜品' : '这个档口还没有菜品'"
       />
       <ul v-else class="stall-detail__list">
         <li v-for="dish in dishes" :key="dish.id">
@@ -62,7 +50,7 @@ const dishes = computed(() => stall.value?.dishes ?? []);
         </li>
       </ul>
     </template>
-  </main>
+  </div>
 </template>
 
 <style scoped lang="scss">

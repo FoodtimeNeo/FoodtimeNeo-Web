@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 菜品评论列表。字段对齐后端评论序列化：
- * { id, rating, comment, reviewer, createdAt }
+ * { id, userId, rating, content, createdAt }
  */
 defineProps({
   reviews: { type: Array, required: true },
@@ -12,12 +12,12 @@ defineProps({
   <ul class="dish-reviews">
     <li v-for="review in reviews" :key="review.id" class="dish-reviews__item">
       <div class="dish-reviews__head">
-        <span class="dish-reviews__reviewer">{{ review.reviewer }}</span>
+        <span class="dish-reviews__reviewer">{{ review.userId }}</span>
         <span class="zine-rating-stamp">
           {{ (review.rating ?? 0).toFixed(1) }}
         </span>
       </div>
-      <p class="dish-reviews__comment">{{ review.comment }}</p>
+      <p class="dish-reviews__comment">{{ review.content }}</p>
       <time v-if="review.createdAt" class="dish-reviews__time">
         {{ review.createdAt }}
       </time>

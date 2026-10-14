@@ -6,7 +6,7 @@ const canteen = {
   id: 'c1',
   name: '西区食堂',
   summary: '两层楼，面食最稳',
-  imageUrl: '/img/c1.jpg',
+  coverImageUrl: '/api/v1/media/00000000-0000-4000-8000-000000000001',
 };
 
 function mountCard() {
@@ -17,10 +17,10 @@ function mountCard() {
 }
 
 describe('CanteenEntryCard', () => {
-  it('展示名称、概要与封面 alt', () => {
+  it('只展示名称与封面，不展示概要', () => {
     const wrapper = mountCard();
     expect(wrapper.text()).toContain('西区食堂');
-    expect(wrapper.text()).toContain('面食最稳');
+    expect(wrapper.text()).not.toContain('面食最稳');
     expect(wrapper.find('img').attributes('alt')).toBe('西区食堂');
   });
 
