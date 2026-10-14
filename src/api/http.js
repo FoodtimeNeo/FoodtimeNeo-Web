@@ -105,6 +105,7 @@ export async function getCsrf() {
   return csrfRequest;
 }
 http.interceptors.request.use(async (config) => {
+  const requestSession = sessionVersion;
   if (
     config.baseURL !== baseURL ||
     typeof config.url !== 'string' ||
@@ -126,9 +127,13 @@ http.interceptors.request.use(async (config) => {
     !['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())
   ) {
     const token = await getCsrf();
+    if (requestSession !== sessionVersion)
+      throw new ApiError('会话已变化，请确认身份后重试', {
+        code: 'SESSION_CHANGED',
+      });
     config.headers.set(token.headerName, token.token);
   }
-  config.sessionVersion = sessionVersion;
+  config.sessionVersion = requestSession;
   return config;
 });
 http.interceptors.response.use(
