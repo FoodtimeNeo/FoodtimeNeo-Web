@@ -31,7 +31,7 @@ describe('LoginView', () => {
     const wrapper = mount(LoginView);
     await wrapper.find('form').trigger('submit.prevent');
     expect(login).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain('请输入邮箱或账号');
+    expect(wrapper.text()).toContain('请输入邮箱');
   });
 
   it('登录成功后跳转到 redirect 目标', async () => {
@@ -39,13 +39,13 @@ describe('LoginView', () => {
     currentQuery = { redirect: '/profile' };
     const wrapper = mount(LoginView);
     const inputs = wrapper.findAll('input');
-    await inputs[0].setValue('user01');
-    await inputs[1].setValue('secret1');
+    await inputs[0].setValue('20260001@bjtu.edu.cn');
+    await inputs[1].setValue('Pass2026!');
     await wrapper.find('form').trigger('submit.prevent');
     await flushPromises();
     expect(login).toHaveBeenCalledWith({
-      loginId: 'user01',
-      password: 'secret1',
+      loginId: '20260001@bjtu.edu.cn',
+      password: 'Pass2026!',
     });
     expect(replace).toHaveBeenCalledWith('/profile');
   });

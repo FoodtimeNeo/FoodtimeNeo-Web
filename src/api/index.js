@@ -5,8 +5,9 @@ import { setForbiddenHandler, setUnauthorizedHandler } from './http.js';
  * api 层不直接依赖 router 或 UI 组件库，鉴权失效跳转与权限提示由这里注入。
  * @param {{ router: import('vue-router').Router, notifyForbidden?: (message: string) => void }} deps
  */
-export function installApi({ router, notifyForbidden }) {
+export function installApi({ router, notifyForbidden, clearAuth }) {
   setUnauthorizedHandler(() => {
+    clearAuth?.();
     const current = router.currentRoute.value;
     if (current.name === 'login') return;
     router.replace({

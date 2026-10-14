@@ -1,4 +1,6 @@
 <script setup>
+import { useId } from 'vue';
+const fieldId = useId();
 /**
  * 鉴权表单字段：标签 + 输入框 + 校验错误。受控组件，错误文案由父级传入。
  */
@@ -18,6 +20,7 @@ defineEmits(['update:modelValue']);
   <label class="auth-field">
     <span class="auth-field__label">{{ label }}</span>
     <input
+      :id="fieldId"
       class="auth-field__input"
       :class="{ 'is-invalid': error }"
       :type="type"
@@ -25,9 +28,16 @@ defineEmits(['update:modelValue']);
       :autocomplete="autocomplete"
       :value="modelValue"
       :aria-invalid="Boolean(error)"
+      :aria-describedby="error ? `${fieldId}-error` : undefined"
       @input="$emit('update:modelValue', $event.target.value)"
     />
-    <span v-if="error" class="auth-field__error" role="alert">{{ error }}</span>
+    <span
+      v-if="error"
+      :id="`${fieldId}-error`"
+      class="auth-field__error"
+      role="alert"
+      >{{ error }}</span
+    >
   </label>
 </template>
 

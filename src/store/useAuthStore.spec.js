@@ -1,107 +1,91 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-
-const loginApi = vi.fn();
-const registerApi = vi.fn();
-vi.mock('@/api/auth.api.js', () => ({
-  login: (...args) => loginApi(...args),
-  register: (...args) => registerApi(...args),
+const api = vi.hoisted(() => ({
+  login: vi.fn(),
+  register: vi.fn(),
+  logout: vi.fn(),
+  fetchCurrentUser: vi.fn(),
 }));
-
+vi.mock('@/api/auth.api.js', () => api);
 import { useAuthStore } from './useAuthStore.js';
-import { readSession } from '@/utils/authSession.js';
-
-describe('useAuthStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia());
-    window.localStorage.clear();
-    loginApi.mockReset();
-    registerApi.mockReset();
-  });
-
-  it('初始为未登录', () => {
+beforeEach(() => {
+  setActivePinia(createPinia());
+  localStorage.clear();
+  Object.values(api).forEach((fn) => fn.mockReset());
+});
+const user = {
+  id: 'one',
+  email: '20260001@bjtu.edu.cn',
+  displayName: '测试用户',
+  role: 'user',
+};
+describe('服务端会话', () => {
+  it('本地伪造Token和超管角色不能恢复身份', async () => {
+    localStorage.setItem(
+      'foodtime_auth_session',
+      JSON.stringify({ token: 'fake', user: { role: 'superadmin' } }),
+    );
+    api.fetchCurrentUser.mockRejectedValue({ status: 401 });
     const store = useAuthStore();
     expect(store.isAuthenticated).toBe(false);
+    await store.refresh();
     expect(store.role).toBe('guest');
+    expect(localStorage.length).toBe(0);
   });
-
-  it('登录写入 token、用户与持久化', async () => {
-    loginApi.mockResolvedValue({
-      id: 'u1',
-      account: 'a1',
-      email: 'a@b.c',
-      nickname: '小明',
-      role: 'admin',
-      token: 'jwt-1',
+  it('登录按嵌套user设置状态，不写入浏览器存储', async () => {
+    api.login.mockResolvedValue({
+      user: { ...user, role: 'admin' },
+      expiresAt: 'future',
     });
     const store = useAuthStore();
-    const user = await store.login({ loginId: 'a1', password: 'p' });
-
-    expect(user.nickname).toBe('小明');
-    expect(store.isAuthenticated).toBe(true);
+    await store.login({});
     expect(store.isAdmin).toBe(true);
+    expect(store.displayName).toBe('测试用户');
+    expect(localStorage.length).toBe(0);
+    expect(store.token).toBeUndefined();
+  });
+  it('刷新及角色降级由me响应决定', async () => {
+    api.fetchCurrentUser
+      .mockResolvedValueOnce({ ...user, role: 'superadmin' })
+      .mockResolvedValueOnce(user);
+    const store = useAuthStore();
+    await store.refresh();
+    expect(store.isSuperadmin).toBe(true);
+    await store.refresh();
+    expect(store.isAdmin).toBe(false);
+  });
+  it('退出失败不假称注销成功，成功才清除身份', async () => {
+    const store = useAuthStore();
+    store.setSession({ user });
+    api.logout.mockRejectedValueOnce({ status: 503, message: 'offline' });
+    await expect(store.logout()).rejects.toMatchObject({ status: 503 });
+    expect(store.isAuthenticated).toBe(true);
+    await store.logout();
+    expect(store.isAuthenticated).toBe(false);
+  });
+  it('注册不自动登录；未知服务端角色不能授予权限', async () => {
+    const store = useAuthStore();
+    await store.register({});
+    expect(store.isAuthenticated).toBe(false);
+    api.fetchCurrentUser.mockResolvedValue({ ...user, role: 'owner' });
+    await expect(store.refresh()).rejects.toMatchObject({ code: 'PROTOCOL' });
+    expect(store.isAuthenticated).toBe(false);
+  });
+  it('旧身份刷新迟到时不能覆盖新登录用户', async () => {
+    let resolve;
+    api.fetchCurrentUser.mockImplementation(
+      () =>
+        new Promise((done) => {
+          resolve = done;
+        }),
+    );
+    const store = useAuthStore();
+    const refresh = store.refresh();
+    api.login.mockResolvedValue({ user: { ...user, id: 'new' } });
+    await store.login({});
+    resolve({ ...user, role: 'superadmin' });
+    await refresh;
+    expect(store.user.id).toBe('new');
     expect(store.isSuperadmin).toBe(false);
-    expect(readSession()).toEqual({
-      token: 'jwt-1',
-      user: {
-        id: 'u1',
-        account: 'a1',
-        email: 'a@b.c',
-        nickname: '小明',
-        role: 'admin',
-      },
-    });
-  });
-
-  it('注册不写入会话', async () => {
-    registerApi.mockResolvedValue({ id: 'u2', account: 'a2', role: 'user' });
-    const store = useAuthStore();
-    await store.register({ email: 'x@y.z', password: 'p', nickname: 'n' });
-    expect(store.isAuthenticated).toBe(false);
-    expect(readSession()).toBeNull();
-  });
-
-  it('退出登录清空状态与存储', async () => {
-    loginApi.mockResolvedValue({
-      id: 'u1',
-      account: 'a1',
-      role: 'user',
-      token: 't',
-    });
-    const store = useAuthStore();
-    await store.login({ loginId: 'a1', password: 'p' });
-    store.logout();
-    expect(store.isAuthenticated).toBe(false);
-    expect(readSession()).toBeNull();
-  });
-
-  it('刷新后从存储恢复会话', async () => {
-    loginApi.mockResolvedValue({
-      id: 'u1',
-      account: 'a1',
-      role: 'superadmin',
-      token: 't',
-    });
-    await useAuthStore().login({ loginId: 'a1', password: 'p' });
-
-    // 模拟新一轮应用启动：重建 pinia，store 从 localStorage 恢复。
-    setActivePinia(createPinia());
-    const restored = useAuthStore();
-    expect(restored.isAuthenticated).toBe(true);
-    expect(restored.isSuperadmin).toBe(true);
-  });
-
-  it('patchUser 更新字段并保留 token', async () => {
-    loginApi.mockResolvedValue({
-      id: 'u1',
-      account: 'a1',
-      role: 'user',
-      token: 't',
-    });
-    const store = useAuthStore();
-    await store.login({ loginId: 'a1', password: 'p' });
-    store.patchUser({ nickname: '新名' });
-    expect(store.displayName).toBe('新名');
-    expect(readSession().token).toBe('t');
   });
 });
