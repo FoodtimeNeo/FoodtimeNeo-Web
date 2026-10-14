@@ -139,6 +139,7 @@ const params = computed(() => ({
   }
 
   &__hero {
+    margin-bottom: var(--ft-space-3);
     position: relative;
     .dish-detail__upload-link {
       position: absolute;

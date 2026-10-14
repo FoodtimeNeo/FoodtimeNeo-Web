@@ -1,4 +1,5 @@
 <script setup>
+import { formatTime } from '@/utils/recordLabels.js';
 /**
  * 菜品评论列表。字段对齐后端评论序列化：
  * { id, userId, rating, content, createdAt }
@@ -18,8 +19,12 @@ defineProps({
         </span>
       </div>
       <p class="dish-reviews__comment">{{ review.content }}</p>
-      <time v-if="review.createdAt" class="dish-reviews__time">
-        {{ review.createdAt }}
+      <time
+        v-if="review.createdAt"
+        :datetime="review.createdAt"
+        class="dish-reviews__time"
+      >
+        {{ formatTime(review.createdAt) }}
       </time>
     </li>
   </ul>
@@ -34,6 +39,7 @@ defineProps({
   gap: var(--ft-space-2);
 
   &__item {
+    overflow-wrap: anywhere;
     padding: var(--ft-space-2);
     border: 2px solid var(--ft-color-text);
     background: var(--zine-paper-card);
@@ -48,6 +54,7 @@ defineProps({
   }
 
   &__reviewer {
+    min-width: 0;
     font-weight: 700;
   }
 
