@@ -1,55 +1,36 @@
-/**
- * 鉴权表单的纯函数校验。返回错误文案字符串，空串表示通过。
- * 最终校验以后端为准，这里只做即时反馈，减少无效请求。
- */
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/**
- * @param {string} value
- * @returns {string}
- */
 export function validateEmail(value) {
-  if (!value) return '请输入邮箱';
-  if (!EMAIL_PATTERN.test(value)) return '邮箱格式不正确';
+  const email = value.trim().toLowerCase();
+  if (!email) return '请输入邮箱';
+  if (email.length > 254 || !/^[0-9]+@bjtu\.edu\.cn$/.test(email))
+    return '请使用数字学号 @bjtu.edu.cn 邮箱';
   return '';
 }
-
-/**
- * 登录账号：邮箱或账号，这里只校验非空。
- * @param {string} value
- * @returns {string}
- */
 export function validateLoginId(value) {
-  if (!value.trim()) return '请输入邮箱或账号';
+  const email = value.trim();
+  if (!email) return '请输入邮箱';
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return '请输入完整邮箱';
   return '';
 }
-
-/**
- * @param {string} value
- * @returns {string}
- */
-export function validatePassword(value) {
+export function validatePassword(value, { isNew = false } = {}) {
   if (!value) return '请输入密码';
-  if (value.length < 6) return '密码至少 6 位';
+  if (value.length < 8 || value.length > 128) return '密码须为 8–128 位';
+  if (!/^[!-~]+$/.test(value))
+    return '密码只能包含 ASCII 字母、数字及半角符号，不能有空白';
+  if (isNew && (!/[A-Za-z]/.test(value) || !/[0-9]/.test(value)))
+    return '新密码须包含字母和数字';
   return '';
 }
-
-/**
- * @param {string} value
- * @returns {string}
- */
-export function validateNickname(value) {
-  if (!value.trim()) return '请输入昵称';
-  if (value.trim().length > 20) return '昵称不超过 20 个字符';
-  return '';
-}
-
-/**
- * @param {string} value
- * @returns {string}
- */
 export function validateVerificationCode(value) {
-  if (!value) return '请输入验证码';
-  if (!/^\d{6}$/.test(value)) return '验证码为 6 位数字';
+  if (!/^[0-9]{6}$/.test(value)) return '验证码为 6 位数字';
   return '';
+}
+export function safeRedirect(value) {
+  return typeof value === 'string' &&
+    /^\/(?!\/)/.test(value) &&
+    [...value].every(
+      (character) => character.charCodeAt(0) > 32 && character !== '\\',
+    )
+    ? value
+    : null;
 }

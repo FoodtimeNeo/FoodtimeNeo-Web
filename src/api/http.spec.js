@@ -1,93 +1,137 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { ApiError, http, setUnauthorizedHandler, toApiError } from './http.js';
-import { clearSession, writeSession } from '@/utils/authSession.js';
-
-describe('toApiError', () => {
-  it('识别超时', () => {
-    expect(toApiError({ code: 'ECONNABORTED' }).code).toBe('TIMEOUT');
-  });
-
-  it('无响应时视为网络错误', () => {
-    expect(toApiError(new Error('boom')).code).toBe('NETWORK');
-  });
-
-  it('映射鉴权失败并保留服务端消息与业务码', () => {
-    const error = toApiError({
-      response: {
-        status: 401,
-        data: { message: '登录已过期', code: 'AUTH_401_001' },
-      },
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  ApiError,
+  http,
+  invalidateSession,
+  setUnauthorizedHandler,
+  setForbiddenHandler,
+  toApiError,
+} from './http.js';
+let received;
+const originalAdapter = http.defaults.adapter;
+function response(config, data, status = 200) {
+  return { data, status, headers: {}, config, statusText: 'OK' };
+}
+beforeEach(() => {
+  invalidateSession();
+  setUnauthorizedHandler(null);
+  setForbiddenHandler(null);
+  received = [];
+  http.defaults.adapter = vi.fn(async (config) => {
+    received.push(config);
+    return response(config, {
+      code: 'OK',
+      data:
+        config.url === '/auth/csrf'
+          ? { headerName: 'X-CSRF-TOKEN', token: 'test-csrf' }
+          : (config.mockData ?? []),
     });
-    expect(error).toBeInstanceOf(ApiError);
-    expect(error.status).toBe(401);
-    expect(error.code).toBe('UNAUTHORIZED');
-    expect(error.bizCode).toBe('AUTH_401_001');
-    expect(error.message).toBe('登录已过期');
-  });
-
-  it('5xx 归为服务端错误', () => {
-    expect(toApiError({ response: { status: 502, data: {} } }).code).toBe(
-      'SERVER',
-    );
   });
 });
-
-describe('http 拦截器', () => {
-  let received;
-
-  beforeEach(() => {
-    clearSession();
-    setUnauthorizedHandler(null);
-    // 用自定义 adapter 拦截请求，不发真实网络请求。
-    received = null;
-    http.defaults.adapter = (config) => {
-      received = config;
-      return Promise.resolve({
-        data: config.__mockData,
-        status: config.__mockStatus ?? 200,
-        statusText: 'OK',
-        headers: {},
-        config,
-      });
-    };
-  });
-
-  afterEach(() => {
-    delete http.defaults.adapter;
-  });
-
-  it('默认 baseURL 指向 /api/v1', () => {
-    expect(http.defaults.baseURL).toBe('/api/v1');
-  });
-
-  it('成功响应解包 data 字段', async () => {
-    const result = await http.get('/canteens', {
-      __mockData: { code: 0, message: 'success', data: [{ id: 'c1' }] },
-    });
-    expect(result).toEqual([{ id: 'c1' }]);
-  });
-
-  it('业务错误（code!==0）抛出 ApiError 并带 bizCode', async () => {
-    await expect(
-      http.get('/dishes/x', {
-        __mockData: { code: 'DINING_404_002', message: '菜品不存在' },
+afterEach(() => {
+  http.defaults.adapter = originalAdapter;
+});
+describe('真实HTTP契约', () => {
+  it('仅按OK解包，Cookie凭据启用且不发送旧Bearer', async () => {
+    expect(
+      await http.get('/dining-halls', {
+        headers: { Authorization: 'Bearer old' },
+        mockData: [{ id: 'hall' }],
       }),
-    ).rejects.toMatchObject({
-      name: 'ApiError',
-      code: 'BUSINESS',
-      bizCode: 'DINING_404_002',
-      message: '菜品不存在',
+    ).toEqual([{ id: 'hall' }]);
+    expect(received[0].withCredentials).toBe(true);
+    expect(received[0].headers.Authorization).toBeUndefined();
+  });
+  it('并发写请求共用内存CSRF，获取令牌在写入之前', async () => {
+    await Promise.all([http.post('/one', {}), http.put('/two', {})]);
+    expect(received.filter((r) => r.url === '/auth/csrf')).toHaveLength(1);
+    expect(received[0].url).toBe('/auth/csrf');
+    received
+      .filter((r) => r.url !== '/auth/csrf')
+      .forEach((r) => expect(r.headers['X-CSRF-TOKEN']).toBe('test-csrf'));
+    expect(localStorage.length).toBe(0);
+  });
+  it.each([
+    'https://evil.example/x',
+    '//evil.example/x',
+    '/../logout',
+    '/%2e%2e/logout',
+    '/x\\y',
+  ])('拒绝越界URL %s且不会向传输层发请求', async (url) => {
+    await expect(http.post(url, {})).rejects.toMatchObject({
+      code: 'UNSAFE_URL',
     });
+    expect(received).toHaveLength(0);
   });
-
-  it('存在会话时自动带上 Authorization 头', async () => {
-    writeSession({ token: 'jwt-abc', user: { id: 'u1' } });
-    await http.get('/profile', { __mockData: { code: 0, data: {} } });
-    expect(received.headers.Authorization).toBe('Bearer jwt-abc');
+  it('拒绝baseURL覆盖', async () => {
+    await expect(
+      http.get('/dining-halls', { baseURL: 'https://evil.example' }),
+    ).rejects.toMatchObject({ code: 'UNSAFE_URL' });
   });
-
-  it('无会话时不带 Authorization 头', async () => {
-    await http.get('/canteens', { __mockData: { code: 0, data: [] } });
-    expect(received.headers.Authorization).toBeUndefined();
+  it('拒绝旧code=0及HTML成功响应', async () => {
+    http.defaults.adapter = async (config) =>
+      response(config, { code: 0, data: {} });
+    await expect(http.get('/x')).rejects.toMatchObject({ code: 'PROTOCOL' });
+    http.defaults.adapter = async (config) =>
+      response(config, '<html>wrong proxy</html>');
+    await expect(http.get('/x')).rejects.toMatchObject({ code: 'PROTOCOL' });
+  });
+  it('CSRF失效不重放写入，下次手动请求才重新获取', async () => {
+    const denied = vi.fn();
+    setForbiddenHandler(denied);
+    const adapter = http.defaults.adapter;
+    let writes = 0;
+    http.defaults.adapter = async (config) => {
+      if (config.url === '/auth/csrf') return adapter(config);
+      writes += 1;
+      if (writes === 1)
+        throw {
+          config,
+          response: response(
+            config,
+            { code: 'CSRF_INVALID', message: '令牌失效' },
+            403,
+          ),
+        };
+      return adapter(config);
+    };
+    await expect(http.post('/one', {})).rejects.toMatchObject({
+      bizCode: 'CSRF_INVALID',
+    });
+    expect(writes).toBe(1);
+    expect(denied).not.toHaveBeenCalled();
+    await http.post('/one', {});
+    expect(received.filter((r) => r.url === '/auth/csrf')).toHaveLength(2);
+  });
+  it('切换会话后旧401不清空新账号', async () => {
+    const unauthorized = vi.fn();
+    setUnauthorizedHandler(unauthorized);
+    let reject;
+    http.defaults.adapter = (config) =>
+      new Promise((resolve, fail) => {
+        reject = () => fail({ config, response: response(config, {}, 401) });
+      });
+    const task = http.get('/users/me/profile');
+    await vi.waitFor(() => expect(reject).toBeTypeOf('function'));
+    invalidateSession();
+    reject();
+    await expect(task).rejects.toMatchObject({ code: 'SESSION_CHANGED' });
+    expect(unauthorized).not.toHaveBeenCalled();
+  });
+  it('错误只保留安全字段，识别限流等待时间', () => {
+    const error = toApiError({
+      response: {
+        status: 429,
+        headers: { 'retry-after': '30' },
+        data: { code: 'LOGIN_RATE_LIMITED', message: '稍后再试' },
+      },
+      config: { data: { password: 'secret' } },
+    });
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ code: 'RATE_LIMITED', retryAfter: 30 });
+    expect(error.cause).toBeUndefined();
+    expect(error.config).toBeUndefined();
+    expect(toApiError({ code: 'ECONNABORTED' }).code).toBe('TIMEOUT');
+    expect(toApiError(new Error()).code).toBe('NETWORK');
   });
 });

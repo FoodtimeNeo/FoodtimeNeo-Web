@@ -1,129 +1,171 @@
 import axios from 'axios';
-import { clearSession, getToken } from '@/utils/authSession.js';
-
-/**
- * 统一的接口错误。页面只依赖 code / status / message，不直接读取 axios 错误结构。
- * code 的取值：
- * - 传输层：TIMEOUT / NETWORK
- * - HTTP 层：UNAUTHORIZED(401) / FORBIDDEN(403) / NOT_FOUND(404) / SERVER(5xx) / REQUEST(其他 4xx)
- * - 业务层：后端返回的字符串业务码（如 AUTH_401_001），放在 bizCode 中
- */
 export class ApiError extends Error {
-  /**
-   * @param {string} message
-   * @param {{ status?: number, code?: string, bizCode?: string, cause?: unknown }} [options]
-   */
   constructor(
     message,
-    { status = 0, code = 'UNKNOWN', bizCode = '', cause } = {},
+    {
+      status = 0,
+      code = 'UNKNOWN',
+      bizCode = '',
+      retryAfter = 0,
+      fields = null,
+    } = {},
   ) {
-    super(message, { cause });
+    super(message);
     this.name = 'ApiError';
-    this.status = status;
-    this.code = code;
-    this.bizCode = bizCode;
+    Object.assign(this, { status, code, bizCode, retryAfter, fields });
   }
 }
-
-const STATUS_CODES = {
-  401: 'UNAUTHORIZED',
-  403: 'FORBIDDEN',
-  404: 'NOT_FOUND',
-};
-
-/**
- * 鉴权失效回调。由路由层通过 setUnauthorizedHandler 注入，避免 api 层直接依赖 router。
- * @type {(() => void) | null}
- */
 let unauthorizedHandler = null;
-
-/**
- * 权限不足回调。由应用层注入统一提示，避免 api 层直接依赖 UI 组件库。
- * @type {((error: ApiError) => void) | null}
- */
 let forbiddenHandler = null;
-
-/**
- * 注册 401 处理器（清理会话后跳转登录）。
- * @param {() => void} handler
- */
-export function setUnauthorizedHandler(handler) {
+let csrf = null;
+let csrfRequest = null;
+let csrfVersion = 0;
+let sessionVersion = 0;
+export const setUnauthorizedHandler = (handler) => {
   unauthorizedHandler = handler;
-}
-
-/**
- * 注册 403 处理器（统一提示权限不足）。
- * @param {(error: ApiError) => void} handler
- */
-export function setForbiddenHandler(handler) {
+};
+export const setForbiddenHandler = (handler) => {
   forbiddenHandler = handler;
+};
+export function clearCsrf() {
+  csrfVersion += 1;
+  csrf = null;
+  csrfRequest = null;
 }
-
-/**
- * 把 axios 错误或业务错误转换为 ApiError。
- * @param {any} error
- * @returns {ApiError}
- */
+// 切换身份后丢弃上一身份未完成的响应。
+export function invalidateSession() {
+  sessionVersion += 1;
+  clearCsrf();
+}
 export function toApiError(error) {
   if (error instanceof ApiError) return error;
-
-  if (error?.code === 'ECONNABORTED') {
-    return new ApiError('请求超时，请稍后重试', {
-      code: 'TIMEOUT',
-      cause: error,
+  if (axios.isCancel(error))
+    return new ApiError('请求已取消', { code: 'CANCELLED' });
+  if (error?.code === 'ECONNABORTED')
+    return new ApiError('请求超时，请确认操作结果后再试', { code: 'TIMEOUT' });
+  const status = error?.response?.status || 0;
+  if (!status)
+    return new ApiError('网络连接失败，请确认操作结果后再试', {
+      code: 'NETWORK',
     });
-  }
-
-  const status = error?.response?.status;
-  if (!status) {
-    return new ApiError('网络连接失败', { code: 'NETWORK', cause: error });
-  }
-
   const body = error.response.data;
-  const code = STATUS_CODES[status] ?? (status >= 500 ? 'SERVER' : 'REQUEST');
+  const codes = {
+    401: 'UNAUTHORIZED',
+    403: 'FORBIDDEN',
+    404: 'NOT_FOUND',
+    429: 'RATE_LIMITED',
+  };
+  // 不保留请求配置和Axios错误，避免错误日志带出密码或验证码。
   return new ApiError(body?.message || `请求失败（${status}）`, {
     status,
-    code,
+    code: codes[status] || (status >= 500 ? 'SERVER' : 'REQUEST'),
     bizCode: typeof body?.code === 'string' ? body.code : '',
-    cause: error,
+    retryAfter: Number(error.response.headers?.['retry-after']) || 0,
+    fields: body?.data || null,
   });
 }
-
+const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+if (!/^\/api\/v1\/?$/.test(baseURL))
+  throw new ApiError('接口必须使用同站 /api/v1 代理', {
+    code: 'CONFIGURATION',
+  });
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-  timeout: 10000,
+  baseURL,
+  timeout: 15000,
+  withCredentials: true,
 });
-
-http.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+export async function getCsrf() {
+  if (csrf) return csrf;
+  if (!csrfRequest) {
+    const version = csrfVersion;
+    const pending = http
+      .get('/auth/csrf', { skipUnauthorized: true })
+      .then((data) => {
+        if (version !== csrfVersion)
+          throw new ApiError('会话已变化，请重试', { code: 'SESSION_CHANGED' });
+        if (
+          data?.headerName !== 'X-CSRF-TOKEN' ||
+          typeof data.token !== 'string' ||
+          !data.token
+        )
+          throw new ApiError('CSRF响应不符合接口约定', { code: 'PROTOCOL' });
+        csrf = data;
+        return data;
+      })
+      .finally(() => {
+        if (csrfRequest === pending) csrfRequest = null;
+      });
+    csrfRequest = pending;
   }
+  return csrfRequest;
+}
+http.interceptors.request.use(async (config) => {
+  if (
+    config.baseURL !== baseURL ||
+    typeof config.url !== 'string' ||
+    !config.url.startsWith('/') ||
+    config.url.startsWith('//') ||
+    /[\\\r\n]/.test(config.url) ||
+    config.url
+      .split(/[?#]/)[0]
+      .split('/')
+      .some((part) => decodeURIComponent(part) === '..')
+  ) {
+    throw new ApiError('禁止向接口代理之外发送会话请求', {
+      code: 'UNSAFE_URL',
+    });
+  }
+  config.withCredentials = true;
+  config.headers.delete('Authorization');
+  if (
+    !['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())
+  ) {
+    const token = await getCsrf();
+    config.headers.set(token.headerName, token.token);
+  }
+  config.sessionVersion = sessionVersion;
   return config;
 });
-
 http.interceptors.response.use(
   (response) => {
+    if (response.config.sessionVersion !== sessionVersion)
+      throw new ApiError('会话已变化，请刷新后查看操作结果', {
+        code: 'SESSION_CHANGED',
+      });
     const body = response.data;
-    // 后端统一结构：{ code, message, data }，code === 0 为成功，返回 data。
-    if (body && typeof body === 'object' && 'code' in body) {
-      if (body.code === 0) return body.data;
+    if (
+      !body ||
+      typeof body !== 'object' ||
+      typeof body.code !== 'string' ||
+      !('data' in body)
+    )
+      throw new ApiError('服务器响应不符合接口约定', { code: 'PROTOCOL' });
+    if (body.code !== 'OK')
       throw new ApiError(body.message || '请求失败', {
         status: response.status,
         code: 'BUSINESS',
-        bizCode: typeof body.code === 'string' ? body.code : String(body.code),
+        bizCode: body.code,
       });
-    }
-    return body;
+    return body.data;
   },
   (error) => {
+    if (
+      error.config?.sessionVersion !== undefined &&
+      error.config.sessionVersion !== sessionVersion
+    )
+      return Promise.reject(
+        new ApiError('会话已变化，请刷新后查看操作结果', {
+          code: 'SESSION_CHANGED',
+        }),
+      );
     const apiError = toApiError(error);
-    if (apiError.status === 401) {
-      clearSession();
-      if (unauthorizedHandler) unauthorizedHandler();
-    } else if (apiError.status === 403) {
-      if (forbiddenHandler) forbiddenHandler(apiError);
-    }
+    if (apiError.bizCode === 'CSRF_INVALID') clearCsrf();
+    if (apiError.status === 401 && !error.config?.skipUnauthorized) {
+      invalidateSession();
+      unauthorizedHandler?.();
+    } else if (apiError.status === 403 && apiError.bizCode !== 'CSRF_INVALID')
+      forbiddenHandler?.(apiError);
+    // 写请求不自动重试，避免超时后重复写入。
     return Promise.reject(apiError);
   },
 );

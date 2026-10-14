@@ -49,8 +49,15 @@ export function resolveNavigation(to, auth) {
  * @param {import('vue-router').Router} router
  */
 export function installGuards(router) {
-  router.beforeEach((to) => {
+  router.beforeEach(async (to) => {
     const auth = useAuthStore();
+    if (
+      !auth.initialized ||
+      to.meta.requiresAuth ||
+      to.meta.requiresAdmin ||
+      to.meta.requiresSuperadmin
+    )
+      await auth.refresh();
     return resolveNavigation(to, {
       isAuthenticated: auth.isAuthenticated,
       isAdmin: auth.isAdmin,

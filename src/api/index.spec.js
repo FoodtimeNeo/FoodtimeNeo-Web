@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { installApi } from './index.js';
 import { http } from './http.js';
-import { clearSession, writeSession } from '@/utils/authSession.js';
+import { clearSession } from '@/utils/authSession.js';
 
 /**
  * 构造一个最小的 router 替身：记录 replace 调用，暴露可改写的 currentRoute。
@@ -38,7 +38,6 @@ describe('installApi', () => {
   });
 
   it('401 时清理会话并跳转登录，带 redirect', async () => {
-    writeSession({ token: 't', user: {} });
     const router = createRouterStub({ name: 'profile', fullPath: '/profile' });
     installApi({ router });
 
