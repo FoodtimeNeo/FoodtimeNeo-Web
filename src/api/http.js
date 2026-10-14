@@ -49,6 +49,11 @@ export function toApiError(error) {
       code: 'NETWORK',
     });
   const body = error.response.data;
+  if (status === 403 && body === 'Invalid CORS request')
+    return new ApiError(
+      '当前页面来源未获后端允许，本地开发请使用 localhost:5173 或 localhost:3000',
+      { status, code: 'FORBIDDEN', bizCode: 'CORS_DENIED' },
+    );
   const codes = {
     401: 'UNAUTHORIZED',
     403: 'FORBIDDEN',
