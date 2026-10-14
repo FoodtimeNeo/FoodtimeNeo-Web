@@ -40,6 +40,12 @@ export const routes = [
     meta: { title: '图册', layout: 'default' },
   },
   {
+    path: '/reviews/new',
+    name: 'reviewCreate',
+    component: () => import('@/views/review/ReviewCreateView.vue'),
+    meta: { title: '写点评', layout: 'default', requiresAuth: true },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/auth/LoginView.vue'),
