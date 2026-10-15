@@ -31,7 +31,11 @@ async function remove() {
 <template>
   <div class="records-page">
     <RouterLink :to="{ name: 'profile' }">← 返回我的</RouterLink>
-    <h1 class="section-title">我的评论</h1>
+    <div class="section-rule">
+      <span class="section-rule__index">07</span
+      ><span class="section-rule__line"></span>
+    </div>
+    <h1 class="section-title">我的<span class="zine-highlight">评论</span></h1>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <EmptyState v-else-if="!items.length" title="暂无已发布评论" />
@@ -44,6 +48,7 @@ async function remove() {
       >
         <button
           v-if="confirming !== row.id"
+          class="button-ink is-danger"
           type="button"
           :disabled="deleting"
           @click="
@@ -81,12 +86,6 @@ async function remove() {
   margin: auto;
 }
 button {
-  min-height: 44px;
-  padding: 8px 16px;
   margin-right: 12px;
-  border: 1px solid var(--ft-color-danger);
-  color: var(--ft-color-danger);
-  background: var(--zine-paper-card);
-  cursor: pointer;
 }
 </style>

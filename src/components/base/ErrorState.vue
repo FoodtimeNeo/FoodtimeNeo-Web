@@ -10,7 +10,7 @@ const emit = defineEmits(['retry']);
 </script>
 
 <template>
-  <div class="content-state" role="alert">
+  <div class="content-state torn-edge" role="alert">
     <span class="content-state__mark" aria-hidden="true">!</span>
     <h2>{{ title }}</h2>
     <p>{{ description }}</p>

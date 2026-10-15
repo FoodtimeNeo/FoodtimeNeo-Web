@@ -39,28 +39,43 @@ async function logout() {
 </script>
 <template>
   <div class="profile-page">
-    <h1 class="section-title">我的</h1>
+    <div class="section-rule">
+      <span class="section-rule__index">06</span>
+      <span class="section-rule__line"></span>
+    </div>
+    <h1 class="section-title">
+      我的<span class="zine-highlight">食堂档案</span>
+    </h1>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="profile">
-      <div class="profile-page__identity">
+      <article class="profile-page__identity torn-edge">
         <MediaImage
           :src="profile.avatarUrl || ''"
           alt="头像"
           empty="未设置头像"
           style="width: 72px; height: 72px; min-height: 72px"
         />
-        <div>
+        <div class="profile-page__identity-copy">
+          <span class="sticker sticker--r-1">个人档案</span>
           <h2>{{ profile.displayName }}</h2>
           <p class="profile-page__id">ID：{{ profile.id }}</p>
         </div>
+      </article>
+      <div class="profile-page__meta">
+        <span class="zine-chip">{{ profile.email }}</span>
+        <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
-      <p>{{ profile.email }}</p>
-      <p>{{ roleLabels[profile.role] }}</p>
       <nav class="profile-page__links" aria-label="个人功能">
-        <RouterLink :to="{ name: 'myReviews' }">我的评论</RouterLink>
-        <RouterLink :to="{ name: 'mySubmissions' }">我的提交</RouterLink>
-        <RouterLink :to="{ name: 'changePassword' }">修改密码</RouterLink>
+        <RouterLink class="paper-link" :to="{ name: 'myReviews' }"
+          ><span class="stamp">01</span> 我的评论 <strong>→</strong></RouterLink
+        >
+        <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
+          ><span class="stamp">02</span> 我的提交 <strong>→</strong></RouterLink
+        >
+        <RouterLink class="paper-link" :to="{ name: 'changePassword' }"
+          ><span class="stamp">03</span> 修改密码 <strong>→</strong></RouterLink
+        >
       </nav>
       <p v-if="exitError" role="alert">{{ exitError }}</p>
       <InkButton
@@ -81,8 +96,35 @@ async function logout() {
 }
 .profile-page__identity {
   display: flex;
-  gap: 16px;
+  position: relative;
   align-items: center;
+  gap: 16px;
+  margin-top: var(--ft-space-3);
+  padding: var(--ft-space-3);
+  border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
+  box-shadow: 5px 6px 0 rgb(58 36 24 / 16%);
+}
+.profile-page__identity :deep(.media-image) {
+  width: 88px;
+  height: 88px;
+  min-height: 88px;
+  border: 7px solid #fff;
+  box-shadow: 3px 3px 0 rgb(58 36 24 / 20%);
+  transform: rotate(-2deg);
+}
+.profile-page__identity-copy {
+  min-width: 0;
+}
+.profile-page__identity-copy h2 {
+  margin: 10px 0 0;
+}
+.profile-page__meta {
+  display: flex;
+  flex-wrap: wrap;
+  display: flex;
+  gap: 16px;
+  margin: var(--ft-space-3) 0;
 }
 .profile-page__identity > div {
   min-width: 0;
@@ -98,10 +140,27 @@ h2 {
   gap: 12px;
   margin: 24px 0;
 }
-.profile-page__links a {
+.profile-page__links a.paper-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 12px;
   min-height: 44px;
-  border: 1px solid var(--ft-color-text);
+  border: 1px dashed rgb(58 36 24 / 34%);
+  background: rgb(255 250 240 / 72%);
+  font-family: var(--ft-font-family-title);
+  font-size: 20px;
+  transition:
+    transform var(--ft-transition-fast),
+    box-shadow var(--ft-transition-fast);
+}
+.profile-page__links a.paper-link:hover {
+  box-shadow: 4px 4px 0 rgb(58 36 24 / 18%);
+  transform: translate(-2px, -2px);
+}
+.profile-page__links strong {
+  margin-left: auto;
+  color: var(--ft-color-primary);
 }
 .profile-page__logout {
   color: var(--ft-color-danger);

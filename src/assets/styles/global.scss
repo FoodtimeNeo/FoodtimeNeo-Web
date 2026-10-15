@@ -22,11 +22,29 @@ html {
 
 body {
   color: var(--ft-color-text);
+  overflow-x: hidden;
   background:
     var(--zine-texture-kraft),
-    linear-gradient(135deg, var(--zine-paper-bg-soft), var(--zine-paper-bg));
+    radial-gradient(
+      circle at 14% 11%,
+      rgb(106 75 58 / 18%) 0 1px,
+      transparent 1.5px
+    ),
+    radial-gradient(
+      circle at 82% 24%,
+      rgb(58 36 24 / 10%) 0 1px,
+      transparent 1.4px
+    ),
+    linear-gradient(
+      138deg,
+      var(--zine-paper-bg-soft) 0%,
+      var(--zine-paper-bg) 54%,
+      #cbb07a 100%
+    );
   background-size:
     600px 600px,
+    23px 23px,
+    31px 31px,
     100% 100%;
   font-family: var(--ft-font-family);
   font-size: var(--ft-font-size-md);
@@ -35,16 +53,39 @@ body {
   text-wrap: pretty;
 }
 
-body::before {
+body::before,
+body::after {
   position: fixed;
   z-index: 0;
   inset: 0;
+  content: '';
+  pointer-events: none;
+}
+
+body::before {
   background: var(--zine-texture-grain) repeat;
   background-size: 200px 200px;
-  content: '';
   mix-blend-mode: multiply;
   opacity: 0.28;
-  pointer-events: none;
+}
+
+body::after {
+  background:
+    var(--zine-decor-torn-edge) left -72px top 112px / 320px auto no-repeat,
+    var(--zine-decor-sticky-note-alt) right -48px bottom 18vh / 128px auto
+      no-repeat,
+    var(--zine-decor-food-sketch-2) left 3vw bottom 18vh / 118px auto no-repeat,
+    radial-gradient(circle at 15% 18%, rgb(58 36 24 / 7%) 0, transparent 30%),
+    radial-gradient(circle at 84% 74%, rgb(58 36 24 / 8%) 0, transparent 28%),
+    repeating-linear-gradient(
+      6deg,
+      rgb(58 36 24 / 4.5%) 0,
+      rgb(58 36 24 / 4.5%) 1px,
+      transparent 1px,
+      transparent 10px
+    );
+  mix-blend-mode: multiply;
+  opacity: 0.58;
 }
 
 #app {
@@ -72,7 +113,7 @@ textarea {
 }
 
 :where(a, button, input, select, textarea):focus-visible {
-  outline: 3px solid var(--zine-stamp-blue);
+  outline: 2px dashed var(--ft-color-primary);
   outline-offset: 3px;
 }
 
@@ -236,6 +277,17 @@ textarea {
   color: var(--zine-paper-card);
 }
 
+.button-ink.is-danger {
+  border-color: var(--zine-stamp-red);
+  background: transparent;
+  color: var(--zine-stamp-red);
+}
+
+.button-ink.is-danger:hover:not(:disabled) {
+  background: var(--zine-stamp-red);
+  color: #fff5f2;
+}
+
 .button-ink.is-stamp-red,
 .button-ink.is-stamp-blue {
   border-width: 2px;
@@ -258,6 +310,81 @@ textarea {
 
 .handwrite {
   font-family: var(--ft-font-family-note);
+}
+
+.dropcap::first-letter {
+  float: left;
+  margin: 2px 8px 0 0;
+  color: var(--ft-color-primary);
+  font-family: var(--ft-font-family-title);
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 0.9;
+}
+
+.zine-rating-stamp,
+.zine-date-stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--zine-title-font);
+  font-weight: 900;
+  line-height: 1;
+  mix-blend-mode: multiply;
+}
+
+.zine-rating-stamp {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border: 3px double var(--zine-stamp-red);
+  background: var(--zine-stamp-red-soft);
+  color: var(--zine-stamp-red);
+  font-size: 21px;
+  transform: rotate(-5deg);
+}
+
+.zine-date-stamp {
+  width: 72px;
+  height: 72px;
+  border: 2px dashed var(--zine-stamp-blue);
+  background: var(--zine-stamp-blue-soft);
+  color: var(--zine-stamp-blue);
+  font-family: var(--zine-handwriting-font);
+  font-size: 17px;
+  text-align: center;
+  transform: rotate(var(--zine-rotate-stamp));
+}
+
+.zine-chip {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid var(--zine-paper-edge);
+  border-radius: var(--ft-radius-pill);
+  background: rgb(255 250 240 / 58%);
+  color: var(--ft-color-secondary-soft);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.zine-hand-link {
+  padding: 0 2px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ft-color-secondary);
+  font-family: var(--zine-handwriting-font);
+  font-size: 21px;
+  text-decoration: underline dashed 1.5px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.zine-hand-link:hover {
+  color: var(--zine-stamp-red);
+  text-decoration-style: wavy;
 }
 
 .torn-edge {
@@ -287,19 +414,39 @@ textarea {
 }
 
 @media (max-width: 768px) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body {
     line-height: 1.58;
     letter-spacing: 0;
     text-wrap: auto;
   }
 
-  body::before {
-    opacity: 0.14;
+  body::after {
+    background:
+      var(--zine-decor-torn-edge) left -112px top 128px / 240px auto no-repeat,
+      var(--zine-decor-food-sketch-3) left -30px bottom 24vh / 90px auto
+        no-repeat,
+      radial-gradient(circle at 18% 20%, rgb(58 36 24 / 7%) 0, transparent 28%);
   }
 
   .sticker,
-  .stamp {
+  .stamp,
+  .zine-rating-stamp,
+  .zine-date-stamp {
     transform: none;
+  }
+
+  .dropcap::first-letter {
+    float: none;
+    margin: 0;
+    font-size: inherit;
+    line-height: inherit;
   }
 
   .button-ink {
@@ -313,7 +460,11 @@ textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .button-ink {
-    transition: none;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

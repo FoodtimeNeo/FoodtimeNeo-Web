@@ -91,22 +91,81 @@ async function remove() {
   max-width: 1000px;
   margin: auto;
 }
+.reviews > .section-title {
+  margin-bottom: 14px;
+}
+.reviews :deep(.submission-record) {
+  position: relative;
+  border-color: var(--ft-color-secondary);
+  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
+  clip-path: polygon(
+    0 2%,
+    7% 0,
+    15% 2%,
+    26% 0,
+    38% 2%,
+    52% 0,
+    66% 2%,
+    79% 0,
+    91% 2%,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+.reviews :deep(.submission-record:nth-of-type(even)) {
+  transform: rotate(0.35deg);
+}
+.reviews :deep(.submission-record:nth-of-type(odd)) {
+  transform: rotate(-0.25deg);
+}
+.reviews :deep(.submission-record h2) {
+  color: var(--ft-color-secondary);
+  font-size: clamp(24px, 3vw, 34px);
+}
+.reviews :deep(.submission-record strong) {
+  color: var(--zine-stamp-red);
+  font-family: var(--zine-handwriting-font);
+}
 label {
   display: grid;
   gap: 8px;
+  color: var(--ft-color-text-muted);
 }
 button,
 textarea {
   min-height: 44px;
   padding: 10px;
-  border: 1px solid var(--ft-color-text);
-  background: var(--zine-paper-card);
+  border: 1px solid var(--ft-color-secondary);
+  background: #fffaf0;
 }
 button {
   margin: 12px 12px 0 0;
+  box-shadow: 2px 2px 0 var(--ft-color-secondary);
+  color: var(--ft-color-secondary);
+  font-weight: 700;
   cursor: pointer;
+}
+button:hover:not(:disabled) {
+  background: var(--ft-color-secondary);
+  color: #fffaf0;
+  transform: translate(-1px, -1px);
+}
+form {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px dashed var(--ft-color-secondary);
+  background: var(--zine-paper-card-alt);
 }
 [role='alert'] {
   color: var(--ft-color-danger);
+  font-weight: 700;
+}
+@media (max-width: 560px) {
+  .reviews :deep(.submission-record:nth-of-type(even)),
+  .reviews :deep(.submission-record:nth-of-type(odd)) {
+    transform: none;
+    box-shadow: var(--app-mobile-shadow);
+  }
 }
 </style>

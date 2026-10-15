@@ -23,26 +23,43 @@ defineProps({
       params: { canteenId, stallId: dish.stallId, dishId: dish.id },
     }"
   >
+    <span class="dish-price__stamp stamp">菜单</span>
     <span class="dish-price__name">{{ dish.name }}</span>
+    <span class="dish-price__dots" aria-hidden="true"></span>
     <span class="dish-price__price">{{ formatPrice(dish.price) }}</span>
   </RouterLink>
 </template>
 
 <style scoped lang="scss">
 .dish-price {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) minmax(20px, 1fr) auto;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--ft-space-2);
   padding: var(--ft-space-2);
-  border: 2px solid var(--ft-color-text);
+  border: 1px solid var(--ft-color-text);
   background: var(--zine-paper-card);
-  box-shadow: 3px 3px 0 var(--ft-color-text);
+  box-shadow: 3px 4px 0 rgb(58 36 24 / 18%);
   color: inherit;
   text-decoration: none;
 
   &:hover .dish-price__name {
     text-decoration: underline;
+  }
+
+  &:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 6px 0 rgb(58 36 24 / 22%);
+  }
+
+  &__stamp {
+    min-width: 48px;
+  }
+
+  &__dots {
+    align-self: center;
+    border-bottom: 1px dashed rgb(58 36 24 / 36%);
   }
 
   &__name {

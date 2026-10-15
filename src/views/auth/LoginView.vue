@@ -43,7 +43,9 @@ async function handleSubmit() {
 </script>
 <template>
   <section class="auth-view">
-    <h1>登录</h1>
+    <span class="sticker sticker--r-2">食堂手账 · SIGN IN</span>
+    <h1><span>欢迎回来</span>登录</h1>
+    <p class="auth-view__intro handwrite">先吃饱，再翻开今天的食堂档案。</p>
     <form ref="formElement" novalidate @submit.prevent="handleSubmit">
       <p v-if="serverError" role="alert" class="auth-view__error">
         {{ serverError }}
@@ -71,19 +73,34 @@ async function handleSubmit() {
     </p>
   </section>
 </template>
-<style scoped>
+<style scoped lang="scss">
 .auth-view {
+  position: relative;
   width: min(calc(100% - 32px), 420px);
   margin: 10vh auto;
   padding: var(--ft-space-4);
-  border: 2px solid var(--ft-color-text);
+  border: 1px solid var(--ft-color-text);
   background: var(--zine-paper-card);
-  box-shadow: 8px 8px 0 var(--ft-color-text);
+  box-shadow: 8px 10px 0 rgb(58 36 24 / 24%);
+  transform: rotate(-0.7deg);
 }
 h1 {
   margin: 0 0 var(--ft-space-3);
   font-family: var(--ft-font-family-title);
   font-size: 40px;
+
+  span {
+    display: block;
+    color: var(--ft-color-primary);
+    font-family: var(--ft-font-family-note);
+    font-size: 22px;
+    font-weight: 400;
+  }
+}
+.auth-view__intro {
+  margin: -8px 0 var(--ft-space-3);
+  color: var(--ft-color-primary);
+  font-size: 20px;
 }
 form {
   display: flex;
@@ -96,5 +113,15 @@ form {
 }
 a {
   color: var(--ft-color-primary);
+}
+
+@media (max-width: 520px) {
+  .auth-view {
+    width: 100%;
+    margin: 0;
+    padding: var(--app-mobile-card-padding);
+    box-shadow: var(--app-mobile-shadow);
+    transform: none;
+  }
 }
 </style>

@@ -60,61 +60,88 @@ const params = computed(() => ({
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="data">
-      <div class="dish-detail__hero">
-        <RouterLink
-          class="dish-detail__upload-link"
-          :to="{ name: 'photoSubmission', params }"
-          aria-label="上传菜品图片"
-          >＋</RouterLink
-        >
-        <MediaImage
-          :src="data.images[0]?.imageUrl || ''"
-          :alt="data.dish.name"
-          empty="暂未上传菜品图片"
+      <article class="dish-detail__main torn-edge">
+        <div class="dish-detail__hero">
+          <RouterLink
+            class="dish-detail__upload-link"
+            :to="{ name: 'photoSubmission', params }"
+            aria-label="上传菜品图片"
+            >＋</RouterLink
+          >
+          <MediaImage
+            frame="polygon"
+            :src="data.images[0]?.imageUrl || ''"
+            :alt="data.dish.name"
+            empty="暂未上传菜品图片"
+          />
+          <RouterLink
+            class="dish-detail__gallery-link sticker sticker--r2"
+            :to="{ name: 'dishGallery', params }"
+            >翻看图册</RouterLink
+          >
+        </div>
+        <div class="dish-detail__content">
+          <span class="stamp">今日主角</span>
+          <h1 class="section-title">{{ data.dish.name }}</h1>
+          <p class="dish-detail__meta">
+            {{ data.dish.diningHallName }} · {{ data.dish.stallName }}
+          </p>
+          <p class="dish-detail__price">{{ formatPrice(data.dish.price) }}</p>
+          <p v-if="data.dish.description" class="dropcap">
+            {{ data.dish.description }}
+          </p>
+          <div class="dish-detail__rating">
+            <span class="zine-rating-stamp">
+              {{
+                data.rating.averageScore === null
+                  ? '—'
+                  : Number(data.rating.averageScore).toFixed(1)
+              }}
+            </span>
+            <p>
+              <strong>综合评分</strong>
+              <span v-if="data.rating.averageScore === null">暂无评分</span>
+              <span v-else
+                >{{ Number(data.rating.averageScore).toFixed(2) }} / 5</span
+              >
+              {{ data.rating.reviewCount }} 条评价 · 每日更新
+            </p>
+          </div>
+          <RouterLink
+            class="dish-detail__review-link button-ink is-primary"
+            :to="{
+              name: 'dishReviewCreate',
+              params,
+            }"
+            >写点评</RouterLink
+          >
+        </div>
+      </article>
+      <section class="dish-detail__reviews" aria-labelledby="reviews-title">
+        <div class="section-rule">
+          <span class="section-rule__index">05</span>
+          <span class="section-rule__line"></span>
+        </div>
+        <h2 id="reviews-title" class="section-title">
+          同学们的<span class="zine-highlight">评论</span>
+        </h2>
+        <p class="section-subtitle">星级和文字都来自审核通过的真实点评。</p>
+        <LoadingState v-if="reviewLoading" />
+        <ErrorState
+          v-else-if="reviewError"
+          :description="reviewError.message"
+          @retry="loadReviews"
         />
-        <RouterLink
-          class="dish-detail__gallery-link"
-          :to="{ name: 'dishGallery', params }"
-          >图册</RouterLink
-        >
-      </div>
-      <h1 class="section-title">{{ data.dish.name }}</h1>
-      <p>{{ data.dish.diningHallName }} · {{ data.dish.stallName }}</p>
-      <p class="dish-detail__price">{{ formatPrice(data.dish.price) }}</p>
-      <p v-if="data.dish.description">{{ data.dish.description }}</p>
-      <h2>评分</h2>
-      <p>
-        {{
-          data.rating.averageScore === null
-            ? '暂无评分'
-            : Number(data.rating.averageScore).toFixed(2) + ' / 5'
-        }}
-      </p>
-      <p>{{ data.rating.reviewCount }} 条评价 · 每日更新</p>
-      <RouterLink
-        class="dish-detail__review-link"
-        :to="{
-          name: 'dishReviewCreate',
-          params,
-        }"
-        >写点评</RouterLink
-      >
-      <h2 id="reviews-title">评论</h2>
-      <LoadingState v-if="reviewLoading" />
-      <ErrorState
-        v-else-if="reviewError"
-        :description="reviewError.message"
-        @retry="loadReviews"
-      />
-      <EmptyState v-else-if="!reviews.length" title="暂无评论" />
-      <DishReviewList v-else :reviews="reviews" />
-      <PaginationControls
-        :page="page"
-        :total="total"
-        :size="size"
-        :disabled="reviewLoading"
-        @change="page = $event"
-      />
+        <EmptyState v-else-if="!reviews.length" title="还没有同学点评" />
+        <DishReviewList v-else :reviews="reviews" />
+        <PaginationControls
+          :page="page"
+          :total="total"
+          :size="size"
+          :disabled="reviewLoading"
+          @change="page = $event"
+        />
+      </section>
     </template>
   </div>
 </template>
@@ -135,7 +162,6 @@ const params = computed(() => ({
   }
 
   &__hero {
-    margin-bottom: var(--ft-space-3);
     position: relative;
     .dish-detail__upload-link {
       position: absolute;
@@ -150,7 +176,6 @@ const params = computed(() => ({
       border: 1px solid var(--ft-color-text);
       font-size: 24px;
     }
-    aspect-ratio: 16 / 9;
     overflow: hidden;
     .dish-detail__gallery-link {
       position: absolute;
@@ -160,8 +185,28 @@ const params = computed(() => ({
       background: var(--zine-paper-card);
       border: 1px solid var(--ft-color-text);
     }
-    border: 2px solid var(--ft-color-text);
-    box-shadow: 6px 6px 0 var(--ft-color-text);
+  }
+
+  &__main {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    overflow: hidden;
+    border: 1px solid var(--ft-color-secondary);
+    background: var(--ft-color-surface);
+  }
+
+  &__content {
+    padding: var(--ft-space-3);
+
+    h1 {
+      margin-top: 12px;
+      font-size: clamp(44px, 6vw, 74px);
+      line-height: 0.9;
+    }
+  }
+
+  &__meta {
+    color: var(--ft-color-text-muted);
   }
 
   &__image {
@@ -183,6 +228,24 @@ const params = computed(() => ({
     font-family: var(--ft-font-family-title);
     font-size: var(--ft-font-size-xl);
     color: var(--ft-color-primary);
+  }
+
+  &__rating {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: var(--ft-space-3) 0;
+
+    p {
+      display: grid;
+      gap: 4px;
+      margin: 0;
+      color: var(--ft-color-text-muted);
+    }
+  }
+
+  &__reviews {
+    margin-top: var(--ft-space-5);
   }
 
   &__desc {
@@ -214,6 +277,23 @@ const params = computed(() => ({
 @media (max-width: 768px) {
   .dish-detail {
     width: calc(100% - var(--zine-page-padding-mobile) * 2);
+
+    &__main {
+      grid-template-columns: 1fr;
+    }
+
+    &__hero {
+      aspect-ratio: 16 / 10;
+    }
+
+    &__content {
+      padding: var(--app-mobile-card-padding);
+
+      h1 {
+        font-size: clamp(34px, 10vw, 44px);
+        line-height: 1.05;
+      }
+    }
   }
 }
 </style>

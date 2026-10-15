@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import AppHeader from '@/components/layout/AppHeader.vue';
+import AppFooter from '@/components/layout/AppFooter.vue';
 import MobileTabBar from '@/components/layout/MobileTabBar.vue';
 import { resolveBreadcrumbs } from '@/components/layout/navigation.js';
 
@@ -11,6 +12,12 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 
 <template>
   <div class="default-layout">
+    <div class="desk-decor desk-decor--torn-left" aria-hidden="true"></div>
+    <div class="desk-decor desk-decor--note-left" aria-hidden="true"></div>
+    <div class="desk-decor desk-decor--stamp-left" aria-hidden="true"></div>
+    <div class="desk-decor desk-decor--stamp-right" aria-hidden="true"></div>
+    <div class="desk-decor desk-decor--sketch-right" aria-hidden="true"></div>
+    <div class="desk-decor desk-decor--tape-bottom" aria-hidden="true"></div>
     <AppHeader />
     <div class="default-layout__paper">
       <nav class="breadcrumbs" aria-label="面包屑">
@@ -30,22 +37,54 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
         <slot />
       </main>
     </div>
+    <AppFooter />
     <MobileTabBar />
   </div>
 </template>
 
 <style scoped>
 .default-layout {
+  position: relative;
   min-height: 100vh;
+  isolation: isolate;
 }
 
 .default-layout__paper {
+  --paper-wave-height: clamp(24px, 3.2vw, 38px);
+  --paper-wave-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 56' preserveAspectRatio='none'%3E%3Cpath fill='black' d='M0 20 C75 6 165 6 240 20 C315 34 405 34 480 20 C555 6 645 6 720 20 C795 34 885 34 960 20 C1035 6 1125 6 1200 20 L1200 56 L0 56 Z'/%3E%3C/svg%3E");
+  position: relative;
+  z-index: 1;
   width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));
   min-height: calc(100vh - 124px);
-  margin: var(--ft-space-3) auto var(--ft-space-5);
+  margin: 36px auto 56px;
   border: 1px solid var(--zine-paper-edge);
-  background: var(--zine-paper-card);
-  box-shadow: var(--ft-shadow-lg);
+  background:
+    linear-gradient(
+      90deg,
+      rgb(255 255 255 / 18%),
+      transparent 10% 90%,
+      rgb(58 36 24 / 5%)
+    ),
+    radial-gradient(circle at 18% 12%, rgb(183 47 28 / 5%) 0, transparent 24%),
+    var(--zine-paper-card);
+  box-shadow:
+    0 18px 48px var(--zine-paper-shadow),
+    inset 0 0 80px rgb(58 36 24 / 5%);
+}
+
+@supports ((-webkit-mask-image: url('')) or (mask-image: url(''))) {
+  .default-layout__paper {
+    -webkit-mask:
+      var(--paper-wave-mask) top center / 100% var(--paper-wave-height)
+        no-repeat,
+      linear-gradient(#000 0 0) bottom / 100%
+        calc(100% - var(--paper-wave-height) + 1px) no-repeat;
+    mask:
+      var(--paper-wave-mask) top center / 100% var(--paper-wave-height)
+        no-repeat,
+      linear-gradient(#000 0 0) bottom / 100%
+        calc(100% - var(--paper-wave-height) + 1px) no-repeat;
+  }
 }
 
 .breadcrumbs {
@@ -69,6 +108,76 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
   min-width: 0;
 }
 
+.desk-decor {
+  position: fixed;
+  z-index: 0;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.desk-decor--torn-left {
+  top: 154px;
+  left: max(12px, calc((100vw - var(--page-max-width)) / 2 - 230px));
+  width: 260px;
+  height: 120px;
+  background-image: var(--zine-decor-torn-edge);
+  opacity: 0.36;
+  transform: rotate(-7deg);
+}
+
+.desk-decor--note-left {
+  top: 36vh;
+  left: max(18px, calc((100vw - var(--page-max-width)) / 2 - 148px));
+  width: 136px;
+  height: 136px;
+  background-image: var(--zine-decor-sticky-note);
+  opacity: 0.42;
+  transform: rotate(var(--zine-decor-rotate-left));
+}
+
+.desk-decor--stamp-left {
+  top: 62vh;
+  left: max(20px, calc((100vw - var(--page-max-width)) / 2 - 142px));
+  width: 128px;
+  height: 128px;
+  background-image: var(--zine-decor-stamp-round);
+  opacity: var(--zine-decor-opacity-bg);
+  transform: rotate(-14deg);
+}
+
+.desk-decor--stamp-right {
+  top: 28vh;
+  right: max(18px, calc((100vw - var(--page-max-width)) / 2 - 160px));
+  width: 146px;
+  height: 146px;
+  background-image: var(--zine-decor-stamp-premium);
+  opacity: 0.3;
+  transform: rotate(12deg);
+}
+
+.desk-decor--sketch-right {
+  top: 56vh;
+  right: max(18px, calc((100vw - var(--page-max-width)) / 2 - 146px));
+  width: 132px;
+  height: 132px;
+  background-image: var(--zine-decor-food-sketch-5);
+  opacity: 0.42;
+  transform: rotate(-8deg);
+}
+
+.desk-decor--tape-bottom {
+  right: max(20px, calc((100vw - var(--page-max-width)) / 2 - 154px));
+  bottom: 18vh;
+  width: 160px;
+  height: 42px;
+  background-image: var(--zine-decor-tape-blue);
+  opacity: 0.54;
+  transform: rotate(var(--zine-decor-rotate-right));
+}
+
 @media (max-width: 768px) {
   .default-layout__paper {
     width: 100%;
@@ -76,6 +185,8 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
     margin: 0;
     border: 0;
     box-shadow: none;
+    mask: none;
+    -webkit-mask: none;
   }
 
   .default-layout {
@@ -86,6 +197,10 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 
   .breadcrumbs {
     padding: var(--ft-space-1) var(--zine-page-padding-mobile);
+  }
+
+  .desk-decor {
+    display: none;
   }
 }
 </style>

@@ -43,13 +43,68 @@ const types = { review: '点评', dish: '菜品', stall: '档口', photo: '图�
   margin: auto;
   overflow-wrap: anywhere;
 }
+.logs > .section-title {
+  margin-bottom: 14px;
+}
 article {
-  border: 1px solid var(--ft-color-text);
+  position: relative;
+  border: 1px solid var(--ft-color-secondary);
   padding: 20px;
   margin: 20px 0;
   background: var(--zine-paper-card);
+  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
+  clip-path: polygon(
+    0 2%,
+    7% 0,
+    15% 2%,
+    26% 0,
+    38% 2%,
+    52% 0,
+    66% 2%,
+    79% 0,
+    91% 2%,
+    100% 0,
+    100% 100%,
+    0 100%
+  );
+}
+article:nth-of-type(even) {
+  transform: rotate(0.35deg);
+}
+article:nth-of-type(odd) {
+  transform: rotate(-0.25deg);
+}
+h3 {
+  margin-top: 0;
+  color: var(--ft-color-secondary);
+  font-family: var(--ft-font-family-title);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.08;
+}
+article p {
+  color: var(--ft-color-text-muted);
+}
+article p:first-of-type {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 2px solid var(--zine-stamp-red);
+  color: var(--zine-stamp-red);
+  font-family: var(--zine-handwriting-font);
+  transform: rotate(-3deg);
 }
 .reason {
   white-space: pre-wrap;
+  padding-top: 10px;
+  border-top: 1px dashed var(--ft-color-secondary);
+  color: var(--zine-stamp-red);
+}
+@media (max-width: 560px) {
+  article,
+  article:nth-of-type(even),
+  article:nth-of-type(odd) {
+    padding: 16px;
+    box-shadow: var(--app-mobile-shadow);
+    transform: none;
+  }
 }
 </style>
