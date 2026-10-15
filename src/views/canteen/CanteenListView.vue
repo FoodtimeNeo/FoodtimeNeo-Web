@@ -1,6 +1,8 @@
 <script setup>
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
+import { useCatalogSearch } from '@/composables/useCatalogSearch.js';
+import CatalogSearch from '@/components/canteen/CatalogSearch.vue';
 import CanteenEntryCard from '@/components/home/CanteenEntryCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
@@ -12,6 +14,10 @@ const {
   loading,
   load,
 } = useAsyncData(fetchCanteens, { initial: [] });
+const { query, matches: filteredCanteens } = useCatalogSearch(
+  canteens,
+  'canteens',
+);
 </script>
 
 <template>
@@ -30,11 +36,30 @@ const {
       title="还没有食堂"
       description="管理员添加后会显示在这里。"
     />
-    <ul v-else class="canteen-list__grid">
-      <li v-for="canteen in canteens" :key="canteen.id">
-        <CanteenEntryCard :canteen="canteen" />
-      </li>
-    </ul>
+    <template v-else>
+      <CatalogSearch
+        v-model="query"
+        label="搜索食堂"
+        placeholder="输入食堂名称"
+        :count="filteredCanteens.length"
+        :total="canteens.length"
+        unit="个食堂"
+      />
+      <EmptyState
+        v-if="!filteredCanteens.length"
+        title="没有匹配的食堂"
+        description="换一个关键词，或查看全部食堂。"
+      >
+        <button class="button-ink" type="button" @click="query = ''">
+          查看全部食堂
+        </button>
+      </EmptyState>
+      <ul v-else class="canteen-list__grid">
+        <li v-for="canteen in filteredCanteens" :key="canteen.id">
+          <CanteenEntryCard :canteen="canteen" />
+        </li>
+      </ul>
+    </template>
   </main>
 </template>
 

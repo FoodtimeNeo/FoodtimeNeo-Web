@@ -1,9 +1,11 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchStalls, fetchStallDishes } from '@/api/canteen.api.js';
 import { ApiError } from '@/api/http.js';
+import { useCatalogSearch } from '@/composables/useCatalogSearch.js';
+import CatalogSearch from '@/components/canteen/CatalogSearch.vue';
 import DishPriceCard from '@/components/canteen/DishPriceCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
@@ -11,7 +13,6 @@ import ErrorState from '@/components/base/ErrorState.vue';
 const route = useRoute();
 const canteenId = computed(() => String(route.params.canteenId));
 const stallId = computed(() => String(route.params.stallId));
-const query = ref('');
 const { data, error, loading, load } = useAsyncData(async (options) => {
   const stalls = await fetchStalls(canteenId.value, options);
   const stall = stalls.find((item) => item.id === stallId.value);
@@ -22,10 +23,9 @@ const { data, error, loading, load } = useAsyncData(async (options) => {
     });
   return { stall, dishes: await fetchStallDishes(stall.id, options) };
 });
-const dishes = computed(() =>
-  (data.value?.dishes || []).filter((dish) =>
-    dish.name.includes(query.value.trim()),
-  ),
+const { query, matches: dishes } = useCatalogSearch(
+  () => data.value?.dishes || [],
+  () => `dishes:${stallId.value}`,
 );
 </script>
 <template>
@@ -43,7 +43,7 @@ const dishes = computed(() =>
         <h1 class="section-title">{{ data.stall.name }}</h1>
         <p class="handwrite">今天想吃什么，就从这张菜单里慢慢挑。</p>
         <RouterLink
-          class="button-ink is-primary"
+          class="button-ink"
           :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"
           >投稿菜品</RouterLink
         >
@@ -52,14 +52,33 @@ const dishes = computed(() =>
         <span class="section-rule__index">04</span>
         <span class="section-rule__line"></span>
       </div>
-      <label class="stall-detail__search">
-        <span>搜索菜品</span
-        ><input v-model="query" type="search" placeholder="输入菜名" />
-      </label>
+      <CatalogSearch
+        v-if="data.dishes.length"
+        v-model="query"
+        label="搜索菜品"
+        placeholder="输入当前档口的菜名"
+        :count="dishes.length"
+        :total="data.dishes.length"
+        unit="道菜品"
+      />
       <EmptyState
         v-if="!dishes.length"
         :title="data.dishes.length ? '没有匹配的菜品' : '这个档口还没有菜品'"
-      />
+        :description="
+          data.dishes.length
+            ? '试试其他关键词，或查看全部菜品。'
+            : '可以通过上方入口投稿菜品。'
+        "
+      >
+        <button
+          v-if="data.dishes.length"
+          class="button-ink"
+          type="button"
+          @click="query = ''"
+        >
+          查看全部菜品
+        </button>
+      </EmptyState>
       <ul v-else class="stall-detail__list">
         <li v-for="dish in dishes" :key="dish.id">
           <DishPriceCard :dish="dish" :canteen-id="canteenId" />
@@ -105,23 +124,6 @@ const dishes = computed(() =>
     }
   }
 
-  &__search {
-    display: grid;
-    gap: 6px;
-    max-width: 520px;
-    margin-top: var(--ft-space-2);
-    color: var(--ft-color-text-muted);
-    font-size: var(--ft-font-size-sm);
-
-    input {
-      min-height: 46px;
-      padding: 10px 14px;
-      border: 1px solid var(--ft-color-secondary);
-      border-radius: 0;
-      background: var(--zine-paper-card);
-    }
-  }
-
   &__list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -135,6 +137,21 @@ const dishes = computed(() =>
 @media (max-width: 768px) {
   .stall-detail {
     width: calc(100% - var(--zine-page-padding-mobile) * 2);
+
+    &__hero {
+      padding: var(--app-mobile-card-padding);
+      background: var(--ft-color-surface);
+      margin-bottom: var(--ft-space-2);
+      h1 {
+        font-size: clamp(28px, 7vw, 36px);
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+      p {
+        font-family: var(--ft-font-family);
+        font-size: var(--ft-font-size-md);
+      }
+    }
 
     &__list {
       grid-template-columns: 1fr;
