@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onUnmounted, reactive, ref, useId } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteen, fetchStalls } from '@/api/canteen.api.js';
@@ -55,6 +55,16 @@ const back = computed(() => ({
   params,
 }));
 const form = reactive({ name: '', description: '', price: '' });
+const fieldId = useId();
+const nameInput = ref(null);
+const priceInput = ref(null);
+const imageField = ref(null);
+const feedback = ref(null);
+const errors = reactive({ name: '', price: '', image: '' });
+const validationErrors = computed(() =>
+  Object.entries(errors).filter(([, value]) => value),
+);
+const checkingImage = ref(false);
 const file = ref(null);
 const message = ref('');
 const submitting = ref(false);
@@ -69,25 +79,33 @@ onUnmounted(() => {
 function setFile(value) {
   file.value = value;
   imageUrl = '';
+  errors.image = '';
+}
+function focusField(field) {
+  ({ name: nameInput.value, price: priceInput.value, image: imageField.value })[
+    field
+  ]?.focus();
 }
 async function submit() {
-  if (submitting.value || !target.value || done.value) return;
+  if (submitting.value || checkingImage.value || !target.value || done.value)
+    return;
   message.value = '';
+  errors.name = '';
+  errors.price = '';
+  errors.image = '';
   if (
     kind !== 'photo' &&
     (!form.name.trim() ||
       form.name.trim().length > (kind === 'dish' ? 120 : 100))
   ) {
-    message.value =
+    errors.name =
       '请填写有效名称（' + (kind === 'dish' ? 120 : 100) + ' 字以内）';
-    return;
   }
-  if (kind === 'dish' && validatePrice(form.price)) {
-    message.value = validatePrice(form.price);
-    return;
-  }
-  if (!file.value) {
-    message.value = '请先选择符合要求的图片';
+  if (kind === 'dish') errors.price = validatePrice(form.price);
+  if (!file.value) errors.image = '请先选择符合要求的图片';
+  if (validationErrors.value.length) {
+    await nextTick();
+    feedback.value?.focus();
     return;
   }
   const actor = auth.user?.id;
@@ -114,7 +132,11 @@ async function submit() {
       imageUrl = '';
     }
   } catch (failure) {
-    if (alive) message.value = failure.message || '提交失败，请确认结果后再试';
+    if (alive) {
+      message.value = failure.message || '提交失败，请确认结果后再试';
+      await nextTick();
+      feedback.value?.focus();
+    }
   } finally {
     if (alive) submitting.value = false;
   }
@@ -140,18 +162,51 @@ async function submit() {
       <div v-if="done" class="submission-page__done torn-edge" role="status">
         <span class="stamp">已提交</span>
         <p class="handwrite">投稿已提交，等待审核。</p>
-        <RouterLink :to="{ name: 'mySubmissions' }">查看我的提交</RouterLink>
+        <RouterLink :to="{ name: 'mySubmissions', query: { kind } }"
+          >查看我的提交</RouterLink
+        >
       </div>
-      <form v-else @submit.prevent="submit">
-        <p v-if="message" role="alert">{{ message }}</p>
+      <form v-else novalidate @submit.prevent="submit">
+        <div
+          v-if="validationErrors.length || message"
+          ref="feedback"
+          class="submission-page__feedback"
+          role="alert"
+          tabindex="-1"
+        >
+          <p v-if="message">{{ message }}</p>
+          <template v-else>
+            <p>请检查以下内容：</p>
+            <ul>
+              <li v-for="[field, text] in validationErrors" :key="field">
+                <button type="button" @click="focusField(field)">
+                  {{ text }}
+                </button>
+              </li>
+            </ul>
+          </template>
+        </div>
         <template v-if="kind !== 'photo'">
           <label
             >名称<input
+              ref="nameInput"
               v-model="form.name"
               :maxlength="kind === 'dish' ? 120 : 100"
               :disabled="submitting"
+              :aria-invalid="Boolean(errors.name)"
+              :aria-describedby="
+                errors.name ? fieldId + '-name-error' : undefined
+              "
               required
+              @input="errors.name = ''"
           /></label>
+          <p
+            v-if="errors.name"
+            :id="fieldId + '-name-error'"
+            class="submission-page__field-error"
+          >
+            {{ errors.name }}
+          </p>
           <label
             >简介（选填）<textarea
               v-model="form.description"
@@ -161,16 +216,44 @@ async function submit() {
           </label>
           <label v-if="kind === 'dish'"
             >参考价格（选填）<input
+              ref="priceInput"
               v-model="form.price"
               inputmode="decimal"
               :disabled="submitting"
+              :aria-invalid="Boolean(errors.price)"
+              :aria-describedby="
+                errors.price ? fieldId + '-price-error' : undefined
+              "
               placeholder="留空由审核人补充"
+              @input="errors.price = ''"
           /></label>
+          <p
+            v-if="errors.price"
+            :id="fieldId + '-price-error'"
+            class="submission-page__field-error"
+          >
+            {{ errors.price }}
+          </p>
         </template>
-        <ImageFileField :disabled="submitting" @change="setFile" />
-        <InkButton type="submit" variant="primary" :disabled="submitting">{{
-          submitting ? '提交中…' : '提交审核'
-        }}</InkButton>
+        <ImageFileField
+          ref="imageField"
+          :disabled="submitting"
+          :validation-message="errors.image"
+          @change="setFile"
+          @checking="checkingImage = $event"
+        />
+        <InkButton
+          type="submit"
+          variant="primary"
+          :disabled="submitting || checkingImage"
+          >{{
+            submitting
+              ? '提交中…'
+              : checkingImage
+                ? '正在检查图片…'
+                : '提交审核'
+          }}</InkButton
+        >
       </form>
     </template>
   </div>
@@ -216,7 +299,24 @@ textarea {
   border-radius: 0;
   box-shadow: 2px 2px 0 rgb(58 36 24 / 16%);
 }
-[role='alert'] {
+[role='alert'],
+.submission-page__field-error {
   color: var(--ft-color-danger);
+}
+.submission-page__feedback {
+  padding: 12px;
+  border: 1px solid var(--ft-color-danger);
+}
+.submission-page__feedback button {
+  min-height: 44px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  text-decoration: underline;
+}
+.submission-page__field-error {
+  margin: -12px 0 0;
 }
 </style>
