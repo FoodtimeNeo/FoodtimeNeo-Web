@@ -93,6 +93,8 @@ views ──► components ──► components/base
 
 认证状态只在内存中保留；HttpOnly Cookie 由浏览器管理。HTTP 层限制同站请求、单次获取 CSRF、不自动重放写请求，并在会话轮换时阻止旧写入和迟到响应。上传预览在页面离开时释放，媒体引用经过安全路径验证。
 
+`ImageFileField` 只做本地选图、解码校验和预览，通过 `change` 返回有效文件或空值，通过 `checking` 告知解码状态；不会自行上传。新选择与清除使旧解码失效，外部 `validationMessage` 与内部错误一同关联到输入框，暴露 `focus()` 供投稿错误摘要定位。
+
 ## 4. 页面外壳
 
 `App.vue` 按完整路由地址（含查询参数）和用户 ID 创建页面；外壳在 `layouts/` 中实现，路由通过 `meta.layout` 选择（`default` / `blank` / `admin`，blank 用于登录页）。桌面端（>768px）顶部导航 + 面包屑，移动端（≤768px）简化顶栏 + 底部 Tab。
