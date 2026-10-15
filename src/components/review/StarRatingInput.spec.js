@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import StarRatingInput from './StarRatingInput.vue';
 
 describe('StarRatingInput', () => {
@@ -23,6 +23,49 @@ describe('StarRatingInput', () => {
       props: { modelValue: 2, disabled: true },
     });
     await wrapper.get('[aria-label="5 星"]').trigger('click');
+    await wrapper
+      .get('[role="radiogroup"]')
+      .trigger('keydown', { key: 'ArrowRight' });
     expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+  });
+
+  it('方向键使真实焦点与选中的星级一致，首尾循环且支持Home/End', async () => {
+    const wrapper = mount(StarRatingInput, {
+      attachTo: document.body,
+      props: {
+        modelValue: 1,
+        'onUpdate:modelValue': (value) =>
+          wrapper.setProps({ modelValue: value }),
+      },
+    });
+    const one = wrapper.get('[aria-label="1 星"]');
+    one.element.focus();
+    await one.trigger('keydown', { key: 'ArrowRight' });
+    await flushPromises();
+    expect(document.activeElement).toBe(
+      wrapper.get('[aria-label="2 星"]').element,
+    );
+    expect(document.activeElement.getAttribute('aria-checked')).toBe('true');
+    await wrapper.get('[aria-label="2 星"]').trigger('keydown', { key: 'End' });
+    await flushPromises();
+    expect(document.activeElement).toBe(
+      wrapper.get('[aria-label="5 星"]').element,
+    );
+    await wrapper
+      .get('[aria-label="5 星"]')
+      .trigger('keydown', { key: 'ArrowRight' });
+    await flushPromises();
+    expect(document.activeElement).toBe(one.element);
+    await one.trigger('keydown', { key: 'ArrowLeft' });
+    await flushPromises();
+    expect(document.activeElement).toBe(
+      wrapper.get('[aria-label="5 星"]').element,
+    );
+    await wrapper
+      .get('[aria-label="5 星"]')
+      .trigger('keydown', { key: 'Home' });
+    await flushPromises();
+    expect(document.activeElement).toBe(one.element);
+    wrapper.unmount();
   });
 });
