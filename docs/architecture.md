@@ -95,7 +95,9 @@ views ──► components ──► components/base
 
 ## 4. 页面外壳
 
-`App.vue` 按路由和用户 ID 创建页面；外壳在 `layouts/` 中实现，路由通过 `meta.layout` 选择（`default` / `blank` / `admin`，blank 用于登录页）。桌面端（>768px）顶部导航 + 面包屑，移动端（≤768px）简化顶栏 + 底部 Tab。
+`App.vue` 按完整路由地址（含查询参数）和用户 ID 创建页面；外壳在 `layouts/` 中实现，路由通过 `meta.layout` 选择（`default` / `blank` / `admin`，blank 用于登录页）。桌面端（>768px）顶部导航 + 面包屑，移动端（≤768px）简化顶栏 + 底部 Tab。
+
+“我的提交”用 `kind=review|dish|stall|photo` 表示当前类型，未指定或非法值回退为点评。切换类型替换当前地址并从第一页读取该类型的既有接口，刷新保留类型；不将查询参数直接拼接到接口路径。“我的评论”只展示正式评论，空态可进入点评审核记录。
 
 ## 5. 测试
 

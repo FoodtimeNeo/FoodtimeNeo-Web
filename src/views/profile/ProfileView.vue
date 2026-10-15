@@ -50,12 +50,14 @@ async function logout() {
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="profile">
       <article class="profile-page__identity torn-edge">
-        <MediaImage
-          :src="profile.avatarUrl || ''"
-          alt="头像"
-          empty="未设置头像"
-          style="width: 72px; height: 72px; min-height: 72px"
-        />
+        <div class="profile-page__avatar" role="img" aria-label="个人头像">
+          <MediaImage
+            :src="profile.avatarUrl || ''"
+            alt=""
+            :empty="Array.from(profile.displayName?.trim() || '我')[0]"
+            aria-hidden="true"
+          />
+        </div>
         <div class="profile-page__identity-copy">
           <span class="sticker sticker--r-1">个人档案</span>
           <h2>{{ profile.displayName }}</h2>
@@ -68,10 +70,14 @@ async function logout() {
       </div>
       <nav class="profile-page__links" aria-label="个人功能">
         <RouterLink class="paper-link" :to="{ name: 'myReviews' }"
-          ><span class="stamp">01</span> 我的评论 <strong>→</strong></RouterLink
+          ><span class="stamp">01</span
+          ><span>我的评论<small>已发布的点评</small></span
+          ><strong>→</strong></RouterLink
         >
         <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
-          ><span class="stamp">02</span> 我的提交 <strong>→</strong></RouterLink
+          ><span class="stamp">02</span
+          ><span>我的提交<small>投稿记录与审核结果</small></span
+          ><strong>→</strong></RouterLink
         >
         <RouterLink class="paper-link" :to="{ name: 'changePassword' }"
           ><span class="stamp">03</span> 修改密码 <strong>→</strong></RouterLink
@@ -105,13 +111,21 @@ async function logout() {
   background: var(--zine-paper-card);
   box-shadow: 5px 6px 0 rgb(58 36 24 / 16%);
 }
-.profile-page__identity :deep(.media-image) {
+.profile-page__avatar {
+  flex: 0 0 88px;
   width: 88px;
   height: 88px;
-  min-height: 88px;
   border: 7px solid #fff;
   box-shadow: 3px 3px 0 rgb(58 36 24 / 20%);
   transform: rotate(-2deg);
+}
+.profile-page__avatar :deep(.media-image) {
+  min-height: 0;
+}
+.profile-page__avatar :deep(span) {
+  padding: 0;
+  font-family: var(--ft-font-family-title);
+  font-size: 32px;
 }
 .profile-page__identity-copy {
   min-width: 0;
@@ -122,7 +136,6 @@ async function logout() {
 .profile-page__meta {
   display: flex;
   flex-wrap: wrap;
-  display: flex;
   gap: 16px;
   margin: var(--ft-space-3) 0;
 }
@@ -161,6 +174,13 @@ h2 {
 .profile-page__links strong {
   margin-left: auto;
   color: var(--ft-color-primary);
+}
+.profile-page__links small {
+  display: block;
+  color: var(--ft-color-text-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: normal;
 }
 .profile-page__logout {
   color: var(--ft-color-danger);
