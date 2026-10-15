@@ -17,7 +17,7 @@ FoodtimeNeo-Web/
 │   ├── verification.md         # 本轮检查与真实联调记录
 │   └── design-style-web.md     # 视觉规范
 ├── scripts/git/                # 分支脚本与 CI 校验（Node，无第三方依赖）
-├── scripts/dev/                # 开发代理目标检查（仅允许本机后端来源）
+├── scripts/dev/                # 开发代理目标检查（本机或明确指定的服务器来源）
 ├── src/
 │   ├── api/                    # HTTP 客户端与按领域划分的接口模块
 │   ├── assets/                 # 图片、字体、styles/（tokens + global）
