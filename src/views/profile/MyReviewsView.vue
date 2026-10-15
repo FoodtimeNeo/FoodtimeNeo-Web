@@ -38,7 +38,17 @@ async function remove() {
     <h1 class="section-title">我的<span class="zine-highlight">评论</span></h1>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
-    <EmptyState v-else-if="!items.length" title="暂无已发布评论" />
+    <EmptyState
+      v-else-if="!items.length"
+      title="暂无已发布评论"
+      description="刚提交的点评需要先审核，可在“我的提交”查看进度和驳回原因。"
+    >
+      <RouterLink
+        class="button-ink"
+        :to="{ name: 'mySubmissions', query: { kind: 'review' } }"
+        >查看点评审核记录</RouterLink
+      >
+    </EmptyState>
     <template v-else>
       <SubmissionRecord
         v-for="row in items"
@@ -71,6 +81,7 @@ async function remove() {
       </SubmissionRecord>
     </template>
     <PaginationControls
+      v-if="total > size"
       :page="page"
       :total="total"
       :size="size"
