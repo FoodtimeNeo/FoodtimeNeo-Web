@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 const api = vi.hoisted(() => ({
   fetchStalls: vi.fn(),
   fetchStallDishes: vi.fn(),
@@ -11,6 +12,7 @@ vi.mock('vue-router', () => ({
 }));
 import StallDetailView from './StallDetailView.vue';
 beforeEach(() => {
+  setActivePinia(createPinia());
   api.fetchStalls.mockReset();
   api.fetchStallDishes.mockReset();
   api.fetchStallDishes.mockResolvedValue([]);
@@ -51,5 +53,25 @@ describe('真实档口层级', () => {
     });
     await flushPromises();
     expect(wrapper.text()).toContain('这个档口还没有菜品');
+  });
+  it('返回同一菜单保留搜索，其他档口不共用关键词，清除后恢复全部菜品', async () => {
+    api.fetchStalls.mockResolvedValue([{ id: 's1', name: '面档' }]);
+    api.fetchStallDishes.mockResolvedValue([
+      { id: 'd1', name: '排骨小锅', price: 0 },
+      { id: 'd2', name: '炒鸡饭', price: 14.9 },
+    ]);
+    const options = { global: { stubs: { RouterLink: RouterLinkStub } } };
+    const first = mount(StallDetailView, options);
+    await flushPromises();
+    await first.get('input').setValue('排骨');
+    expect(first.text()).toContain('找到 1 / 2 道菜品');
+    expect(first.text()).not.toContain('炒鸡饭');
+    first.unmount();
+    const returned = mount(StallDetailView, options);
+    await flushPromises();
+    expect(returned.get('input').element.value).toBe('排骨');
+    await returned.get('[aria-label="清除搜索关键词"]').trigger('click');
+    expect(returned.text()).toContain('炒鸡饭');
+    expect(api.fetchStallDishes).toHaveBeenCalledTimes(2);
   });
 });

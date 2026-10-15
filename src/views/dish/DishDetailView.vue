@@ -61,7 +61,10 @@ const params = computed(() => ({
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="data">
       <article class="dish-detail__main torn-edge">
-        <div class="dish-detail__hero">
+        <div
+          class="dish-detail__hero"
+          :class="{ 'dish-detail__hero--empty': !data.images.length }"
+        >
           <RouterLink
             class="dish-detail__upload-link"
             :to="{ name: 'photoSubmission', params }"
@@ -260,8 +263,7 @@ const params = computed(() => ({
     margin: var(--ft-space-3) 0;
   }
 
-  &__gallery-link,
-  &__review-link {
+  &__gallery-link {
     color: var(--ft-color-primary);
     font-weight: 700;
     text-decoration: none;
@@ -284,6 +286,16 @@ const params = computed(() => ({
 
     &__hero {
       aspect-ratio: 16 / 10;
+    }
+
+    &__hero--empty {
+      aspect-ratio: auto;
+      height: 120px;
+
+      :deep(.media-image span) {
+        max-width: calc(100% - 100px);
+        margin-right: auto;
+      }
     }
 
     &__content {

@@ -3,6 +3,8 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteen, fetchStalls } from '@/api/canteen.api.js';
+import { useCatalogSearch } from '@/composables/useCatalogSearch.js';
+import CatalogSearch from '@/components/canteen/CatalogSearch.vue';
 import StallEntryCard from '@/components/canteen/StallEntryCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
@@ -25,6 +27,10 @@ const {
   loading: stallsLoading,
   load: loadStalls,
 } = useAsyncData(() => fetchStalls(canteenId.value), { initial: [] });
+const { query, matches: filteredStalls } = useCatalogSearch(
+  stalls,
+  () => `stalls:${canteenId.value}`,
+);
 </script>
 
 <template>
@@ -41,8 +47,12 @@ const {
       @retry="loadCanteen"
     />
     <template v-else-if="canteen">
-      <header class="canteen-detail__hero torn-edge">
+      <header
+        class="canteen-detail__hero torn-edge"
+        :class="{ 'canteen-detail__hero--text': !canteen.coverImageUrl }"
+      >
         <MediaImage
+          v-if="canteen.coverImageUrl"
           class="canteen-detail__hero-image"
           frame="polygon"
           :src="canteen.coverImageUrl || ''"
@@ -52,11 +62,9 @@ const {
         <div class="canteen-detail__hero-content">
           <span class="sticker sticker--r-1">食堂档案</span>
           <h1 class="section-title">{{ canteen.name }}</h1>
-          <p class="dropcap">
-            从这里翻开档口名册，继续找到今天想吃的那一道菜。
-          </p>
+          <p class="dropcap">选择档口，继续查看菜单和菜品。</p>
           <RouterLink
-            class="button-ink is-primary"
+            class="button-ink"
             :to="{ name: 'stallSubmission', params: { canteenId } }"
             >投稿档口</RouterLink
           >
@@ -81,11 +89,30 @@ const {
           title="这个食堂还没有档口"
           description="管理员添加后会显示在这里。"
         />
-        <ul v-else class="canteen-detail__grid">
-          <li v-for="stall in stalls" :key="stall.id">
-            <StallEntryCard :stall="stall" :canteen-id="canteenId" />
-          </li>
-        </ul>
+        <template v-else>
+          <CatalogSearch
+            v-model="query"
+            label="搜索档口"
+            placeholder="输入当前食堂的档口名称"
+            :count="filteredStalls.length"
+            :total="stalls.length"
+            unit="个档口"
+          />
+          <EmptyState
+            v-if="!filteredStalls.length"
+            title="没有匹配的档口"
+            description="只搜索当前食堂的档口名称，试试其他关键词。"
+          >
+            <button class="button-ink" type="button" @click="query = ''">
+              查看全部档口
+            </button>
+          </EmptyState>
+          <ul v-else class="canteen-detail__grid">
+            <li v-for="stall in filteredStalls" :key="stall.id">
+              <StallEntryCard :stall="stall" :canteen-id="canteenId" />
+            </li>
+          </ul>
+        </template>
       </section>
     </template>
   </main>
@@ -121,6 +148,10 @@ const {
 
   &__hero-image {
     min-height: 360px;
+  }
+
+  &__hero--text {
+    grid-template-columns: 1fr;
   }
 
   &__hero-content {
@@ -162,7 +193,7 @@ const {
     width: calc(100% - var(--zine-page-padding-mobile) * 2);
 
     &__grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: 1fr;
       gap: var(--ft-space-2);
     }
 
@@ -177,6 +208,15 @@ const {
 
     &__hero-content {
       padding: var(--app-mobile-card-padding);
+
+      h1 {
+        font-size: clamp(30px, 8vw, 40px);
+        line-height: 1.2;
+      }
+    }
+
+    &__subtitle {
+      margin-top: var(--ft-space-1);
     }
   }
 }
