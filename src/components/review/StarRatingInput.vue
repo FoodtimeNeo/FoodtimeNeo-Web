@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 
 const props = defineProps({
   modelValue: { type: Number, default: 0 },
@@ -7,6 +7,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue']);
+const options = ref(null);
 const rating = computed(() =>
   Number.isInteger(props.modelValue) && props.modelValue >= 1
     ? Math.min(props.modelValue, 5)
@@ -17,18 +18,25 @@ function select(nextRating) {
   if (!props.disabled) emit('update:modelValue', nextRating);
 }
 
-function onKeydown(event) {
+async function onKeydown(event) {
+  if (props.disabled) return;
+  const previous = rating.value <= 1 ? 5 : rating.value - 1;
+  const next = rating.value >= 5 ? 1 : rating.value + 1;
   const nextByKey = {
-    ArrowLeft: Math.max(1, (rating.value || 1) - 1),
-    ArrowDown: Math.max(1, (rating.value || 1) - 1),
-    ArrowRight: Math.min(5, rating.value + 1 || 1),
-    ArrowUp: Math.min(5, rating.value + 1 || 1),
+    ArrowLeft: previous,
+    ArrowUp: previous,
+    ArrowRight: next,
+    ArrowDown: next,
     Home: 1,
     End: 5,
   };
   if (!(event.key in nextByKey)) return;
   event.preventDefault();
   select(nextByKey[event.key]);
+  await nextTick();
+  options.value
+    ?.querySelectorAll('[role="radio"]')
+    [nextByKey[event.key] - 1]?.focus();
 }
 </script>
 
@@ -36,6 +44,7 @@ function onKeydown(event) {
   <fieldset class="star-rating" :disabled="disabled">
     <legend>星级评分</legend>
     <div
+      ref="options"
       class="star-rating__options"
       role="radiogroup"
       aria-label="星级评分，满分 5 分"
@@ -90,7 +99,7 @@ function onKeydown(event) {
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--ft-color-border);
+    color: var(--ft-color-text-muted);
     font-size: 34px;
     line-height: 1;
     cursor: pointer;
