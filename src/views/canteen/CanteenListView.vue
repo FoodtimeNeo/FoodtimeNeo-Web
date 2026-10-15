@@ -16,7 +16,12 @@ const {
 
 <template>
   <main class="canteen-list">
+    <div class="section-rule">
+      <span class="section-rule__index">02</span>
+      <span class="section-rule__line"></span>
+    </div>
     <h1 class="section-title">全部<span class="zine-highlight">食堂</span></h1>
+    <p class="section-subtitle">一张张食堂拍立得，点进去继续翻档口。</p>
 
     <LoadingState v-if="loading" message="正在翻开食堂手账…" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />

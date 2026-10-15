@@ -48,20 +48,28 @@ defineEmits(['update:modelValue']);
   gap: var(--ft-space-1);
 
   &__label {
+    color: var(--ft-color-text-muted);
+    font-size: var(--ft-font-size-sm);
     font-weight: 700;
-    color: var(--ft-color-text);
   }
 
   &__input {
+    min-height: 46px;
     padding: 10px var(--ft-space-2);
-    border: 2px solid var(--ft-color-text);
+    border: 1px solid var(--ft-color-secondary);
     border-radius: 0;
     background: var(--zine-paper-card);
-    box-shadow: 3px 3px 0 var(--ft-color-text);
+    box-shadow: 2px 2px 0 rgb(58 36 24 / 18%);
+
+    &:focus {
+      border-color: var(--ft-color-primary);
+      box-shadow: 3px 3px 0 rgb(183 47 28 / 20%);
+      outline: none;
+    }
 
     &.is-invalid {
       border-color: var(--ft-color-danger);
-      box-shadow: 3px 3px 0 var(--ft-color-danger);
+      box-shadow: 2px 2px 0 var(--ft-color-danger);
     }
   }
 

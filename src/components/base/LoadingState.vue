@@ -5,9 +5,9 @@ defineProps({
 </script>
 
 <template>
-  <div class="content-state" role="status" aria-live="polite">
+  <div class="content-state torn-edge" role="status" aria-live="polite">
     <span class="content-state__mark" aria-hidden="true">✦</span>
-    <p>{{ message }}</p>
+    <p class="handwrite">{{ message }}</p>
   </div>
 </template>
 

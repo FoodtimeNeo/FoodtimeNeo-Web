@@ -38,12 +38,24 @@ const dishes = computed(() =>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="data">
-      <h1 class="section-title">{{ data.stall.name }}</h1>
-      <RouterLink
-        :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"
-        >投稿菜品</RouterLink
-      >
-      <label>搜索菜品<input v-model="query" type="search" /></label>
+      <header class="stall-detail__hero torn-edge">
+        <span class="sticker sticker--r-1">档口菜单</span>
+        <h1 class="section-title">{{ data.stall.name }}</h1>
+        <p class="handwrite">今天想吃什么，就从这张菜单里慢慢挑。</p>
+        <RouterLink
+          class="button-ink is-primary"
+          :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"
+          >投稿菜品</RouterLink
+        >
+      </header>
+      <div class="section-rule">
+        <span class="section-rule__index">04</span>
+        <span class="section-rule__line"></span>
+      </div>
+      <label class="stall-detail__search">
+        <span>搜索菜品</span
+        ><input v-model="query" type="search" placeholder="输入菜名" />
+      </label>
       <EmptyState
         v-if="!dishes.length"
         :title="data.dishes.length ? '没有匹配的菜品' : '这个档口还没有菜品'"
@@ -75,6 +87,39 @@ const dishes = computed(() =>
   &__summary {
     margin: var(--ft-space-2) 0 0;
     color: var(--ft-color-text-muted);
+  }
+
+  &__hero {
+    position: relative;
+    margin-bottom: var(--ft-space-4);
+    padding: clamp(24px, 5vw, 48px);
+    border: 1px solid var(--ft-color-secondary);
+    background:
+      var(--zine-decor-food-sketch-2) right 28px center / 150px auto no-repeat,
+      var(--ft-color-surface);
+
+    p {
+      max-width: 620px;
+      color: var(--ft-color-primary);
+      font-size: 24px;
+    }
+  }
+
+  &__search {
+    display: grid;
+    gap: 6px;
+    max-width: 520px;
+    margin-top: var(--ft-space-2);
+    color: var(--ft-color-text-muted);
+    font-size: var(--ft-font-size-sm);
+
+    input {
+      min-height: 46px;
+      padding: 10px 14px;
+      border: 1px solid var(--ft-color-secondary);
+      border-radius: 0;
+      background: var(--zine-paper-card);
+    }
   }
 
   &__list {

@@ -20,9 +20,14 @@ watch(kind, () => {
 <template>
   <div class="records-page">
     <RouterLink :to="{ name: 'profile' }">← 返回我的</RouterLink>
-    <h1 class="section-title">我的提交</h1>
+    <div class="section-rule">
+      <span class="section-rule__index">08</span
+      ><span class="section-rule__line"></span>
+    </div>
+    <h1 class="section-title">我的<span class="zine-highlight">提交</span></h1>
     <label
-      >投稿类型<select v-model="kind">
+      ><span>投稿类型</span
+      ><select v-model="kind">
         <option v-for="(label, key) in kinds" :key="key" :value="key">
           {{ label }}
         </option>
@@ -58,5 +63,12 @@ select {
   padding: 8px 16px;
   border: 1px solid var(--ft-color-text);
   background: var(--zine-paper-card);
+}
+label {
+  display: inline-grid;
+  gap: 6px;
+  margin: var(--ft-space-2) 0;
+  color: var(--ft-color-text-muted);
+  font-size: var(--ft-font-size-sm);
 }
 </style>

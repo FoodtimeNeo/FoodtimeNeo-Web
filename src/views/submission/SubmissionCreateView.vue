@@ -123,6 +123,10 @@ async function submit() {
 <template>
   <div class="submission-page">
     <RouterLink :to="back">← 返回</RouterLink>
+    <div class="section-rule">
+      <span class="section-rule__index">10</span
+      ><span class="section-rule__line"></span>
+    </div>
     <h1 class="section-title">{{ title }}</h1>
     <LoadingState v-if="loading" /><ErrorState
       v-else-if="error"
@@ -130,9 +134,12 @@ async function submit() {
       @retry="load"
     />
     <template v-else-if="target">
-      <p>投稿目标：{{ target.name }}</p>
-      <div v-if="done" role="status">
-        <p>投稿已提交，等待审核。</p>
+      <p class="submission-page__target sticker sticker--r-1">
+        投稿目标：{{ target.name }}
+      </p>
+      <div v-if="done" class="submission-page__done torn-edge" role="status">
+        <span class="stamp">已提交</span>
+        <p class="handwrite">投稿已提交，等待审核。</p>
         <RouterLink :to="{ name: 'mySubmissions' }">查看我的提交</RouterLink>
       </div>
       <form v-else @submit.prevent="submit">
@@ -175,6 +182,22 @@ async function submit() {
   margin: auto;
   overflow-wrap: anywhere;
 }
+.submission-page__target {
+  width: fit-content;
+  margin: var(--ft-space-2) 0;
+}
+.submission-page__done {
+  margin: var(--ft-space-3) 0;
+  padding: var(--ft-space-3);
+  border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
+  box-shadow: 4px 5px 0 rgb(58 36 24 / 16%);
+}
+.submission-page__done p {
+  margin: var(--ft-space-2) 0;
+  color: var(--ft-color-primary);
+  font-size: 24px;
+}
 form {
   display: grid;
   gap: 20px;
@@ -190,6 +213,8 @@ textarea {
   background: var(--zine-paper-card);
   width: 100%;
   min-height: 44px;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 rgb(58 36 24 / 16%);
 }
 [role='alert'] {
   color: var(--ft-color-danger);

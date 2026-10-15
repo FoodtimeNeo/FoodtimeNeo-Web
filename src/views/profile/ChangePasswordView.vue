@@ -46,7 +46,11 @@ async function submit() {
 <template>
   <div class="password-page">
     <RouterLink :to="{ name: 'profile' }">← 返回我的</RouterLink>
-    <h1 class="section-title">修改密码</h1>
+    <div class="section-rule">
+      <span class="section-rule__index">09</span
+      ><span class="section-rule__line"></span>
+    </div>
+    <h1 class="section-title">修改<span class="zine-highlight">密码</span></h1>
     <form ref="element" novalidate @submit.prevent="submit">
       <p v-if="message" role="alert">{{ message }}</p>
       <AuthField
@@ -75,6 +79,7 @@ async function submit() {
   padding: var(--ft-space-3);
   width: min(100%, 540px);
   margin: auto;
+  padding-bottom: var(--ft-space-5);
 }
 form {
   display: grid;
