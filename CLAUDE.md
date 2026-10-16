@@ -79,7 +79,7 @@ npm run check
 
 完整规范见 [docs/git-workflow.md](docs/git-workflow.md)，要点：
 
-- `main` 可发布，`develop` 集成，二者只能通过 PR 合入，CI 在 PR 与合并时运行。
+- `main` 可发布并按发布PR合入，`develop` 默认PR集成；负责人明确授权直接集成时，遵循 `docs/git-workflow.md` 的功能分支验证与一次非快进合并流程。CI在相关PR和main/develop的push时运行。
 - 一个功能一个分支 `feature/<kebab-name>`，缺陷用 `fix/<kebab-name>`，都合入 `develop`。
 - 开始开发统一执行 `npm run feature -- <name>`：分支不存在则从最新 `develop` 创建；已存在则先指向 `develop` 最新状态再继续开发。
 - 提交信息使用 Conventional Commits，例如 `feat(canteen): 实现食堂列表`。一个提交对应一个可解释、可验证的改动，说明必须来自实际差异。

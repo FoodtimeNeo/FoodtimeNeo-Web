@@ -20,9 +20,20 @@
 ```vue
 <PaperCard variant="warm">
   <WashiTape color="red" />
-  <StampBadge>今日推荐</StampBadge>
+  <StampBadge>食堂档案</StampBadge>
   <InkButton variant="primary" :disabled="saving" @click="save">
     保存
   </InkButton>
 </PaperCard>
 ```
+
+## 已有交互组件
+
+| 组件路径                        | 主要输入                                                       | 事件与行为                                                                                                    |
+| ------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `base/MediaImage.vue`           | `src`、`alt`、`empty`、`frame`（plain/polaroid/polygon）       | 媒体地址经过安全检查；空地址或加载失败显示占位，不直接渲染HTML                                                |
+| `canteen/CatalogSearch.vue`     | `modelValue`、`label`、`placeholder`、`count`、`total`、`unit` | `update:modelValue`；只展示输入与数量，不发起查询；清除或Esc后焦点回到输入框                                  |
+| `review/StarRatingInput.vue`    | `modelValue`、`disabled`                                       | `update:modelValue`；1–5星，方向键可循环，Home/End同步选中项与实际焦点                                        |
+| `submission/ImageFileField.vue` | `disabled`、`required`、`publicationHint`、`validationMessage` | `change`返回有效File或null，`checking`表示解码状态；本地预览与清除，暴露 `focus()` 供错误摘要定位，不自行上传 |
+
+目录搜索逻辑由 `useCatalogSearch` 处理，跨页面搜索词由store保存；图片上传由页面调用API。组件不读取当前用户或推断服务端权限，业务父级、投稿目标及错误处理由对应页面负责。

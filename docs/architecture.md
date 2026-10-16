@@ -15,6 +15,9 @@ FoodtimeNeo-Web/
 │   ├── development-rules.md    # 编码约定细则
 │   ├── backend-integration.md  # 现有后端接口映射与安全边界
 │   ├── verification.md         # 本轮检查与真实联调记录
+│   ├── README.md               # 文档索引与适用范围
+│   ├── local-development.md    # 环境、代理与三端联调
+│   ├── ci-cd.md                # CI与交付范围
 │   └── design-style-web.md     # 视觉规范
 ├── scripts/git/                # 分支脚本与 CI 校验（Node，无第三方依赖）
 ├── scripts/dev/                # 开发代理目标检查（本机或明确指定的服务器来源）
@@ -61,7 +64,7 @@ views ──► components ──► components/base
 - 依赖只能自上而下。`components` 不导入 `views`，`api` 不导入 `store` 或 Vue。
 - `views` 负责取数、组合组件和处理路由参数；`components` 通过 props / emits 通信，不直接请求接口。
 - `api/*.api.js` 只做请求与响应字段适配，返回前端模型；错误统一为 `ApiError`（见 `src/api/http.js`）。
-- `store` 只放跨页面共享状态（会话、当前用户、角色）。单页数据留在页面或 composable 中。
+- `store` 只放跨页面共享状态（会话、当前用户、角色、目录搜索词）。单页数据留在页面或 composable 中。
 - 导入 `src/` 内模块统一使用 `@/` 别名，同目录可用相对路径。
 
 ## 3. 路由树

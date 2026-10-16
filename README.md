@@ -2,7 +2,7 @@
 
 FoodTime 前端重建项目。视觉效果参照食堂手账风格，页面按食堂、档口、菜品、图册重新组织。
 
-项目总规划见本地 `../FoodtimeNeo-Web-开发规划.md`；开发入口规则见 [CLAUDE.md](CLAUDE.md)（AI 编码工具会自动读取），架构见 [docs/architecture.md](docs/architecture.md)，Git 规范见 [docs/git-workflow.md](docs/git-workflow.md)，详细约定见 [docs/development-rules.md](docs/development-rules.md)，视觉基线见 [docs/design-style-web.md](docs/design-style-web.md)。
+完整文档入口见 [docs/README.md](docs/README.md)；开发入口规则见 [CLAUDE.md](CLAUDE.md)，架构见 [docs/architecture.md](docs/architecture.md)，Git规范见 [docs/git-workflow.md](docs/git-workflow.md)，视觉基线见 [docs/design-style-web.md](docs/design-style-web.md)。构建、代理及联调方式见 [本地开发](docs/local-development.md)，CI与交付范围见 [CI说明](docs/ci-cd.md)。
 
 ## 本地开发
 
@@ -46,6 +46,6 @@ npm.cmd run dev -- --port 5173
 
 此预览会请求真实线上数据，浏览和登录可用于体验检查，自动写入测试继续使用隔离库。账号密码不放入环境文件或代码。
 
-本轮经确认复用隔离联调库，验收地址为 `http://localhost:3000`，对应未修改的 Backend 程序在 18080 端口。运行参数和样例凭据只留在本地忽略目录，不进入代码仓库。邮箱投递暂未接通；注册页面保留真实验证码流程及服务端错误，不提供模拟验证码。
+此前隔离验收使用 `http://localhost:3000` 和本机18080 Backend，不代表当前一定有这些进程运行。运行参数和样例凭据只留在本地忽略目录，不进入代码仓库。邮箱正式投递尚未完成验收；Backend的dev测试开关启用时可手工使用 `000000` 注册，Web仍使用真实注册接口，prod后端拒绝启用测试通道。
 
 接口映射、权限及字段边界见 [docs/backend-integration.md](docs/backend-integration.md)，验收范围见 [docs/verification.md](docs/verification.md)。
