@@ -21,22 +21,21 @@ describe('DishPriceCard', () => {
     expect(wrapper.text()).toContain('¥0.00');
   });
 
-  it('长菜名保持完整，并默认显示 4.8 分', () => {
+  it('长菜名保持完整，缺少评分时显示暂无评分', () => {
     const name = '五花肉石锅拌饭配韩式辣酱和时令蔬菜';
     const wrapper = mountCard({ id: 'd3', name, price: 15.6 });
     expect(wrapper.get('.dish-price__name').text()).toBe(name);
-    expect(wrapper.get('[aria-label="评分 4.8 分"]').text()).toContain(
-      '4.8 分',
-    );
+    expect(wrapper.get('[aria-label="暂无评分"]').text()).toBe('暂无评分');
+    expect(wrapper.text()).not.toContain('4.8');
   });
 
-  it('展示传入的评分，零分不会替换为默认分数', () => {
+  it('展示传入的真实评分', () => {
     const wrapper = mountCard(
       { id: 'd4', name: '例汤', price: 0 },
-      { rating: 0 },
+      { rating: 3.5 },
     );
-    expect(wrapper.get('[aria-label="评分 0.0 分"]').text()).toContain(
-      '0.0 分',
+    expect(wrapper.get('[aria-label="评分 3.5 分"]').text()).toContain(
+      '3.5 分',
     );
   });
 
