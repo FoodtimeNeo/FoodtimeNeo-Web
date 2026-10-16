@@ -50,6 +50,8 @@ git switch -C feature/canteen-list origin/develop
 5. 合并方式使用 **Squash and merge**，PR 标题即合并提交标题，须符合提交规范。
 6. 发布时由 `develop` 向 `main` 发起 PR，使用 **Create a merge commit** 保留集成历史。
 
+从 `main` 同步历史以解决发布冲突的 `hotfix/*` PR 也使用 **Create a merge commit**，以保留 `main` 的祖先关系。
+
 合并前若 `develop` 有新提交，在功能分支上执行 `npm run feature -- <name> --rebase` 同步，不要把 `develop` merge 进功能分支。
 
 ## 4. 提交信息
@@ -66,7 +68,7 @@ git switch -C feature/canteen-list origin/develop
 
 示例：`feat(canteen): 实现食堂列表`、`fix(router): 修复登录后跳转丢失参数`。
 
-CI 校验 PR 中每条提交的标题；GitHub 生成的 `Merge pull request …`、`Revert "…"` 自动放行。
+CI 校验 PR 标题及尚未进入远端 `main` / `develop` 的新提交标题。发布与热修复携带的已有主分支历史不重复校验，避免旧标题阻挡发布；新提交仍须符合规范。GitHub 生成的 `Merge pull request …`、`Revert "…"` 自动放行。
 
 ## 5. 仓库设置（需管理员在 GitHub 配置）
 
