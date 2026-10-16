@@ -1,12 +1,13 @@
 # FoodtimeNeo-Web 前端设计风格规范
 
-本文档以 `FoodTime--frontend` 的视觉规范为基线，约束 `FoodtimeNeo-Web`（北交干饭吧）的视觉与交互设计，包括色彩、字体、间距、形状、阴影、装饰、组件、动效、响应式和无障碍要求。新项目保持原有视觉语言，页面层级和组件结构以新项目开发规划为准。
+本文档以 `FoodTime--frontend` 的视觉规范为基线，约束 `FoodtimeNeo-Web`（北交干饭吧）的视觉与交互设计，包括色彩、字体、间距、形状、阴影、装饰、组件、动效、响应式和无障碍要求。新项目保持原有视觉语言，页面层级和组件结构以[当前架构](architecture.md)为准。
 
 令牌的唯一来源：
 
 - [src/assets/styles/tokens.scss](../src/assets/styles/tokens.scss)：全部 CSS 变量（颜色、字号、间距、圆角、阴影、装饰素材）
 - [src/assets/styles/global.scss](../src/assets/styles/global.scss)：全局基础样式和通用类（`.section-title`、`.button-ink`、`.stamp`、`.sticker` 等）
-- [src/App.vue](../src/App.vue)：页面外壳（纸张背景、桌面装饰、主内容容器）
+- [src/App.vue](../src/App.vue)：按路由选择外壳并创建页面
+- [src/layouts/DefaultLayout.vue](../src/layouts/DefaultLayout.vue)：普通页面外壳、纸张背景、桌面装饰及主内容容器
 
 本文档与令牌文件冲突时，以令牌文件为准，并同步更新本文档。
 

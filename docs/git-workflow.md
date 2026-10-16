@@ -10,7 +10,7 @@
 | `fix/<name>`     | 已合入功能的缺陷 | 最新 `develop` | `develop`                               |
 | `hotfix/<name>`  | 线上紧急修复     | `main`         | `main`，随后同步回 `develop`            |
 
-`<name>` 使用 kebab-case，描述功能本身而不是任务编号，例如 `feature/canteen-list`、`feature/dish-gallery`、`fix/login-redirect`。`main` 和 `develop` 禁止直接推送，所有改动经 PR 合入。CI 会拒绝不符合上表流向的 PR。
+`<name>` 使用 kebab-case，描述功能本身而不是任务编号，例如 `feature/canteen-list`、`feature/dish-gallery`、`fix/login-redirect`。默认通过PR集成；main按发布PR处理。负责人明确授权直接集成develop时，仍按下文功能分支和验证步骤执行，不能直接在develop实现功能。CI会拒绝不符合上表流向的PR。
 
 ## 2. 功能分支的生命周期
 
@@ -53,6 +53,23 @@ git switch -C feature/canteen-list origin/develop
 从 `main` 同步历史以解决发布冲突的 `hotfix/*` PR 也使用 **Create a merge commit**，以保留 `main` 的祖先关系。
 
 合并前若 `develop` 有新提交，在功能分支上执行 `npm run feature -- <name> --rebase` 同步，不要把 `develop` merge 进功能分支。
+
+### 明确授权的直接集成
+
+当前协作中负责人已授权功能验证后直接合并并推送。实现提交放在对应feature，先运行 `npm run check`，再以一次 `git merge --no-ff` 合回develop，使用中文提交与合并说明，推送feature和develop，不创建PR。该授权不改变main发布流程，也不要求关闭仓库保护或强推开发分支。
+
+### 发布后将开发分支同步到main
+
+main通过发布PR合并后，若已包含全部develop提交，可以在干净工作区执行：
+
+```sh
+git fetch origin --prune
+git switch develop
+git merge --ff-only origin/main
+git push origin develop
+```
+
+此操作让开发分支包含main的发布合并节点，减少下次发布的历史冲突。若不能快进，先核对独有提交，不用 `reset --hard` 丢弃工作。复用功能分支使用一次 `git switch -C feature/<name> origin/develop` 指向最新基线，避免先切到旧代码再重置。
 
 ## 4. 提交信息
 
