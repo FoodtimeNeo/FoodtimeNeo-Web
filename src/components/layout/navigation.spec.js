@@ -3,6 +3,8 @@ import { createRouter, createMemoryHistory } from 'vue-router';
 import { routes } from '@/router/routes.js';
 import {
   navigationItems,
+  getNavigationItems,
+  navigationTarget,
   resolveActiveNavigation,
   resolveBreadcrumbs,
 } from './navigation.js';
@@ -14,7 +16,6 @@ const detail = { name: 'canteenDetail', meta: { title: '第一食堂' } };
 describe('布局导航', () => {
   it('主导航不再包含独立点评入口，旧点评地址不匹配业务页面', () => {
     expect(navigationItems.map((item) => item.name)).toEqual([
-      'home',
       'canteenList',
       'profile',
     ]);
@@ -48,7 +49,7 @@ describe('布局导航', () => {
     expect(resolveBreadcrumbs(route)).toEqual([
       { name: 'home', title: '首页' },
     ]);
-    expect(resolveActiveNavigation(route)).toBe('home');
+    expect(resolveActiveNavigation(route)).toBe('canteenList');
   });
 
   it('由嵌套路由生成完整面包屑，并高亮所属栏目', () => {
@@ -80,5 +81,38 @@ describe('布局导航', () => {
         meta: {},
       }),
     ).toBeNull();
+  });
+
+  it('只有管理员在食堂和我的之间有管理入口，所有管理页面均高亮管理', () => {
+    expect(getNavigationItems(false).map((item) => item.label)).toEqual([
+      '食堂',
+      '我的',
+    ]);
+    expect(getNavigationItems(true).map((item) => item.label)).toEqual([
+      '食堂',
+      '管理',
+      '我的',
+    ]);
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    for (const name of [
+      'adminAudit',
+      'adminManage',
+      'managedReviews',
+      'moderationLogs',
+      'superadminUsers',
+    ]) {
+      expect(resolveActiveNavigation(router.resolve({ name }))).toBe(
+        'adminAudit',
+      );
+    }
+  });
+
+  it('重复点击当前栏目保留详情页和参数，其他栏目正常切换', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    const route = router.resolve('/canteens/c1/stalls/s1/dishes/d1');
+    expect(navigationTarget(navigationItems[0], route)).toBe(route.fullPath);
+    expect(navigationTarget(navigationItems[1], route)).toEqual({
+      name: 'profile',
+    });
   });
 });

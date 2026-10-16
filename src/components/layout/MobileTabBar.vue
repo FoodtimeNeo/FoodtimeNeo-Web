@@ -1,10 +1,17 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { navigationItems, resolveActiveNavigation } from './navigation.js';
+import {
+  getNavigationItems,
+  navigationTarget,
+  resolveActiveNavigation,
+} from './navigation.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
+const navigationItems = computed(() => getNavigationItems(auth.isAdmin));
 const activeName = computed(() => resolveActiveNavigation(route));
 </script>
 
@@ -14,7 +21,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
       <RouterLink
         v-if="router.hasRoute(item.name)"
         class="mobile-tab-bar__item"
-        :to="{ name: item.name }"
+        :to="navigationTarget(item, route)"
         :class="{ 'is-active': activeName === item.name }"
         :aria-current="activeName === item.name ? 'location' : undefined"
       >

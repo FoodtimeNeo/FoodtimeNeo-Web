@@ -1,8 +1,21 @@
 export const navigationItems = [
-  { name: 'home', label: '首页', icon: '⌂' },
   { name: 'canteenList', label: '食堂', icon: '▤' },
   { name: 'profile', label: '我的', icon: '◯' },
 ];
+
+const managementItem = { name: 'adminAudit', label: '管理', icon: '◇' };
+
+export function getNavigationItems(isAdmin) {
+  return isAdmin
+    ? [navigationItems[0], managementItem, navigationItems[1]]
+    : navigationItems;
+}
+
+export function navigationTarget(item, route) {
+  return resolveActiveNavigation(route) === item.name
+    ? route.fullPath
+    : { name: item.name };
+}
 
 export function resolveBreadcrumbs(route) {
   if (route.name === 'dishReviewCreate') {
@@ -32,6 +45,10 @@ export function resolveBreadcrumbs(route) {
 }
 
 export function resolveActiveNavigation(route) {
+  if (route.meta.requiresAdmin || route.meta.requiresSuperadmin)
+    return managementItem.name;
+  if (route.name === 'home' || route.matched.some((r) => r.name === 'home'))
+    return 'canteenList';
   const names = new Set(navigationItems.map((item) => item.name));
   const section = route.meta.nav;
 
