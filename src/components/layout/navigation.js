@@ -48,7 +48,7 @@ export function resolveActiveNavigation(route) {
   if (route.meta.requiresAdmin || route.meta.requiresSuperadmin)
     return managementItem.name;
   if (route.name === 'home' || route.matched.some((r) => r.name === 'home'))
-    return 'canteenList';
+    return null;
   const names = new Set(navigationItems.map((item) => item.name));
   const section = route.meta.nav;
 
