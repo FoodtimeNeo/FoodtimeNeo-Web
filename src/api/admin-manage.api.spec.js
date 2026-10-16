@@ -14,6 +14,7 @@ import {
   saveManagedItem,
   deleteManagedReview,
   catalogPayload,
+  fetchManagedReviews,
 } from './admin-manage.api.js';
 it('目录字段按真实类型投影，不发送 floor、分类、菜品封面或虚构属性', async () => {
   const input = {
@@ -51,5 +52,15 @@ it('目录字段按真实类型投影，不发送 floor、分类、菜品封面�
   await deleteManagedReview('r', '原因');
   expect(api.delete).toHaveBeenLastCalledWith('/admin/reviews/r', {
     data: { reason: '原因' },
+  });
+});
+it('管理员评论查询发送用户关键词和分页，空条件查询全部', async () => {
+  await fetchManagedReviews(2, ' author@bjtu.edu.cn ');
+  expect(api.get).toHaveBeenLastCalledWith('/admin/reviews', {
+    params: { page: 2, size: 20, q: 'author@bjtu.edu.cn' },
+  });
+  await fetchManagedReviews(1, '');
+  expect(api.get).toHaveBeenLastCalledWith('/admin/reviews', {
+    params: { page: 1, size: 20 },
   });
 });

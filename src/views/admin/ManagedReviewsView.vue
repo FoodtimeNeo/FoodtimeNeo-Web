@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { useRoute } from 'vue-router';
 import {
   fetchManagedReviews,
   deleteManagedReview,
@@ -10,12 +11,26 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
-const { items, page, total, size, loading, error, load } =
-  usePagedData(fetchManagedReviews);
+const route = useRoute();
+const draft = ref(typeof route.query.q === 'string' ? route.query.q : '');
+const query = ref(draft.value.trim());
+const { items, page, total, size, loading, error, load } = usePagedData(
+  (page, options) => fetchManagedReviews(page, query.value, options),
+);
 const selected = ref(null);
 const reason = ref('');
 const failure = ref('');
 const writing = ref(false);
+function search(clear = false) {
+  if (writing.value) return;
+  if (clear) draft.value = '';
+  query.value = draft.value.trim();
+  selected.value = null;
+  reason.value = '';
+  failure.value = '';
+  if (page.value !== 1) page.value = 1;
+  else load();
+}
 async function remove() {
   if (writing.value || !selected.value) return;
   failure.value = '';
@@ -38,12 +53,43 @@ async function remove() {
 </script>
 <template>
   <section class="reviews">
-    <h2 class="section-title">正式评论管理</h2>
+    <h2 class="section-title">评论管理</h2>
+    <p>
+      查看审核通过的正式评论。删除须填写原因，评分在下一次每日快照刷新后更新。
+    </p>
+    <RouterLink :to="{ name: 'adminAudit' }">查看投稿审核记录 →</RouterLink>
+    <form class="search" @submit.prevent="search()">
+      <label
+        >按用户查询<input
+          v-model="draft"
+          type="search"
+          maxlength="254"
+          placeholder="用户 ID、邮箱或昵称"
+          :disabled="writing || loading"
+      /></label>
+      <button type="submit" :disabled="writing || loading">查询</button>
+      <button
+        v-if="query || draft"
+        type="button"
+        :disabled="writing || loading"
+        @click="search(true)"
+      >
+        清除筛选
+      </button>
+    </form>
+    <p v-if="!loading && !error" role="status">共 {{ total }} 条评论</p>
     <LoadingState v-if="loading" /><ErrorState
       v-else-if="error"
       :description="error.message"
       @retry="load"
-    /><EmptyState v-else-if="!items.length" title="暂无正式评论" />
+    /><EmptyState
+      v-else-if="!items.length"
+      :title="query ? '没有找到该用户的评论' : '暂无正式评论'"
+    >
+      <button v-if="query" type="button" @click="search(true)">
+        查看全部评论
+      </button>
+    </EmptyState>
     <SubmissionRecord
       v-for="row in !loading && !error ? items : []"
       :key="row.id"
@@ -93,6 +139,26 @@ async function remove() {
 }
 .reviews > .section-title {
   margin-bottom: 14px;
+}
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0;
+}
+.search label {
+  flex: 1 1 240px;
+}
+.search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px;
+  border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
+}
+.reviews > p {
+  margin: 12px 0;
 }
 .reviews :deep(.submission-record) {
   position: relative;
