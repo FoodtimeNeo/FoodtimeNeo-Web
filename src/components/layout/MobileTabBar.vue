@@ -10,7 +10,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
 <template>
   <nav class="mobile-tab-bar" aria-label="底部导航">
-    <template v-for="item in navigationItems" :key="item.name">
+    <template v-for="(item, index) in navigationItems" :key="item.name">
       <RouterLink
         v-if="router.hasRoute(item.name)"
         class="mobile-tab-bar__item"
@@ -19,7 +19,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
         :aria-current="activeName === item.name ? 'location' : undefined"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          item.icon
+          String(index + 1).padStart(2, '0')
         }}</span>
         <span>{{ item.label }}</span>
       </RouterLink>
@@ -30,7 +30,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
         :title="`${item.label}将在后续阶段开放`"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          item.icon
+          String(index + 1).padStart(2, '0')
         }}</span>
         <span>{{ item.label }}</span>
       </span>
@@ -51,7 +51,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     min-height: calc(
       var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom)
     );
@@ -85,12 +86,25 @@ const activeName = computed(() => resolveActiveNavigation(route));
     font-weight: 700;
   }
 
+  .mobile-tab-bar__item.is-active .mobile-tab-bar__icon {
+    background: var(--zine-stamp-red-soft);
+    box-shadow: 2px 2px 0 rgb(58 36 24 / 14%);
+  }
+
   .mobile-tab-bar__item.is-pending {
     opacity: 0.45;
   }
 
   .mobile-tab-bar__icon {
-    font-size: 25px;
+    display: grid;
+    min-width: 26px;
+    height: 22px;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-family: var(--zine-title-font);
+    font-size: 10px;
+    font-weight: 900;
     line-height: 1;
   }
 }

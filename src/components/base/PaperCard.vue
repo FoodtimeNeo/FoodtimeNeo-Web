@@ -5,11 +5,19 @@ defineProps({
     default: 'plain',
     validator: (value) => ['plain', 'warm'].includes(value),
   },
+  torn: { type: Boolean, default: false },
+  tilt: { type: Boolean, default: false },
 });
 </script>
 
 <template>
-  <div class="paper-card" :class="`paper-card--${variant}`">
+  <div
+    class="paper-card"
+    :class="[
+      `paper-card--${variant}`,
+      { 'torn-edge': torn, 'paper-card--tilt': tilt },
+    ]"
+  >
     <slot />
   </div>
 </template>
@@ -21,6 +29,10 @@ defineProps({
   border: 1px solid var(--zine-paper-edge);
   border-radius: var(--zine-radius-paper);
   box-shadow: var(--ft-shadow-sm);
+}
+
+.paper-card--tilt {
+  transform: rotate(var(--zine-rotate-left));
 }
 
 .paper-card--plain {
@@ -35,6 +47,10 @@ defineProps({
   .paper-card {
     padding: var(--app-mobile-card-padding);
     box-shadow: var(--app-mobile-shadow);
+  }
+
+  .paper-card--tilt {
+    transform: none;
   }
 }
 </style>

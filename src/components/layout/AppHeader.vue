@@ -2,14 +2,28 @@
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { navigationItems, resolveActiveNavigation } from './navigation.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
 const activeName = computed(() => resolveActiveNavigation(route));
 </script>
 
 <template>
   <header class="app-header">
+    <span
+      class="app-header__decor app-header__decor--stamp"
+      aria-hidden="true"
+    ></span>
+    <span
+      class="app-header__decor app-header__decor--food"
+      aria-hidden="true"
+    ></span>
+    <span
+      class="app-header__decor app-header__decor--tape"
+      aria-hidden="true"
+    ></span>
     <div class="app-header__inner">
       <RouterLink class="app-header__brand" :to="{ name: 'home' }">
         <strong>北交干饭吧</strong>
@@ -33,7 +47,16 @@ const activeName = computed(() => resolveActiveNavigation(route));
         </RouterLink>
       </nav>
 
-      <span class="app-header__account">访客模式</span>
+      <RouterLink
+        v-if="auth.isAdmin"
+        class="app-header__admin"
+        :to="{ name: 'adminAudit' }"
+      >
+        管理台
+      </RouterLink>
+      <span class="app-header__account">
+        {{ auth.isAuthenticated ? auth.displayName : '访客模式' }}
+      </span>
     </div>
   </header>
 </template>
@@ -50,6 +73,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
 }
 
 .app-header__inner {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--ft-space-4);
@@ -89,19 +114,80 @@ const activeName = computed(() => resolveActiveNavigation(route));
   gap: 6px;
   min-height: 48px;
   padding: 0 var(--ft-space-1);
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
   font-weight: 700;
 }
 
 .app-header__nav a.is-active {
   border-color: var(--zine-stamp-red);
   color: var(--zine-stamp-red);
+  box-shadow: 3px 3px 0 rgb(58 36 24 / 40%);
+  transform: rotate(-1deg);
 }
 
 .app-header__account {
   flex: none;
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
+  font-family: var(--ft-font-family-note);
+}
+
+.app-header__admin {
+  flex: none;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--ft-color-text);
+  color: var(--ft-color-text);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 2px 2px 0 var(--ft-color-text);
+  transform: rotate(1deg);
+}
+
+.app-header__decor {
+  position: absolute;
+  z-index: 1;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.app-header__decor--stamp {
+  top: -14px;
+  left: max(430px, calc((100vw - var(--page-max-width)) / 2 + 374px));
+  width: 98px;
+  height: 98px;
+  background-image: var(--zine-decor-stamp-recommend);
+  opacity: 0.26;
+  transform: rotate(-9deg);
+}
+
+.app-header__decor--food {
+  right: max(18px, calc((100vw - var(--page-max-width)) / 2 + 8px));
+  bottom: -22px;
+  width: 78px;
+  height: 78px;
+  background-image: var(--zine-decor-food-sketch-4);
+  opacity: 0.24;
+  transform: rotate(7deg);
+}
+
+.app-header__decor--tape {
+  bottom: 7px;
+  left: max(310px, calc((100vw - var(--page-max-width)) / 2 + 278px));
+  width: 130px;
+  height: 34px;
+  background-image: var(--zine-decor-tape-blue);
+  opacity: 0.36;
+  transform: rotate(3deg);
+}
+
+@media (max-width: 1180px) {
+  .app-header__decor {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {
@@ -120,7 +206,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
   }
 
   .app-header__brand span,
-  .app-header__nav {
+  .app-header__nav,
+  .app-header__account {
     display: none;
   }
 }

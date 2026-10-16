@@ -3,7 +3,10 @@ defineProps({
   variant: {
     type: String,
     default: 'default',
-    validator: (value) => ['default', 'primary'].includes(value),
+    validator: (value) =>
+      ['default', 'primary', 'danger', 'stamp-red', 'stamp-blue'].includes(
+        value,
+      ),
   },
   type: {
     type: String,
@@ -23,7 +26,12 @@ function onClick(event) {
 <template>
   <button
     class="button-ink"
-    :class="{ 'is-primary': variant === 'primary' }"
+    :class="{
+      'is-primary': variant === 'primary',
+      'is-danger': variant === 'danger',
+      'is-stamp-red': variant === 'stamp-red',
+      'is-stamp-blue': variant === 'stamp-blue',
+    }"
     :type="type"
     :disabled="disabled"
     @click="onClick"
