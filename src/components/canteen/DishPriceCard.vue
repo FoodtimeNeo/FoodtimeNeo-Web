@@ -94,4 +94,11 @@ defineProps({
     color: var(--ft-color-primary);
   }
 }
+
+@media (min-width: 769px) {
+  .dish-price__name {
+    font-size: var(--ft-font-size-lg);
+    line-height: 1lh;
+  }
+}
 </style>
