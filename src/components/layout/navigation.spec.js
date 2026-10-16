@@ -44,12 +44,15 @@ describe('布局导航', () => {
       router.resolve({ name: crumbs[4].name, params: crumbs[4].params }).path,
     ).toBe('/canteens/c1/stalls/s1/dishes/d1');
   });
-  it('首页只有一个面包屑并高亮首页', () => {
+  it('首页只有一个面包屑，食堂标签仍能进入食堂列表', () => {
     const route = { matched: [home], meta: home.meta };
     expect(resolveBreadcrumbs(route)).toEqual([
       { name: 'home', title: '首页' },
     ]);
-    expect(resolveActiveNavigation(route)).toBe('canteenList');
+    expect(resolveActiveNavigation(route)).toBeNull();
+    expect(navigationTarget(navigationItems[0], route)).toEqual({
+      name: 'canteenList',
+    });
   });
 
   it('由嵌套路由生成完整面包屑，并高亮所属栏目', () => {
