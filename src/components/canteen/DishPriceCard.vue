@@ -1,12 +1,13 @@
 <script setup>
 import { formatPrice } from '@/utils/mediaUrl.js';
 /**
- * 档口页的菜品条目：菜名 + 价格，点击进入菜品详情。
+ * 档口页的菜品条目：菜名、展示评分与价格，点击进入菜品详情。
  * 字段对齐后端菜品序列化：{ id, name, price, canteenId }。
  */
 defineProps({
   dish: { type: Object, required: true },
   canteenId: { type: String, required: true },
+  rating: { type: Number, default: 4.8 },
 });
 
 /**
@@ -24,7 +25,15 @@ defineProps({
     }"
   >
     <span class="dish-price__stamp stamp">菜单</span>
-    <span class="dish-price__name">{{ dish.name }}</span>
+    <span class="dish-price__info">
+      <span class="dish-price__name">{{ dish.name }}</span>
+      <span
+        class="dish-price__rating"
+        :aria-label="`评分 ${rating.toFixed(1)} 分`"
+      >
+        <span aria-hidden="true">★</span> {{ rating.toFixed(1) }} 分
+      </span>
+    </span>
     <span class="dish-price__dots" aria-hidden="true"></span>
     <span class="dish-price__price">{{ formatPrice(dish.price) }}</span>
   </RouterLink>
@@ -64,8 +73,18 @@ defineProps({
 
   &__name {
     font-weight: 700;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+  }
+
+  &__info {
+    display: grid;
+    gap: var(--ft-space-1);
+    min-width: 0;
+  }
+
+  &__rating {
+    color: var(--ft-color-primary);
+    font-size: var(--ft-font-size-sm);
     white-space: nowrap;
   }
 
@@ -73,6 +92,13 @@ defineProps({
     flex: none;
     font-family: var(--ft-font-family-title);
     color: var(--ft-color-primary);
+  }
+}
+
+@media (min-width: 769px) {
+  .dish-price__name {
+    font-size: var(--ft-font-size-lg);
+    line-height: 1lh;
   }
 }
 </style>

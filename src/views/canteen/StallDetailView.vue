@@ -21,11 +21,19 @@ const { data, error, loading, load } = useAsyncData(async (options) => {
       status: 404,
       code: 'NOT_FOUND',
     });
-  return { stall, dishes: await fetchStallDishes(stall.id, options) };
+  const dishes = await fetchStallDishes(stall.id, options);
+  return {
+    stall,
+    // 用户指定的暂定展示评分，尚未接入真实评分。
+    dishes: dishes.map((dish) => ({ ...dish, menuRating: 4.8 })),
+  };
 });
 const { query, matches: dishes } = useCatalogSearch(
   () => data.value?.dishes || [],
   () => `dishes:${stallId.value}`,
+);
+const sortedDishes = computed(() =>
+  [...dishes.value].sort((a, b) => b.menuRating - a.menuRating),
 );
 </script>
 <template>
@@ -80,8 +88,12 @@ const { query, matches: dishes } = useCatalogSearch(
         </button>
       </EmptyState>
       <ul v-else class="stall-detail__list">
-        <li v-for="dish in dishes" :key="dish.id">
-          <DishPriceCard :dish="dish" :canteen-id="canteenId" />
+        <li v-for="dish in sortedDishes" :key="dish.id">
+          <DishPriceCard
+            :dish="dish"
+            :canteen-id="canteenId"
+            :rating="dish.menuRating"
+          />
         </li>
       </ul>
     </template>
@@ -126,7 +138,7 @@ const { query, matches: dishes } = useCatalogSearch(
 
   &__list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--ft-space-2);
     margin: var(--ft-space-3) 0 0;
     padding: 0;
