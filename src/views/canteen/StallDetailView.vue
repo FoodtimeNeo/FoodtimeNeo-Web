@@ -24,8 +24,7 @@ const { data, error, loading, load } = useAsyncData(async (options) => {
   const dishes = await fetchStallDishes(stall.id, options);
   return {
     stall,
-    // 用户指定的暂定展示评分，尚未接入真实评分。
-    dishes: dishes.map((dish) => ({ ...dish, menuRating: 4.8 })),
+    dishes,
   };
 });
 const { query, matches: dishes } = useCatalogSearch(
@@ -33,7 +32,9 @@ const { query, matches: dishes } = useCatalogSearch(
   () => `dishes:${stallId.value}`,
 );
 const sortedDishes = computed(() =>
-  [...dishes.value].sort((a, b) => b.menuRating - a.menuRating),
+  [...dishes.value].sort(
+    (a, b) => (b.averageScore ?? -1) - (a.averageScore ?? -1),
+  ),
 );
 </script>
 <template>
@@ -92,7 +93,7 @@ const sortedDishes = computed(() =>
           <DishPriceCard
             :dish="dish"
             :canteen-id="canteenId"
-            :rating="dish.menuRating"
+            :rating="dish.averageScore ?? null"
           />
         </li>
       </ul>

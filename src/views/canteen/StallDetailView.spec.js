@@ -18,11 +18,30 @@ beforeEach(() => {
   api.fetchStallDishes.mockResolvedValue([]);
 });
 describe('真实档口层级', () => {
-  it('菜单使用暂定评分，同分保持原顺序，搜索与清除后评分仍可见', async () => {
+  it('按真实评分排列，无评分置后且不编造分数，搜索后仍显示真实值', async () => {
     api.fetchStalls.mockResolvedValue([{ id: 's1', name: '面档' }]);
     const dishes = [
-      { id: 'd2', stallId: 's1', name: '五花肉石锅拌饭', price: 15.6 },
-      { id: 'd1', stallId: 's1', name: '韩式辣鸡饭', price: 14 },
+      {
+        id: 'd2',
+        stallId: 's1',
+        name: '五花肉石锅拌饭',
+        price: 15.6,
+        averageScore: null,
+      },
+      {
+        id: 'd1',
+        stallId: 's1',
+        name: '韩式辣鸡饭',
+        price: 14,
+        averageScore: 4.2,
+      },
+      {
+        id: 'd3',
+        stallId: 's1',
+        name: '韩式拌面',
+        price: 12,
+        averageScore: 4.2,
+      },
     ];
     api.fetchStallDishes.mockResolvedValue(dishes);
     const wrapper = mount(StallDetailView, {
@@ -31,16 +50,18 @@ describe('真实档口层级', () => {
     await flushPromises();
     expect(
       wrapper.findAll('.dish-price__name').map((item) => item.text()),
-    ).toEqual(dishes.map((dish) => dish.name));
-    expect(wrapper.findAll('[aria-label="评分 4.8 分"]')).toHaveLength(2);
+    ).toEqual([dishes[1].name, dishes[2].name, dishes[0].name]);
+    expect(wrapper.findAll('[aria-label="暂无评分"]')).toHaveLength(1);
+    expect(wrapper.findAll('[aria-label="评分 4.2 分"]')).toHaveLength(2);
     expect(dishes[0]).not.toHaveProperty('menuRating');
-    await wrapper.get('input').setValue('韩式');
+    await wrapper.get('input').setValue('辣鸡');
     expect(wrapper.findAll('.dish-price')).toHaveLength(1);
-    expect(wrapper.get('[aria-label="评分 4.8 分"]').text()).toContain(
-      '4.8 分',
+    expect(wrapper.get('[aria-label="评分 4.2 分"]').text()).toContain(
+      '4.2 分',
     );
     await wrapper.get('[aria-label="清除搜索关键词"]').trigger('click');
-    expect(wrapper.findAll('[aria-label="评分 4.8 分"]')).toHaveLength(2);
+    expect(wrapper.findAll('[aria-label="评分 4.2 分"]')).toHaveLength(2);
+    expect(wrapper.findAll('[aria-label="暂无评分"]')).toHaveLength(1);
   });
   it('单独获取当前档口菜品，零价格可显示', async () => {
     api.fetchStalls.mockResolvedValue([
