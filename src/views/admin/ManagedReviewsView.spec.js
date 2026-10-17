@@ -10,6 +10,7 @@ import ManagedReviewsView from './ManagedReviewsView.vue';
 const row = {
   id: 'r1',
   userId: 'u1',
+  userDisplayName: '干饭达人',
   dishName: '例汤',
   diningHallName: '食堂',
   stallName: '汤档',
@@ -33,6 +34,8 @@ it('按用户查询并清除筛选，空结果可恢复全部评论', async () =
   const wrapper = mountPage();
   await flushPromises();
   expect(wrapper.text()).toContain('真实评论');
+  expect(wrapper.text()).toContain('作者：干饭达人');
+  expect(wrapper.text()).not.toContain('作者 ID：');
   api.fetchManagedReviews.mockResolvedValue({ items: [], total: 0, size: 20 });
   await wrapper.get('input').setValue(' u1 ');
   await wrapper.get('form.search').trigger('submit');

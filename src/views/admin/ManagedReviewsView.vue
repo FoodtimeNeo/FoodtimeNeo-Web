@@ -96,7 +96,7 @@ async function remove() {
       :row="row"
       kind="review"
     >
-      <p>作者 ID：{{ row.userId }}</p>
+      <p>作者：{{ row.userDisplayName || row.userId }}</p>
       <form v-if="selected === row.id" @submit.prevent="remove">
         <label
           >处理原因（必填）<textarea v-model="reason" :disabled="writing" />

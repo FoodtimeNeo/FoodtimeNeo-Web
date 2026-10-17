@@ -10,7 +10,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   api.fetchAuditItems.mockResolvedValue({
     items: [
-      { id: 'd', type: 'dish', name: '面', status: 'pending', price: null },
+      {
+        id: 'd',
+        type: 'dish',
+        name: '面',
+        status: 'pending',
+        price: null,
+        userId: 'u9',
+        userDisplayName: '干饭达人',
+      },
     ],
     page: 1,
     size: 20,
@@ -68,4 +76,10 @@ it('审核冲突保留原内容，写入期间阻止重复提交', async () => {
   await flushPromises();
   expect(wrapper.text()).toContain('已被他人审核');
   expect(wrapper.get('textarea').element.value).toBe('说明');
+});
+it('审核队列显示投稿者昵称，不展示内部目标 ID', async () => {
+  const wrapper = mount(AdminAuditView);
+  await flushPromises();
+  expect(wrapper.text()).toContain('投稿者：干饭达人');
+  expect(wrapper.text()).not.toContain('目标 ID：');
 });

@@ -2,7 +2,8 @@
 import { formatTime } from '@/utils/recordLabels.js';
 /**
  * 菜品评论列表。字段对齐后端评论序列化：
- * { id, userId, rating, content, createdAt }
+ * { id, userId, userDisplayName, rating, content, createdAt }
+ * 展示作者昵称，缺失时回退显示用户 ID。
  */
 defineProps({
   reviews: { type: Array, required: true },
@@ -13,7 +14,9 @@ defineProps({
   <ul class="dish-reviews">
     <li v-for="review in reviews" :key="review.id" class="dish-reviews__item">
       <div class="dish-reviews__head">
-        <span class="dish-reviews__reviewer">{{ review.userId }}</span>
+        <span class="dish-reviews__reviewer">{{
+          review.userDisplayName || review.userId
+        }}</span>
         <span class="zine-rating-stamp">
           {{ (review.rating ?? 0).toFixed(1) }}
         </span>

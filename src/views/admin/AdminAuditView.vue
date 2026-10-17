@@ -95,7 +95,7 @@ async function submit() {
         <h3>{{ labels[row.type] }} · {{ row.name || row.id }}</h3>
         <p>{{ statusLabels[row.status] }}</p>
         <p>ID：{{ row.id }}</p>
-        <p>目标 ID：{{ row.targetId }} · 投稿者 ID：{{ row.userId }}</p>
+        <p>投稿者：{{ row.userDisplayName || row.userId }}</p>
         <p>提交时间：{{ formatTime(row.createdAt) }}</p>
         <p v-if="row.rating">评分：{{ row.rating }} / 5</p>
         <p v-if="row.content" class="text">{{ row.content }}</p>
