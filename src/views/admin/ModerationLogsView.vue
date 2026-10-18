@@ -24,7 +24,10 @@ const types = { review: '点评', dish: '菜品', stall: '档口', photo: '图�
       </h3>
       <p>日志 ID：{{ row.id }}</p>
       <p>投稿 ID：{{ row.submissionId }}</p>
-      <p>审核人 ID：{{ row.moderatorId }}</p>
+      <p v-if="row.actor === 'ai'">
+        🤖 AI 审核{{ row.aiModel ? `（${row.aiModel}）` : '' }}
+      </p>
+      <p v-else>审核人 ID：{{ row.moderatorId }}</p>
       <p>{{ formatTime(row.createdAt) }}</p>
       <p v-if="row.reason" class="reason">{{ row.reason }}</p>
     </article>
