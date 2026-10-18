@@ -11,6 +11,7 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
+import AiVerdict from '@/components/base/AiVerdict.vue';
 const route = useRoute();
 const draft = ref(typeof route.query.q === 'string' ? route.query.q : '');
 const query = ref(draft.value.trim());
@@ -97,6 +98,13 @@ async function remove() {
       kind="review"
     >
       <p>作者：{{ row.userDisplayName || row.userId }}</p>
+      <AiVerdict
+        :risk-level="row.aiRiskLevel"
+        :confidence="row.aiConfidence"
+        :labels="row.aiLabels"
+        :reason="row.aiReason"
+        :checked-at="row.aiCheckedAt"
+      />
       <form v-if="selected === row.id" @submit.prevent="remove">
         <label
           >处理原因（必填）<textarea v-model="reason" :disabled="writing" />

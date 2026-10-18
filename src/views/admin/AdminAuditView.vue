@@ -10,6 +10,7 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
+import AiVerdict from '@/components/base/AiVerdict.vue';
 const status = ref('pending');
 const labels = { review: '点评', dish: '菜品', stall: '档口', photo: '图片' };
 const { items, page, total, size, loading, error, load } = usePagedData(
@@ -105,6 +106,14 @@ async function submit() {
           :src="row.imageUrl"
           alt="待审核图片"
           class="photo"
+        />
+        <AiVerdict
+          v-if="row.type === 'review' || row.type === 'photo'"
+          :risk-level="row.aiRiskLevel"
+          :confidence="row.aiConfidence"
+          :labels="row.aiLabels"
+          :reason="row.aiReason"
+          :checked-at="row.aiCheckedAt"
         />
         <p v-if="row.reason" class="text">审核说明：{{ row.reason }}</p>
         <div v-if="row.status === 'pending'">

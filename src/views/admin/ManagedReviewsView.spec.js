@@ -17,6 +17,11 @@ const row = {
   content: '真实评论',
   rating: 4,
   createdAt: '2026-10-16T08:00:00Z',
+  aiRiskLevel: 'LOW',
+  aiConfidence: 0.9,
+  aiLabels: [],
+  aiReason: '正常点评',
+  aiCheckedAt: '2026-10-16T08:00:00Z',
 };
 const mountPage = () =>
   mount(ManagedReviewsView, {
@@ -118,4 +123,11 @@ it('分页保留用户条件，修改查询后回到第一页', async () => {
     'u2',
     expect.any(Object),
   );
+});
+it('正式评论显示 AI 分诊结论，无结论时显示占位', async () => {
+  const wrapper = mountPage();
+  await flushPromises();
+  expect(wrapper.text()).toContain('AI 分诊');
+  expect(wrapper.text()).toContain('LOW');
+  expect(wrapper.text()).toContain('90%');
 });

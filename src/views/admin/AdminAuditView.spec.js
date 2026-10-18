@@ -83,3 +83,47 @@ it('审核队列显示投稿者昵称，不展示内部目标 ID', async () => {
   expect(wrapper.text()).toContain('投稿者：干饭达人');
   expect(wrapper.text()).not.toContain('目标 ID：');
 });
+it('点评与图片投稿显示 AI 分诊结论，菜品投稿不显示', async () => {
+  api.fetchAuditItems.mockResolvedValue({
+    items: [
+      {
+        id: 'r1',
+        type: 'review',
+        status: 'pending',
+        userId: 'u1',
+        content: '好吃',
+        rating: 5,
+        aiRiskLevel: 'LOW',
+        aiConfidence: 0.9,
+        aiLabels: [],
+        aiReason: '正常点评',
+        aiCheckedAt: '2026-10-16T08:00:00Z',
+      },
+      {
+        id: 'p1',
+        type: 'photo',
+        status: 'pending',
+        userId: 'u2',
+        imageUrl: '/api/v1/media/x',
+        aiRiskLevel: 'HIGH',
+        aiConfidence: 0.95,
+        aiLabels: ['广告'],
+        aiReason: '推广二维码',
+        aiCheckedAt: '2026-10-16T08:00:00Z',
+      },
+      { id: 'd', type: 'dish', name: '面', status: 'pending', userId: 'u9' },
+    ],
+    page: 1,
+    size: 20,
+    total: 3,
+  });
+  const wrapper = mount(AdminAuditView);
+  await flushPromises();
+  const text = wrapper.text();
+  expect(text).toContain('AI 分诊：');
+  expect(text).toContain('LOW');
+  expect(text).toContain('HIGH');
+  expect(text).toContain('90%');
+  expect(text).toContain('广告');
+  expect(text.match(/AI 分诊/g) || []).toHaveLength(2);
+});
