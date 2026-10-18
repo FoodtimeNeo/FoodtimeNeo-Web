@@ -4,6 +4,7 @@ import PaperCard from './PaperCard.vue';
 import InkButton from './InkButton.vue';
 import StampBadge from './StampBadge.vue';
 import WashiTape from './WashiTape.vue';
+import AiVerdict from './AiVerdict.vue';
 
 describe('基础组件', () => {
   it('纸张卡片显示默认插槽并切换纸色', () => {
@@ -40,5 +41,23 @@ describe('基础组件', () => {
     const wrapper = mount(WashiTape, { props: { color: 'blue' } });
     expect(wrapper.attributes('aria-hidden')).toBe('true');
     expect(wrapper.classes()).toContain('washi-tape--blue');
+  });
+
+  it('AI结论显示风险等级与置信度，无结论时显示占位', () => {
+    const wrapper = mount(AiVerdict, {
+      props: {
+        riskLevel: 'HIGH',
+        confidence: 0.95,
+        labels: ['广告'],
+        reason: '推广二维码',
+        checkedAt: '2026-10-16T08:00:00Z',
+      },
+    });
+    expect(wrapper.text()).toContain('HIGH');
+    expect(wrapper.text()).toContain('95%');
+    expect(wrapper.text()).toContain('广告');
+
+    const empty = mount(AiVerdict);
+    expect(empty.text()).toContain('暂无结论');
   });
 });
