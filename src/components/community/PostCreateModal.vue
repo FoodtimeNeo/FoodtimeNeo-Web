@@ -103,7 +103,7 @@ function addFiles(files) {
       continue;
     }
 
-    let previewUrl = '';
+    let previewUrl;
     try {
       previewUrl = URL.createObjectURL(file);
     } catch {
