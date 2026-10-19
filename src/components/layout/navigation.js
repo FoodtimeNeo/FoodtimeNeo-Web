@@ -1,5 +1,6 @@
 export const navigationItems = [
   { name: 'canteenList', label: '食堂', icon: '▤' },
+  { name: 'community', label: '社区', icon: '✦' },
   { name: 'profile', label: '我的', icon: '◯' },
 ];
 
@@ -7,7 +8,12 @@ const managementItem = { name: 'adminAudit', label: '管理', icon: '◇' };
 
 export function getNavigationItems(isAdmin) {
   return isAdmin
-    ? [navigationItems[0], managementItem, navigationItems[1]]
+    ? [
+        navigationItems[0],
+        navigationItems[1],
+        managementItem,
+        navigationItems[2],
+      ]
     : navigationItems;
 }
 
@@ -31,6 +37,13 @@ export function resolveBreadcrumbs(route) {
         params: { canteenId, stallId, dishId },
       },
       { name: 'dishReviewCreate', title: '写点评' },
+    ];
+  }
+  if (route.name === 'communityDetail') {
+    return [
+      { name: 'home', title: '首页' },
+      { name: 'community', title: '社区' },
+      { name: 'communityDetail', title: '帖子详情' },
     ];
   }
   const crumbs = route.matched
