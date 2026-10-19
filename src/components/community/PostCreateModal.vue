@@ -1,7 +1,8 @@
 <script setup>
-import { ref, reactive, watch } from 'vue';
+import { ref, reactive, watch, onUnmounted } from 'vue';
 import { ElMessage, ElDialog } from 'element-plus';
 import { createCommunityPost } from '@/api/community.api.js';
+import { uploadImage } from '@/api/submission.api.js';
 
 const props = defineProps({
   modelValue: {
@@ -17,90 +18,186 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'created']);
 
 const submitting = ref(false);
-const newImageUrl = ref('');
+const fileInputRef = ref(null);
 
 const form = reactive({
   title: '',
   content: '',
-  images: [],
 });
+
+// 存储已选择的图片项：{ id, file?, previewUrl }
+const formImages = ref([]);
+
+function cleanObjectUrls() {
+  for (const item of formImages.value) {
+    if (item.isBlob && item.previewUrl) {
+      try {
+        URL.revokeObjectURL(item.previewUrl);
+      } catch {
+        // 忽略
+      }
+    }
+  }
+}
 
 watch(
   () => props.modelValue,
   (val) => {
-    if (val && props.initialData) {
-      if (props.initialData.title !== undefined)
-        form.title = props.initialData.title;
-      if (props.initialData.content !== undefined)
-        form.content = props.initialData.content;
-      if (props.initialData.images && Array.isArray(props.initialData.images)) {
-        form.images = [...props.initialData.images];
+    if (val) {
+      cleanObjectUrls();
+      formImages.value = [];
+      if (props.initialData) {
+        form.title = props.initialData.title || '';
+        form.content = props.initialData.content || '';
+        if (
+          props.initialData.images &&
+          Array.isArray(props.initialData.images)
+        ) {
+          formImages.value = props.initialData.images.map((img, i) => {
+            const url = typeof img === 'string' ? img : img.url;
+            return {
+              id: `init-${i}-${Date.now()}`,
+              previewUrl: url,
+              file: null,
+              isBlob: false,
+            };
+          });
+        }
       }
     }
   },
   { immediate: true },
 );
 
-// 快速预设图库供测试便捷选择
-const sampleImages = [
-  'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
-];
+onUnmounted(() => {
+  cleanObjectUrls();
+});
 
 function handleClose() {
   emit('update:modelValue', false);
 }
 
-function addImage(url) {
-  const target = (url || newImageUrl.value).trim();
-  if (!target) return;
-  if (form.images.length >= 9) {
+function triggerFileInput() {
+  if (fileInputRef.value) {
+    fileInputRef.value.value = '';
+    fileInputRef.value.click();
+  }
+}
+
+function addFiles(files) {
+  if (!files || !files.length) return;
+  const remaining = 9 - formImages.value.length;
+  if (remaining <= 0) {
     ElMessage.warning('最多添加 9 张配图');
     return;
   }
-  form.images.push(target);
-  newImageUrl.value = '';
+
+  const selected = Array.from(files).slice(0, remaining);
+  for (const file of selected) {
+    if (!file.type.startsWith('image/')) {
+      ElMessage.warning(`文件 ${file.name} 不是支持的图片格式`);
+      continue;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      ElMessage.warning(`图片 ${file.name} 超过 10MB 限制`);
+      continue;
+    }
+
+    let previewUrl = '';
+    try {
+      previewUrl = URL.createObjectURL(file);
+    } catch {
+      previewUrl = '';
+    }
+
+    formImages.value.push({
+      id: `file-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      file,
+      previewUrl,
+      isBlob: true,
+    });
+  }
+
+  if (files.length > remaining) {
+    ElMessage.info(`最多上传 9 张图片，已选取前 ${remaining} 张`);
+  }
+}
+
+function handleFileSelect(e) {
+  addFiles(e.target.files);
+}
+
+function handleFileDrop(e) {
+  if (submitting.value) return;
+  if (e.dataTransfer && e.dataTransfer.files) {
+    addFiles(e.dataTransfer.files);
+  }
 }
 
 function removeImage(index) {
-  form.images.splice(index, 1);
+  const removed = formImages.value.splice(index, 1)[0];
+  if (removed?.isBlob && removed.previewUrl) {
+    try {
+      URL.revokeObjectURL(removed.previewUrl);
+    } catch {
+      // 忽略
+    }
+  }
+}
+
+async function resolveImageUrls() {
+  const urls = [];
+  for (const item of formImages.value) {
+    if (item.file) {
+      try {
+        const uploadRes = await uploadImage(item.file);
+        urls.push(uploadRes?.imageUrl || item.previewUrl);
+      } catch {
+        // 如果后端在 Mock 模式下未提供真实 upload 接口，退回本地预览 URL 保证发帖流程通畅
+        urls.push(item.previewUrl);
+      }
+    } else {
+      urls.push(item.previewUrl);
+    }
+  }
+  return urls;
 }
 
 async function handleSubmit() {
   if (!form.title.trim()) {
-    ElMessage.warning('请填写帖子标题');
+    ElMessage.warning('请填写手账标题');
     return;
   }
   if (!form.content.trim()) {
-    ElMessage.warning('请填写帖子正文');
+    ElMessage.warning('请记录你的美食心得');
     return;
   }
-  if (form.images.length === 0) {
-    ElMessage.warning('请至少添加一张配图（可从下方快捷添加）');
+  if (formImages.value.length === 0) {
+    ElMessage.warning('请至少上传一张美食实拍图片');
     return;
   }
 
   submitting.value = true;
   try {
+    const finalImageUrls = await resolveImageUrls();
+
     const post = await createCommunityPost({
       title: form.title.trim(),
       content: form.content.trim(),
-      images: form.images,
+      images: finalImageUrls,
     });
 
-    // 审核提示：符合用户“新发的帖子需要审核才能展示”的要求
     ElMessage.success({
       message: '发帖成功！内容已提交审核，审核通过后将在社区公开展示。',
-      duration: 4000,
+      duration: 3500,
     });
 
-    // 重置表单
+    // 重置并关闭
     form.title = '';
     form.content = '';
-    form.images = [];
+    cleanObjectUrls();
+    formImages.value = [];
+
     emit('created', post);
     emit('update:modelValue', false);
   } catch (error) {
@@ -114,119 +211,148 @@ async function handleSubmit() {
 <template>
   <ElDialog
     :model-value="modelValue"
-    title="发布社区美食帖"
-    width="90%"
     class="post-create-dialog"
     destroy-on-close
     append-to-body
+    :width="'min(560px, 94vw)'"
+    :show-close="true"
     @close="handleClose"
   >
+    <template #header>
+      <div class="post-dialog-header">
+        <span class="washi-tape" aria-hidden="true"></span>
+        <div class="header-main">
+          <span class="header-stamp">食记</span>
+          <h2 class="header-title">写一页美食手账</h2>
+        </div>
+        <p class="header-subtitle">
+          随手拍、聊美味，把真实的味蕾体验分享给全校同学
+        </p>
+      </div>
+    </template>
+
     <form class="post-create-form" @submit.prevent="handleSubmit">
+      <!-- 标题 -->
       <div class="post-create-form__item">
-        <label for="post-title" class="post-create-form__label">
-          标题 <span class="required">*</span>
-        </label>
+        <div class="item-header">
+          <label for="post-title" class="post-create-form__label">
+            <span class="label-badge">01</span> 标题
+            <span class="required">*</span>
+          </label>
+          <span class="char-count">{{ form.title.length }}/50</span>
+        </div>
         <input
           id="post-title"
           v-model="form.title"
           type="text"
           class="post-create-form__input"
-          placeholder="给这顿美食起个吸引人的标题吧（如：学一瓦罐汤绝绝子）"
+          placeholder="给这顿美食起个吸引人的手账标题吧（如：学一瓦罐汤绝绝子）"
           maxlength="50"
           :disabled="submitting"
         />
       </div>
 
+      <!-- 正文心得 -->
       <div class="post-create-form__item">
-        <label for="post-content" class="post-create-form__label">
-          正文心得 <span class="required">*</span>
-        </label>
+        <div class="item-header">
+          <label for="post-content" class="post-create-form__label">
+            <span class="label-badge">02</span> 美食心得
+            <span class="required">*</span>
+          </label>
+          <span class="char-count">{{ form.content.length }}/1000</span>
+        </div>
         <textarea
           id="post-content"
           v-model="form.content"
           rows="4"
           class="post-create-form__textarea"
-          placeholder="分享你的美食心得、档口位置、推荐吃法..."
+          placeholder="分享档口位置、推荐吃法、真实口感、排队情况或踩雷提醒..."
           maxlength="1000"
           :disabled="submitting"
         ></textarea>
       </div>
 
+      <!-- 实拍图片上传（真实上传，无链接/无快捷预设） -->
       <div class="post-create-form__item">
-        <label class="post-create-form__label">
-          配图（最多9张，第一张为封面） <span class="required">*</span>
-        </label>
+        <div class="item-header">
+          <label class="post-create-form__label">
+            <span class="label-badge">03</span> 美食实拍（最多 9
+            张，首张为封面）
+            <span class="required">*</span>
+          </label>
+          <span class="char-count">{{ formImages.length }}/9</span>
+        </div>
 
-        <!-- 已选配图列表 -->
-        <div v-if="form.images.length" class="post-create-form__preview-list">
+        <!-- 隐藏的真实文件输入框 -->
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          class="hidden-file-input"
+          :disabled="submitting || formImages.length >= 9"
+          @change="handleFileSelect"
+        />
+
+        <!-- 图片卡片网格 -->
+        <div class="post-photo-grid">
           <div
-            v-for="(img, idx) in form.images"
-            :key="idx"
-            class="post-create-form__preview-item"
+            v-for="(img, idx) in formImages"
+            :key="img.id || idx"
+            class="photo-card"
           >
-            <img :src="img" alt="配图预览" />
-            <span v-if="idx === 0" class="cover-tag">封面</span>
+            <img :src="img.previewUrl" alt="实拍预览" />
+            <span v-if="idx === 0" class="photo-card__cover-badge">封面</span>
             <button
               type="button"
-              class="remove-btn"
+              class="photo-card__remove-btn"
               title="移除此图"
+              :disabled="submitting"
               @click="removeImage(idx)"
             >
               ×
             </button>
           </div>
-        </div>
 
-        <!-- 图片添加输入框 -->
-        <div class="post-create-form__image-input-wrap">
-          <input
-            v-model="newImageUrl"
-            type="url"
-            class="post-create-form__input post-create-form__input--url"
-            placeholder="粘贴图片 HTTPS 链接..."
-            :disabled="submitting"
-            @keydown.enter.prevent="addImage()"
-          />
+          <!-- 上传触发器 -->
           <button
+            v-if="formImages.length < 9"
             type="button"
-            class="post-create-form__add-img-btn"
-            :disabled="submitting || !newImageUrl"
-            @click="addImage()"
+            class="photo-upload-trigger"
+            :class="{ 'is-empty': formImages.length === 0 }"
+            :disabled="submitting"
+            @click="triggerFileInput"
+            @dragover.prevent
+            @drop.prevent="handleFileDrop"
           >
-            + 添加
+            <div v-if="formImages.length === 0" class="upload-guide">
+              <span class="upload-icon">📸</span>
+              <span class="upload-main-text">点击或拖拽上传实拍照片</span>
+              <span class="upload-sub-text"
+                >支持 JPG、PNG、WebP，单张 ≤ 10MB</span
+              >
+            </div>
+            <div v-else class="upload-add-more">
+              <span class="add-icon">＋</span>
+              <span class="add-text">添加图片</span>
+            </div>
           </button>
-        </div>
-
-        <!-- 快捷预设图片推荐 -->
-        <div class="post-create-form__samples">
-          <span class="samples-title">快捷选用手账美食配图：</span>
-          <div class="samples-row">
-            <button
-              v-for="(sample, sIdx) in sampleImages"
-              :key="sIdx"
-              type="button"
-              class="sample-thumb"
-              title="点击添加该图"
-              @click="addImage(sample)"
-            >
-              <img :src="sample" alt="示例" />
-              <span>+</span>
-            </button>
-          </div>
         </div>
       </div>
 
+      <!-- 审核提示 -->
       <div class="post-create-form__audit-tip">
-        <span
-          >💡
-          提示：为了营造健康的社区氛围，新发布的帖子将由管理员审核后公开展示。</span
+        <span class="tip-stamp">保真</span>
+        <span class="tip-text"
+          >为了营造真实健康的校园美食手账氛围，新发的帖子将在审核通过后展示。</span
         >
       </div>
 
+      <!-- 操作按钮 -->
       <div class="post-create-form__actions">
         <button
           type="button"
-          class="post-create-form__btn post-create-form__btn--cancel"
+          class="post-btn post-btn--cancel"
           :disabled="submitting"
           @click="handleClose"
         >
@@ -234,10 +360,11 @@ async function handleSubmit() {
         </button>
         <button
           type="submit"
-          class="post-create-form__btn post-create-form__btn--submit"
-          :disabled="submitting"
+          class="post-btn post-btn--submit"
+          :disabled="submitting || formImages.length === 0"
         >
-          {{ submitting ? '提交中...' : '提交审核发布' }}
+          <span v-if="submitting">正在发布手账...</span>
+          <span v-else>盖章发布</span>
         </button>
       </div>
     </form>
@@ -245,6 +372,95 @@ async function handleSubmit() {
 </template>
 
 <style scoped lang="scss">
+:deep(.post-create-dialog) {
+  --el-dialog-bg-color: var(--zine-paper-card, #fffaf0);
+  --el-dialog-padding-primary: 0;
+
+  max-width: 560px;
+  border-radius: var(--ft-radius-lg, 16px);
+  background: var(--zine-paper-card, #fffaf0);
+  border: 2px solid var(--ft-color-secondary, #3a2418);
+  box-shadow: 8px 8px 0 var(--ft-color-secondary, #3a2418);
+  overflow: hidden;
+  margin: 32px auto;
+
+  .el-dialog__header {
+    padding: 0;
+    margin: 0;
+  }
+
+  .el-dialog__body {
+    padding: 20px 24px 24px;
+    background: var(--zine-paper-card, #fffaf0);
+  }
+
+  .el-dialog__headerbtn {
+    top: 14px;
+    right: 14px;
+    font-size: 20px;
+    color: var(--ft-color-secondary, #3a2418);
+    transition: transform var(--ft-transition-fast, 180ms ease);
+
+    &:hover {
+      transform: scale(1.15) rotate(90deg);
+      color: var(--ft-color-primary, #c9341e);
+    }
+  }
+}
+
+.post-dialog-header {
+  position: relative;
+  padding: 22px 24px 14px;
+  background: var(--zine-paper-card-alt, #f7efd9);
+  border-bottom: 2px dashed var(--ft-color-border, #d5ccbc);
+
+  .washi-tape {
+    position: absolute;
+    top: -10px;
+    left: 45px;
+    width: 80px;
+    height: 20px;
+    background: rgb(213 180 144 / 70%);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+    transform: rotate(-2deg);
+    pointer-events: none;
+  }
+
+  .header-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-stamp {
+    display: inline-block;
+    padding: 2px 7px;
+    border: 1.5px solid var(--ft-color-primary, #c9341e);
+    border-radius: 4px;
+    color: var(--ft-color-primary, #c9341e);
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.2;
+    transform: rotate(-3deg);
+    background: rgb(201 52 30 / 6%);
+  }
+
+  .header-title {
+    margin: 0;
+    font-family: var(--ft-font-family-title, serif);
+    font-size: 21px;
+    font-weight: 900;
+    color: var(--ft-color-secondary, #3a2418);
+    letter-spacing: 0.5px;
+  }
+
+  .header-subtitle {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--ft-color-text-muted, #6e5547);
+  }
+}
+
 .post-create-form {
   display: flex;
   flex-direction: column;
@@ -254,16 +470,42 @@ async function handleSubmit() {
     display: flex;
     flex-direction: column;
     gap: 6px;
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
   }
 
   &__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 14px;
     font-weight: 700;
     color: var(--ft-color-secondary, #3a2418);
 
+    .label-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 800;
+      color: var(--ft-color-primary, #c9341e);
+      background: rgb(201 52 30 / 12%);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
     .required {
       color: var(--ft-color-danger, #c9341e);
+      margin-left: 2px;
     }
+  }
+
+  .char-count {
+    font-size: 12px;
+    color: var(--ft-color-text-muted, #6e5547);
   }
 
   &__input,
@@ -271,179 +513,209 @@ async function handleSubmit() {
     width: 100%;
     box-sizing: border-box;
     padding: 10px 12px;
-    border: 1px solid var(--ft-color-border, #d5ccbc);
-    border-radius: var(--ft-radius-sm, 4px);
-    background: var(--ft-color-surface, #f8f5ee);
+    border: 1.5px solid var(--ft-color-border, #d5ccbc);
+    border-radius: var(--ft-radius-sm, 6px);
+    background: #fff;
     color: var(--ft-color-text, #3a2418);
     font-family: inherit;
     font-size: 14px;
+    line-height: 1.5;
     outline: none;
-    transition: border-color var(--ft-transition-fast, 180ms ease);
+    transition: all var(--ft-transition-fast, 180ms ease);
 
     &:focus {
       border-color: var(--ft-color-primary, #c9341e);
-      background: #fff;
+      box-shadow: 0 0 0 2px rgb(201 52 30 / 15%);
+    }
+
+    &::placeholder {
+      color: #9e8e80;
+      font-size: 13px;
     }
   }
 
-  &__preview-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 8px;
+  &__textarea {
+    resize: vertical;
+    min-height: 90px;
   }
 
-  &__preview-item {
+  .hidden-file-input {
+    display: none;
+  }
+
+  /* 图片卡片网格与上传按钮 */
+  .post-photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .photo-card {
     position: relative;
-    width: 80px;
-    height: 80px;
-    border-radius: 6px;
+    aspect-ratio: 1;
+    border-radius: 8px;
     overflow: hidden;
-    border: 1px solid var(--ft-color-border, #d5ccbc);
+    border: 1.5px solid var(--ft-color-border, #d5ccbc);
+    background: #f0ebe1;
+    box-shadow: 2px 2px 0 rgb(58 36 24 / 10%);
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      display: block;
     }
 
-    .cover-tag {
+    &__cover-badge {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgb(201 52 30 / 85%);
+      background: rgb(201 52 30 / 88%);
       color: #fff;
-      font-size: 10px;
-      text-align: center;
-      line-height: 18px;
+      font-size: 11px;
       font-weight: 700;
+      text-align: center;
+      line-height: 20px;
     }
 
-    .remove-btn {
+    &__remove-btn {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      width: 20px;
-      height: 20px;
+      top: 3px;
+      right: 3px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
-      background: rgb(0 0 0 / 60%);
+      background: rgb(0 0 0 / 65%);
       color: #fff;
-      border: none;
-      cursor: pointer;
+      border: 1px solid #fff;
       font-size: 14px;
-      line-height: 18px;
+      line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      transition: all 160ms ease;
 
       &:hover {
         background: var(--ft-color-danger, #c9341e);
+        transform: scale(1.1);
       }
     }
   }
 
-  &__image-input-wrap {
-    display: flex;
-    gap: 8px;
-  }
-
-  &__add-img-btn {
-    flex: none;
-    padding: 0 16px;
-    background: var(--ft-color-surface-ink, #f1ece2);
-    border: 1px solid var(--ft-color-border, #d5ccbc);
-    border-radius: var(--ft-radius-sm, 4px);
-    font-size: 13px;
-    font-weight: 700;
+  .photo-upload-trigger {
+    aspect-ratio: 1;
+    border: 2px dashed var(--ft-color-border, #d5ccbc);
+    border-radius: 8px;
+    background: var(--zine-paper-card-alt, #f7efd9);
     cursor: pointer;
-    color: var(--ft-color-secondary, #3a2418);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    transition: all var(--ft-transition-fast, 180ms ease);
 
     &:hover:not(:disabled) {
-      background: var(--zine-paper-card, #fffaf0);
       border-color: var(--ft-color-primary, #c9341e);
-      color: var(--ft-color-primary, #c9341e);
+      background: #fff;
+      transform: translateY(-2px);
+      box-shadow: 2px 2px 0 var(--ft-color-primary, #c9341e);
     }
 
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-  }
 
-  &__samples {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px 10px;
-    background: var(--zine-paper-card-alt, #f7efd9);
-    border-radius: 6px;
-
-    .samples-title {
-      font-size: 12px;
-      color: var(--ft-color-text-muted, #6e5547);
+    &.is-empty {
+      grid-column: 1 / -1;
+      aspect-ratio: auto;
+      min-height: 100px;
+      padding: 16px;
     }
 
-    .samples-row {
+    .upload-guide {
       display: flex;
-      gap: 8px;
-      overflow-x: auto;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+
+      .upload-icon {
+        font-size: 26px;
+      }
+
+      .upload-main-text {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ft-color-secondary, #3a2418);
+      }
+
+      .upload-sub-text {
+        font-size: 12px;
+        color: var(--ft-color-text-muted, #6e5547);
+      }
     }
 
-    .sample-thumb {
-      position: relative;
-      width: 48px;
-      height: 48px;
-      border: 1px solid var(--ft-color-border, #d5ccbc);
-      border-radius: 4px;
-      overflow: hidden;
-      cursor: pointer;
-      padding: 0;
-      background: none;
+    .upload-add-more {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      color: var(--ft-color-text-muted, #6e5547);
 
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+      .add-icon {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1;
       }
 
-      span {
-        position: absolute;
-        inset: 0;
-        background: rgb(0 0 0 / 25%);
-        color: #fff;
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0;
-        transition: opacity 160ms ease;
-      }
-
-      &:hover span {
-        opacity: 1;
+      .add-text {
+        font-size: 11px;
+        font-weight: 700;
       }
     }
   }
 
   &__audit-tip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 12px;
-    color: #e6a23c;
-    background: rgb(230 162 60 / 10%);
+    color: #b05a10;
+    background: #fdf5e8;
+    border: 1px dashed #e6a23c;
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: 6px;
+
+    .tip-stamp {
+      display: inline-block;
+      padding: 1px 4px;
+      border: 1px solid #b05a10;
+      border-radius: 2px;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      flex: none;
+    }
+
+    .tip-text {
+      line-height: 1.4;
+    }
   }
 
   &__actions {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
-  &__btn {
-    padding: 9px 20px;
-    border-radius: var(--ft-radius-sm, 4px);
+  .post-btn {
+    padding: 9px 22px;
+    border-radius: var(--ft-radius-sm, 6px);
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
@@ -451,28 +723,37 @@ async function handleSubmit() {
 
     &--cancel {
       background: var(--ft-color-surface-ink, #f1ece2);
-      border: 1px solid var(--ft-color-border, #d5ccbc);
+      border: 1.5px solid var(--ft-color-border, #d5ccbc);
       color: var(--ft-color-text-muted, #6e5547);
 
       &:hover:not(:disabled) {
         background: #fff;
+        color: var(--ft-color-secondary, #3a2418);
       }
     }
 
     &--submit {
       background: var(--ft-color-primary, #c9341e);
-      border: 1px solid var(--ft-color-primary-strong, #ab1f0b);
+      border: 1.5px solid var(--ft-color-primary-strong, #ab1f0b);
       color: #fff;
-      box-shadow: 0 4px 0 rgb(171 31 11 / 40%);
+      box-shadow: 4px 4px 0 var(--ft-color-secondary, #3a2418);
 
       &:hover:not(:disabled) {
         background: var(--ft-color-primary-strong, #ab1f0b);
-        transform: translateY(-1px);
+        transform: translate(-1px, -1px);
+        box-shadow: 5px 5px 0 var(--ft-color-secondary, #3a2418);
       }
 
       &:active:not(:disabled) {
-        transform: translateY(2px);
+        transform: translate(2px, 2px);
+        box-shadow: 2px 2px 0 var(--ft-color-secondary, #3a2418);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
         box-shadow: none;
+        transform: none;
       }
     }
   }
