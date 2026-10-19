@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { fetchCommunityPosts } from '@/api/community.api.js';
@@ -36,33 +36,39 @@ async function loadFeed() {
   }
 }
 
-// 2列双列自适应瀑布流分配算法
+const isMobile = ref(false);
+let mediaQueryList = null;
+
+function handleMediaChange(e) {
+  isMobile.value = e.matches;
+}
+
+// 响应式瀑布流分配算法（电脑端 3 列，手机端 2 列）
 const columns = computed(() => {
-  const left = [];
-  const right = [];
-  let leftHeight = 0;
-  let rightHeight = 0;
+  const colCount = isMobile.value ? 2 : 3;
+  const cols = Array.from({ length: colCount }, () => []);
+  const colHeights = Array.from({ length: colCount }, () => 0);
 
   for (const post of posts.value) {
     const img = post.images?.[0];
     let estimatedHeight = 240; // 默认基准高度
     if (img && img.width && img.height) {
       const ratio = img.height / img.width;
-      // 限制最小与最大比例
       const clampedRatio = Math.max(0.7, Math.min(1.4, ratio));
       estimatedHeight = 180 * clampedRatio + 60; // 图片高度 + 标题文本高度
     }
 
-    if (leftHeight <= rightHeight) {
-      left.push(post);
-      leftHeight += estimatedHeight;
-    } else {
-      right.push(post);
-      rightHeight += estimatedHeight;
+    let minIdx = 0;
+    for (let i = 1; i < colCount; i++) {
+      if (colHeights[i] < colHeights[minIdx]) {
+        minIdx = i;
+      }
     }
+    cols[minIdx].push(post);
+    colHeights[minIdx] += estimatedHeight;
   }
 
-  return { left, right };
+  return cols;
 });
 
 function handleCardClick(post) {
@@ -79,11 +85,24 @@ function handlePostCreated() {
 
 onMounted(() => {
   loadFeed();
+  if (typeof window !== 'undefined' && window.matchMedia) {
+    mediaQueryList = window.matchMedia('(max-width: 768px)');
+    isMobile.value = mediaQueryList.matches;
+    if (mediaQueryList.addEventListener) {
+      mediaQueryList.addEventListener('change', handleMediaChange);
+    }
+  }
   if (route?.query?.action === 'new' || history.state?.prefill) {
     if (history.state?.prefill) {
       prefillData.value = history.state.prefill;
     }
     isCreateModalOpen.value = true;
+  }
+});
+
+onUnmounted(() => {
+  if (mediaQueryList && mediaQueryList.removeEventListener) {
+    mediaQueryList.removeEventListener('change', handleMediaChange);
   }
 });
 </script>
@@ -114,23 +133,18 @@ onMounted(() => {
     <EmptyState
       v-else-if="posts.length === 0"
       title="社区暂无公开帖子"
-      description="点击右下角「+」号，抢先发布第一篇美食手账吧！"
+      description="点击右上角「+」号，抢先发布第一篇美食手账吧！"
     />
 
-    <!-- 2 列瀑布流布局 (小红书风格) -->
+    <!-- 瀑布流布局 (电脑 3 列，手机 2 列) -->
     <main v-else class="community-waterfall" aria-label="帖子列表">
-      <div class="community-waterfall__col">
+      <div
+        v-for="(col, colIdx) in columns"
+        :key="colIdx"
+        class="community-waterfall__col"
+      >
         <CommunityPostCard
-          v-for="post in columns.left"
-          :key="post.id"
-          :post="post"
-          @click="handleCardClick(post)"
-        />
-      </div>
-
-      <div class="community-waterfall__col">
-        <CommunityPostCard
-          v-for="post in columns.right"
+          v-for="post in col"
           :key="post.id"
           :post="post"
           @click="handleCardClick(post)"
@@ -196,13 +210,13 @@ onMounted(() => {
   }
 }
 
-/* 2列瀑布流容器 */
+/* 瀑布流容器 (电脑 3 列，手机 2 列) */
 .community-waterfall {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   align-items: start;
-  max-width: 860px;
+  max-width: 1080px;
   margin: 0 auto;
 
   &__col {
@@ -290,6 +304,7 @@ onMounted(() => {
   }
 
   .community-waterfall {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
 

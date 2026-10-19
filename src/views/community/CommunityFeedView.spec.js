@@ -42,7 +42,58 @@ describe('CommunityFeedView', () => {
     mockPush.mockReset();
   });
 
-  it('拉取帖子时默认请求 approved 审核通过状态，并分双列渲染', async () => {
+  it('拉取帖子时默认请求 approved 审核通过状态，并在电脑端以三列渲染', async () => {
+    fetchCommunityPosts.mockResolvedValue({
+      items: [
+        {
+          id: 'p1',
+          title: '学一瓦罐汤',
+          status: 'approved',
+          images: [{ url: '/img1.jpg', width: 800, height: 600 }],
+        },
+        {
+          id: 'p2',
+          title: '明湖酸汤粉',
+          status: 'approved',
+          images: [{ url: '/img2.jpg', width: 800, height: 1000 }],
+        },
+        {
+          id: 'p3',
+          title: '学二牛肉拉面',
+          status: 'approved',
+          images: [{ url: '/img3.jpg', width: 800, height: 800 }],
+        },
+      ],
+      total: 3,
+    });
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    // 验证审核过滤参数
+    expect(fetchCommunityPosts).toHaveBeenCalledWith({ status: 'approved' });
+
+    // 验证渲染标题与电脑端三列结构
+    expect(wrapper.text()).toContain('学一瓦罐汤');
+    expect(wrapper.text()).toContain('明湖酸汤粉');
+    expect(wrapper.text()).toContain('学二牛肉拉面');
+    const cols = wrapper.findAll('.community-waterfall__col');
+    expect(cols.length).toBe(3);
+  });
+
+  it('在移动端视口下以两列渲染瀑布流', async () => {
+    // 模拟移动端 mediaQuery
+    window.matchMedia = vi.fn().mockImplementation((query) => ({
+      matches: query.includes('768px'),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
     fetchCommunityPosts.mockResolvedValue({
       items: [
         {
@@ -64,12 +115,6 @@ describe('CommunityFeedView', () => {
     const wrapper = mountView();
     await flushPromises();
 
-    // 验证审核过滤参数
-    expect(fetchCommunityPosts).toHaveBeenCalledWith({ status: 'approved' });
-
-    // 验证渲染标题与双列结构
-    expect(wrapper.text()).toContain('学一瓦罐汤');
-    expect(wrapper.text()).toContain('明湖酸汤粉');
     const cols = wrapper.findAll('.community-waterfall__col');
     expect(cols.length).toBe(2);
   });
