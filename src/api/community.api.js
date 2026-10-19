@@ -156,6 +156,423 @@ export const INITIAL_POSTS = [
     commentCount: 2,
   },
   {
+    id: 'post-107',
+    title: '清真餐厅手抓羊肉与大盘鸡！聚餐首选🍗',
+    content:
+      '清真餐厅的大盘鸡份量太实诚了，土豆软糯沙甜，宽面吸饱了浓香汤汁。羊肉串肉质紧实，孜然焦香四溢，几位室友聚餐人均二十吃到撑！',
+    author: {
+      id: 'u-107',
+      name: '清真食堂迷',
+      avatar:
+        'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-107-1',
+        url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 600, // 4:3
+      },
+      {
+        id: 'img-107-2',
+        url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 1000,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-17T11:45:00.000Z',
+    likeCount: 51,
+    favoriteCount: 18,
+    commentCount: 5,
+  },
+  {
+    id: 'post-108',
+    title: '学二二楼自选麻辣烫！骨汤浓郁选菜自由🥦',
+    content:
+      '可以自己选骨汤、微辣或者藤椒风味。菜品很新鲜，特别推荐藕片、小油菜和手工牛肉丸，称重计价很良心，淋上一勺蒜泥和麻酱，满足感拉满。',
+    author: {
+      id: 'u-108',
+      name: '麻辣烫品鉴家',
+      avatar:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-108-1',
+        url: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 1080, // 长竖图
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-16T19:20:00.000Z',
+    likeCount: 73,
+    favoriteCount: 31,
+    commentCount: 6,
+  },
+  {
+    id: 'post-109',
+    title: '明湖韩式石锅拌饭！金黄锅巴嘎嘣脆🍳',
+    content:
+      '端上来的时候还在滋滋作响，趁热把太阳蛋、西葫芦、胡萝卜丝和辣酱拌匀。底部那层焦脆焦脆的锅巴简直是这碗饭的灵魂！',
+    author: {
+      id: 'u-109',
+      name: '锅巴收割机',
+      avatar:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-109-1',
+        url: 'https://images.unsplash.com/photo-1553163147-622ab57be1c7?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 750,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-16T12:30:00.000Z',
+    likeCount: 29,
+    favoriteCount: 11,
+    commentCount: 2,
+  },
+  {
+    id: 'post-110',
+    title: '东区一层老北京炸酱面，菜码丰富酱香浓郁🍜',
+    content:
+      '手擀面劲道爽口，配菜有黄瓜丝、心儿里美萝卜丝和黄豆芽。黑亮油润的炸酱肉丁分明，拌开后每一根面条都裹满了酱香味。',
+    author: {
+      id: 'u-110',
+      name: '老北京面王',
+      avatar:
+        'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-110-1',
+        url: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 533, // 3:2 横图
+      },
+      {
+        id: 'img-110-2',
+        url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 800,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-15T18:10:00.000Z',
+    likeCount: 47,
+    favoriteCount: 14,
+    commentCount: 3,
+  },
+  {
+    id: 'post-111',
+    title: '留园二楼川湘小炒：小炒黄牛肉鲜辣下饭🌶️',
+    content:
+      '猛火现炒的黄牛肉片嫩滑多汁，配上野山椒和香菜段，辣意直击味蕾。配上两碗大米饭，碳水快乐直接拉满！',
+    author: {
+      id: 'u-111',
+      name: '无辣不欢同学',
+      avatar:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-111-1',
+        url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 980,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-15T12:05:00.000Z',
+    likeCount: 62,
+    favoriteCount: 19,
+    commentCount: 4,
+  },
+  {
+    id: 'post-112',
+    title: '学一早点铺鲜肉小笼包配热豆浆🥟',
+    content:
+      '早八人的元气早点！小笼包咬开有一汪鲜美的肉汁，包子皮软糯微甜。搭配一杯现磨热豆浆，开启一整天的活力学习。',
+    author: {
+      id: 'u-112',
+      name: '早八追光者',
+      avatar:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-112-1',
+        url: 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 600,
+      },
+      {
+        id: 'img-112-2',
+        url: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 800,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-14T07:45:00.000Z',
+    likeCount: 38,
+    favoriteCount: 8,
+    commentCount: 1,
+  },
+  {
+    id: 'post-113',
+    title: '学苑日式照烧鸡排饭！溏心蛋裹着米饭太香了🍱',
+    content:
+      '外皮煎得金黄酥脆的厚切鸡排，淋上咸甜浓稠的照烧酱汁。用筷子戳破溏心蛋，蛋液流在晶莹的米饭上，性价比超高的一餐。',
+    author: {
+      id: 'u-113',
+      name: '日料爱好者',
+      avatar:
+        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-113-1',
+        url: 'https://images.unsplash.com/photo-1553163147-622ab57be1c7?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 1050, // 竖长图
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-14T12:15:00.000Z',
+    likeCount: 56,
+    favoriteCount: 20,
+    commentCount: 3,
+  },
+  {
+    id: 'post-114',
+    title: '清真烤肉拌饭！特调千岛酱与烤肉粒的绝妙碰撞🥙',
+    content:
+      '肉量铺得满满当当，烤鸡肉外皮焦香内里多汁，配菜有爽口的生菜丝和腌黄瓜。特调酱料搅拌开来，每一口都很满足！',
+    author: {
+      id: 'u-114',
+      name: '肉食主义者',
+      avatar:
+        'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-114-1',
+        url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 600,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-13T17:50:00.000Z',
+    likeCount: 44,
+    favoriteCount: 15,
+    commentCount: 2,
+  },
+  {
+    id: 'post-115',
+    title: '明湖负一层柳州螺蛳粉加超大炸蛋！酸笋臭香谁懂啊🌶️',
+    content:
+      '螺蛳熬制的红油高汤，配菜有酸豆角、木耳丝和香脆花生。浸饱了汤汁的虎皮炸蛋咬下去直接爆汁，嗦粉的快乐不过如此！',
+    author: {
+      id: 'u-115',
+      name: '柳州嗦粉大户',
+      avatar:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-115-1',
+        url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 1120, // 超长竖图
+      },
+      {
+        id: 'img-115-2',
+        url: 'https://images.unsplash.com/photo-1552611052-33e04de081de?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 800,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-13T12:00:00.000Z',
+    likeCount: 95,
+    favoriteCount: 41,
+    commentCount: 7,
+  },
+  {
+    id: 'post-116',
+    title: '东区广式生滚牛肉粥加现炸香脆油条🥣',
+    content:
+      '生滚滑牛肉片薄且嫩，米粒已经熬煮得绵密起胶。冬天晚自习出来喝上一大碗，胃里暖洋洋的，还可以免费加葱花和胡椒粉。',
+    author: {
+      id: 'u-116',
+      name: '广式靓汤达人',
+      avatar:
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-116-1',
+        url: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 550,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-12T20:30:00.000Z',
+    likeCount: 33,
+    favoriteCount: 12,
+    commentCount: 1,
+  },
+  {
+    id: 'post-117',
+    title: '学二窗口脆皮烤鸭饭！鸭皮油脂丰盈甜面酱绝配🦆',
+    content:
+      '烤鸭外皮烤得深红油亮，切块整齐。配上半颗卤蛋、烫青菜和浓甜面酱，米饭吸饱了鸭油肉汁，性价比极高的经典午餐。',
+    author: {
+      id: 'u-117',
+      name: '烤鸭脑袋',
+      avatar:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-117-1',
+        url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 800, // 正方形 1:1
+      },
+      {
+        id: 'img-117-2',
+        url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 600,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-12T11:50:00.000Z',
+    likeCount: 68,
+    favoriteCount: 25,
+    commentCount: 4,
+  },
+  {
+    id: 'post-118',
+    title: '西门外咖啡馆燕麦拿铁与抹茶瑞士卷☕🍰',
+    content:
+      '期末复习周的续命去处。燕麦奶香和深烘咖啡豆很搭，抹茶瑞士卷蛋糕体湿润细腻，中间的红豆奶油甜而不腻，拍照也很出片。',
+    author: {
+      id: 'u-118',
+      name: '咖啡自习中',
+      avatar:
+        'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-118-1',
+        url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 1020, // 竖长图
+      },
+      {
+        id: 'img-118-2',
+        url: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 800,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-11T15:10:00.000Z',
+    likeCount: 82,
+    favoriteCount: 39,
+    commentCount: 5,
+  },
+  {
+    id: 'post-119',
+    title: '留园教工餐厅对外开放时的招牌红烧狮子头🧆',
+    content:
+      '大颗狮子头肥瘦比例三七开，肉馅里切了爽脆的荸荠碎，口感丝毫不油腻，酱汁浓郁拌饭可以连吃两碗！',
+    author: {
+      id: 'u-119',
+      name: '教工食堂常客',
+      avatar:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-119-1',
+        url: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 600,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-11T12:00:00.000Z',
+    likeCount: 46,
+    favoriteCount: 17,
+    commentCount: 2,
+  },
+  {
+    id: 'post-120',
+    title: '学一麻辣香锅！放学后三个人拼一大锅的快乐🥘',
+    content:
+      '土豆片煎得焦焦脆脆，宽粉 Q 弹，培根和午餐肉浸满了麻辣酱香。三个人点了一大盆才六十多块钱，干饭人社交必备！',
+    author: {
+      id: 'u-120',
+      name: '香锅小分队',
+      avatar:
+        'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-120-1',
+        url: 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 1040, // 竖长图
+      },
+      {
+        id: 'img-120-2',
+        url: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 600,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-10T18:30:00.000Z',
+    likeCount: 91,
+    favoriteCount: 35,
+    commentCount: 8,
+  },
+  {
+    id: 'post-121',
+    title: '学苑老坛酸菜鱼米线，汤白鱼嫩酸爽过瘾🐟',
+    content:
+      '老坛酸菜酸香扑鼻，黑鱼片去骨切薄无刺，煮得白嫩嫩的。吸溜一大口米线再喝两口酸汤，胃口瞬间打开。',
+    author: {
+      id: 'u-121',
+      name: '酸汤鱼专家',
+      avatar:
+        'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&q=80',
+    },
+    images: [
+      {
+        id: 'img-121-1',
+        url: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=800&q=80',
+        width: 800,
+        height: 720,
+      },
+    ],
+    status: 'approved',
+    createdAt: '2026-10-10T12:10:00.000Z',
+    likeCount: 53,
+    favoriteCount: 21,
+    commentCount: 3,
+  },
+  {
     id: 'post-106',
     title: '（待审核示例）测试新帖发布审核机制',
     content: '此帖处于待审核状态，正常情况下不会在公共列表中展示。',
