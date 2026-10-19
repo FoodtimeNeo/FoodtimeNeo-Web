@@ -40,8 +40,22 @@ function formatPostTime(isoString) {
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 }
 
-function handlePlaceholderAction(actionName) {
-  ElMessage.info(`${actionName}功能将在下一阶段开放`);
+const isLiked = ref(false);
+const isFavorited = ref(false);
+
+function toggleLike() {
+  if (!post.value) return;
+  isLiked.value = !isLiked.value;
+  post.value.likeCount = (post.value.likeCount || 0) + (isLiked.value ? 1 : -1);
+  ElMessage.success(isLiked.value ? '点赞成功' : '已取消点赞');
+}
+
+function toggleFavorite() {
+  if (!post.value) return;
+  isFavorited.value = !isFavorited.value;
+  post.value.favoriteCount =
+    (post.value.favoriteCount || 0) + (isFavorited.value ? 1 : -1);
+  ElMessage.success(isFavorited.value ? '收藏成功' : '已取消收藏');
 }
 
 onMounted(() => {
@@ -111,27 +125,32 @@ onMounted(() => {
         <!-- 正文 -->
         <p class="community-detail-card__text">{{ post.content }}</p>
 
-        <!-- 互动操作栏（点赞、收藏，预留下一阶段） -->
+        <!-- 互动操作栏（点赞、收藏） -->
         <div class="community-detail-card__interactions">
           <button
             type="button"
-            class="interact-btn is-placeholder"
-            title="下一阶段开放"
-            @click="handlePlaceholderAction('点赞')"
+            class="interact-btn"
+            :class="{ 'is-active': isLiked }"
+            :aria-pressed="isLiked"
+            @click="toggleLike"
           >
-            <span class="btn-icon">👍</span>
-            <span>点赞 {{ post.likeCount || 0 }}</span>
-            <span class="sub-pill">下阶段</span>
+            <span class="btn-icon">{{ isLiked ? '❤️' : '🤍' }}</span>
+            <span
+              >{{ isLiked ? '已赞' : '点赞' }} {{ post.likeCount || 0 }}</span
+            >
           </button>
           <button
             type="button"
-            class="interact-btn is-placeholder"
-            title="下一阶段开放"
-            @click="handlePlaceholderAction('收藏')"
+            class="interact-btn"
+            :class="{ 'is-active': isFavorited }"
+            :aria-pressed="isFavorited"
+            @click="toggleFavorite"
           >
-            <span class="btn-icon">⭐</span>
-            <span>收藏 {{ post.favoriteCount || 0 }}</span>
-            <span class="sub-pill">下阶段</span>
+            <span class="btn-icon">{{ isFavorited ? '⭐' : '☆' }}</span>
+            <span
+              >{{ isFavorited ? '已收藏' : '收藏' }}
+              {{ post.favoriteCount || 0 }}</span
+            >
           </button>
         </div>
 
@@ -295,12 +314,12 @@ onMounted(() => {
         border-color: var(--ft-color-primary, #c9341e);
       }
 
-      .sub-pill {
-        font-size: 10px;
-        color: #909399;
-        background: rgb(0 0 0 / 6%);
-        padding: 1px 5px;
-        border-radius: 4px;
+      &.is-active {
+        background: #fff;
+        border-color: var(--ft-color-primary, #c9341e);
+        color: var(--ft-color-primary, #c9341e);
+        font-weight: 700;
+        box-shadow: 0 2px 6px rgb(201 52 30 / 15%);
       }
     }
   }

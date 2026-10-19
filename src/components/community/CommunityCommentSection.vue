@@ -60,6 +60,24 @@ function formatTime(isoString) {
   return `${month}-${day} ${hours}:${minutes}`;
 }
 
+const likedComments = ref(new Set());
+
+function handleLikeComment(cmt) {
+  if (likedComments.value.has(cmt.id)) {
+    likedComments.value.delete(cmt.id);
+    cmt.likeCount = Math.max(0, (cmt.likeCount || 0) - 1);
+  } else {
+    likedComments.value.add(cmt.id);
+    cmt.likeCount = (cmt.likeCount || 0) + 1;
+    ElMessage.success('已赞同该评论');
+  }
+}
+
+function handleReplyComment(cmt) {
+  const authorName = cmt.author?.name || '同学';
+  commentText.value = `@${authorName} `;
+}
+
 onMounted(() => {
   loadComments();
 });
@@ -136,20 +154,23 @@ onMounted(() => {
 
           <p class="community-comments__text">{{ cmt.content }}</p>
 
-          <!-- 下阶段交互占位：点赞与回复 -->
-          <div class="community-comments__sub-actions" aria-hidden="true">
-            <span
-              class="sub-action-item is-disabled"
-              title="点赞功能将在下阶段开放"
+          <!-- 评论互动：点赞与回复 -->
+          <div class="community-comments__sub-actions">
+            <button
+              type="button"
+              class="sub-action-btn"
+              :class="{ 'is-liked': likedComments.has(cmt.id) }"
+              @click="handleLikeComment(cmt)"
             >
               👍 {{ cmt.likeCount ? cmt.likeCount : '点赞' }}
-            </span>
-            <span
-              class="sub-action-item is-disabled"
-              title="回复功能将在下阶段开放"
+            </button>
+            <button
+              type="button"
+              class="sub-action-btn"
+              @click="handleReplyComment(cmt)"
             >
               回复
-            </span>
+            </button>
           </div>
         </div>
       </article>
@@ -338,13 +359,25 @@ onMounted(() => {
     gap: 16px;
     margin-top: 6px;
 
-    .sub-action-item {
+    .sub-action-btn {
+      background: none;
+      border: none;
+      padding: 0;
       font-size: 12px;
       color: var(--ft-color-text-muted, #6e5547);
-      cursor: default;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: color var(--ft-transition-fast, 180ms ease);
 
-      &.is-disabled {
-        opacity: 0.6;
+      &:hover {
+        color: var(--ft-color-primary, #c9341e);
+      }
+
+      &.is-liked {
+        color: var(--ft-color-primary, #c9341e);
+        font-weight: 700;
       }
     }
   }

@@ -103,4 +103,46 @@ describe('CommunityDetailView', () => {
     );
     expect(wrapper.text()).toContain('正在审核中');
   });
+
+  it('点赞与收藏可即时切换且不包含下阶段文案', async () => {
+    fetchCommunityPostDetail.mockResolvedValue({
+      id: 'p1',
+      title: '学一瓦罐汤',
+      content: '排骨汤浓郁好喝',
+      author: { id: 'u-1', name: '同学' },
+      createdAt: '2026-10-19T10:00:00.000Z',
+      status: 'approved',
+      images: [],
+      likeCount: 10,
+      favoriteCount: 5,
+    });
+    fetchPostComments.mockResolvedValue([]);
+
+    const wrapper = mountView();
+    await flushPromises();
+
+    // 严禁出现“下阶段”
+    expect(wrapper.text()).not.toContain('下阶段');
+    expect(wrapper.text()).not.toContain('下一阶段');
+
+    const btns = wrapper.findAll(
+      '.community-detail-card__interactions .interact-btn',
+    );
+    expect(btns.length).toBe(2);
+
+    // 点赞
+    await btns[0].trigger('click');
+    expect(wrapper.text()).toContain('已赞 11');
+    expect(btns[0].classes()).toContain('is-active');
+
+    // 取消点赞
+    await btns[0].trigger('click');
+    expect(wrapper.text()).toContain('点赞 10');
+    expect(btns[0].classes()).not.toContain('is-active');
+
+    // 收藏
+    await btns[1].trigger('click');
+    expect(wrapper.text()).toContain('已收藏 6');
+    expect(btns[1].classes()).toContain('is-active');
+  });
 });
