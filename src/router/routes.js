@@ -113,6 +113,28 @@ export const routes = [
     meta: { title: '食堂', layout: 'default', requiresAuth: true },
   },
   {
+    path: '/community',
+    name: 'community',
+    component: () => import('@/views/community/CommunityFeedView.vue'),
+    meta: {
+      title: '社区',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'community',
+    },
+  },
+  {
+    path: '/community/posts/:postId',
+    name: 'communityDetail',
+    component: () => import('@/views/community/CommunityDetailView.vue'),
+    meta: {
+      title: '帖子详情',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'community',
+    },
+  },
+  {
     path: '/canteens/:canteenId',
     name: 'canteenDetail',
     component: () => import('@/views/canteen/CanteenDetailView.vue'),

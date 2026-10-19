@@ -5,8 +5,10 @@ import { ElMessage } from 'element-plus';
 import { fetchDish } from '@/api/dish.api.js';
 import { ApiError } from '@/api/http.js';
 import { createReview } from '@/api/review.api.js';
+import { uploadImage, submitPhoto } from '@/api/submission.api.js';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import StarRatingInput from '@/components/review/StarRatingInput.vue';
+import ImageFileField from '@/components/submission/ImageFileField.vue';
 import InkButton from '@/components/base/InkButton.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -39,13 +41,39 @@ const submitting = ref(false);
 const validationMessage = ref('');
 const form = reactive({ rating: 0, content: '' });
 const formElement = ref(null);
+const photoFile = ref(null);
+const checkingImage = ref(false);
+const syncToCommunity = ref(false);
+let previewUrl = '';
 let active = true;
+
+function handlePhotoChange(file) {
+  photoFile.value = file;
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = '';
+  }
+  if (file) {
+    try {
+      previewUrl = URL.createObjectURL(file);
+    } catch {
+      // 忽略
+    }
+  }
+}
+
 onUnmounted(() => {
   active = false;
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl);
+    previewUrl = '';
+  }
 });
+
 async function submitReview() {
   if (
     submitting.value ||
+    checkingImage.value ||
     targetLoading.value ||
     targetError.value ||
     !dish.value
@@ -69,7 +97,45 @@ async function submitReview() {
       rating: form.rating,
       content: form.content.trim(),
     });
+
+    let uploadedImageUrl = '';
+    // 选填图片：上传并提交菜品实拍图加入图册（与菜品页点击加号作用一致）
+    if (photoFile.value) {
+      try {
+        const uploadRes = await uploadImage(photoFile.value);
+        if (uploadRes?.imageUrl) {
+          uploadedImageUrl = uploadRes.imageUrl;
+          await submitPhoto(dish.value.id, { imageUrl: uploadedImageUrl });
+        }
+      } catch (err) {
+        console.warn('菜品图片上传加入图册失败', err);
+      }
+    }
+
     if (!active) return;
+
+    if (syncToCommunity.value) {
+      ElMessage.success('点评已提交，正在前往社区发表帖子…');
+      const imageList = [];
+      if (uploadedImageUrl) {
+        imageList.push(uploadedImageUrl);
+      } else if (previewUrl) {
+        imageList.push(previewUrl);
+      }
+      await router.push({
+        name: 'community',
+        query: { action: 'new' },
+        state: {
+          prefill: {
+            title: `${dish.value.name}品鉴心得`,
+            content: form.content.trim(),
+            images: imageList,
+          },
+        },
+      });
+      return;
+    }
+
     form.content = '';
     ElMessage.success('点评已提交，审核通过后展示');
     await router.push({ name: 'dishDetail', params });
@@ -112,6 +178,24 @@ async function submitReview() {
       <label class="review-create__comment"
         ><span>文字点评</span
         ><textarea v-model="form.content" rows="6" :disabled="submitting" />
+      </label>
+      <div class="review-create__photo-upload">
+        <span class="photo-upload-label">菜品配图（选填）</span>
+        <ImageFileField
+          :required="false"
+          :disabled="submitting"
+          publication-hint="选填。上传后将作为实拍图加入菜品图册（审核通过后展示）。"
+          @change="handlePhotoChange"
+          @checking="checkingImage = $event"
+        />
+      </div>
+      <label class="review-create__sync">
+        <input
+          v-model="syncToCommunity"
+          type="checkbox"
+          :disabled="submitting"
+        />
+        <span>将本评论发表至社区帖子</span>
       </label>
       <p
         v-if="validationMessage"
@@ -204,6 +288,36 @@ async function submitReview() {
       justify-self: end;
       color: var(--ft-color-text-muted);
       font-weight: 400;
+    }
+  }
+
+  &__photo-upload {
+    display: grid;
+    gap: var(--ft-space-1);
+
+    .photo-upload-label {
+      font-weight: 700;
+      color: var(--ft-color-text);
+      font-size: var(--ft-font-size-sm);
+    }
+  }
+
+  &__sync {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ft-color-secondary);
+    cursor: pointer;
+    user-select: none;
+    padding: 6px 0;
+
+    input[type='checkbox'] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--ft-color-primary);
+      cursor: pointer;
     }
   }
 
