@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { fetchCommunityPosts } from '@/api/community.api.js';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
@@ -8,11 +8,20 @@ import PostCreateModal from '@/components/community/PostCreateModal.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 
+const route = useRoute();
 const router = useRouter();
 
 const posts = ref([]);
 const loading = ref(false);
 const isCreateModalOpen = ref(false);
+const prefillData = ref({});
+
+function openCreateModal(prefill = null) {
+  if (prefill) {
+    prefillData.value = prefill;
+  }
+  isCreateModalOpen.value = true;
+}
 
 async function loadFeed() {
   loading.value = true;
@@ -70,6 +79,12 @@ function handlePostCreated() {
 
 onMounted(() => {
   loadFeed();
+  if (route?.query?.action === 'new' || history.state?.prefill) {
+    if (history.state?.prefill) {
+      prefillData.value = history.state.prefill;
+    }
+    isCreateModalOpen.value = true;
+  }
 });
 </script>
 
@@ -82,6 +97,16 @@ onMounted(() => {
           随手拍、聊美味，发现更多好吃的校园美食
         </p>
       </div>
+      <!-- 入口一：在社区页右上角放置加号发帖按钮 -->
+      <button
+        type="button"
+        class="community-header-post-btn"
+        aria-label="发布新帖子"
+        @click="openCreateModal()"
+      >
+        <span class="btn-plus">＋</span>
+        <span>发帖</span>
+      </button>
     </header>
 
     <LoadingState v-if="loading" />
@@ -125,7 +150,11 @@ onMounted(() => {
     </button>
 
     <!-- 发帖弹窗 -->
-    <PostCreateModal v-model="isCreateModalOpen" @created="handlePostCreated" />
+    <PostCreateModal
+      v-model="isCreateModalOpen"
+      :initial-data="prefillData"
+      @created="handlePostCreated"
+    />
   </div>
 </template>
 
@@ -136,6 +165,10 @@ onMounted(() => {
   padding: var(--ft-space-3, 24px) var(--zine-page-padding, 32px) 80px;
 
   &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
     margin-bottom: var(--ft-space-3, 24px);
     border-bottom: 2px dashed var(--ft-color-border, #d5ccbc);
     padding-bottom: var(--ft-space-2, 16px);
@@ -176,6 +209,36 @@ onMounted(() => {
     display: flex;
     flex-direction: column;
     min-width: 0;
+  }
+}
+
+.community-header-post-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: var(--ft-color-primary, #c9341e);
+  color: #fff;
+  border: 1px solid var(--ft-color-primary-strong, #ab1f0b);
+  border-radius: var(--ft-radius-pill, 999px);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgb(171 31 11 / 30%);
+  transition: all var(--ft-transition-fast, 180ms ease);
+  flex: none;
+
+  &:hover {
+    background: var(--ft-color-primary-strong, #ab1f0b);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgb(171 31 11 / 40%);
+  }
+
+  .btn-plus {
+    font-size: 18px;
+    line-height: 1;
+    font-weight: 800;
+    margin-top: -1px;
   }
 }
 

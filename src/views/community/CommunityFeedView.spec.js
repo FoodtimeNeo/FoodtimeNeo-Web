@@ -12,7 +12,7 @@ vi.mock('@/api/community.api.js', () => ({
 }));
 
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: {} }),
+  useRoute: () => ({ params: {}, query: {} }),
   useRouter: () => ({ push: mockPush }),
   RouterLink: RouterLinkStub,
 }));
@@ -113,6 +113,19 @@ describe('CommunityFeedView', () => {
 
     // 点击发帖按钮
     await fabBtn.trigger('click');
+    expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
+  });
+
+  it('顶部右上角存在发帖按钮，点击可唤起发帖弹窗', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [], total: 0 });
+    const wrapper = mountView();
+    await flushPromises();
+
+    const topBtn = wrapper.find('.community-header-post-btn');
+    expect(topBtn.exists()).toBe(true);
+
+    expect(wrapper.find('.el-dialog-stub').exists()).toBe(false);
+    await topBtn.trigger('click');
     expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
   });
 });

@@ -1,12 +1,16 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
 import { ElMessage, ElDialog } from 'element-plus';
 import { createCommunityPost } from '@/api/community.api.js';
 
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Boolean,
     default: false,
+  },
+  initialData: {
+    type: Object,
+    default: () => ({}),
   },
 });
 
@@ -20,6 +24,22 @@ const form = reactive({
   content: '',
   images: [],
 });
+
+watch(
+  () => props.modelValue,
+  (val) => {
+    if (val && props.initialData) {
+      if (props.initialData.title !== undefined)
+        form.title = props.initialData.title;
+      if (props.initialData.content !== undefined)
+        form.content = props.initialData.content;
+      if (props.initialData.images && Array.isArray(props.initialData.images)) {
+        form.images = [...props.initialData.images];
+      }
+    }
+  },
+  { immediate: true },
+);
 
 // 快速预设图库供测试便捷选择
 const sampleImages = [
