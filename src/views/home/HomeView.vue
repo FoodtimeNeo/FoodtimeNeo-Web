@@ -1,17 +1,60 @@
 <script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
+import { fetchCommunityPosts } from '@/api/community.api.js';
 import CanteenEntryCard from '@/components/home/CanteenEntryCard.vue';
+import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
+
+const router = useRouter();
+
 const {
   data: canteens,
   error,
   loading,
   load,
 } = useAsyncData(fetchCanteens, { initial: [] });
+
+// 02 社区动态部分
+const communityPosts = ref([]);
+const communityLoading = ref(false);
+const communityTotal = ref(0);
+
+const displayPosts = computed(() => communityPosts.value.slice(0, 6));
+
+async function loadCommunityPosts() {
+  communityLoading.value = true;
+  try {
+    const res = await fetchCommunityPosts({
+      page: 1,
+      size: 6,
+      status: 'approved',
+    });
+    communityPosts.value = res.items || [];
+    communityTotal.value = res.total || communityPosts.value.length;
+  } catch (err) {
+    console.warn('加载首页社区动态失败', err);
+  } finally {
+    communityLoading.value = false;
+  }
+}
+
+function handlePostClick(post) {
+  router.push({
+    name: 'communityDetail',
+    params: { postId: post.id },
+  });
+}
+
+onMounted(() => {
+  loadCommunityPosts();
+});
 </script>
+
 <template>
   <div class="home-page">
     <header class="home-page__hero">
@@ -32,6 +75,8 @@ const {
       </aside>
       <span class="home-page__hero-sketch" aria-hidden="true"></span>
     </header>
+
+    <!-- 01 食堂档案 -->
     <section class="home-page__section" aria-labelledby="canteens-title">
       <div class="section-rule">
         <span class="section-rule__index">01</span>
@@ -53,6 +98,58 @@ const {
           <CanteenEntryCard :canteen="canteen" />
         </li>
       </ul>
+    </section>
+
+    <!-- 02 校园食记 · 社区动态（第二部分） -->
+    <section
+      class="home-page__section home-page__community-section"
+      aria-labelledby="community-title"
+    >
+      <div class="section-rule">
+        <span class="section-rule__index">02</span>
+        <span class="section-rule__line"></span>
+      </div>
+      <div class="home-page__section-header">
+        <div class="home-page__section-titles">
+          <h2 id="community-title" class="section-title">
+            校园食记 · <span class="zine-highlight">社区动态</span>
+          </h2>
+          <p class="section-subtitle">
+            随手拍、聊美味，看看同学们今天都在吃什么。
+          </p>
+        </div>
+        <RouterLink
+          class="home-page__community-more button-ink"
+          :to="{ name: 'community' }"
+        >
+          进入社区广场 →
+        </RouterLink>
+      </div>
+
+      <LoadingState v-if="communityLoading" />
+      <EmptyState
+        v-else-if="!communityPosts.length"
+        title="暂无社区动态"
+        description="快去社区分享你的第一篇美食手账吧！"
+      />
+      <div v-else class="home-page__community-grid">
+        <CommunityPostCard
+          v-for="post in displayPosts"
+          :key="post.id"
+          :post="post"
+          @click="handlePostClick(post)"
+        />
+      </div>
+
+      <div v-if="communityPosts.length > 0" class="home-page__community-footer">
+        <RouterLink
+          :to="{ name: 'community' }"
+          class="home-page__community-bottom-btn"
+        >
+          <span>进入社区广场发现更多（共 {{ communityTotal }} 篇食记）</span>
+          <span class="btn-arrow">→</span>
+        </RouterLink>
+      </div>
     </section>
   </div>
 </template>
@@ -87,6 +184,7 @@ const {
       72% 1%,
       80% 4%,
       88% 1%,
+      90% 4%,
       100% 4%,
       100% 100%,
       0 100%
@@ -165,6 +263,76 @@ const {
     padding: 0;
     list-style: none;
   }
+
+  /* 02 社区部分样式 */
+  &__community-section {
+    margin-top: var(--ft-space-6, 56px);
+  }
+
+  &__section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: var(--ft-space-3, 20px);
+  }
+
+  &__community-more {
+    font-size: 14px;
+    padding: 8px 18px;
+    text-decoration: none;
+  }
+
+  &__community-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+    align-items: start;
+  }
+
+  &__community-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--ft-space-5, 36px);
+  }
+
+  &__community-bottom-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: var(--zine-paper-card, #fffaf0);
+    border: 2px solid var(--ft-color-secondary, #3a2418);
+    border-radius: var(--ft-radius-pill, 999px);
+    box-shadow: 4px 4px 0 var(--ft-color-secondary, #3a2418);
+    color: var(--ft-color-secondary, #3a2418);
+    font-weight: 700;
+    font-size: 14px;
+    text-decoration: none;
+    transition: all var(--ft-transition-fast, 180ms ease);
+
+    &:hover {
+      background: #fff;
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0 var(--ft-color-secondary, #3a2418);
+      color: var(--ft-color-primary, #c9341e);
+    }
+
+    &:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 var(--ft-color-secondary, #3a2418);
+    }
+
+    .btn-arrow {
+      font-size: 16px;
+      transition: transform var(--ft-transition-fast, 180ms ease);
+    }
+
+    &:hover .btn-arrow {
+      transform: translateX(4px);
+    }
+  }
 }
 
 @media (max-width: 768px) {
@@ -196,6 +364,16 @@ const {
     &__grid {
       grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: var(--ft-space-2);
+    }
+
+    &__community-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    &__community-more {
+      width: 100%;
+      text-align: center;
     }
   }
 }
