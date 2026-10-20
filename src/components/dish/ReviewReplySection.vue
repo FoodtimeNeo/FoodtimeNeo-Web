@@ -1,16 +1,21 @@
 <script setup>
-import { onScopeDispose, ref } from 'vue';
-import {
-  fetchReviewReplies,
-  createReviewReply,
-  deleteReviewReply,
-} from '@/api/review.api.js';
+import { onScopeDispose, ref, watch } from 'vue';
 import { formatTime } from '@/utils/recordLabels.js';
+import CommentLikeButton from './CommentLikeButton.vue';
 
-const props = defineProps({ review: { type: Object, required: true } });
+const props = defineProps({
+  review: { type: Object, required: true },
+  actions: { type: Object, required: true },
+});
 const expanded = ref(false);
 const rows = ref([]);
 const total = ref(props.review.replyCount ?? 0);
+watch(
+  () => props.review.replyCount,
+  (count) => {
+    total.value = count ?? 0;
+  },
+);
 const loading = ref(false);
 const loaded = ref(false);
 const nextCursor = ref(null);
@@ -36,7 +41,7 @@ async function load(reset = false) {
   loading.value = true;
   loadError.value = '';
   try {
-    const result = await fetchReviewReplies(
+    const result = await props.actions.fetchReviewReplies(
       props.review.id,
       reset ? '' : nextCursor.value || '',
     );
@@ -83,7 +88,7 @@ async function submit() {
     operation = { signature, id: crypto.randomUUID() };
   posting.value = true;
   try {
-    await createReviewReply(props.review.id, {
+    await props.actions.createReviewReply(props.review.id, {
       content,
       replyToId: target.value?.id || null,
       clientRequestId: operation.id,
@@ -106,7 +111,7 @@ async function remove() {
   removing.value = true;
   loadError.value = '';
   try {
-    await deleteReviewReply(selectedDelete.value);
+    await props.actions.deleteReviewReply(selectedDelete.value);
     if (!alive) return;
     selectedDelete.value = null;
     notice.value = '回复已删除';
@@ -154,6 +159,10 @@ async function remove() {
           <p class="review-replies__content">{{ row.content }}</p>
           <time :datetime="row.createdAt">{{ formatTime(row.createdAt) }}</time>
           <div class="review-replies__actions">
+            <CommentLikeButton
+              :target="row"
+              :save="(liked) => actions.setReplyLike(row.id, liked)"
+            />
             <button type="button" :disabled="posting" @click="choose(row)">
               回复这条
             </button>

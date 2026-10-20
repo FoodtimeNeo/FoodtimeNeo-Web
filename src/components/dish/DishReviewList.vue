@@ -1,6 +1,5 @@
 <script setup>
 import { formatTime } from '@/utils/recordLabels.js';
-import { setReviewLike } from '@/api/review.api.js';
 import CommentLikeButton from './CommentLikeButton.vue';
 import ReviewReplySection from './ReviewReplySection.vue';
 /**
@@ -10,6 +9,7 @@ import ReviewReplySection from './ReviewReplySection.vue';
  */
 defineProps({
   reviews: { type: Array, required: true },
+  actions: { type: Object, required: true },
 });
 </script>
 
@@ -34,9 +34,9 @@ defineProps({
       </time>
       <CommentLikeButton
         :target="review"
-        :save="(liked) => setReviewLike(review.id, liked)"
+        :save="(liked) => actions.setReviewLike(review.id, liked)"
       />
-      <ReviewReplySection :review="review" />
+      <ReviewReplySection :review="review" :actions="actions" />
     </li>
   </ul>
 </template>
