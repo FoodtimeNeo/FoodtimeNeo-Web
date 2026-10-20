@@ -24,6 +24,7 @@ function mountView() {
     global: {
       stubs: {
         RouterLink: RouterLinkStub,
+        Teleport: true,
         ElDialog: {
           template:
             '<div class="el-dialog-stub" v-if="modelValue"><slot /></div>',
@@ -119,7 +120,7 @@ describe('CommunityFeedView', () => {
     expect(cols.length).toBe(2);
   });
 
-  it('点击卡片跳转到对应帖子详情页', async () => {
+  it('点击卡片在当前页弹出小红书详情弹窗而不单开页面', async () => {
     fetchCommunityPosts.mockResolvedValue({
       items: [
         {
@@ -138,11 +139,14 @@ describe('CommunityFeedView', () => {
     const card = wrapper.find('.community-post-card');
     expect(card.exists()).toBe(true);
     await card.trigger('click');
+    await flushPromises();
 
-    expect(mockPush).toHaveBeenCalledWith({
-      name: 'communityDetail',
-      params: { postId: 'p1' },
+    const detailModal = wrapper.findComponent({
+      name: 'CommunityPostDetailModal',
     });
+    expect(detailModal.exists()).toBe(true);
+    expect(detailModal.props('modelValue')).toBe(true);
+    expect(detailModal.props('postId')).toBe('p1');
   });
 
   it('右下角存在悬浮发帖按钮，点击可唤起发帖弹窗', async () => {

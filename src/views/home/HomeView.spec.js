@@ -27,6 +27,7 @@ function mountHome() {
     global: {
       stubs: {
         RouterLink: RouterLinkStub,
+        Teleport: true,
         ElDialog: {
           template:
             '<div class="el-dialog-stub" v-if="modelValue"><slot /></div>',
@@ -83,14 +84,19 @@ describe('HomeView', () => {
     const waterfallCols = wrapper.findAll('.home-community-waterfall__col');
     expect(waterfallCols.length).toBeGreaterThan(0);
 
-    // 点击卡片跳转到详情页
+    // 点击卡片在电脑端弹出小红书详情弹窗而不单开页面
     const postCard = wrapper.find('.community-post-card');
     expect(postCard.exists()).toBe(true);
     await postCard.trigger('click');
-    expect(mockPush).toHaveBeenCalledWith({
-      name: 'communityDetail',
-      params: { postId: 'p1' },
+    await flushPromises();
+
+    // 弹窗组件被唤起
+    const detailModal = wrapper.findComponent({
+      name: 'CommunityPostDetailModal',
     });
+    expect(detailModal.exists()).toBe(true);
+    expect(detailModal.props('modelValue')).toBe(true);
+    expect(detailModal.props('postId')).toBe('p1');
   });
 
   it('首页提供快速发帖入口可唤起发帖弹窗', async () => {
