@@ -1,18 +1,25 @@
 export const navigationItems = [
-  { name: 'canteenList', label: '食堂', icon: '▤' },
-  { name: 'community', label: '社区', icon: '✦' },
-  { name: 'profile', label: '我的', icon: '◯' },
+  { name: 'home', label: '首页', icon: '⌂', code: '00' },
+  { name: 'canteenList', label: '食堂', icon: '▤', code: '01' },
+  { name: 'community', label: '社区', icon: '✦', code: '02' },
+  { name: 'profile', label: '我的', icon: '◯', code: '03' },
 ];
 
-const managementItem = { name: 'adminAudit', label: '管理', icon: '◇' };
+const managementItem = {
+  name: 'adminAudit',
+  label: '管理',
+  icon: '◇',
+  code: '03',
+};
 
 export function getNavigationItems(isAdmin) {
   return isAdmin
     ? [
         navigationItems[0],
         navigationItems[1],
-        managementItem,
         navigationItems[2],
+        managementItem,
+        { ...navigationItems[3], code: '04' },
       ]
     : navigationItems;
 }
@@ -46,8 +53,8 @@ export function resolveBreadcrumbs(route) {
       { name: 'communityDetail', title: '帖子详情' },
     ];
   }
-  const crumbs = route.matched
-    .filter((record) => record.name && record.meta.title)
+  const crumbs = (route.matched || [])
+    .filter((record) => record.name && record.meta?.title)
     .map((record) => ({ name: record.name, title: record.meta.title }));
 
   if (crumbs[0]?.name !== 'home') {
@@ -58,15 +65,15 @@ export function resolveBreadcrumbs(route) {
 }
 
 export function resolveActiveNavigation(route) {
-  if (route.meta.requiresAdmin || route.meta.requiresSuperadmin)
+  if (route.meta?.requiresAdmin || route.meta?.requiresSuperadmin)
     return managementItem.name;
-  if (route.name === 'home' || route.matched.some((r) => r.name === 'home'))
-    return null;
+  if (route.name === 'home' || route.matched?.some((r) => r.name === 'home'))
+    return 'home';
   const names = new Set(navigationItems.map((item) => item.name));
-  const section = route.meta.nav;
+  const section = route.meta?.nav;
 
   if (names.has(section)) return section;
 
-  const matched = [...route.matched].reverse();
+  const matched = [...(route.matched || [])].reverse();
   return matched.find((record) => names.has(record.name))?.name ?? null;
 }
