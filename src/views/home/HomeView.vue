@@ -16,7 +16,7 @@ const {
   error,
   loading,
   load,
-} = useAsyncData(fetchCanteens, { initial: [] });
+} = useAsyncData(fetchCanteens, { initial: [], cacheKey: 'canteens_list' });
 
 // 02 社区动态部分
 const communityPosts = ref([]);
