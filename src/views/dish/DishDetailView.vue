@@ -107,7 +107,7 @@ const params = computed(() => ({
               <span v-else
                 >{{ Number(data.rating.averageScore).toFixed(2) }} / 5</span
               >
-              {{ data.rating.reviewCount }} 条评价 · 每日更新
+              {{ data.rating.reviewCount }} 条评价 · 实时统计
             </p>
           </div>
           <RouterLink

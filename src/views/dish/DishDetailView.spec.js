@@ -64,13 +64,13 @@ describe('菜品真实详情', () => {
       params: { canteenId: 'c1', stallId: 's1', dishId: 'd1' },
     });
   });
-  it('评分取服务器快照，评论显示昵称与正文，隐藏投票', async () => {
+  it('评分取服务器实时汇总，评论显示昵称与正文', async () => {
     const wrapper = mount(DishDetailView, {
       global: { stubs: { RouterLink: RouterLinkStub } },
     });
     await flushPromises();
     expect(wrapper.text()).toContain('4.25 / 5');
-    expect(wrapper.text()).toContain('每日更新');
+    expect(wrapper.text()).toContain('实时统计');
     expect(wrapper.text()).toContain('干饭达人');
     expect(wrapper.text()).not.toContain('user-id');
     expect(wrapper.text()).toContain('好吃');
