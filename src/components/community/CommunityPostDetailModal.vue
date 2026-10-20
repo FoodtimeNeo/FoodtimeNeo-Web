@@ -12,7 +12,7 @@ import ErrorState from '@/components/base/ErrorState.vue';
 /**
  * 小红书风格帖子详情弹窗。
  * 电脑端：居中双栏浮层，左侧自适应完整图片，右侧作者/正文/滚动评论/吸底操作栏。
- * 手机端：小红书原生上下流，顶部返回与作者简栏，上方图片，下方文案评论，底部吸底操作栏。
+ * 手机端：小红书原生上下流，顶部常驻返回与作者简栏，上方全宽图片，下方文案评论，底部吸底操作栏。
  */
 defineOptions({
   name: 'CommunityPostDetailModal',
@@ -245,50 +245,6 @@ function replyUser(cmt) {
         aria-label="帖子详情"
         @click="handleOverlayClick"
       >
-        <!-- 移动端顶部导航栏（<= 768px） -->
-        <header class="redbook-mobile-header">
-          <button
-            type="button"
-            class="mobile-header-btn"
-            aria-label="返回"
-            @click="close"
-          >
-            ←
-          </button>
-          <div class="mobile-header-author">
-            <img
-              v-if="post?.author?.avatar"
-              :src="post.author.avatar"
-              :alt="post.author.name"
-              class="mobile-author-avatar"
-            />
-            <span v-else class="mobile-author-fallback">{{
-              (post?.author?.name || '饭')[0]
-            }}</span>
-            <span class="mobile-author-name">{{
-              post?.author?.name || '校园干饭人'
-            }}</span>
-          </div>
-          <div class="mobile-header-actions">
-            <button
-              type="button"
-              class="mobile-follow-btn"
-              :class="{ 'is-following': isFollowing }"
-              @click="toggleFollow"
-            >
-              {{ isFollowing ? '已关注' : '关注' }}
-            </button>
-            <button
-              type="button"
-              class="mobile-share-btn"
-              aria-label="分享"
-              @click="handleShare"
-            >
-              ↗
-            </button>
-          </div>
-        </header>
-
         <!-- 电脑端悬浮关闭按钮（> 768px） -->
         <button
           type="button"
@@ -299,7 +255,7 @@ function replyUser(cmt) {
           ×
         </button>
 
-        <!-- 弹窗主体卡片 -->
+        <!-- 弹窗主体卡片容器 -->
         <div class="redbook-modal__card" @click.stop>
           <LoadingState v-if="loading" />
 
@@ -310,263 +266,382 @@ function replyUser(cmt) {
           />
 
           <div v-else-if="post" class="redbook-modal__body">
-            <!-- 左侧：图片区域（自适应尺寸居中，保持原图比例） -->
-            <div class="redbook-media-pane">
-              <div class="redbook-media-pane__wrapper">
+            <!-- 移动端顶部常驻导航栏（<= 768px，位于内容最顶端） -->
+            <header class="redbook-mobile-header">
+              <button
+                type="button"
+                class="mobile-header-btn"
+                aria-label="返回"
+                @click="close"
+              >
+                ←
+              </button>
+              <div class="mobile-header-author">
                 <img
-                  v-if="currentImage"
-                  :src="currentImage"
-                  :alt="post.title"
-                  class="redbook-media-pane__img"
-                  loading="lazy"
+                  v-if="post.author?.avatar"
+                  :src="post.author.avatar"
+                  :alt="post.author.name"
+                  class="mobile-author-avatar"
                 />
-                <div v-else class="redbook-media-pane__empty">
-                  <span>暂无图片</span>
-                </div>
-
-                <!-- 切换箭头 -->
-                <button
-                  v-if="images.length > 1 && currentImageIndex > 0"
-                  type="button"
-                  class="redbook-img-nav redbook-img-nav--prev"
-                  aria-label="上一张"
-                  @click="prevImage"
-                >
-                  ‹
-                </button>
-                <button
-                  v-if="
-                    images.length > 1 && currentImageIndex < images.length - 1
-                  "
-                  type="button"
-                  class="redbook-img-nav redbook-img-nav--next"
-                  aria-label="下一张"
-                  @click="nextImage"
-                >
-                  ›
-                </button>
-
-                <!-- 底部轮播小圆点 -->
-                <div v-if="images.length > 1" class="redbook-dots">
-                  <span
-                    v-for="(_, idx) in images"
-                    :key="idx"
-                    class="redbook-dot"
-                    :class="{ 'is-active': idx === currentImageIndex }"
-                    @click="currentImageIndex = idx"
-                  ></span>
-                </div>
+                <span v-else class="mobile-author-fallback">{{
+                  (post.author?.name || '饭')[0]
+                }}</span>
+                <span class="mobile-author-name">{{
+                  post.author?.name || '校园干饭人'
+                }}</span>
               </div>
-            </div>
-
-            <!-- 右侧：作者信息、正文、滚动评论与底部吸底操作栏 -->
-            <div class="redbook-info-pane">
-              <!-- 作者栏（PC 端展示） -->
-              <header class="redbook-author-bar">
-                <div class="redbook-author-avatar-wrap">
-                  <img
-                    v-if="post.author?.avatar"
-                    :src="post.author.avatar"
-                    :alt="post.author.name"
-                    class="redbook-author-avatar"
-                  />
-                  <div v-else class="redbook-author-fallback">
-                    {{ (post.author?.name || '饭')[0] }}
-                  </div>
-                </div>
-                <div class="redbook-author-meta">
-                  <span class="redbook-author-name">{{
-                    post.author?.name || '校园干饭人'
-                  }}</span>
-                </div>
+              <div class="mobile-header-actions">
                 <button
                   type="button"
-                  class="redbook-follow-btn"
+                  class="mobile-follow-btn"
                   :class="{ 'is-following': isFollowing }"
                   @click="toggleFollow"
                 >
                   {{ isFollowing ? '已关注' : '关注' }}
                 </button>
-              </header>
-
-              <!-- 中间可滚动区域（正文 + 评论列表） -->
-              <div class="redbook-scroll-area">
-                <!-- 审核提示 -->
-                <div
-                  v-if="post.status === 'pending'"
-                  class="redbook-audit-badge"
+                <button
+                  type="button"
+                  class="mobile-share-btn"
+                  aria-label="分享"
+                  @click="handleShare"
                 >
-                  ⚠️ 当前帖子正在审核中，仅供本人预览
-                </div>
+                  ↗
+                </button>
+              </div>
+            </header>
 
-                <!-- 标题 -->
-                <h1 class="redbook-post-title">{{ post.title }}</h1>
-
-                <!-- 话题标签 -->
-                <div
-                  v-if="post.tags && post.tags.length"
-                  class="redbook-post-tags"
-                >
-                  <span v-for="tag in post.tags" :key="tag" class="redbook-tag">
-                    #{{ tag }}
-                  </span>
-                </div>
-
-                <!-- 正文内容 -->
-                <p class="redbook-post-text">{{ post.content }}</p>
-
-                <!-- 发布时间与食堂位置 -->
-                <div class="redbook-post-footline">
-                  <time>{{ formatPostTime(post.createdAt) }}</time>
-                  <span v-if="post.canteenName"> · {{ post.canteenName }}</span>
-                </div>
-
-                <!-- 评论列表部分 -->
-                <div class="redbook-comments-section">
-                  <div class="redbook-comments-header">
-                    <span>共 {{ comments.length }} 条评论</span>
+            <!-- 主内容展示区（PC 为左右双栏，移动端为上下垂直流） -->
+            <div class="redbook-layout-main">
+              <!-- 左侧（移动端为上方）：图片区域（自适应尺寸居中，保持原图比例） -->
+              <div class="redbook-media-pane">
+                <div class="redbook-media-pane__wrapper">
+                  <img
+                    v-if="currentImage"
+                    :src="currentImage"
+                    :alt="post.title"
+                    class="redbook-media-pane__img"
+                    loading="lazy"
+                  />
+                  <div v-else class="redbook-media-pane__empty">
+                    <span>暂无图片</span>
                   </div>
 
-                  <div v-if="commentLoading" class="redbook-comments-loading">
-                    评论加载中...
-                  </div>
-                  <div
-                    v-else-if="comments.length === 0"
-                    class="redbook-comments-empty"
+                  <!-- 切换箭头 -->
+                  <button
+                    v-if="images.length > 1 && currentImageIndex > 0"
+                    type="button"
+                    class="redbook-img-nav redbook-img-nav--prev"
+                    aria-label="上一张"
+                    @click="prevImage"
                   >
-                    还没有人评论，来发第一条吧~
-                  </div>
-                  <div v-else class="redbook-comments-list">
-                    <article
-                      v-for="cmt in comments"
-                      :key="cmt.id"
-                      class="redbook-comment-item"
-                    >
-                      <div class="cmt-avatar-wrap">
-                        <img
-                          v-if="cmt.author?.avatar"
-                          :src="cmt.author.avatar"
-                          :alt="cmt.author.name"
-                          class="cmt-avatar"
-                        />
-                        <span v-else class="cmt-fallback">{{
-                          (cmt.author?.name || '评')[0]
-                        }}</span>
-                      </div>
-                      <div class="cmt-content-wrap">
-                        <div class="cmt-author-row">
-                          <span class="cmt-author-name">{{
-                            cmt.author?.name || '热心同学'
-                          }}</span>
-                          <span
-                            v-if="cmt.author?.id === post.author?.id"
-                            class="cmt-author-tag"
-                            >作者</span
-                          >
-                        </div>
-                        <p class="cmt-body-text">{{ cmt.content }}</p>
-                        <div class="cmt-meta-row">
-                          <time class="cmt-time">{{
-                            formatTime(cmt.createdAt)
-                          }}</time>
-                          <button
-                            type="button"
-                            class="cmt-reply-btn"
-                            @click="replyUser(cmt)"
-                          >
-                            回复
-                          </button>
-                          <button
-                            type="button"
-                            class="cmt-like-btn"
-                            :class="{
-                              'is-liked': likedComments.has(cmt.id),
-                            }"
-                            @click="toggleLikeComment(cmt)"
-                          >
-                            <span>{{
-                              likedComments.has(cmt.id) ? '❤️' : '🤍'
-                            }}</span>
-                            <span v-if="cmt.likeCount">{{
-                              cmt.likeCount
-                            }}</span>
-                          </button>
-                        </div>
-                      </div>
-                    </article>
+                    ‹
+                  </button>
+                  <button
+                    v-if="
+                      images.length > 1 && currentImageIndex < images.length - 1
+                    "
+                    type="button"
+                    class="redbook-img-nav redbook-img-nav--next"
+                    aria-label="下一张"
+                    @click="nextImage"
+                  >
+                    ›
+                  </button>
+
+                  <!-- 底部轮播小圆点 -->
+                  <div v-if="images.length > 1" class="redbook-dots">
+                    <span
+                      v-for="(_, idx) in images"
+                      :key="idx"
+                      class="redbook-dot"
+                      :class="{ 'is-active': idx === currentImageIndex }"
+                      @click="currentImageIndex = idx"
+                    ></span>
                   </div>
                 </div>
               </div>
 
-              <!-- 底部吸底操作栏 -->
-              <footer class="redbook-bottom-bar">
-                <div class="redbook-input-pill">
-                  <span class="pill-pen-icon" aria-hidden="true">✎</span>
-                  <input
-                    ref="commentInputRef"
-                    v-model="quickCommentText"
-                    type="text"
-                    placeholder="说点什么..."
-                    class="pill-input"
-                    maxlength="300"
-                    @keydown.enter="handleSendComment"
-                  />
+              <!-- 右侧（移动端为下方）：作者信息、正文、滚动评论 -->
+              <div class="redbook-info-pane">
+                <!-- 作者栏（PC 端展示） -->
+                <header class="redbook-author-bar">
+                  <div class="redbook-author-avatar-wrap">
+                    <img
+                      v-if="post.author?.avatar"
+                      :src="post.author.avatar"
+                      :alt="post.author.name"
+                      class="redbook-author-avatar"
+                    />
+                    <div v-else class="redbook-author-fallback">
+                      {{ (post.author?.name || '饭')[0] }}
+                    </div>
+                  </div>
+                  <div class="redbook-author-meta">
+                    <span class="redbook-author-name">{{
+                      post.author?.name || '校园干饭人'
+                    }}</span>
+                  </div>
                   <button
-                    v-if="quickCommentText.trim()"
                     type="button"
-                    class="pill-send-btn"
-                    :disabled="isSubmittingComment"
-                    @click="handleSendComment"
+                    class="redbook-follow-btn"
+                    :class="{ 'is-following': isFollowing }"
+                    @click="toggleFollow"
                   >
-                    发送
+                    {{ isFollowing ? '已关注' : '关注' }}
                   </button>
+                </header>
+
+                <!-- 正文 + 评论区域 -->
+                <div class="redbook-scroll-area">
+                  <!-- 审核提示 -->
+                  <div
+                    v-if="post.status === 'pending'"
+                    class="redbook-audit-badge"
+                  >
+                    ⚠️ 当前帖子正在审核中，仅供本人预览
+                  </div>
+
+                  <!-- 标题 -->
+                  <h1 class="redbook-post-title">{{ post.title }}</h1>
+
+                  <!-- 话题标签 -->
+                  <div
+                    v-if="post.tags && post.tags.length"
+                    class="redbook-post-tags"
+                  >
+                    <span
+                      v-for="tag in post.tags"
+                      :key="tag"
+                      class="redbook-tag"
+                    >
+                      #{{ tag }}
+                    </span>
+                  </div>
+
+                  <!-- 正文内容 -->
+                  <p class="redbook-post-text">{{ post.content }}</p>
+
+                  <!-- 发布时间与食堂位置 -->
+                  <div class="redbook-post-footline">
+                    <time>{{ formatPostTime(post.createdAt) }}</time>
+                    <span v-if="post.canteenName">
+                      · {{ post.canteenName }}</span
+                    >
+                  </div>
+
+                  <!-- 评论列表部分 -->
+                  <div class="redbook-comments-section">
+                    <div class="redbook-comments-header">
+                      <span>共 {{ comments.length }} 条评论</span>
+                    </div>
+
+                    <div v-if="commentLoading" class="redbook-comments-loading">
+                      评论加载中...
+                    </div>
+                    <div
+                      v-else-if="comments.length === 0"
+                      class="redbook-comments-empty"
+                    >
+                      还没有人评论，来发第一条吧~
+                    </div>
+                    <div v-else class="redbook-comments-list">
+                      <article
+                        v-for="cmt in comments"
+                        :key="cmt.id"
+                        class="redbook-comment-item"
+                      >
+                        <div class="cmt-avatar-wrap">
+                          <img
+                            v-if="cmt.author?.avatar"
+                            :src="cmt.author.avatar"
+                            :alt="cmt.author.name"
+                            class="cmt-avatar"
+                          />
+                          <span v-else class="cmt-fallback">{{
+                            (cmt.author?.name || '评')[0]
+                          }}</span>
+                        </div>
+                        <div class="cmt-content-wrap">
+                          <div class="cmt-author-row">
+                            <span class="cmt-author-name">{{
+                              cmt.author?.name || '热心同学'
+                            }}</span>
+                            <span
+                              v-if="cmt.author?.id === post.author?.id"
+                              class="cmt-author-tag"
+                              >作者</span
+                            >
+                          </div>
+                          <p class="cmt-body-text">{{ cmt.content }}</p>
+                          <div class="cmt-meta-row">
+                            <time class="cmt-time">{{
+                              formatTime(cmt.createdAt)
+                            }}</time>
+                            <button
+                              type="button"
+                              class="cmt-reply-btn"
+                              @click="replyUser(cmt)"
+                            >
+                              回复
+                            </button>
+                            <button
+                              type="button"
+                              class="cmt-like-btn"
+                              :class="{
+                                'is-liked': likedComments.has(cmt.id),
+                              }"
+                              @click="toggleLikeComment(cmt)"
+                            >
+                              <span>{{
+                                likedComments.has(cmt.id) ? '❤️' : '🤍'
+                              }}</span>
+                              <span v-if="cmt.likeCount">{{
+                                cmt.likeCount
+                              }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="redbook-action-icons">
-                  <button
-                    type="button"
-                    class="action-icon-btn"
-                    :class="{ 'is-active': isLiked }"
-                    :aria-label="`点赞 ${post.likeCount || 0}`"
-                    @click="toggleLike"
-                  >
-                    <span class="icon-emoji">{{ isLiked ? '❤️' : '🤍' }}</span>
-                    <span class="icon-count">{{ post.likeCount || 0 }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="action-icon-btn"
-                    :class="{ 'is-active': isFavorited }"
-                    :aria-label="`收藏 ${post.favoriteCount || 0}`"
-                    @click="toggleFavorite"
-                  >
-                    <span class="icon-emoji">{{
-                      isFavorited ? '⭐' : '☆'
-                    }}</span>
-                    <span class="icon-count">{{
-                      post.favoriteCount || 0
-                    }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="action-icon-btn"
-                    :aria-label="`评论 ${comments.length}`"
-                    @click="focusCommentInput"
-                  >
-                    <span class="icon-emoji">💬</span>
-                    <span class="icon-count">{{ comments.length }}</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="action-icon-btn"
-                    aria-label="分享"
-                    @click="handleShare"
-                  >
-                    <span class="icon-emoji">↗</span>
-                  </button>
-                </div>
-              </footer>
+                <!-- PC 端操作栏（放置在右栏底部） -->
+                <footer class="redbook-bottom-bar pc-only-bottom">
+                  <div class="redbook-input-pill">
+                    <span class="pill-pen-icon" aria-hidden="true">✎</span>
+                    <input
+                      ref="commentInputRef"
+                      v-model="quickCommentText"
+                      type="text"
+                      placeholder="说点什么..."
+                      class="pill-input"
+                      maxlength="300"
+                      @keydown.enter="handleSendComment"
+                    />
+                    <button
+                      v-if="quickCommentText.trim()"
+                      type="button"
+                      class="pill-send-btn"
+                      :disabled="isSubmittingComment"
+                      @click="handleSendComment"
+                    >
+                      发送
+                    </button>
+                  </div>
+
+                  <div class="redbook-action-icons">
+                    <button
+                      type="button"
+                      class="action-icon-btn"
+                      :class="{ 'is-active': isLiked }"
+                      :aria-label="`点赞 ${post.likeCount || 0}`"
+                      @click="toggleLike"
+                    >
+                      <span class="icon-emoji">{{
+                        isLiked ? '❤️' : '🤍'
+                      }}</span>
+                      <span class="icon-count">{{ post.likeCount || 0 }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="action-icon-btn"
+                      :class="{ 'is-active': isFavorited }"
+                      :aria-label="`收藏 ${post.favoriteCount || 0}`"
+                      @click="toggleFavorite"
+                    >
+                      <span class="icon-emoji">{{
+                        isFavorited ? '⭐' : '☆'
+                      }}</span>
+                      <span class="icon-count">{{
+                        post.favoriteCount || 0
+                      }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="action-icon-btn"
+                      :aria-label="`评论 ${comments.length}`"
+                      @click="focusCommentInput"
+                    >
+                      <span class="icon-emoji">💬</span>
+                      <span class="icon-count">{{ comments.length }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="action-icon-btn"
+                      aria-label="分享"
+                      @click="handleShare"
+                    >
+                      <span class="icon-emoji">↗</span>
+                    </button>
+                  </div>
+                </footer>
+              </div>
             </div>
+
+            <!-- 手机端固定吸底操作条（<= 768px） -->
+            <footer class="redbook-bottom-bar mobile-only-bottom">
+              <div class="redbook-input-pill">
+                <span class="pill-pen-icon" aria-hidden="true">✎</span>
+                <input
+                  v-model="quickCommentText"
+                  type="text"
+                  placeholder="说点什么..."
+                  class="pill-input"
+                  maxlength="300"
+                  @keydown.enter="handleSendComment"
+                />
+                <button
+                  v-if="quickCommentText.trim()"
+                  type="button"
+                  class="pill-send-btn"
+                  :disabled="isSubmittingComment"
+                  @click="handleSendComment"
+                >
+                  发送
+                </button>
+              </div>
+
+              <div class="redbook-action-icons">
+                <button
+                  type="button"
+                  class="action-icon-btn"
+                  :class="{ 'is-active': isLiked }"
+                  :aria-label="`点赞 ${post.likeCount || 0}`"
+                  @click="toggleLike"
+                >
+                  <span class="icon-emoji">{{ isLiked ? '❤️' : '🤍' }}</span>
+                  <span class="icon-count">{{ post.likeCount || 0 }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="action-icon-btn"
+                  :class="{ 'is-active': isFavorited }"
+                  :aria-label="`收藏 ${post.favoriteCount || 0}`"
+                  @click="toggleFavorite"
+                >
+                  <span class="icon-emoji">{{ isFavorited ? '⭐' : '☆' }}</span>
+                  <span class="icon-count">{{ post.favoriteCount || 0 }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="action-icon-btn"
+                  :aria-label="`评论 ${comments.length}`"
+                  @click="focusCommentInput"
+                >
+                  <span class="icon-emoji">💬</span>
+                  <span class="icon-count">{{ comments.length }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="action-icon-btn"
+                  aria-label="分享"
+                  @click="handleShare"
+                >
+                  <span class="icon-emoji">↗</span>
+                </button>
+              </div>
+            </footer>
           </div>
         </div>
       </div>
@@ -582,7 +657,7 @@ function replyUser(cmt) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(0 0 0 / 68%);
+  background: rgb(0 0 0 / 72%);
   backdrop-filter: blur(8px);
   padding: 24px;
   overflow: hidden;
@@ -617,26 +692,43 @@ function replyUser(cmt) {
 
   &__card {
     position: relative;
-    width: min(94vw, 1020px);
+    width: min(94vw, 1040px);
     height: min(88vh, 840px);
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 20px 50px rgb(0 0 0 / 35%);
     overflow: hidden;
     display: flex;
+    flex-direction: column;
   }
 
   &__body {
     display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
     overflow: hidden;
   }
 }
 
-// 移动端顶部栏默认隐藏
+// 电脑端布局：左右分栏
+.redbook-layout-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+// 移动端顶部导航默认在 PC 端隐藏
 .redbook-mobile-header {
   display: none;
+}
+
+// 移动端吸底操作栏默认在 PC 端隐藏
+.mobile-only-bottom {
+  display: none !important;
 }
 
 // 左栏：自适应图片展示
@@ -1002,7 +1094,7 @@ function replyUser(cmt) {
   }
 }
 
-// 底部吸底操作栏
+// 吸底操作栏样式
 .redbook-bottom-bar {
   flex: none;
   padding: 12px 18px;
@@ -1088,8 +1180,15 @@ function replyUser(cmt) {
 // 移动端响应式（<= 768px）
 @media (max-width: 768px) {
   .redbook-modal {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
     padding: 0;
+    margin: 0;
     background: #fff;
+    backdrop-filter: none;
+    display: block; // 消除 flex 默认横向排布产生的子项水平拉扯！
 
     &__close-btn {
       display: none;
@@ -1100,26 +1199,33 @@ function replyUser(cmt) {
       height: 100vh;
       max-height: 100vh;
       border-radius: 0;
+      border: 0;
+      box-shadow: none;
+      display: flex;
       flex-direction: column;
     }
 
     &__body {
+      display: flex;
       flex-direction: column;
-      overflow-y: auto;
-      height: calc(100vh - 54px - 60px);
+      width: 100%;
+      height: 100%;
+      position: relative;
     }
   }
 
-  // 移动端顶部导航
+  // 移动端顶部常驻导航栏
   .redbook-mobile-header {
-    flex: none;
-    height: 54px;
-    padding: 0 14px;
     display: flex;
+    flex: none;
+    width: 100%;
+    height: 52px;
+    padding: 0 12px;
     align-items: center;
     justify-content: space-between;
     background: #fff;
     border-bottom: 1px solid #f0eee8;
+    z-index: 10;
 
     .mobile-header-btn {
       border: 0;
@@ -1127,7 +1233,7 @@ function replyUser(cmt) {
       font-size: 24px;
       cursor: pointer;
       color: #333;
-      padding: 4px;
+      padding: 4px 8px;
     }
 
     .mobile-header-author {
@@ -1191,45 +1297,73 @@ function replyUser(cmt) {
     }
   }
 
-  // 移动端上方：图片自适应
+  // 移动端主内容滚动区：垂直单列上下流
+  .redbook-layout-main {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 74px; // 留出固定吸底栏的空间，防止遮挡评论
+  }
+
+  // 上方：自适应全宽图片轮播
   .redbook-media-pane {
     flex: none;
     width: 100%;
-    min-height: 280px;
+    min-height: 260px;
     max-height: 70vh;
     height: auto;
     background: #000;
 
-    &__img {
+    &__wrapper {
+      width: 100%;
+      height: auto;
       max-height: 70vh;
+    }
+
+    &__img {
+      width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
     }
   }
 
-  // 移动端下方：文案与评论
+  // 下方：文案与评论
   .redbook-info-pane {
+    flex: none;
     width: 100%;
     height: auto;
     border-left: 0;
   }
 
-  .redbook-author-bar {
-    display: none; // 手机端由顶部 header 接管
+  // PC 端作者栏与 PC 端操作栏在移动端隐藏
+  .redbook-author-bar,
+  .pc-only-bottom {
+    display: none !important;
   }
 
   .redbook-scroll-area {
-    padding: 16px 14px 20px;
+    padding: 16px 14px 24px;
     overflow-y: visible;
   }
 
-  // 底部固定操作栏（吸底）
-  .redbook-bottom-bar {
+  // 移动端固定吸底操作栏（参考图 3）
+  .mobile-only-bottom {
+    display: flex !important;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 10002;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-    box-shadow: 0 -2px 10px rgb(0 0 0 / 8%);
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid #f0eee8;
+    padding: 8px 14px max(10px, env(safe-area-inset-bottom));
+    box-shadow: 0 -3px 12px rgb(0 0 0 / 8%);
   }
 }
 
