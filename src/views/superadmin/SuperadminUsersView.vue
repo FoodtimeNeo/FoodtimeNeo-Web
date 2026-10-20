@@ -88,6 +88,9 @@ async function submit() {
       <p>{{ roleLabels[row.role] }} · {{ statusLabels[row.status] }}</p>
       <p>注册时间：{{ formatTime(row.createdAt) }}</p>
       <p>正式评论数：{{ row.reviewCount }}</p>
+      <RouterLink :to="{ name: 'managedReviews', query: { q: row.id } }"
+        >查看该用户评论</RouterLink
+      >
       <p v-if="row.id === auth.user?.id">不能修改自己的角色或状态</p>
       <form v-if="selected?.id === row.id" @submit.prevent="submit">
         <label

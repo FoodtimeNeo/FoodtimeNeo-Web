@@ -51,13 +51,19 @@ export function resolveNavigation(to, auth) {
 export function installGuards(router) {
   router.beforeEach(async (to) => {
     const auth = useAuthStore();
-    if (
-      !auth.initialized ||
+    if (!auth.initialized) {
+      await auth.refresh();
+    } else if (
       to.meta.requiresAuth ||
       to.meta.requiresAdmin ||
       to.meta.requiresSuperadmin
-    )
-      await auth.refresh();
+    ) {
+      if (!auth.isAuthenticated) {
+        await auth.refresh();
+      } else {
+        auth.refresh().catch(() => {});
+      }
+    }
     return resolveNavigation(to, {
       isAuthenticated: auth.isAuthenticated,
       isAdmin: auth.isAdmin,

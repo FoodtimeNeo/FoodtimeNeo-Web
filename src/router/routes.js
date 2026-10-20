@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/profile/review-replies',
+    name: 'myReviewReplies',
+    component: () => import('@/views/profile/MyReviewRepliesView.vue'),
+    meta: {
+      title: '我的回复',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/admin/reviews',
     name: 'managedReviews',
     component: () => import('@/views/admin/ManagedReviewsView.vue'),
@@ -111,6 +122,28 @@ export const routes = [
     name: 'canteenList',
     component: () => import('@/views/canteen/CanteenListView.vue'),
     meta: { title: '食堂', layout: 'default', requiresAuth: true },
+  },
+  {
+    path: '/community',
+    name: 'community',
+    component: () => import('@/views/community/CommunityFeedView.vue'),
+    meta: {
+      title: '社区',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'community',
+    },
+  },
+  {
+    path: '/community/posts/:postId',
+    name: 'communityDetail',
+    component: () => import('@/views/community/CommunityDetailView.vue'),
+    meta: {
+      title: '帖子详情',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'community',
+    },
   },
   {
     path: '/canteens/:canteenId',

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { fetchAuditItems, submitAudit } from '@/api/admin-audit.api.js';
+import { removeReviewReplyAsAdmin } from '@/api/review.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime, statusLabels } from '@/utils/recordLabels.js';
 import { formatPrice } from '@/utils/mediaUrl.js';
@@ -10,8 +11,15 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
+import AiVerdict from '@/components/base/AiVerdict.vue';
 const status = ref('pending');
-const labels = { review: '点评', dish: '菜品', stall: '档口', photo: '图片' };
+const labels = {
+  review: '点评',
+  dish: '菜品',
+  stall: '档口',
+  photo: '图片',
+  'dish-review-reply': '点评回复',
+};
 const { items, page, total, size, loading, error, load } = usePagedData(
   (page, options) => fetchAuditItems(status.value, page, options),
 );
@@ -38,8 +46,9 @@ async function submit() {
   if (writing.value || !selected.value) return;
   const row = selected.value;
   failure.value = '';
-  if (row.action === 'reject' && !reason.value.trim()) {
-    failure.value = '驳回须填写审核原因';
+  if (['reject', 'remove'].includes(row.action) && !reason.value.trim()) {
+    failure.value =
+      row.action === 'remove' ? '删除须填写原因' : '驳回须填写审核原因';
     return;
   }
   if (
@@ -52,15 +61,23 @@ async function submit() {
   }
   writing.value = true;
   try {
-    await submitAudit(row.type, row.id, {
-      action: row.action,
-      reason: reason.value.trim() || null,
-      ...(row.type === 'dish' && row.action === 'approve'
-        ? { price: Number(price.value) }
-        : {}),
-    });
+    if (row.action === 'remove')
+      await removeReviewReplyAsAdmin(row.id, reason.value.trim());
+    else
+      await submitAudit(row.type, row.id, {
+        action: row.action,
+        reason: reason.value.trim() || null,
+        ...(row.type === 'dish' && row.action === 'approve'
+          ? { price: Number(price.value) }
+          : {}),
+      });
     selected.value = null;
-    notice.value = row.action === 'approve' ? '审核已通过' : '已驳回';
+    notice.value =
+      row.action === 'remove'
+        ? '回复已删除'
+        : row.action === 'approve'
+          ? '审核已通过'
+          : '已驳回';
     if (items.value.length === 1 && page.value > 1) page.value--;
     else await load();
   } catch (error) {
@@ -95,7 +112,7 @@ async function submit() {
         <h3>{{ labels[row.type] }} · {{ row.name || row.id }}</h3>
         <p>{{ statusLabels[row.status] }}</p>
         <p>ID：{{ row.id }}</p>
-        <p>目标 ID：{{ row.targetId }} · 投稿者 ID：{{ row.userId }}</p>
+        <p>投稿者：{{ row.userDisplayName || row.userId }}</p>
         <p>提交时间：{{ formatTime(row.createdAt) }}</p>
         <p v-if="row.rating">评分：{{ row.rating }} / 5</p>
         <p v-if="row.content" class="text">{{ row.content }}</p>
@@ -106,16 +123,33 @@ async function submit() {
           alt="待审核图片"
           class="photo"
         />
+        <AiVerdict
+          v-if="['review', 'photo', 'dish-review-reply'].includes(row.type)"
+          :risk-level="row.aiRiskLevel"
+          :confidence="row.aiConfidence"
+          :labels="row.aiLabels"
+          :reason="row.aiReason"
+          :checked-at="row.aiCheckedAt"
+        />
         <p v-if="row.reason" class="text">审核说明：{{ row.reason }}</p>
-        <div v-if="row.status === 'pending'">
+        <div
+          v-if="
+            row.status === 'pending' ||
+            (row.type === 'dish-review-reply' && row.status === 'approved')
+          "
+        >
           <form
             v-if="selected?.id === row.id && selected?.type === row.type"
             @submit.prevent="submit"
           >
             <strong
-              >{{ selected.action === 'approve' ? '通过' : '驳回' }}这条{{
-                labels[row.type]
-              }}投稿</strong
+              >{{
+                selected.action === 'remove'
+                  ? '删除'
+                  : selected.action === 'approve'
+                    ? '通过'
+                    : '驳回'
+              }}这条{{ labels[row.type] }}投稿</strong
             >
             <label v-if="row.type === 'dish' && selected.action === 'approve'"
               >正式价格<input
@@ -125,7 +159,7 @@ async function submit() {
             /></label>
             <label
               >审核说明{{
-                selected.action === 'reject' ? '（必填）' : '（选填）'
+                selected.action !== 'approve' ? '（必填）' : '（选填）'
               }}<textarea v-model="reason" :disabled="writing" rows="3" />
             </label>
             <p v-if="failure" role="alert">{{ failure }}</p>
@@ -137,17 +171,26 @@ async function submit() {
               >
                 取消</button
               ><button type="submit" :disabled="writing">
-                {{ writing ? '审核中…' : '确认审核' }}
+                {{
+                  writing
+                    ? '处理中…'
+                    : selected.action === 'remove'
+                      ? '确认删除'
+                      : '确认审核'
+                }}
               </button>
             </div>
           </form>
-          <div v-else>
+          <div v-else-if="row.status === 'pending'">
             <button :disabled="writing" @click="choose(row, 'approve')">
               通过</button
             ><button :disabled="writing" @click="choose(row, 'reject')">
               驳回
             </button>
           </div>
+          <button v-else :disabled="writing" @click="choose(row, 'remove')">
+            删除违规回复
+          </button>
         </div>
       </article>
     </template>

@@ -1,10 +1,17 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { navigationItems, resolveActiveNavigation } from './navigation.js';
+import {
+  getNavigationItems,
+  navigationTarget,
+  resolveActiveNavigation,
+} from './navigation.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
 
 const route = useRoute();
 const router = useRouter();
+const auth = useAuthStore();
+const navigationItems = computed(() => getNavigationItems(auth.isAdmin));
 const activeName = computed(() => resolveActiveNavigation(route));
 </script>
 
@@ -14,12 +21,12 @@ const activeName = computed(() => resolveActiveNavigation(route));
       <RouterLink
         v-if="router.hasRoute(item.name)"
         class="mobile-tab-bar__item"
-        :to="{ name: item.name }"
+        :to="navigationTarget(item, route)"
         :class="{ 'is-active': activeName === item.name }"
         :aria-current="activeName === item.name ? 'location' : undefined"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          String(index + 1).padStart(2, '0')
+          item.code || String(index).padStart(2, '0')
         }}</span>
         <span>{{ item.label }}</span>
       </RouterLink>
@@ -30,7 +37,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
         :title="`${item.label}将在后续阶段开放`"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          String(index + 1).padStart(2, '0')
+          item.code || String(index).padStart(2, '0')
         }}</span>
         <span>{{ item.label }}</span>
       </span>

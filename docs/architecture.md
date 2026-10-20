@@ -15,6 +15,9 @@ FoodtimeNeo-Web/
 │   ├── development-rules.md    # 编码约定细则
 │   ├── backend-integration.md  # 现有后端接口映射与安全边界
 │   ├── verification.md         # 本轮检查与真实联调记录
+│   ├── README.md               # 文档索引与适用范围
+│   ├── local-development.md    # 环境、代理与三端联调
+│   ├── ci-cd.md                # CI与交付范围
 │   └── design-style-web.md     # 视觉规范
 ├── scripts/git/                # 分支脚本与 CI 校验（Node，无第三方依赖）
 ├── scripts/dev/                # 开发代理目标检查（本机或明确指定的服务器来源）
@@ -61,7 +64,7 @@ views ──► components ──► components/base
 - 依赖只能自上而下。`components` 不导入 `views`，`api` 不导入 `store` 或 Vue。
 - `views` 负责取数、组合组件和处理路由参数；`components` 通过 props / emits 通信，不直接请求接口。
 - `api/*.api.js` 只做请求与响应字段适配，返回前端模型；错误统一为 `ApiError`（见 `src/api/http.js`）。
-- `store` 只放跨页面共享状态（会话、当前用户、角色）。单页数据留在页面或 composable 中。
+- `store` 只放跨页面共享状态（会话、当前用户、角色、目录搜索词）。单页数据留在页面或 composable 中。
 - 导入 `src/` 内模块统一使用 `@/` 别名，同目录可用相对路径。
 
 ## 3. 路由树
@@ -79,6 +82,7 @@ views ──► components ──► components/base
 …/:canteenId/submissions/new                          档口投稿
 /profile /profile/reviews /profile/submissions       本人身份与历史
 /profile/password                                    修改本人密码
+/profile/review-replies                              本人回复及审核记录
 /login  /register                                    鉴权
 /admin/audit /admin/moderation/logs                   内容审核与日志
 /admin/manage /admin/reviews                          目录与正式评论管理
@@ -106,3 +110,9 @@ views ──► components ──► components/base
 - 单元测试与源文件同目录，命名 `*.spec.js`。
 - 测试覆盖：`utils` 纯函数、`api` 字段适配与错误映射、`store` 行为、`router` 守卫、组件的交互与状态（加载 / 空 / 错误）。
 - 接口替身只存在于单元测试，不注入应用运行；真实联调使用经确认的隔离库。不存在本地身份、Mock 业务数据或失败后的模拟成功回退。
+
+### 管理入口
+
+普通用户的主导航为“食堂 / 我的”，管理员和平台管理员在中间增加“管理”；桌面与移动端共用角色判断。管理下的审核、目录、正式评论、日志和平台用户页面统一高亮“管理”。重复点击当前栏目保留当前页面及参数；首页可由品牌链接进入。所有管理路由仍须由前后端验证权限。
+
+点评互动由DishDetailView注入领域API操作到DishReviewList/ReviewReplySection；展示组件不直接导入API。回复按展开动作游标加载，输入与请求状态局部保存；我的回复使用独立分页页面，不并入原评论投稿接口。

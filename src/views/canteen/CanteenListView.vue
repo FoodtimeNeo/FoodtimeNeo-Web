@@ -13,7 +13,7 @@ const {
   error,
   loading,
   load,
-} = useAsyncData(fetchCanteens, { initial: [] });
+} = useAsyncData(fetchCanteens, { initial: [], cacheKey: 'canteens_list' });
 const { query, matches: filteredCanteens } = useCatalogSearch(
   canteens,
   'canteens',

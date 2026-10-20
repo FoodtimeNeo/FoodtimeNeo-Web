@@ -1,12 +1,17 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { navigationItems, resolveActiveNavigation } from './navigation.js';
+import {
+  getNavigationItems,
+  navigationTarget,
+  resolveActiveNavigation,
+} from './navigation.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const navigationItems = computed(() => getNavigationItems(auth.isAdmin));
 const activeName = computed(() => resolveActiveNavigation(route));
 </script>
 
@@ -36,24 +41,17 @@ const activeName = computed(() => resolveActiveNavigation(route));
             router.hasRoute(entry.name),
           )"
           :key="item.name"
-          :to="{ name: item.name }"
+          :to="navigationTarget(item, route)"
           :class="{ 'is-active': activeName === item.name }"
           :aria-current="activeName === item.name ? 'location' : undefined"
         >
           <span aria-hidden="true">{{
-            String(index + 1).padStart(2, '0')
+            item.code || String(index).padStart(2, '0')
           }}</span>
           {{ item.label }}
         </RouterLink>
       </nav>
 
-      <RouterLink
-        v-if="auth.isAdmin"
-        class="app-header__admin"
-        :to="{ name: 'adminAudit' }"
-      >
-        管理台
-      </RouterLink>
       <span class="app-header__account">
         {{ auth.isAuthenticated ? auth.displayName : '访客模式' }}
       </span>

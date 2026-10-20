@@ -1,13 +1,12 @@
 <script setup>
 import { formatPrice } from '@/utils/mediaUrl.js';
 /**
- * 档口页的菜品条目：菜名、展示评分与价格，点击进入菜品详情。
- * 字段对齐后端菜品序列化：{ id, name, price, canteenId }。
+ * 档口页的菜品条目：菜名、后端实时评分与价格。
  */
 defineProps({
   dish: { type: Object, required: true },
   canteenId: { type: String, required: true },
-  rating: { type: Number, default: 4.8 },
+  rating: { type: Number, default: null },
 });
 
 /**
@@ -29,9 +28,14 @@ defineProps({
       <span class="dish-price__name">{{ dish.name }}</span>
       <span
         class="dish-price__rating"
-        :aria-label="`评分 ${rating.toFixed(1)} 分`"
+        :aria-label="
+          rating === null ? '暂无评分' : `评分 ${rating.toFixed(1)} 分`
+        "
       >
-        <span aria-hidden="true">★</span> {{ rating.toFixed(1) }} 分
+        <template v-if="rating !== null">
+          <span aria-hidden="true">★</span> {{ rating.toFixed(1) }} 分
+        </template>
+        <template v-else>暂无评分</template>
       </span>
     </span>
     <span class="dish-price__dots" aria-hidden="true"></span>

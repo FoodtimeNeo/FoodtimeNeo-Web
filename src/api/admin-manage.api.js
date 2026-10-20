@@ -38,7 +38,10 @@ export function saveManagedItem(type, id, input) {
 }
 export const deleteManagedItem = (type, id) =>
   http.delete(path(type) + '/' + encodeURIComponent(id));
-export const fetchManagedReviews = (page = 1, options = {}) =>
-  http.get('/admin/reviews', { ...options, params: { page, size: 20 } });
+export const fetchManagedReviews = (page = 1, query = '', options = {}) =>
+  http.get('/admin/reviews', {
+    ...options,
+    params: { page, size: 20, ...(query.trim() ? { q: query.trim() } : {}) },
+  });
 export const deleteManagedReview = (id, reason) =>
   http.delete('/admin/reviews/' + encodeURIComponent(id), { data: { reason } });
