@@ -2,8 +2,6 @@
 
 当前可执行配置为 [CI工作流](../.github/workflows/ci.yml)，没有自动部署Web到服务器的CD工作流。
 
-发布版本维护在 `package.json`、`package-lock.json` 和 [更新日志](../CHANGELOG.md)。v1.1.0 的更新内容为“增加菜品评论点赞、回复功能”，从最新 `develop` 发起到 `main` 的发布 PR，并使用合并提交保留历史。CI 通过后在发布提交创建 `v1.1.0` 标签和同名 GitHub Release；Release 与服务器部署分别处理。
-
 | 事件                                   | 实际执行                                                  |
 | -------------------------------------- | --------------------------------------------------------- |
 | main/develop的PR打开、更新、重开、编辑 | 分支及PR/新提交标题检查；Lint、Prettier、Vitest和Vite构建 |

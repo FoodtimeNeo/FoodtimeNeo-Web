@@ -49,17 +49,12 @@ async function change() {
   <div class="comment-like">
     <button
       type="button"
-      class="review-action"
+      class="button-ink"
       :aria-pressed="liked"
       :aria-busy="busy"
       :disabled="busy"
       @click="change"
     >
-      <svg viewBox="0 0 20 20" aria-hidden="true">
-        <path
-          d="M7 9h-3v8h3m0-8 4-6c2 0 2 2 1 5h4c1 0 1 1 1 2l-1 6c0 1-1 1-2 1H7Z"
-        />
-      </svg>
       {{ busy ? '处理中…' : liked ? '已赞' : '赞' }} {{ count }}
     </button>
     <p v-if="error" class="comment-like__error" role="alert">{{ error }}</p>
@@ -68,6 +63,7 @@ async function change() {
 
 <style scoped lang="scss">
 .comment-like {
+  margin-top: var(--ft-space-1);
   button {
     min-height: 44px;
     min-width: 72px;
@@ -76,7 +72,6 @@ async function change() {
     color: var(--ft-color-primary);
   }
   &__error {
-    margin: 0;
     color: var(--ft-color-danger);
     font-size: var(--ft-font-size-sm);
     overflow-wrap: anywhere;

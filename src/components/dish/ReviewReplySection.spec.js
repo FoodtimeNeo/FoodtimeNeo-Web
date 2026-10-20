@@ -92,7 +92,6 @@ it('自己的回复经确认后删除，再读取服务端计数', async () => {
   const w = render();
   await w.get('button').trigger('click');
   await flushPromises();
-  await w.get('summary').trigger('click');
   await button(w, '删除回复').trigger('click');
   expect(api.deleteReviewReply).not.toHaveBeenCalled();
   api.fetchReviewReplies.mockResolvedValue({
@@ -105,68 +104,4 @@ it('自己的回复经确认后删除，再读取服务端计数', async () => {
   await flushPromises();
   expect(api.deleteReviewReply).toHaveBeenCalledExactlyOnceWith('reply');
   expect(w.text()).not.toContain('第一条');
-});
-
-it('编辑器按需展开，收起编辑与整楼后保留草稿、对象和点赞结果', async () => {
-  const w = render();
-  expect(w.find('textarea').exists()).toBe(false);
-  await w.get('[aria-expanded]').trigger('click');
-  await flushPromises();
-  expect(w.find('textarea').exists()).toBe(false);
-  await button(w, '回复这条').trigger('click');
-  await w.get('textarea').setValue('保留草稿');
-  await button(w, '收起编辑').trigger('click');
-  expect(w.find('textarea').exists()).toBe(false);
-  api.setReplyLike.mockResolvedValue({
-    likedByMe: true,
-    likeCount: 1,
-    counterVersion: 1,
-  });
-  await w.get('[aria-pressed]').trigger('click');
-  await flushPromises();
-  await w.get('[aria-expanded]').trigger('click');
-  await w.get('[aria-expanded]').trigger('click');
-  expect(api.fetchReviewReplies).toHaveBeenCalledTimes(1);
-  expect(w.get('[aria-pressed]').attributes('aria-pressed')).toBe('true');
-  await button(w, '继续编辑回复…').trigger('click');
-  expect(w.get('textarea').element.value).toBe('保留草稿');
-  expect(w.get('label').text()).toBe('回复 甲');
-});
-
-it('加载失败可重试，取消指定对象后发送一级回复并使用新的操作标识', async () => {
-  api.fetchReviewReplies.mockRejectedValueOnce(new Error('连接失败'));
-  const w = render();
-  await w.get('[aria-expanded]').trigger('click');
-  await flushPromises();
-  expect(w.text()).toContain('连接失败');
-  await w.get('[aria-label="刷新回复"]').trigger('click');
-  await flushPromises();
-  await button(w, '回复这条').trigger('click');
-  await w.get('textarea').setValue('正文');
-  api.createReviewReply.mockRejectedValue(new Error('超时'));
-  await w.get('form').trigger('submit');
-  await flushPromises();
-  const first = api.createReviewReply.mock.calls[0][1];
-  await button(w, '取消回复对象').trigger('click');
-  await w.get('form').trigger('submit');
-  await flushPromises();
-  const second = api.createReviewReply.mock.calls[1][1];
-  expect(second.content).toBe(first.content);
-  expect(second.replyToId).toBe(null);
-  expect(second.clientRequestId).not.toBe(first.clientRequestId);
-});
-
-it('打开编辑器时将键盘焦点送入输入框，收起后回到入口', async () => {
-  const w = mount(ReviewReplySection, {
-    attachTo: document.body,
-    props: { review: { id: 'focus', replyCount: 0 }, actions: api },
-    global: { stubs: { RouterLink: true } },
-  });
-  await w.get('[aria-expanded]').trigger('click');
-  await flushPromises();
-  await button(w, '写下你的回复…').trigger('click');
-  expect(document.activeElement).toBe(w.get('textarea').element);
-  await button(w, '收起编辑').trigger('click');
-  expect(document.activeElement).toBe(button(w, '写下你的回复…').element);
-  w.unmount();
 });

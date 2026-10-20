@@ -241,50 +241,6 @@ textarea {
   pointer-events: none;
 }
 
-.review-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 44px;
-  min-width: 44px;
-  padding: var(--ft-space-1);
-  border: 0;
-  border-radius: var(--ft-radius-sm);
-  background: transparent;
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-sm);
-  line-height: 1.5;
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: 2px dashed var(--ft-color-primary);
-    outline-offset: 3px;
-  }
-
-  &:hover:not(:disabled) {
-    background: var(--zine-stamp-red-soft);
-    color: var(--ft-color-text);
-  }
-  &:active:not(:disabled) {
-    background: var(--zine-paper-bg-soft);
-  }
-  &:disabled {
-    opacity: 0.55;
-    cursor: wait;
-  }
-  svg {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-}
-
 .button-ink {
   display: inline-flex;
   align-items: center;
