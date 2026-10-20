@@ -47,3 +47,5 @@
 | dish/ReviewReplySection.vue | review和actions(fetchReviewReplies/createReviewReply/deleteReviewReply/setReplyLike)；展开才取第一页，游标更多、结构化对象、审核提示、去重标识及本人删除确认 |
 
 按钮至少44px，可键盘操作；长正文折行，状态和错误在相邻位置显示。个人回复复用SubmissionRecord和PaginationControls；管理审核识别dish-review-reply并要求删除原因。
+
+`ReviewReplySection` 提供可选 `actions` 插槽，将一级评论的时间和点赞放入同一操作栏。面板保持挂载以保留折叠期间的点赞状态；共享编辑器按意图出现并恢复焦点。局部操作共用全局 `.review-action`，正文/状态色仍来自 tokens.scss。
