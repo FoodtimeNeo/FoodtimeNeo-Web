@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { useAsyncData } from './useAsyncData.js';
+import { useAsyncData, clearAsyncDataCache } from './useAsyncData.js';
 import { ApiError } from '@/api/http.js';
 
 async function tick() {
@@ -39,5 +39,20 @@ describe('useAsyncData', () => {
     await load();
     expect(error.value).toBeNull();
     expect(data.value).toBe('好了');
+  });
+
+  it('指定 cacheKey 时复用缓存且不重复请求', async () => {
+    clearAsyncDataCache();
+    const loader = vi.fn().mockResolvedValue(['食堂A', '食堂B']);
+    const first = useAsyncData(loader, { cacheKey: 'test_canteen' });
+    await tick();
+    expect(first.data.value).toEqual(['食堂A', '食堂B']);
+    expect(loader).toHaveBeenCalledTimes(1);
+
+    // 第二次调用相同 cacheKey 时，初始值即命中缓存，不再次执行 loader
+    const second = useAsyncData(loader, { cacheKey: 'test_canteen' });
+    expect(second.data.value).toEqual(['食堂A', '食堂B']);
+    expect(second.loading.value).toBe(false);
+    expect(loader).toHaveBeenCalledTimes(1);
   });
 });
