@@ -2,6 +2,7 @@
 import { formatTime } from '@/utils/recordLabels.js';
 import { setReviewLike } from '@/api/review.api.js';
 import CommentLikeButton from './CommentLikeButton.vue';
+import ReviewReplySection from './ReviewReplySection.vue';
 /**
  * 菜品评论列表。字段对齐后端评论序列化：
  * { id, userId, userDisplayName, rating, content, createdAt }
@@ -35,6 +36,7 @@ defineProps({
         :target="review"
         :save="(liked) => setReviewLike(review.id, liked)"
       />
+      <ReviewReplySection :review="review" />
     </li>
   </ul>
 </template>

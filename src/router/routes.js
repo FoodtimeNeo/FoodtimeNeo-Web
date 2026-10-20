@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/profile/review-replies',
+    name: 'myReviewReplies',
+    component: () => import('@/views/profile/MyReviewRepliesView.vue'),
+    meta: {
+      title: '我的回复',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/admin/reviews',
     name: 'managedReviews',
     component: () => import('@/views/admin/ManagedReviewsView.vue'),
