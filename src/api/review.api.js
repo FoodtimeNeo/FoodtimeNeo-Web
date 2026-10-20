@@ -6,3 +6,8 @@ export function createReview({ dishId, rating, content }) {
     content,
   });
 }
+
+export function setReviewLike(id, liked) {
+  const path = `/reviews/${encodeURIComponent(id)}/like`;
+  return liked ? http.put(path) : http.delete(path);
+}
