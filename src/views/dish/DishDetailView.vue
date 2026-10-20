@@ -10,6 +10,7 @@ import {
   fetchDishRating,
 } from '@/api/dish.api.js';
 import { ApiError } from '@/api/http.js';
+import * as reviewActions from '@/api/review.api.js';
 import { formatPrice } from '@/utils/mediaUrl.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
@@ -136,7 +137,7 @@ const params = computed(() => ({
           @retry="loadReviews"
         />
         <EmptyState v-else-if="!reviews.length" title="还没有同学点评" />
-        <DishReviewList v-else :reviews="reviews" />
+        <DishReviewList v-else :reviews="reviews" :actions="reviewActions" />
         <PaginationControls
           :page="page"
           :total="total"

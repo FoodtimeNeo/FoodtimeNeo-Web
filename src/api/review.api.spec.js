@@ -7,6 +7,7 @@ vi.mock('./http.js', () => ({ http: { get, post, put, delete: remove } }));
 import {
   createReview,
   setReviewLike,
+  setReplyLike,
   fetchReviewReplies,
   createReviewReply,
 } from './review.api.js';
@@ -46,4 +47,8 @@ it('点赞与取消使用幂等方法和编码后的评论路径', async () => {
   expect(put).toHaveBeenCalledWith('/reviews/a%2Fb/like');
   await setReviewLike('a/b', false);
   expect(remove).toHaveBeenCalledWith('/reviews/a%2Fb/like');
+  await setReplyLike('a/b', true);
+  expect(put).toHaveBeenCalledWith('/review-replies/a%2Fb/like');
+  await setReplyLike('a/b', false);
+  expect(remove).toHaveBeenCalledWith('/review-replies/a%2Fb/like');
 });

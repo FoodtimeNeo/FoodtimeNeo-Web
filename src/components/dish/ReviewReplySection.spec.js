@@ -4,8 +4,8 @@ const api = vi.hoisted(() => ({
   fetchReviewReplies: vi.fn(),
   createReviewReply: vi.fn(),
   deleteReviewReply: vi.fn(),
+  setReplyLike: vi.fn(),
 }));
-vi.mock('@/api/review.api.js', () => api);
 import ReviewReplySection from './ReviewReplySection.vue';
 const row = {
   id: 'reply',
@@ -13,9 +13,24 @@ const row = {
   userDisplayName: '甲',
   ownedByMe: true,
 };
+it('回复点赞直接应用响应，不重新加载楼层', async () => {
+  const w = render();
+  await w.get('button').trigger('click');
+  await flushPromises();
+  api.setReplyLike.mockResolvedValue({
+    likedByMe: true,
+    likeCount: 1,
+    counterVersion: 1,
+  });
+  await w.get('[aria-pressed]').trigger('click');
+  await flushPromises();
+  expect(api.setReplyLike).toHaveBeenCalledExactlyOnceWith('reply', true);
+  expect(api.fetchReviewReplies).toHaveBeenCalledTimes(1);
+  expect(w.get('[aria-pressed]').attributes('aria-pressed')).toBe('true');
+});
 const render = () =>
   mount(ReviewReplySection, {
-    props: { review: { id: 'r', replyCount: 2 } },
+    props: { review: { id: 'r', replyCount: 2 }, actions: api },
     global: { stubs: { RouterLink: true } },
   });
 const button = (w, label) =>

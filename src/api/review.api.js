@@ -28,6 +28,10 @@ export const createReviewReply = (
   });
 export const deleteReviewReply = (id) =>
   http.delete(`/review-replies/${encodeURIComponent(id)}`);
+export const setReplyLike = (id, liked) =>
+  http[liked ? 'put' : 'delete'](
+    `/review-replies/${encodeURIComponent(id)}/like`,
+  );
 export const fetchMyReviewReplies = (page = 1, options = {}) =>
   http.get('/users/me/review-replies', {
     ...options,

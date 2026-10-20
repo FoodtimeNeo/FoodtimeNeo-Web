@@ -82,6 +82,7 @@ views ──► components ──► components/base
 …/:canteenId/submissions/new                          档口投稿
 /profile /profile/reviews /profile/submissions       本人身份与历史
 /profile/password                                    修改本人密码
+/profile/review-replies                              本人回复及审核记录
 /login  /register                                    鉴权
 /admin/audit /admin/moderation/logs                   内容审核与日志
 /admin/manage /admin/reviews                          目录与正式评论管理
@@ -113,3 +114,5 @@ views ──► components ──► components/base
 ### 管理入口
 
 普通用户的主导航为“食堂 / 我的”，管理员和平台管理员在中间增加“管理”；桌面与移动端共用角色判断。管理下的审核、目录、正式评论、日志和平台用户页面统一高亮“管理”。重复点击当前栏目保留当前页面及参数；首页可由品牌链接进入。所有管理路由仍须由前后端验证权限。
+
+点评互动由DishDetailView注入领域API操作到DishReviewList/ReviewReplySection；展示组件不直接导入API。回复按展开动作游标加载，输入与请求状态局部保存；我的回复使用独立分页页面，不并入原评论投稿接口。
