@@ -1,17 +1,15 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
 import { fetchCommunityPosts } from '@/api/community.api.js';
 import CanteenCarousel from '@/components/home/CanteenCarousel.vue';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
+import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
 import PostCreateModal from '@/components/community/PostCreateModal.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
-
-const router = useRouter();
 
 const {
   data: canteens,
@@ -25,6 +23,8 @@ const communityPosts = ref([]);
 const communityLoading = ref(false);
 const communityTotal = ref(0);
 const isCreateModalOpen = ref(false);
+const activePostId = ref('');
+const isDetailModalOpen = ref(false);
 
 const screenWidth = ref(
   typeof window !== 'undefined' ? window.innerWidth : 1200,
@@ -93,10 +93,8 @@ async function loadCommunityPosts() {
 }
 
 function handlePostClick(post) {
-  router.push({
-    name: 'communityDetail',
-    params: { postId: post.id },
-  });
+  activePostId.value = post.id;
+  isDetailModalOpen.value = true;
 }
 
 onMounted(() => {
@@ -232,6 +230,12 @@ onUnmounted(() => {
       <PostCreateModal
         v-model="isCreateModalOpen"
         @created="loadCommunityPosts"
+      />
+
+      <!-- 小红书风格帖子详情弹窗 -->
+      <CommunityPostDetailModal
+        v-model="isDetailModalOpen"
+        :post-id="activePostId"
       />
     </section>
   </div>

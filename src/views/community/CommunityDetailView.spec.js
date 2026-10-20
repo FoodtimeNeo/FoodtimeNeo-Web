@@ -67,8 +67,17 @@ describe('CommunityDetailView', () => {
     expect(wrapper.text()).toContain('ID: u-101');
 
     // 多图轮播与指示圆点
-    const dots = wrapper.findAll('.community-image-viewer__dot');
+    const dots = wrapper.findAll('.dot-item');
     expect(dots.length).toBe(2);
+
+    // 图片自适应展示存在
+    const mediaImg = wrapper.find('.media-img');
+    expect(mediaImg.exists()).toBe(true);
+    expect(mediaImg.attributes('src')).toBe('/p1.jpg');
+
+    // 底部操作栏存在
+    const bottomBar = wrapper.find('.bottom-action-bar');
+    expect(bottomBar.exists()).toBe(true);
   });
 
   it('帖子不存在或加载失败时显示错误态', async () => {

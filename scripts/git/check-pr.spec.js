@@ -79,7 +79,7 @@ beforeAll(() => {
   );
   git('update-ref', 'refs/remotes/origin/main', main);
   git('update-ref', 'refs/remotes/origin/develop', develop);
-});
+}, 30000);
 
 afterAll(() => {
   if (

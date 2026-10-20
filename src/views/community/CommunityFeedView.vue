@@ -1,20 +1,22 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { fetchCommunityPosts } from '@/api/community.api.js';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
+import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
 import PostCreateModal from '@/components/community/PostCreateModal.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 
 const route = useRoute();
-const router = useRouter();
 
 const posts = ref([]);
 const loading = ref(false);
 const isCreateModalOpen = ref(false);
 const prefillData = ref({});
+const activePostId = ref('');
+const isDetailModalOpen = ref(false);
 
 function openCreateModal(prefill = null) {
   if (prefill) {
@@ -72,10 +74,8 @@ const columns = computed(() => {
 });
 
 function handleCardClick(post) {
-  router.push({
-    name: 'communityDetail',
-    params: { postId: post.id },
-  });
+  activePostId.value = post.id;
+  isDetailModalOpen.value = true;
 }
 
 function handlePostCreated() {
@@ -168,6 +168,12 @@ onUnmounted(() => {
       v-model="isCreateModalOpen"
       :initial-data="prefillData"
       @created="handlePostCreated"
+    />
+
+    <!-- 小红书风格帖子详情弹窗 -->
+    <CommunityPostDetailModal
+      v-model="isDetailModalOpen"
+      :post-id="activePostId"
     />
   </div>
 </template>
