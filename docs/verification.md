@@ -109,3 +109,11 @@ npm run check全部通过：59个测试文件、232项测试，Lint、格式检�
 以最新 `origin/develop e980aac` 为功能基线，同步 `origin/main 77e2eee` 的祖先关系；7个冲突文件全部保留develop版本，同步完成后的代码树与该develop基线一致。随后仅更新npm版本元数据至1.1.0、更新日志及发布说明，更新内容为“增加菜品评论点赞、回复功能”。
 
 Node 24.22.0 下 `npm run check` 通过59个测试文件、235项测试，以及ESLint、Prettier和生产构建。首次受限环境执行在Vitest缓存重命名时遇到EPERM，正常权限重新执行完整门禁通过。本轮没有更改业务逻辑或写入线上数据；远端CI和GitHub Release结果以对应发布PR及Actions为准。
+
+## 2026-10-21 撤回后的完整版本复验
+
+因 Android 尚有多楼恢复、评论全量读取及审核 AI 信息缺口，首次 Web main 发布以 `d0eb811` 保留历史回退，Release 暂转草稿；develop 的完整源码保留。`feature/review-release-readiness` 仅记录该撤回祖先及补充验收，不把旧 main 的回退树覆盖到开发版。
+
+Node 24.22.0 再次执行完整 `npm run check`，59 个文件、235 项测试、ESLint、Prettier 和生产构建全部通过。真实浏览器连接独立 5174 Web / 18080 Backend / `foodtime_completion_lab`：普通用户提交 4 星评论，待审时仍是 0 评论和空均分；通过后显示 1 评论及 4.00。界面内完成评论/回复的点赞和取消、按需展开、收起保留回复草稿、提交回复和回复指定楼层、刷新取回审核后内容。删除父回复后只减公开回复数，子回复仍保留并显示“已删除的回复”。
+
+写入仅针对明确命名的本地验收内容。此 Web 浏览器流程中的审核通过使用独立管理员 HTTP 会话；Android 的真实集成 runner 另行验证原生人工审核界面。没有以 API 辅助审核冒充 Web 管理界面点击验收。截图及三端总报告保存在工作区 `docs/review-completion-2026-10-21.md`。既有邮件和真实 AI 提供方的范围限制仍有效；本轮没有部署生产服务器。
