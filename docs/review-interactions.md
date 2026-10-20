@@ -17,3 +17,9 @@
 ## 一级点评点赞
 
 评论列表读取 likeCount/likedByMe/counterVersion。PUT /reviews/{id}/like 点赞，DELETE同路径取消；不发送身份和计数。按钮用服务端响应更新，处理期间禁用并显示反馈，失败保留旧状态并显示错误。较旧计数版本不覆盖新值，不为一次点赞重载整页。
+
+## 点评回复
+
+点评内展开时才请求一页20条回复，后续使用nextCursor；total使用后端统计。支持回复一级点评或同楼回复，replyToId结构化提交，删除对象显示占位。POST返回审核提交回执，待审内容不插入公开列表。输入失败保留，clientRequestId在同一内容/对象重试时复用，服务器去重；变更内容创建新操作。自己的回复先确认再删除。
+
+个人页新增“我的回复”(/profile/review-replies)，分页显示pending/approved/rejected、审核原因及原点评已删除状态。管理端内容审核识别dish-review-reply，显示AI结论并支持人工决策；已通过回复可填写原因后删除。网络状态、空列表、删除确认和错误沿用现有组件。

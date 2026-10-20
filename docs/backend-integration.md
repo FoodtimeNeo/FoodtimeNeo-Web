@@ -71,3 +71,7 @@
 ### 管理员评论管理
 
 管理员和平台管理员由主导航中间的“管理”进入，在“评论管理”查看正式评论。列表显示作者ID、评论ID、时间、食堂/档口/菜品、正文与评分，支持 q 按用户ID/邮箱/昵称查询、分页和清除。平台用户列表可跳转该用户评论。删除须确认并填写原因，失败保留原记录和原因，成功刷新当前筛选；删评只影响正式评论，审核历史保留、评分等待每日快照。待审核/已通过/已驳回提交在“内容审核”查看，普通用户由路由和后端共同阻止管理操作。
+
+## 点评回复（2026-10-20）
+
+GET/POST /reviews/{id}/replies；公开分页size20/cursor，返回items/total/hasMore/nextCursor。POST仅发送content、replyToId和clientRequestId，202表示已进入审核；同ID同载荷重试去重。GET /users/me/review-replies使用page/size；DELETE /review-replies/{id}删除本人回复；管理员DELETE /admin/review-replies/{id}携带reason。人工审核类型dish-review-reply沿用 /admin/moderation/{type}/{id}，正文和会话身份继续由服务端校验。原点评删除时整楼隐藏。
