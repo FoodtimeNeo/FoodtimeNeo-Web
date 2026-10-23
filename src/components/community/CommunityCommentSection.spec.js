@@ -1,86 +1,95 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-
-const fetchPostComments = vi.fn();
-const createPostComment = vi.fn();
-
-vi.mock('@/api/community.api.js', () => ({
-  fetchPostComments: (...args) => fetchPostComments(...args),
-  createPostComment: (...args) => createPostComment(...args),
-}));
-
 import CommunityCommentSection from './CommunityCommentSection.vue';
-
-describe('CommunityCommentSection', () => {
+const api = vi.hoisted(() => ({
+  fetchRootComments: vi.fn(),
+  fetchCommentReplies: vi.fn(),
+  createPostComment: vi.fn(),
+  deletePostComment: vi.fn(),
+}));
+vi.mock('@/api/community.api.js', () => api);
+const root = {
+  id: 'root',
+  userId: 'u1',
+  status: 'approved',
+  author: { name: '甲同学' },
+  content: '一级评论',
+  createdAt: '2026-10-23T01:00:00Z',
+};
+const reply = {
+  id: 'reply',
+  userId: 'u2',
+  rootCommentId: 'root',
+  replyToCommentId: 'root',
+  replyToDisplayName: '甲同学',
+  status: 'approved',
+  author: { name: '乙同学' },
+  content: '楼内回复',
+  createdAt: '2026-10-23T02:00:00Z',
+};
+describe('紧凑楼中楼', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
-    fetchPostComments.mockReset();
-    createPostComment.mockReset();
+    vi.clearAllMocks();
+    api.fetchRootComments.mockResolvedValue({ items: [root], hasMore: false });
+    api.fetchCommentReplies.mockResolvedValue({
+      items: [reply],
+      hasMore: false,
+    });
   });
-
-  it('展示评论列表且不包含下阶段字样，支持点赞与回复联动', async () => {
-    fetchPostComments.mockResolvedValue([
-      {
-        id: 'c1',
-        postId: 'p1',
-        author: { id: 'u1', name: '小红' },
-        content: '汤很好喝！',
-        createdAt: '2026-10-19T10:00:00.000Z',
-        likeCount: 2,
-      },
-    ]);
-
+  it('只缩进一层，楼内互相回复发送实际对象 ID', async () => {
+    api.createPostComment.mockResolvedValue({ id: 'new' });
     const wrapper = mount(CommunityCommentSection, {
-      props: { postId: 'p1' },
+      props: { postId: 'post' },
     });
     await flushPromises();
-
-    expect(wrapper.text()).toContain('汤很好喝！');
-    expect(wrapper.text()).toContain('小红');
-    expect(wrapper.text()).not.toContain('下阶段');
-    expect(wrapper.text()).not.toContain('下一阶段');
-
-    // 点赞
-    const likeBtn = wrapper.find('.sub-action-btn');
-    expect(likeBtn.text()).toContain('👍 2');
-    await likeBtn.trigger('click');
-    expect(likeBtn.text()).toContain('👍 3');
-    expect(likeBtn.classes()).toContain('is-liked');
-
-    // 回复自动在输入框填入 @小红
-    const replyBtn = wrapper.findAll('.sub-action-btn')[1];
-    await replyBtn.trigger('click');
-    const textarea = wrapper.find('.community-comments__textarea');
-    expect(textarea.element.value).toBe('@小红 ');
+    expect(wrapper.findAll('.compact-replies')).toHaveLength(1);
+    await wrapper
+      .find('[data-comment-id="reply"] .reply-button')
+      .trigger('click');
+    expect(wrapper.find('.reply-selection').text()).toContain('乙同学');
+    expect(wrapper.find('textarea').element.value).toBe('');
+    await wrapper.find('textarea').setValue('赞同你的推荐');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(api.createPostComment).toHaveBeenCalledWith('post', {
+      content: '赞同你的推荐',
+      rootCommentId: 'root',
+      replyToCommentId: 'reply',
+      clientRequestId: expect.any(String),
+    });
   });
-
-  it('可以成功发送新评论并更新列表', async () => {
-    fetchPostComments.mockResolvedValue([]);
-    createPostComment.mockResolvedValue({
-      id: 'c2',
-      postId: 'p1',
-      author: { id: 'u2', name: '我' },
-      content: '我也觉得超赞！',
-      createdAt: '2026-10-19T10:05:00.000Z',
-      likeCount: 0,
-    });
-
+  it('失败保留草稿，重试复用编号', async () => {
+    api.createPostComment
+      .mockRejectedValueOnce(new Error('请求超时'))
+      .mockResolvedValueOnce({ id: 'new' });
     const wrapper = mount(CommunityCommentSection, {
-      props: { postId: 'p1' },
+      props: { postId: 'post' },
     });
     await flushPromises();
-
-    const textarea = wrapper.find('.community-comments__textarea');
-    await textarea.setValue('我也觉得超赞！');
-
-    const sendBtn = wrapper.find('.community-comments__send-btn');
-    await sendBtn.trigger('click');
+    await wrapper.find('textarea').setValue('重试评论');
+    await wrapper.find('form').trigger('submit');
     await flushPromises();
-
-    expect(createPostComment).toHaveBeenCalledWith('p1', {
-      content: '我也觉得超赞！',
+    expect(wrapper.find('textarea').element.value).toBe('重试评论');
+    expect(wrapper.text()).toContain('请求超时');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(api.createPostComment.mock.calls[0][1].clientRequestId).toBe(
+      api.createPostComment.mock.calls[1][1].clientRequestId,
+    );
+  });
+  it('删根评论仅展示占位并保留回复，禁止继续回复', async () => {
+    api.fetchRootComments.mockResolvedValue({
+      items: [{ ...root, content: '', deleted: true }],
+      hasMore: false,
     });
-    expect(wrapper.text()).toContain('我也觉得超赞！');
+    const wrapper = mount(CommunityCommentSection, {
+      props: { postId: 'post' },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('原评论已删除');
+    expect(wrapper.text()).toContain('楼内回复');
+    expect(wrapper.findAll('.reply-button')).toHaveLength(0);
   });
 });

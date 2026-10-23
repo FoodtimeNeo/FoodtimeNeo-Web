@@ -69,3 +69,20 @@ export async function fetchMyCommunityPosts(params = {}) {
 }
 export const deleteCommunityPost = (id) =>
   http.delete(`/community/posts/${encodeURIComponent(id)}`);
+
+export async function fetchRootComments(id, params = {}) {
+  const page = await http.get(
+    `/community/posts/${encodeURIComponent(id)}/comments/cursor`,
+    { params },
+  );
+  return { ...page, items: page.items.map(mapComment) };
+}
+export async function fetchCommentReplies(id, root, params = {}) {
+  const page = await http.get(
+    `/community/posts/${encodeURIComponent(id)}/comments/${encodeURIComponent(root)}/replies`,
+    { params },
+  );
+  return { ...page, items: page.items.map(mapComment) };
+}
+export const deletePostComment = (id) =>
+  http.delete(`/community/comments/${encodeURIComponent(id)}`);
