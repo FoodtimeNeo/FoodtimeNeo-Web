@@ -1,12 +1,16 @@
 <script setup>
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import CommunityPostContent from '@/components/community/CommunityPostContent.vue';
 const route = useRoute();
+const router = useRouter();
 </script>
 <template>
   <main class="community-detail-view">
     <RouterLink to="/community" class="back-link">返回校园社区</RouterLink
-    ><CommunityPostContent :post-id="route.params.postId" />
+    ><CommunityPostContent
+      :post-id="route.params.postId"
+      @deleted="router.replace('/community')"
+    />
   </main>
 </template>
 <style scoped>

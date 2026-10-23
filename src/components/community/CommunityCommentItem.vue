@@ -1,13 +1,29 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { setCommentLike } from '@/api/community.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 const props = defineProps({
   item: { type: Object, required: true },
   allowReplies: { type: Boolean, default: true },
 });
-const emit = defineEmits(['reply', 'delete']);
+const emit = defineEmits(['reply', 'delete', 'updated']);
 const auth = useAuthStore();
 const mine = computed(() => props.item.userId === auth.user?.id);
+const acting = ref(false),
+  error = ref('');
+async function like() {
+  if (acting.value) return;
+  acting.value = true;
+  error.value = '';
+  try {
+    const state = await setCommentLike(props.item.id, !props.item.likedByMe);
+    emit('updated', { likedByMe: state.liked, likeCount: state.likeCount });
+  } catch (e) {
+    error.value = e.message || '点赞失败';
+  } finally {
+    acting.value = false;
+  }
+}
 </script>
 <template>
   <article class="comment-item" :data-comment-id="item.id">
@@ -32,7 +48,18 @@ const mine = computed(() => props.item.userId === auth.user?.id);
           >回复 {{ item.replyToDisplayName || '同学' }}：</span
         >{{ item.content }}
       </p>
+      <p v-if="error" role="alert">{{ error }}</p>
       <div class="comment-meta">
+        <button
+          v-if="!item.deleted && item.status === 'approved'"
+          type="button"
+          class="comment-like"
+          :aria-pressed="!!item.likedByMe"
+          :disabled="acting"
+          @click="like"
+        >
+          {{ item.likedByMe ? '♥' : '♡' }} {{ item.likeCount || 0 }}
+        </button>
         <time>{{
           new Date(item.createdAt).toLocaleString('zh-CN', {
             month: '2-digit',

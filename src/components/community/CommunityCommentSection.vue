@@ -157,6 +157,7 @@ async function moreReplies(root) {
         :item="root"
         @reply="selectReply($event, root)"
         @delete="remove"
+        @updated="Object.assign(root, $event)"
       />
       <div v-if="threads[root.id]?.items.length" class="compact-replies">
         <CommunityCommentItem
@@ -166,6 +167,7 @@ async function moreReplies(root) {
           :allow-replies="!root.deleted"
           @reply="selectReply($event, root)"
           @delete="remove"
+          @updated="Object.assign(reply, $event)"
         />
       </div>
       <button

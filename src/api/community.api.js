@@ -86,3 +86,20 @@ export async function fetchCommentReplies(id, root, params = {}) {
 }
 export const deletePostComment = (id) =>
   http.delete(`/community/comments/${encodeURIComponent(id)}`);
+
+export const setPostLike = (id, liked) =>
+  http[liked ? 'put' : 'delete'](
+    `/community/posts/${encodeURIComponent(id)}/like`,
+  );
+export const setCommentLike = (id, liked) =>
+  http[liked ? 'put' : 'delete'](
+    `/community/comments/${encodeURIComponent(id)}/like`,
+  );
+export const setPostFavorite = (id, favorite) =>
+  http[favorite ? 'put' : 'delete'](
+    `/community/posts/${encodeURIComponent(id)}/favorite`,
+  );
+export async function fetchMyCommunityFavorites(params = {}) {
+  const page = await http.get('/users/me/community-favorites', { params });
+  return { ...page, items: page.items.map(mapPost) };
+}

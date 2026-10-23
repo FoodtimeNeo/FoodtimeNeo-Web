@@ -1,10 +1,12 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import CommunityDetailView from './CommunityDetailView.vue';
 const api = vi.hoisted(() => ({ fetchCommunityPostDetail: vi.fn() }));
 vi.mock('@/api/community.api.js', () => api);
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { postId: 'p1' } }),
+  useRouter: () => ({ replace: vi.fn() }),
 }));
 function view() {
   return mount(CommunityDetailView, {
@@ -14,7 +16,10 @@ function view() {
   });
 }
 describe('真实帖子详情', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setActivePinia(createPinia());
+  });
   it('呈现标题正文作者和可切换的多图', async () => {
     api.fetchCommunityPostDetail.mockResolvedValue({
       id: 'p1',
