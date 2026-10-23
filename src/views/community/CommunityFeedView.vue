@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { fetchCommunityPosts } from '@/api/community.api.js';
@@ -13,6 +13,9 @@ const route = useRoute();
 
 const posts = ref([]);
 const loading = ref(false);
+const cursor = ref(null);
+const hasMore = ref(false);
+const loadError = ref('');
 const isCreateModalOpen = ref(false);
 const prefillData = ref({});
 const activePostId = ref('');
@@ -25,29 +28,31 @@ function openCreateModal(prefill = null) {
   isCreateModalOpen.value = true;
 }
 
-async function loadFeed() {
+async function loadFeed(more = false) {
+  if (loading.value) return;
+  loadError.value = '';
   loading.value = true;
   try {
     // 关键需求：新发的帖子需要审核才能展示，故默认只拉取 approved 状态的帖子
-    const res = await fetchCommunityPosts({ status: 'approved' });
-    posts.value = res.items || [];
+    const res = await fetchCommunityPosts({
+      cursor: more ? cursor.value : undefined,
+    });
+    posts.value = more
+      ? [...posts.value, ...(res.items || [])]
+      : res.items || [];
+    cursor.value = res.nextCursor;
+    hasMore.value = !!res.hasMore;
   } catch (error) {
-    ElMessage.error(error.message || '加载社区帖子失败');
+    loadError.value = error.message || '加载社区帖子失败';
+    ElMessage.error(loadError.value);
   } finally {
     loading.value = false;
   }
 }
 
-const isMobile = ref(false);
-let mediaQueryList = null;
-
-function handleMediaChange(e) {
-  isMobile.value = e.matches;
-}
-
 // 响应式瀑布流分配算法（电脑端 3 列，手机端 2 列）
 const columns = computed(() => {
-  const colCount = isMobile.value ? 2 : 3;
+  const colCount = 2;
   const cols = Array.from({ length: colCount }, () => []);
   const colHeights = Array.from({ length: colCount }, () => 0);
 
@@ -85,24 +90,11 @@ function handlePostCreated() {
 
 onMounted(() => {
   loadFeed();
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    mediaQueryList = window.matchMedia('(max-width: 768px)');
-    isMobile.value = mediaQueryList.matches;
-    if (mediaQueryList.addEventListener) {
-      mediaQueryList.addEventListener('change', handleMediaChange);
-    }
-  }
   if (route?.query?.action === 'new' || history.state?.prefill) {
     if (history.state?.prefill) {
       prefillData.value = history.state.prefill;
     }
     isCreateModalOpen.value = true;
-  }
-});
-
-onUnmounted(() => {
-  if (mediaQueryList && mediaQueryList.removeEventListener) {
-    mediaQueryList.removeEventListener('change', handleMediaChange);
   }
 });
 </script>
@@ -128,7 +120,10 @@ onUnmounted(() => {
       </button>
     </header>
 
-    <LoadingState v-if="loading" />
+    <p v-if="loadError" role="alert">
+      {{ loadError }} <button type="button" @click="loadFeed()">重试</button>
+    </p>
+    <LoadingState v-if="loading && !posts.length" />
 
     <EmptyState
       v-else-if="posts.length === 0"
@@ -151,6 +146,16 @@ onUnmounted(() => {
         />
       </div>
     </main>
+
+    <button
+      v-if="hasMore"
+      type="button"
+      class="community-more"
+      :disabled="loading"
+      @click="loadFeed(true)"
+    >
+      {{ loading ? '加载中…' : '加载更多' }}
+    </button>
 
     <!-- 右下角悬浮「+」发帖按钮 -->
     <button
@@ -179,6 +184,13 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+.community-more {
+  display: block;
+  margin: 24px auto;
+  min-height: 44px;
+  padding: 8px 24px;
+  cursor: pointer;
+}
 .community-feed-view {
   position: relative;
   min-height: calc(100vh - 200px);

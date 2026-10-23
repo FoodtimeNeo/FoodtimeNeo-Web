@@ -44,6 +44,7 @@ function handleClick() {
     :aria-label="post.title"
     @click="handleClick"
     @keydown.enter="handleClick"
+    @keydown.space.prevent="handleClick"
   >
     <div class="community-post-card__cover-wrap" :style="aspectStyle">
       <img

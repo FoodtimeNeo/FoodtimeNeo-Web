@@ -43,7 +43,7 @@ describe('CommunityFeedView', () => {
     mockPush.mockReset();
   });
 
-  it('拉取帖子时默认请求 approved 审核通过状态，并在电脑端以三列渲染', async () => {
+  it('使用公开信息流并以两列渲染', async () => {
     fetchCommunityPosts.mockResolvedValue({
       items: [
         {
@@ -72,14 +72,14 @@ describe('CommunityFeedView', () => {
     await flushPromises();
 
     // 验证审核过滤参数
-    expect(fetchCommunityPosts).toHaveBeenCalledWith({ status: 'approved' });
+    expect(fetchCommunityPosts).toHaveBeenCalledWith({ cursor: undefined });
 
     // 验证渲染标题与电脑端三列结构
     expect(wrapper.text()).toContain('学一瓦罐汤');
     expect(wrapper.text()).toContain('明湖酸汤粉');
     expect(wrapper.text()).toContain('学二牛肉拉面');
     const cols = wrapper.findAll('.community-waterfall__col');
-    expect(cols.length).toBe(3);
+    expect(cols.length).toBe(2);
   });
 
   it('在移动端视口下以两列渲染瀑布流', async () => {
