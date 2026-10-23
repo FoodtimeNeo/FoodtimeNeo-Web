@@ -103,3 +103,23 @@ export async function fetchMyCommunityFavorites(params = {}) {
   const page = await http.get('/users/me/community-favorites', { params });
   return { ...page, items: page.items.map(mapPost) };
 }
+
+export async function fetchCommunityAudit(
+  type,
+  status,
+  page = 1,
+  options = {},
+) {
+  return http.get(`/admin/community/${type}`, {
+    ...options,
+    params: { status, page, size: 20 },
+  });
+}
+export const fetchCommunityAuditDetail = (type, id) =>
+  http.get(`/admin/community/${type}/${encodeURIComponent(id)}`);
+export const submitCommunityAudit = (type, id, body) =>
+  http.post(`/admin/community/${type}/${encodeURIComponent(id)}`, body);
+export const removeCommunityAsAdmin = (type, id, reason) =>
+  http.delete(`/admin/community/${type}/${encodeURIComponent(id)}`, {
+    data: { reason },
+  });
