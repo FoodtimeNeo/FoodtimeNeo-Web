@@ -14,6 +14,8 @@ const types = {
   stall: '档口',
   photo: '图片',
   'dish-review-reply': '点评回复',
+  'community-post': '社区食记',
+  'community-comment': '社区评论／回复',
 };
 </script>
 <template>

@@ -9,6 +9,7 @@ const emit = defineEmits(['update:modelValue', 'deleted']);
     :model-value="modelValue"
     title="校园食记"
     width="min(1080px, 96vw)"
+    :style="{ boxSizing: 'border-box', maxWidth: 'calc(100% - 32px)' }"
     append-to-body
     destroy-on-close
     @update:model-value="emit('update:modelValue', $event)"
