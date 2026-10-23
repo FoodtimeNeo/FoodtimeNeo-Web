@@ -1,9 +1,20 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { fetchCommunityPostDetail } from '@/api/community.api.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
+import { ElMessageBox } from 'element-plus';
+import {
+  fetchCommunityPostDetail,
+  setPostLike,
+  setPostFavorite,
+  deleteCommunityPost,
+} from '@/api/community.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 const props = defineProps({ postId: { type: String, required: true } });
+const emit = defineEmits(['deleted']);
+const auth = useAuthStore();
+const actionError = ref(''),
+  acting = ref(false);
 const post = ref(null),
   error = ref(''),
   loading = ref(false);
@@ -29,6 +40,49 @@ watch(
   },
   { immediate: true },
 );
+async function interact(kind) {
+  if (acting.value) return;
+  acting.value = true;
+  actionError.value = '';
+  try {
+    if (kind === 'like') {
+      const state = await setPostLike(post.value.id, !post.value.likedByMe);
+      post.value.likedByMe = state.liked;
+      post.value.likeCount = state.likeCount;
+    } else {
+      const state = await setPostFavorite(
+        post.value.id,
+        !post.value.favoritedByMe,
+      );
+      post.value.favoritedByMe = state.favorited;
+      post.value.favoriteCount = state.favoriteCount;
+    }
+  } catch (e) {
+    actionError.value = e.message || '操作失败，请重试';
+  } finally {
+    acting.value = false;
+  }
+}
+async function remove() {
+  try {
+    await ElMessageBox.confirm(
+      '删除后无法恢复，帖子将从公开社区隐藏。',
+      '删除食记',
+      { type: 'warning' },
+    );
+  } catch {
+    return;
+  }
+  acting.value = true;
+  try {
+    await deleteCommunityPost(post.value.id);
+    emit('deleted');
+  } catch (e) {
+    actionError.value = e.message || '删除失败';
+  } finally {
+    acting.value = false;
+  }
+}
 </script>
 <template>
   <p v-if="error" role="alert">
@@ -59,6 +113,38 @@ watch(
       </p>
       <h1>{{ post.title }}</h1>
       <p class="post-body">{{ post.content }}</p>
+      <div v-if="post.status === 'approved'" class="post-interactions">
+        <button
+          type="button"
+          :aria-pressed="post.likedByMe"
+          :disabled="acting"
+          class="post-like"
+          @click="interact('like')"
+        >
+          {{ post.likedByMe ? '♥ 已赞' : '♡ 点赞' }} {{ post.likeCount }}
+        </button>
+        <button
+          type="button"
+          :aria-pressed="post.favoritedByMe"
+          :disabled="acting"
+          class="post-favorite"
+          @click="interact('favorite')"
+        >
+          {{ post.favoritedByMe ? '★ 已收藏' : '☆ 收藏' }}
+          {{ post.favoriteCount }}
+        </button>
+        <span>{{ post.commentCount }} 条评论与回复</span>
+      </div>
+      <button
+        v-if="post.userId === auth.user?.id"
+        type="button"
+        :disabled="acting"
+        class="post-delete"
+        @click="remove"
+      >
+        删除这篇食记
+      </button>
+      <p v-if="actionError" role="alert">{{ actionError }}</p>
       <CommunityCommentSection
         v-if="post.status === 'approved'"
         :post-id="post.id"
@@ -68,6 +154,35 @@ watch(
   </article>
 </template>
 <style scoped>
+.post-interactions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-block: 1px solid var(--ft-color-border);
+  font-size: 13px;
+}
+button {
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--zine-paper-card, #fffaf0);
+  border: 1px solid var(--ft-color-border);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+}
+button[aria-pressed='true'],
+.post-delete {
+  color: var(--ft-color-primary, #c9341e);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.post-delete {
+  margin-top: 12px;
+}
 .community-post-content {
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);

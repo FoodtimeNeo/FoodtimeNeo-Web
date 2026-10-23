@@ -2,7 +2,7 @@
 import { ElDialog } from 'element-plus';
 import CommunityPostContent from './CommunityPostContent.vue';
 defineProps({ modelValue: Boolean, postId: { type: String, default: '' } });
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue', 'deleted']);
 </script>
 <template>
   <ElDialog
@@ -17,6 +17,10 @@ const emit = defineEmits(['update:modelValue']);
       v-if="modelValue && postId"
       :key="postId"
       :post-id="postId"
+      @deleted="
+        emit('deleted');
+        emit('update:modelValue', false);
+      "
     />
   </ElDialog>
 </template>
