@@ -69,10 +69,10 @@ function handleClick() {
 
       <!-- 待审核标识（仅非公开或自身查看时显示） -->
       <span
-        v-if="post.status === 'pending'"
+        v-if="post.status === 'pending' || post.status === 'rejected'"
         class="community-post-card__pending-badge"
       >
-        待审核
+        {{ post.status === 'pending' ? '待审核' : '未通过' }}
       </span>
     </div>
 

@@ -228,6 +228,7 @@ async function handleSubmit() {
     destroy-on-close
     append-to-body
     :width="'min(560px, 94vw)'"
+    :style="{ boxSizing: 'border-box', maxWidth: 'calc(100% - 32px)' }"
     :show-close="true"
     @close="handleClose"
   >
@@ -356,9 +357,7 @@ async function handleSubmit() {
             <div v-if="formImages.length === 0" class="upload-guide">
               <span class="upload-icon">📸</span>
               <span class="upload-main-text">点击或拖拽上传实拍照片</span>
-              <span class="upload-sub-text"
-                >支持 JPG、PNG、WebP，单张 ≤ 10MB</span
-              >
+              <span class="upload-sub-text">支持 JPG、PNG，单张 ≤ 10MB</span>
             </div>
             <div v-else class="upload-add-more">
               <span class="add-icon">＋</span>
