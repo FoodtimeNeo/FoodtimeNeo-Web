@@ -116,6 +116,15 @@ function closeLightbox() {
         <span>暂无配图</span>
       </div>
 
+      <span
+        v-if="images.length > 1"
+        class="community-image-viewer__counter"
+        role="status"
+        :aria-label="`第 ${currentIndex + 1} 张，共 ${images.length} 张`"
+      >
+        {{ currentIndex + 1 }} / {{ images.length }}
+      </span>
+
       <!-- 桌面端左右翻页按钮 -->
       <button
         v-if="images.length > 1 && currentIndex > 0"
@@ -180,6 +189,7 @@ function closeLightbox() {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  min-width: 0;
 
   &__stage {
     position: relative;
@@ -278,15 +288,31 @@ function closeLightbox() {
     backdrop-filter: blur(4px);
   }
 
+  &__counter {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    border-radius: var(--ft-radius-pill, 999px);
+    background: rgb(0 0 0 / 65%);
+    color: #fff;
+    font-size: 13px;
+    pointer-events: none;
+  }
+
   &__dots {
     display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 0 8px;
     margin-top: 12px;
   }
 
   &__dot {
+    flex: 0 0 44px;
     width: 44px;
     height: 44px;
     border-radius: 50%;
