@@ -92,4 +92,186 @@ describe('紧凑楼中楼', () => {
     expect(wrapper.text()).toContain('楼内回复');
     expect(wrapper.findAll('.reply-button')).toHaveLength(0);
   });
+
+  it('长讨论提交一级评论后保留已加载楼层，并从刷新后的游标继续翻页', async () => {
+    const roots = Array.from({ length: 33 }, (_, i) => ({
+      ...root,
+      id: `root-${i}`,
+      content: `旧楼层${i}`,
+    }));
+    api.fetchCommentReplies.mockResolvedValue({ items: [], hasMore: false });
+    api.fetchRootComments
+      .mockResolvedValueOnce({
+        items: roots.slice(0, 20),
+        hasMore: true,
+        nextCursor: 'page-20',
+      })
+      .mockResolvedValueOnce({
+        items: roots.slice(20, 32),
+        hasMore: true,
+        nextCursor: 'page-32',
+      })
+      .mockResolvedValueOnce({
+        items: [
+          { ...root, id: 'new', status: 'pending', content: '新一级评论' },
+          ...roots.slice(0, 32),
+        ],
+        hasMore: true,
+        nextCursor: 'refreshed-33',
+      })
+      .mockResolvedValueOnce({ items: roots.slice(32), hasMore: false });
+    api.createPostComment.mockResolvedValue({ id: 'new' });
+    const wrapper = mount(CommunityCommentSection, {
+      props: { postId: 'post' },
+    });
+    await flushPromises();
+    const more = () =>
+      wrapper
+        .findAll('button')
+        .find((button) => button.text() === '加载更多评论');
+    await more().trigger('click');
+    await flushPromises();
+    await wrapper.find('textarea').setValue('新一级评论');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.findAll('.comment-thread')).toHaveLength(33);
+    expect(wrapper.text()).toContain('旧楼层31');
+    expect(wrapper.text()).toContain('新一级评论');
+    expect(api.fetchRootComments).toHaveBeenNthCalledWith(3, 'post', {
+      size: 33,
+      cursor: undefined,
+    });
+    await more().trigger('click');
+    await flushPromises();
+    expect(api.fetchRootComments).toHaveBeenLastCalledWith('post', {
+      cursor: 'refreshed-33',
+    });
+    expect(wrapper.findAll('.comment-thread')).toHaveLength(34);
+    wrapper.unmount();
+  });
+
+  it('楼内提交回复后保留展开范围与下一页游标', async () => {
+    const replies = Array.from({ length: 24 }, (_, i) => ({
+      ...reply,
+      id: `reply-${i}`,
+      content: `楼内回复${i}`,
+    }));
+    api.fetchCommentReplies
+      .mockResolvedValueOnce({
+        items: replies.slice(0, 3),
+        hasMore: true,
+        nextCursor: 'reply-3',
+      })
+      .mockResolvedValueOnce({
+        items: replies.slice(3, 23),
+        hasMore: true,
+        nextCursor: 'reply-23',
+      })
+      .mockResolvedValueOnce({
+        items: replies.slice(0, 23),
+        hasMore: true,
+        nextCursor: 'refreshed-reply-23',
+      })
+      .mockResolvedValueOnce({ items: replies.slice(23), hasMore: false });
+    api.createPostComment.mockResolvedValue({ id: 'new' });
+    const wrapper = mount(CommunityCommentSection, {
+      props: { postId: 'post' },
+    });
+    await flushPromises();
+    await wrapper.find('.more-replies').trigger('click');
+    await flushPromises();
+    await wrapper
+      .find('[data-comment-id="reply-22"] .reply-button')
+      .trigger('click');
+    await wrapper.find('textarea').setValue('继续讨论');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.findAll('.compact-replies [data-comment-id]')).toHaveLength(
+      23,
+    );
+    expect(wrapper.text()).toContain('楼内回复22');
+    expect(api.fetchCommentReplies).toHaveBeenNthCalledWith(3, 'post', 'root', {
+      size: 23,
+      cursor: undefined,
+    });
+    await wrapper.find('.more-replies').trigger('click');
+    await flushPromises();
+    expect(api.fetchCommentReplies).toHaveBeenLastCalledWith('post', 'root', {
+      size: 20,
+      cursor: 'refreshed-reply-23',
+    });
+    expect(wrapper.findAll('.compact-replies [data-comment-id]')).toHaveLength(
+      24,
+    );
+    wrapper.unmount();
+  });
+
+  it('刷新超过100条的已加载范围时沿游标分批获取，不截断后面的楼层', async () => {
+    const roots = Array.from({ length: 121 }, (_, i) => ({
+      ...root,
+      id: `root-${i}`,
+      content: `长楼层${i}`,
+    }));
+    api.fetchCommentReplies.mockResolvedValue({ items: [], hasMore: false });
+    api.fetchRootComments.mockImplementation(
+      async (_post, { size = 20, cursor } = {}) => {
+        const start = Number(cursor || 0);
+        return {
+          items: roots.slice(start, start + size),
+          hasMore: start + size < roots.length,
+          nextCursor: String(start + size),
+        };
+      },
+    );
+    api.createPostComment.mockResolvedValue({ id: 'new' });
+    const wrapper = mount(CommunityCommentSection, {
+      props: { postId: 'post' },
+    });
+    await flushPromises();
+    for (let i = 0; i < 5; i++) {
+      await wrapper
+        .findAll('button')
+        .find((button) => button.text() === '加载更多评论')
+        .trigger('click');
+      await flushPromises();
+    }
+    await wrapper.find('textarea').setValue('第121条');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.findAll('.comment-thread')).toHaveLength(121);
+    expect(wrapper.text()).toContain('长楼层120');
+    expect(api.fetchRootComments).toHaveBeenNthCalledWith(7, 'post', {
+      size: 100,
+      cursor: undefined,
+    });
+    expect(api.fetchRootComments).toHaveBeenNthCalledWith(8, 'post', {
+      size: 21,
+      cursor: '100',
+    });
+    wrapper.unmount();
+  });
+
+  it('切换帖子后，旧帖提交结果不清空新帖草稿', async () => {
+    let finish;
+    api.createPostComment.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const wrapper = mount(CommunityCommentSection, {
+      props: { postId: 'post' },
+    });
+    await flushPromises();
+    await wrapper.find('textarea').setValue('旧帖评论');
+    await wrapper.find('form').trigger('submit');
+    await wrapper.setProps({ postId: 'other-post' });
+    await flushPromises();
+    await wrapper.find('textarea').setValue('新帖草稿');
+    finish({ id: 'old-result' });
+    await flushPromises();
+    expect(wrapper.find('textarea').element.value).toBe('新帖草稿');
+    expect(wrapper.emitted('changed')).toBeUndefined();
+    wrapper.unmount();
+  });
 });

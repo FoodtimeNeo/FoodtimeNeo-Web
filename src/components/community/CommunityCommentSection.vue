@@ -23,27 +23,54 @@ const loading = ref(false),
 let epoch = 0,
   requestId = crypto.randomUUID(),
   payloadKey = '';
-async function replies(root, more = false, version = epoch) {
+// 重新获取已展开的范围，继续使用服务端游标；不把长讨论收回第一页。
+async function loadedPage(fetchPage, count) {
+  const items = [];
+  let page;
+  do {
+    page = await fetchPage({
+      size: Math.min(100, count - items.length),
+      cursor: page?.nextCursor,
+    });
+    items.push(...page.items);
+  } while (page.hasMore && items.length < count);
+  return { ...page, items };
+}
+async function replies(root, more = false, version = epoch, preserve = false) {
   const prior = threads.value[root.id];
-  const page = await fetchCommentReplies(props.postId, root.id, {
-    size: more ? 20 : 3,
-    cursor: more ? prior?.nextCursor : undefined,
-  });
+  const postId = props.postId;
+  const fetchPage = (params) => fetchCommentReplies(postId, root.id, params);
+  const page =
+    preserve && prior
+      ? await loadedPage(
+          fetchPage,
+          Math.max(3, prior.items.length + (prior.hasMore ? 0 : 1)),
+        )
+      : await fetchPage({
+          size: more ? 20 : 3,
+          cursor: more ? prior?.nextCursor : undefined,
+        });
   if (version !== epoch) return;
   threads.value[root.id] = {
     ...page,
     items: more ? [...(prior?.items || []), ...page.items] : page.items,
   };
 }
-async function load(more = false) {
+async function load(more = false, preserve = false, newRoot = false) {
   if (loading.value) return;
   const version = epoch;
   loading.value = true;
   error.value = '';
   try {
-    const page = await fetchRootComments(props.postId, {
-      cursor: more ? cursor.value : undefined,
-    });
+    const postId = props.postId;
+    const page = preserve
+      ? await loadedPage(
+          (params) => fetchRootComments(postId, params),
+          Math.max(20, roots.value.length + (newRoot ? 1 : 0)),
+        )
+      : await fetchRootComments(postId, {
+          cursor: more ? cursor.value : undefined,
+        });
     if (version !== epoch) return;
     roots.value = more ? [...roots.value, ...page.items] : page.items;
     cursor.value = page.nextCursor;
@@ -51,7 +78,7 @@ async function load(more = false) {
     await Promise.all(
       page.items
         .filter((r) => r.status === 'approved')
-        .map((r) => replies(r, false, version)),
+        .map((r) => replies(r, false, version, preserve)),
     );
   } catch (e) {
     if (version === epoch) error.value = e.message || '评论加载失败';
@@ -64,6 +91,7 @@ watch(
   () => {
     epoch++;
     loading.value = false;
+    submitting.value = false;
     roots.value = [];
     threads.value = {};
     draft.value = '';
@@ -80,7 +108,7 @@ async function selectReply(item, root) {
   input.value?.focus();
 }
 async function send() {
-  if (submitting.value || !draft.value.trim()) return;
+  if (submitting.value || loading.value || !draft.value.trim()) return;
   if (draft.value.trim().length > 500) {
     error.value = '评论最多500字';
     return;
@@ -91,6 +119,7 @@ async function send() {
     body.replyToCommentId = target.value.item.id;
   }
   const key = JSON.stringify(body);
+  const version = epoch;
   if (payloadKey && payloadKey !== key) requestId = crypto.randomUUID();
   payloadKey = key;
   submitting.value = true;
@@ -100,17 +129,18 @@ async function send() {
       ...body,
       clientRequestId: requestId,
     });
+    if (version !== epoch) return;
     draft.value = '';
     target.value = null;
     requestId = crypto.randomUUID();
     payloadKey = '';
     ElMessage.success('已提交审核，通过前仅自己可见');
-    await load();
-    emit('changed');
+    await load(false, true, !body.rootCommentId);
+    if (version === epoch) emit('changed');
   } catch (e) {
-    error.value = e.message || '提交失败，请重试';
+    if (version === epoch) error.value = e.message || '提交失败，请重试';
   } finally {
-    submitting.value = false;
+    if (version === epoch) submitting.value = false;
   }
 }
 async function remove(item) {
@@ -125,7 +155,7 @@ async function remove(item) {
   }
   try {
     await deletePostComment(item.id);
-    await load();
+    await load(false, true);
     emit('changed');
   } catch (e) {
     error.value = e.message || '删除失败';
@@ -143,7 +173,7 @@ async function moreReplies(root) {
   <section class="community-comments" aria-label="评论与回复">
     <header>
       <h2>同学们的回应</h2>
-      <button type="button" :disabled="loading" @click="load()">
+      <button type="button" :disabled="loading || submitting" @click="load()">
         刷新评论
       </button>
     </header>
@@ -174,6 +204,7 @@ async function moreReplies(root) {
         v-if="threads[root.id]?.hasMore"
         type="button"
         class="more-replies"
+        :disabled="loading || submitting"
         @click="moreReplies(root)"
       >
         展开更多回复
@@ -182,7 +213,7 @@ async function moreReplies(root) {
     <button
       v-if="hasMore"
       type="button"
-      :disabled="loading"
+      :disabled="loading || submitting"
       @click="load(true)"
     >
       加载更多评论
@@ -212,7 +243,7 @@ async function moreReplies(root) {
         ><button
           type="submit"
           class="community-comments__send-btn"
-          :disabled="submitting || !draft.trim()"
+          :disabled="submitting || loading || !draft.trim()"
         >
           {{ submitting ? '提交中…' : '提交评论' }}
         </button>

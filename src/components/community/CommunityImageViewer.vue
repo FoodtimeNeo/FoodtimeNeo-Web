@@ -16,7 +16,7 @@ const props = defineProps({
 const currentIndex = ref(0);
 const isLightboxOpen = ref(false);
 watch(
-  () => props.images,
+  () => JSON.stringify(props.images.map(({ id, url }) => [id, url])),
   () => {
     currentIndex.value = 0;
     isLightboxOpen.value = false;

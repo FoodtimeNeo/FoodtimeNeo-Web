@@ -89,4 +89,23 @@ describe('CommunityImageViewer', () => {
       false,
     );
   });
+
+  it('帖子互动刷新产生相同图片的新数组时保留图片位置和放大层', async () => {
+    render();
+    await wrapper.findAll('[role="tab"]')[8].trigger('click');
+    await wrapper
+      .get('.community-image-viewer__stage')
+      .trigger('keydown.enter');
+    await wrapper.setProps({ images: images.map((image) => ({ ...image })) });
+    expect(wrapper.get('[role="status"]').text()).toBe('9 / 9');
+    expect(wrapper.findComponent({ name: 'ElImageViewer' }).exists()).toBe(
+      true,
+    );
+
+    await wrapper.setProps({ images: images.slice(0, 3) });
+    expect(wrapper.get('[role="status"]').text()).toBe('1 / 3');
+    expect(wrapper.findComponent({ name: 'ElImageViewer' }).exists()).toBe(
+      false,
+    );
+  });
 });
