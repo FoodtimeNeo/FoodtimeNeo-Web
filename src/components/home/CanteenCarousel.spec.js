@@ -57,4 +57,29 @@ describe('CanteenCarousel', () => {
       params: { canteenId: 'c1' },
     });
   });
+
+  it.each([undefined, null, 0, NaN])(
+    '食堂没有有效评分（%s）时显示无评分，不生成分数或口碑标签',
+    (rating) => {
+      const wrapper = mount(CanteenCarousel, {
+        props: { canteens: [{ id: 'empty', name: '空白食堂', rating }] },
+      });
+
+      expect(wrapper.get('.zine-rating-stamp').text()).toBe('无评分');
+      expect(wrapper.text()).not.toContain('4.5');
+      expect(wrapper.text()).not.toContain('超高口碑');
+      expect(wrapper.text()).not.toContain('大众推荐');
+      wrapper.unmount();
+    },
+  );
+
+  it('真实评分保留一位小数和口碑标签', () => {
+    const wrapper = mount(CanteenCarousel, {
+      props: { canteens: [{ id: 'rated', name: '有评分食堂', rating: 4.86 }] },
+    });
+
+    expect(wrapper.get('.zine-rating-stamp').text()).toBe('4.9');
+    expect(wrapper.text()).toContain('超高口碑');
+    wrapper.unmount();
+  });
 });
