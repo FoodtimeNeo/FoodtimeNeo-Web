@@ -1,5 +1,7 @@
 # 🍱 FoodtimeNeo-Web
 
+当前版本 **1.0.0**；修复范围与验证结果见 [1.0.0 发布验收](docs/release-1.0.0.md)。
+
 <div align="center">
 
 ### 校园食堂手账风美食点评与社区互动平台 · Web 前端工程
