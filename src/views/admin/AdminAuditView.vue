@@ -1,5 +1,12 @@
 <script setup>
 import { ref, watch } from 'vue';
+import {
+  fetchCommunityAudit,
+  fetchCommunityAuditDetail,
+  submitCommunityAudit,
+  removeCommunityAsAdmin,
+} from '@/api/community.api.js';
+import CommunityImageViewer from '@/components/community/CommunityImageViewer.vue';
 import { fetchAuditItems, submitAudit } from '@/api/admin-audit.api.js';
 import { removeReviewReplyAsAdmin } from '@/api/review.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
@@ -13,15 +20,25 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import AiVerdict from '@/components/base/AiVerdict.vue';
 const status = ref('pending');
+const channel = ref('catalog'),
+  details = ref(null),
+  detailLoading = ref(false);
+const communityType = (row) =>
+  row.type === 'community-post' ? 'posts' : 'comments';
 const labels = {
   review: '点评',
   dish: '菜品',
   stall: '档口',
   photo: '图片',
   'dish-review-reply': '点评回复',
+  'community-post': '社区食记',
+  'community-comment': '社区评论／回复',
 };
 const { items, page, total, size, loading, error, load } = usePagedData(
-  (page, options) => fetchAuditItems(status.value, page, options),
+  (page, options) =>
+    channel.value === 'catalog'
+      ? fetchAuditItems(status.value, page, options)
+      : fetchCommunityAudit(channel.value, status.value, page, options),
 );
 const selected = ref(null);
 const reason = ref('');
@@ -29,22 +46,46 @@ const price = ref('');
 const writing = ref(false);
 const failure = ref('');
 const notice = ref('');
-watch(status, () => {
+watch([status, channel], () => {
+  details.value = null;
   selected.value = null;
   notice.value = '';
   if (page.value !== 1) page.value = 1;
   else load();
 });
-function choose(row, action) {
+async function choose(row, action) {
+  details.value = null;
   selected.value = { ...row, action };
   reason.value = '';
   price.value = row.price === null ? '' : String(row.price ?? '');
   failure.value = '';
   notice.value = '';
+  if (row.type.startsWith('community-')) {
+    detailLoading.value = true;
+    try {
+      const result = await fetchCommunityAuditDetail(
+        communityType(row),
+        row.id,
+      );
+      if (selected.value?.id === row.id && selected.value?.type === row.type)
+        details.value = result;
+    } catch (e) {
+      failure.value = e.message || '完整审核内容加载失败';
+    } finally {
+      detailLoading.value = false;
+    }
+  }
 }
 async function submit() {
   if (writing.value || !selected.value) return;
   const row = selected.value;
+  if (
+    row.type.startsWith('community-') &&
+    (detailLoading.value || !details.value)
+  ) {
+    failure.value = '请先加载完整内容再审核';
+    return;
+  }
   failure.value = '';
   if (['reject', 'remove'].includes(row.action) && !reason.value.trim()) {
     failure.value =
@@ -61,7 +102,19 @@ async function submit() {
   }
   writing.value = true;
   try {
-    if (row.action === 'remove')
+    if (row.type.startsWith('community-')) {
+      if (row.action === 'remove')
+        await removeCommunityAsAdmin(
+          communityType(row),
+          row.id,
+          reason.value.trim(),
+        );
+      else
+        await submitCommunityAudit(communityType(row), row.id, {
+          action: row.action,
+          reason: reason.value.trim() || null,
+        });
+    } else if (row.action === 'remove')
       await removeReviewReplyAsAdmin(row.id, reason.value.trim());
     else
       await submitAudit(row.type, row.id, {
@@ -74,7 +127,7 @@ async function submit() {
     selected.value = null;
     notice.value =
       row.action === 'remove'
-        ? '回复已删除'
+        ? '内容已下架'
         : row.action === 'approve'
           ? '审核已通过'
           : '已驳回';
@@ -101,6 +154,13 @@ async function submit() {
         </option>
       </select></label
     >
+    <label
+      >审核范围<select v-model="channel" :disabled="writing">
+        <option value="catalog">菜品与点评</option>
+        <option value="posts">社区食记</option>
+        <option value="comments">社区评论与回复</option>
+      </select></label
+    >
     <p v-if="notice" role="status">{{ notice }}</p>
     <LoadingState v-if="loading" /><ErrorState
       v-else-if="error"
@@ -124,7 +184,15 @@ async function submit() {
           class="photo"
         />
         <AiVerdict
-          v-if="['review', 'photo', 'dish-review-reply'].includes(row.type)"
+          v-if="
+            [
+              'review',
+              'photo',
+              'dish-review-reply',
+              'community-post',
+              'community-comment',
+            ].includes(row.type)
+          "
           :risk-level="row.aiRiskLevel"
           :confidence="row.aiConfidence"
           :labels="row.aiLabels"
@@ -135,13 +203,63 @@ async function submit() {
         <div
           v-if="
             row.status === 'pending' ||
-            (row.type === 'dish-review-reply' && row.status === 'approved')
+            ([
+              'dish-review-reply',
+              'community-post',
+              'community-comment',
+            ].includes(row.type) &&
+              row.status === 'approved')
           "
         >
           <form
             v-if="selected?.id === row.id && selected?.type === row.type"
             @submit.prevent="submit"
           >
+            <template v-if="row.type.startsWith('community-')">
+              <p v-if="detailLoading" role="status">完整内容加载中…</p>
+              <section
+                v-if="details"
+                class="community-review-context"
+                aria-label="完整社区审核内容"
+              >
+                <h4>{{ details.post.title }}</h4>
+                <p class="text">{{ details.post.content }}</p>
+                <CommunityImageViewer
+                  :images="details.post.images"
+                  :alt="details.post.title"
+                />
+                <template v-if="details.comment">
+                  <blockquote v-if="details.rootComment">
+                    一级评论：{{
+                      details.rootComment.deleted
+                        ? '已删除'
+                        : details.rootComment.content
+                    }}
+                  </blockquote>
+                  <blockquote v-if="details.replyToComment">
+                    实际回复对象：{{ details.replyToComment.userDisplayName }} ·
+                    {{
+                      details.replyToComment.deleted
+                        ? '已删除'
+                        : details.replyToComment.content
+                    }}
+                  </blockquote>
+                  <h4>
+                    本次待审核{{
+                      details.comment.rootCommentId ? '回复' : '评论'
+                    }}
+                  </h4>
+                  <p class="text">{{ details.comment.content }}</p>
+                </template>
+              </section>
+              <button
+                v-else-if="!detailLoading"
+                type="button"
+                @click="choose(row, selected.action)"
+              >
+                重试加载完整内容
+              </button>
+            </template>
             <strong
               >{{
                 selected.action === 'remove'
@@ -160,7 +278,12 @@ async function submit() {
             <label
               >审核说明{{
                 selected.action !== 'approve' ? '（必填）' : '（选填）'
-              }}<textarea v-model="reason" :disabled="writing" rows="3" />
+              }}<textarea
+                v-model="reason"
+                :disabled="writing"
+                rows="3"
+                maxlength="500"
+              />
             </label>
             <p v-if="failure" role="alert">{{ failure }}</p>
             <div>
@@ -170,7 +293,14 @@ async function submit() {
                 @click="selected = null"
               >
                 取消</button
-              ><button type="submit" :disabled="writing">
+              ><button
+                type="submit"
+                :disabled="
+                  writing ||
+                  detailLoading ||
+                  (row.type.startsWith('community-') && !details)
+                "
+              >
                 {{
                   writing
                     ? '处理中…'
@@ -189,7 +319,11 @@ async function submit() {
             </button>
           </div>
           <button v-else :disabled="writing" @click="choose(row, 'remove')">
-            删除违规回复
+            {{
+              row.type.startsWith('community-')
+                ? '下架违规社区内容'
+                : '删除违规回复'
+            }}
           </button>
         </div>
       </article>

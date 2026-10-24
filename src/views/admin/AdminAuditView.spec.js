@@ -7,6 +7,13 @@ const api = vi.hoisted(() => ({
 vi.mock('@/api/admin-audit.api.js', () => api);
 const replyApi = vi.hoisted(() => ({ removeReviewReplyAsAdmin: vi.fn() }));
 vi.mock('@/api/review.api.js', () => replyApi);
+const communityApi = vi.hoisted(() => ({
+  fetchCommunityAudit: vi.fn(),
+  fetchCommunityAuditDetail: vi.fn(),
+  submitCommunityAudit: vi.fn(),
+  removeCommunityAsAdmin: vi.fn(),
+}));
+vi.mock('@/api/community.api.js', () => communityApi);
 import AdminAuditView from './AdminAuditView.vue';
 beforeEach(() => {
   vi.clearAllMocks();
@@ -26,6 +33,58 @@ beforeEach(() => {
     size: 20,
     total: 1,
   });
+});
+it('社区审核先加载完整图文，再提交人工决定', async () => {
+  communityApi.fetchCommunityAudit.mockResolvedValue({
+    items: [
+      {
+        id: 'post',
+        type: 'community-post',
+        name: '食记标题',
+        status: 'pending',
+        content: '食记正文',
+      },
+    ],
+    page: 1,
+    size: 20,
+    total: 1,
+  });
+  let finish;
+  communityApi.fetchCommunityAuditDetail.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  communityApi.submitCommunityAudit.mockResolvedValue({ status: 'approved' });
+  const w = mount(AdminAuditView);
+  await flushPromises();
+  await w.findAll('select')[1].setValue('posts');
+  await flushPromises();
+  await w
+    .findAll('button')
+    .find((b) => b.text() === '通过')
+    .trigger('click');
+  await flushPromises();
+  expect(w.get('button[type=submit]').attributes('disabled')).toBeDefined();
+  finish({
+    post: {
+      title: '食记标题',
+      content: '完整正文',
+      images: [{ url: '/one' }, { url: '/two' }],
+    },
+    comment: null,
+  });
+  await flushPromises();
+  expect(w.text()).toContain('完整正文');
+  expect(w.findAll('.community-image-viewer__dot')).toHaveLength(2);
+  await w.get('form').trigger('submit');
+  await flushPromises();
+  expect(communityApi.submitCommunityAudit).toHaveBeenCalledWith(
+    'posts',
+    'post',
+    { action: 'approve', reason: null },
+  );
 });
 it('已通过回复可填写原因后删除', async () => {
   api.fetchAuditItems.mockResolvedValue({

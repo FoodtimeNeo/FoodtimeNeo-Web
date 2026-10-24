@@ -1,122 +1,65 @@
-# FoodtimeNeo 社区功能（小红书风格）开发与交接文档
+# 社区功能开发与交接
 
-## 1. 模块定位与概述
+## 当前实现
 
-社区功能为 FoodtimeNeo 新增的 UGC 校园美食图文分享板块。整体交互与视觉体验参考“小红书”的瀑布流与多图图文详情浏览，同时深度融合 FoodtimeNeo 的食堂手账、牛皮纸底色、硬阴影与印章视觉语言。
+社区已连接真实后端。公开信息流为双列瀑布流，支持游标加载更多；“我的食记”和“我的收藏”分别读取个人接口。卡片使用服务端标题、作者和图片尺寸，旧记录未知尺寸时使用布局回退。
 
-当前已完成的完整功能范围：
+帖子标题最多50字、正文最多2000字，原创图文1–9张图片。发帖弹窗接受JPEG/PNG，校验10MB限制，可移除和前移图片，首张为封面。图片上传失败会保留当前草稿并显示错误；同一草稿重试复用请求编号和已上传结果。
 
-1. **导航与首页双重集成**：
-   - 在桌面端导航栏与移动端底部 TabBar 增设「社区」入口；
-   - **首页集成**：作为首页第二部分（`02 校园食记 · 社区动态`）展示最新精选瀑布流，支持点击直达详情或一键跳转社区广场；
-2. **手账便签风发帖界面与真实图片上传**：
-   - 弹窗宽度限制为精致的 `min(560px, 94vw)`，彻底告别空旷平庸；
-   - 采用和纸胶带、牛皮纸底色、手账艺术标题字体与立体硬阴影；
-   - **真实图片上传**：彻底移除外链输入与快捷预设图，支持点击或拖拽上传真实图片文件（JPG/PNG/WebP，最多 9 张），支持多选、首张自动设为封面、一键移除；
-3. **响应式瀑布流（Feed 列表）**：
-   - 电脑端网页显示 3 列瀑布流，手机端显示 2 列瀑布流；
-   - 封面图自适应不同宽高比（4:3、3:4、1:1、9:16、16:9 等多种版式），卡片展示上图下标题，严格按发布时间倒序排列；
-   - **扩充至 40+ 篇高质量各大食堂美食手账帖子**，涵盖学一、学二、明湖、留园、清真、学苑、东区等各大食堂数十种风味美食；
-4. **双发帖入口与菜品联动**：
-   - **入口一**：社区页右上角常驻「＋ 发帖」按钮（同时右下角保留悬浮「+」发帖快捷键）；
-   - **入口二**：在菜品详情页发表评论时，可勾选「将本评论发表至社区帖子」；发表评论后自动将点评文案与配图预填至社区发帖界面，一键发布；
-5. **菜品点评配图直通图册**：
-   - 菜品点评支持选填图片，用户选填的图片在提交点评时会自动上传并调用图册接口加入该菜品官方图册，与菜品页点击加号上传图片作用一致；
-6. **发帖与审核机制**：
-   - 新帖提交后默认状态置为 `pending`（待审核），社区公开 Feed 仅展示 `approved`（审核通过）的帖子，保证社区内容安全合规；
-7. **多图详情页**：
-   - 支持多图横向轮播滑动（手机端触控滑动手势 + 桌面端切换箭头）；
-   - 底部圆点指示器（Dots），当前页药丸形伸长过渡；
-   - 单击图片支持全屏 Lightbox 大图预览与缩放浏览；
-8. **热闹的评论区与即时互动**：
-   - 详情页展示发帖人、ID、发布时间、正文与配图；
-   - 点赞与收藏按钮提供即时点击状态切换、数字增减与 Toast 提示，无“下阶段”等生硬字眼；
-   - 大幅扩充各重点帖子的生动评论互动（涵盖催更、口感探讨、排队避坑、搭伙组团等）；
-   - 评论区支持查看评论列表、按人名快捷回复（自动填充 `@昵称`）、评论点赞以及即时发表新评论。
+帖子、评论和回复均不可编辑。发布后进入“我的食记”查看待审或驳回状态，审核通过才出现在公开信息流。
 
----
+## 详情与楼中楼
 
-## 2. 路由与导航结构
+`CommunityPostContent`由弹窗和独立详情路由共同使用，包含完整正文、多图轮播、点赞收藏和评论区。`CommunityImageViewer`支持滑动、方向键、圆点和大图缩放；全屏预览使用Element Plus的ImageViewer。
 
-### 2.1 路由配置 (`src/router/routes.js`)
+`CommunityCommentSection`读取一级评论游标页及每楼的回复页。回复可以针对楼内任何合法对象，始终只缩进一层；选择对象时保存根评论和实际回复ID，不把@姓名拼入正文。评论回复最多500字，待审/驳回内容仅作者可见。删除根评论后保留占位及合法回复，删除操作要求明确确认。
 
-| 路径                       | 路由名称          | 页面组件                  | 鉴权要求             | 说明                                          |
-| -------------------------- | ----------------- | ------------------------- | -------------------- | --------------------------------------------- |
-| `/community`               | `community`       | `CommunityFeedView.vue`   | `requiresAuth: true` | 社区帖子响应式瀑布流列表页（电脑3列/手机2列） |
-| `/community/posts/:postId` | `communityDetail` | `CommunityDetailView.vue` | `requiresAuth: true` | 帖子多图详情与评论互动页                      |
+点赞与收藏使用显式PUT/DELETE接口，写入期间禁用重复操作，成功后更新服务端返回的状态和计数；失败保留原状态并显示错误。
 
-### 2.2 导航集成 (`src/components/layout/navigation.js`)
+## 主要文件
 
-- `navigationItems`：顺序为 `['canteenList', 'community', 'profile']`；
-- `getNavigationItems(isAdmin)`：管理员在社区与我的之间插入管理入口 `['canteenList', 'community', 'adminAudit', 'profile']`；
-- 面包屑 `resolveBreadcrumbs`：社区详情页自动生成 `首页 / 社区 / 帖子详情`。
+| 文件                                                    | 职责                                               |
+| ------------------------------------------------------- | -------------------------------------------------- |
+| `src/api/community.api.js`                              | 真实接口、游标、个人列表、互动及审核适配           |
+| `src/views/community/CommunityFeedView.vue`             | 双列瀑布流、发现/我的/收藏分类及加载更多           |
+| `src/components/community/PostCreateModal.vue`          | 标题正文、图片选择排序、上传及发布去重             |
+| `src/components/community/CommunityPostContent.vue`     | 共用详情与服务端互动状态                           |
+| `src/components/community/CommunityPostDetailModal.vue` | ElDialog弹窗容器                                   |
+| `src/views/community/CommunityDetailView.vue`           | 独立详情路由与返回入口                             |
+| `src/components/community/CommunityImageViewer.vue`     | 轮播与全屏大图                                     |
+| `src/components/community/CommunityCommentSection.vue`  | 根评论/回复分页、回复对象与草稿                    |
+| `src/components/community/CommunityCommentItem.vue`     | 单条评论、审核/删除状态及点赞                      |
+| `src/views/admin/AdminAuditView.vue`                    | 社区审核范围、完整配图与回复上下文、人工决定及下架 |
 
----
+## 接口约定
 
-## 3. 组件清单与职责划分
+路径相对于API前缀：
 
-```text
-src/
-├── api/
-│   ├── community.api.js            # 社区数据请求适配层与 40+ 篇高质量美食 Mock 帖子及丰富评论
-│   └── community.api.spec.js       # 接口与审核过滤单元测试
-├── components/community/
-│   ├── CommunityPostCard.vue       # 瀑布流单帖卡片（上图下标题、宽高比自适应）
-│   ├── PostCreateModal.vue         # 快速发帖弹窗（手账便签设计、真实图片上传、接收预填数据）
-│   ├── PostCreateModal.spec.js     # 发帖弹窗单元测试
-│   ├── CommunityImageViewer.vue    # 多图轮播滑动器（手势滑动、圆点指示器、单击放大灯箱）
-│   └── CommunityCommentSection.vue # 评论区组件（展示列表、@快捷回复、点赞即时交互、即时发送）
-└── views/
-    ├── home/
-    │   ├── HomeView.vue                 # 首页（01 食堂档案 + 02 社区动态第二部分）
-    │   └── HomeView.spec.js             # 首页单元测试
-    ├── dish/
-    │   ├── DishReviewCreateView.vue     # 菜品点评页（选填图片直通菜品图册 + 一键勾选同步发帖）
-    │   └── DishReviewCreateView.spec.js # 菜品点评与社区联动单元测试
-    └── community/
-        ├── CommunityFeedView.vue        # 社区排列页（右上角发帖、电脑3列/手机2列瀑布流、审核过滤）
-        ├── CommunityFeedView.spec.js    # 排列页双入口与响应式列数单元测试
-        ├── CommunityDetailView.vue      # 帖子详情页（多图展示、点赞收藏即时响应、无下阶段生硬文案）
-        └── CommunityDetailView.spec.js  # 详情页与交互单元测试
-```
+| 操作           | 接口                                                                            |
+| -------------- | ------------------------------------------------------------------------------- |
+| 公开信息流     | `GET /community/feed/cursor`                                                    |
+| 发布及详情     | `POST /community/posts`、`GET /community/posts/{id}`                            |
+| 一级评论       | `GET /community/posts/{id}/comments/cursor`                                     |
+| 楼内回复       | `GET /community/posts/{id}/comments/{rootId}/replies`                           |
+| 提交评论或回复 | `POST /community/posts/{id}/comments`                                           |
+| 点赞           | `PUT/DELETE /community/posts/{id}/like`、`/community/comments/{id}/like`        |
+| 收藏           | `PUT/DELETE /community/posts/{id}/favorite`                                     |
+| 个人列表       | `GET /users/me/community-posts`、`/users/me/community-favorites`                |
+| 删除           | `DELETE /community/posts/{id}`、`/community/comments/{id}`                      |
+| 完整社区审核   | `GET/POST/DELETE /admin/community/posts/{id}`、`/admin/community/comments/{id}` |
 
----
+发布请求传`title`、`content`、`imageUrls`和`clientRequestId`。评论传`content`、`clientRequestId`；回复同时传`rootCommentId`、`replyToCommentId`。后端返回的作者与图片映射为现有组件消费的`author`、`images`结构。
 
-## 4. 关键设计与算法说明
+公开Feed、一级评论和回复返回`items,total,hasMore,nextCursor`。详情中的`likedByMe`、`favoritedByMe`和计数均由服务端计算。社区图片按当前帖子可见性读取。
 
-### 4.1 首页第二部分（02 社区动态）架构设计
+## 人工审核
 
-- 首页由原有的单一 Hero + 01 食堂手账，演进为两大部分的完整校园美食手账闭环：
-  1. `01 选择今天的食堂`：引导同学从食堂档案深入档口与菜品；
-  2. `02 校园食记 · 社区动态`：展示同学们最新的实拍体验与打卡手账，配有「进入社区广场 →」和底部快速浏览入口，增强全站活跃氛围。
+管理中心的“内容审核”增加社区食记、社区评论与回复两个审核范围。选择审核动作后先读取全部图片及根楼层/实际回复对象，完整内容加载完成才允许提交决定；驳回和下架须填写原因。待审内容与终审冲突由服务端校验。
 
-### 4.2 发帖弹窗手账质感重构与真实图片上传
+AI不确定或服务故障时转人工。一次终审成功后重复处理返回冲突，界面保留错误信息以便刷新核对。
 
-1. **尺寸与视觉重构**：
-   - 弹窗宽度限制为 `min(560px, 94vw)`，居中显示，具有牛皮纸米黄底色与 `8px 8px 0 #3a2418` 经典立体手绘硬阴影；
-   - 顶部和纸胶带装饰，配合标题字体和编号徽标（01、02、03），打造出书写手账的沉浸式体验。
-2. **纯粹的真实图片上传**：
-   - 彻底移除了“粘贴图片链接”输入框与“快捷选用手账美食配图”示例栏；
-   - 采用原生 `<input type="file" accept="image/jpeg,image/png,image/webp" multiple>`，支持点击或拖拽上传本地真实图片文件；
-   - 选图后通过 `URL.createObjectURL(file)` 实现高保真即时预览与封面标注，提交时无缝对接后端 `uploadImage(file)` 图片上传服务，并在卸载时自动清理 ObjectURL 避免内存泄漏。
+## 验证
 
-### 4.3 响应式瀑布流（电脑 3 列，手机 2 列）高度平衡算法
+`npm run check`通过ESLint、Prettier、60个测试文件的237项测试及生产构建。测试覆盖真实接口适配、上传失败保留草稿、回复对象关系、重试编号、删除占位和服务端互动状态。
 
-- **实现原理**：在 `CommunityFeedView.vue` 中通过 `matchMedia('(max-width: 768px)')` 监听移动端视口，动态确定列数：`const colCount = isMobile.value ? 2 : 3`；
-- **分配算法**：根据首图宽高比贪心分配至当前累计高度最小的列，保持时间倒序同时实现自然错落的视觉节奏；
-- **CSS 配合**：桌面端 Grid 3 列（最大宽度 1080px），手机端自适应 2 列。
-
----
-
-## 5. 验证与门禁检查
-
-所有代码已严格遵循规范，并通过全量检查门禁：
-
-```sh
-npm run check
-```
-
-- **ESLint**：0 error, 0 warning；
-- **Prettier**：全量代码样式格式化完毕；
-- **Vitest 单元测试**：全量测试套件通过（包含发帖弹窗文件上传、首页第二部分、社区瀑布流、双发帖入口、菜品图片联动图册、点赞收藏等完整覆盖）；
-- **Vite 生产构建**：生产打包顺利无阻。
+浏览器已完成真实上传两图、发布、完整内容审核、楼内回复与评论审核、帖子/评论点赞及收藏；390px和1180px两侧布局已检查，修正窄屏弹窗溢出。后端字段和三端完整验收说明见Backend仓库的`docs/community-schema.md`与`docs/community-delivery.md`。

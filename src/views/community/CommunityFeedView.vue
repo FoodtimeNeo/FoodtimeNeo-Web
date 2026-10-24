@@ -1,8 +1,12 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { fetchCommunityPosts } from '@/api/community.api.js';
+import {
+  fetchCommunityPosts,
+  fetchMyCommunityPosts,
+  fetchMyCommunityFavorites,
+} from '@/api/community.api.js';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
 import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
 import PostCreateModal from '@/components/community/PostCreateModal.vue';
@@ -13,6 +17,12 @@ const route = useRoute();
 
 const posts = ref([]);
 const loading = ref(false);
+const cursor = ref(null);
+const mode = ref('public'),
+  currentPage = ref(1);
+let feedVersion = 0;
+const hasMore = ref(false);
+const loadError = ref('');
 const isCreateModalOpen = ref(false);
 const prefillData = ref({});
 const activePostId = ref('');
@@ -25,29 +35,42 @@ function openCreateModal(prefill = null) {
   isCreateModalOpen.value = true;
 }
 
-async function loadFeed() {
+async function loadFeed(more = false) {
+  if (loading.value) return;
+  const version = feedVersion;
+  loadError.value = '';
   loading.value = true;
   try {
     // 关键需求：新发的帖子需要审核才能展示，故默认只拉取 approved 状态的帖子
-    const res = await fetchCommunityPosts({ status: 'approved' });
-    posts.value = res.items || [];
+    const pageNumber = more ? currentPage.value + 1 : 1;
+    const res =
+      mode.value === 'public'
+        ? await fetchCommunityPosts({ cursor: more ? cursor.value : undefined })
+        : await (
+            mode.value === 'mine'
+              ? fetchMyCommunityPosts
+              : fetchMyCommunityFavorites
+          )({ page: pageNumber, size: 20 });
+    if (version !== feedVersion) return;
+    currentPage.value = pageNumber;
+    posts.value = more
+      ? [...posts.value, ...(res.items || [])]
+      : res.items || [];
+    cursor.value = res.nextCursor;
+    hasMore.value =
+      mode.value === 'public' ? !!res.hasMore : pageNumber * 20 < res.total;
   } catch (error) {
-    ElMessage.error(error.message || '加载社区帖子失败');
+    if (version !== feedVersion) return;
+    loadError.value = error.message || '加载社区帖子失败';
+    ElMessage.error(loadError.value);
   } finally {
-    loading.value = false;
+    if (version === feedVersion) loading.value = false;
   }
-}
-
-const isMobile = ref(false);
-let mediaQueryList = null;
-
-function handleMediaChange(e) {
-  isMobile.value = e.matches;
 }
 
 // 响应式瀑布流分配算法（电脑端 3 列，手机端 2 列）
 const columns = computed(() => {
-  const colCount = isMobile.value ? 2 : 3;
+  const colCount = 2;
   const cols = Array.from({ length: colCount }, () => []);
   const colHeights = Array.from({ length: colCount }, () => 0);
 
@@ -78,31 +101,26 @@ function handleCardClick(post) {
   isDetailModalOpen.value = true;
 }
 
-function handlePostCreated() {
-  // 发帖成功后，由于新贴为 pending 待审核状态，无需强制刷新公开 Feed，但可以轻微拉取最新已过审数据
+function changeMode(next) {
+  feedVersion++;
+  mode.value = next;
+  loading.value = false;
+  posts.value = [];
+  cursor.value = null;
+  currentPage.value = 1;
   loadFeed();
+}
+function handlePostCreated() {
+  changeMode('mine');
 }
 
 onMounted(() => {
   loadFeed();
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    mediaQueryList = window.matchMedia('(max-width: 768px)');
-    isMobile.value = mediaQueryList.matches;
-    if (mediaQueryList.addEventListener) {
-      mediaQueryList.addEventListener('change', handleMediaChange);
-    }
-  }
   if (route?.query?.action === 'new' || history.state?.prefill) {
     if (history.state?.prefill) {
       prefillData.value = history.state.prefill;
     }
     isCreateModalOpen.value = true;
-  }
-});
-
-onUnmounted(() => {
-  if (mediaQueryList && mediaQueryList.removeEventListener) {
-    mediaQueryList.removeEventListener('change', handleMediaChange);
   }
 });
 </script>
@@ -128,11 +146,35 @@ onUnmounted(() => {
       </button>
     </header>
 
-    <LoadingState v-if="loading" />
+    <nav class="community-tabs" aria-label="食记分类">
+      <button
+        v-for="tab in [
+          { id: 'public', label: '发现食记' },
+          { id: 'mine', label: '我的食记' },
+          { id: 'favorites', label: '我的收藏' },
+        ]"
+        :key="tab.id"
+        type="button"
+        :aria-pressed="mode === tab.id"
+        @click="changeMode(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
+    <p v-if="loadError" role="alert">
+      {{ loadError }} <button type="button" @click="loadFeed()">重试</button>
+    </p>
+    <LoadingState v-if="loading && !posts.length" />
 
     <EmptyState
       v-else-if="posts.length === 0"
-      title="社区暂无公开帖子"
+      :title="
+        mode === 'public'
+          ? '社区暂无公开帖子'
+          : mode === 'mine'
+            ? '你还没有发布食记'
+            : '你还没有收藏食记'
+      "
       description="点击右上角「+」号，抢先发布第一篇美食手账吧！"
     />
 
@@ -151,6 +193,16 @@ onUnmounted(() => {
         />
       </div>
     </main>
+
+    <button
+      v-if="hasMore"
+      type="button"
+      class="community-more"
+      :disabled="loading"
+      @click="loadFeed(true)"
+    >
+      {{ loading ? '加载中…' : '加载更多' }}
+    </button>
 
     <!-- 右下角悬浮「+」发帖按钮 -->
     <button
@@ -174,11 +226,37 @@ onUnmounted(() => {
     <CommunityPostDetailModal
       v-model="isDetailModalOpen"
       :post-id="activePostId"
+      @deleted="loadFeed()"
     />
   </div>
 </template>
 
 <style scoped lang="scss">
+.community-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  button {
+    min-height: 44px;
+    padding: 8px 16px;
+    border: 1px solid var(--ft-color-border);
+    background: transparent;
+    border-radius: 8px;
+    color: inherit;
+    cursor: pointer;
+    &[aria-pressed='true'] {
+      color: var(--ft-color-primary);
+      border-color: currentColor;
+    }
+  }
+}
+.community-more {
+  display: block;
+  margin: 24px auto;
+  min-height: 44px;
+  padding: 8px 24px;
+  cursor: pointer;
+}
 .community-feed-view {
   position: relative;
   min-height: calc(100vh - 200px);

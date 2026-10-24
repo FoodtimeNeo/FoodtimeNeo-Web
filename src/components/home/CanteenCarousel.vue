@@ -58,9 +58,13 @@ function imageFrameClass(index) {
   return classList[index % classList.length];
 }
 
+function hasRating(rating) {
+  return Number.isFinite(rating) && rating >= 1 && rating <= 5;
+}
+
 function visibleChips(canteen) {
   const chips = [];
-  if (canteen.rating) {
+  if (hasRating(canteen.rating)) {
     chips.push(canteen.rating >= 4.5 ? '超高口碑' : '大众推荐');
   }
   if (canteen.stallsCount) {
@@ -139,8 +143,13 @@ function handleSelect(canteenId) {
 
           <div class="canteen-card__title-row">
             <h3 class="canteen-card__name">{{ canteen.name }}</h3>
-            <span class="zine-rating-stamp">
-              {{ (canteen.rating ?? 4.5).toFixed(1) }}
+            <span
+              class="zine-rating-stamp"
+              :class="{ 'is-unrated': !hasRating(canteen.rating) }"
+            >
+              {{
+                hasRating(canteen.rating) ? canteen.rating.toFixed(1) : '无评分'
+              }}
             </span>
           </div>
 
@@ -388,6 +397,15 @@ function handleSelect(canteenId) {
     font-family: var(--ft-font-family-title);
     transform: rotate(-6deg);
     border-radius: 50%;
+
+    &.is-unrated {
+      width: auto;
+      min-width: 36px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
   }
 
   &__footer {
