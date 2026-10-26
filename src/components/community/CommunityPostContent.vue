@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue';
+import MediaImage from '@/components/base/MediaImage.vue';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { ElMessageBox } from 'element-plus';
 import {
@@ -95,7 +96,7 @@ async function remove() {
     </div>
     <div class="post-copy">
       <header>
-        <img
+        <MediaImage
           v-if="post.author?.avatar"
           :src="post.author.avatar"
           alt=""

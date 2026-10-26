@@ -19,7 +19,9 @@ describe('StallEntryCard', () => {
   it('展示档口名称与封面 alt', () => {
     const wrapper = mountCard();
     expect(wrapper.text()).toContain('面档');
-    expect(wrapper.find('img').attributes('alt')).toBe('面档');
+    expect(wrapper.findComponent({ name: 'MediaImage' }).props('alt')).toBe(
+      '面档',
+    );
   });
 
   it('链接带上食堂与档口参数', () => {

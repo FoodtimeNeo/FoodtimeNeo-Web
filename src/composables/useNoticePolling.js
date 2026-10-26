@@ -1,5 +1,4 @@
 import { computed, onUnmounted, ref, watch } from 'vue';
-import { useAsyncData } from './useAsyncData.js';
 import { fetchNoticeFeed } from '@/api/notice.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 
@@ -10,31 +9,58 @@ const POLL_INTERVAL_MS = 60000;
 export function useNoticePolling({ intervalMs = POLL_INTERVAL_MS } = {}) {
   const auth = useAuthStore();
   const sinceSeq = ref(0);
-  const state = useAsyncData(
-    (options) => fetchNoticeFeed(sinceSeq.value, 20, options),
-    { immediate: false, initial: { items: [], unreadCount: 0 } },
-  );
+  const data = ref({ items: [], unreadCount: 0 });
+  let controller, pending;
+  let generation = 0,
+    active = true;
+  async function load() {
+    if (!active || !auth.isAuthenticated || document.hidden) return;
+    if (pending) return pending;
+    const ticket = generation;
+    controller = new AbortController();
+    const task = fetchNoticeFeed(sinceSeq.value, 20, {
+      signal: controller.signal,
+    })
+      .then((result) => {
+        if (active && ticket === generation) data.value = result;
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (pending === task) pending = null;
+      });
+    pending = task;
+    return task;
+  }
 
   const timer = setInterval(tick, intervalMs);
-  onUnmounted(() => clearInterval(timer));
+  onUnmounted(() => {
+    active = false;
+    generation++;
+    controller?.abort();
+    clearInterval(timer);
+  });
 
   function tick() {
     if (typeof document !== 'undefined' && document.hidden) return;
     if (!auth.isAuthenticated) return;
-    state.load();
+    load();
   }
 
-  if (auth.isAuthenticated) state.load();
   watch(
-    () => auth.isAuthenticated,
-    (loggedIn) => {
-      if (loggedIn) state.load();
+    () => `${auth.user?.id || ''}:${auth.user?.role || ''}`,
+    () => {
+      generation++;
+      controller?.abort();
+      pending = null;
+      data.value = { items: [], unreadCount: 0 };
+      if (auth.isAuthenticated) load();
     },
+    { immediate: true },
   );
 
   return {
-    noticesUnread: computed(() => state.data.value.unreadCount ?? 0),
-    items: computed(() => state.data.value.items ?? []),
-    refresh: () => state.load(),
+    noticesUnread: computed(() => data.value.unreadCount ?? 0),
+    items: computed(() => data.value.items ?? []),
+    refresh: load,
   };
 }

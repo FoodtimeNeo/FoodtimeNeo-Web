@@ -1,5 +1,5 @@
 <script setup>
-import { computed, provide, ref, watch } from 'vue';
+import { computed, provide, ref, watch, onMounted, onUnmounted } from 'vue';
 import { RouterView } from 'vue-router';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import BlankLayout from '@/layouts/BlankLayout.vue';
@@ -14,6 +14,16 @@ import { fetchUnreadMessageCount } from '@/api/message.api.js';
 const auth = useAuthStore();
 const inbox = useInboxStore();
 const popupQueue = ref([]);
+const foreground = ref(!document.hidden);
+const updateForeground = () => {
+  foreground.value = !document.hidden;
+};
+onMounted(() =>
+  document.addEventListener('visibilitychange', updateForeground),
+);
+onUnmounted(() =>
+  document.removeEventListener('visibilitychange', updateForeground),
+);
 
 const layouts = {
   blank: BlankLayout,
@@ -46,9 +56,12 @@ provide('refreshInbox', refreshInbox);
 
 // 按用户绑定水位：切号、退出时隔离，弹窗队列一并清空。
 watch(
-  () => auth.user?.id,
-  (id) => {
+  () => `${auth.user?.id || ''}:${auth.user?.role || ''}`,
+  () => {
+    const id = auth.user?.id;
     popupQueue.value = [];
+    messageUnread.cancel();
+    messageUnread.data.value = { unreadCount: 0 };
     if (id) {
       inbox.bind(id);
       refreshInbox();
@@ -66,7 +79,9 @@ watch([noticesUnread, messageUnreadCount], ([noticeCount, msgCount]) => {
 
 // 新公告弹窗队列：feed 按 seq 正序，水位之后的新条目逐条展示；
 // 首次建立基线时静默记录水位，避免登录即连环弹窗。
-const popupOpen = computed(() => popupQueue.value.length > 0);
+const popupOpen = computed(
+  () => foreground.value && popupQueue.value.length > 0,
+);
 const popupNotice = computed(() => popupQueue.value[0] ?? null);
 
 watch(feedItems, (list) => {

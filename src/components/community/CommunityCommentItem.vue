@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref } from 'vue';
+import MediaImage from '@/components/base/MediaImage.vue';
 import { setCommentLike } from '@/api/community.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 const props = defineProps({
@@ -27,7 +28,7 @@ async function like() {
 </script>
 <template>
   <article class="comment-item" :data-comment-id="item.id">
-    <img
+    <MediaImage
       v-if="item.author?.avatar && !item.deleted"
       class="avatar"
       :src="item.author.avatar"

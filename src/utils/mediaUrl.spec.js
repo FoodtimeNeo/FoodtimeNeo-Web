@@ -21,4 +21,16 @@ describe('图片来源与真实金额', () => {
     expect(formatPrice('12.3')).toBe('¥12.30');
     expect(formatPrice(null)).toBe('价格未填写');
   });
+  it('只接受单个合法图片尺寸参数', () => {
+    const ref = '/api/v1/media/00000000-0000-4000-8000-000000000001';
+    expect(safeMediaUrl(ref + '?size=thumb', origin)).toBe(ref + '?size=thumb');
+    for (const query of [
+      '?size=huge',
+      '?size=thumb&size=full',
+      '?token=secret',
+      '?size=thumb&x=1',
+    ]) {
+      expect(safeMediaUrl(ref + query, origin)).toBe('');
+    }
+  });
 });

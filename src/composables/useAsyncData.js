@@ -75,5 +75,10 @@ export function useAsyncData(
     }
   }
 
-  return { data, error, loading, load };
+  function cancel() {
+    generation++;
+    controller?.abort();
+    loading.value = false;
+  }
+  return { data, error, loading, load, cancel };
 }

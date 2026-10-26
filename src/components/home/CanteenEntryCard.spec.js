@@ -21,7 +21,9 @@ describe('CanteenEntryCard', () => {
     const wrapper = mountCard();
     expect(wrapper.text()).toContain('西区食堂');
     expect(wrapper.text()).not.toContain('面食最稳');
-    expect(wrapper.find('img').attributes('alt')).toBe('西区食堂');
+    expect(wrapper.findComponent({ name: 'MediaImage' }).props('alt')).toBe(
+      '西区食堂',
+    );
   });
 
   it('链接指向对应食堂详情', () => {

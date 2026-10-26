@@ -19,6 +19,12 @@ function render(items = images) {
 afterEach(() => wrapper?.unmount());
 
 describe('CommunityImageViewer', () => {
+  it('初始仅装载当前和后一张图片，跳到末张后移除远处装载器', async () => {
+    render();
+    expect(wrapper.findAllComponents({ name: 'MediaImage' })).toHaveLength(2);
+    await wrapper.findAll('[role="tab"]')[8].trigger('click');
+    expect(wrapper.findAllComponents({ name: 'MediaImage' })).toHaveLength(1);
+  });
   it('九图均可直接切换，当前页码和放大查看的起始图片一致', async () => {
     render();
     const tabs = wrapper.findAll('[role="tab"]');
