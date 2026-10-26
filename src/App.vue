@@ -13,6 +13,7 @@ import { fetchUnreadMessageCount } from '@/api/message.api.js';
 
 const auth = useAuthStore();
 const inbox = useInboxStore();
+const popupQueue = ref([]);
 
 const layouts = {
   blank: BlankLayout,
@@ -47,12 +48,12 @@ provide('refreshInbox', refreshInbox);
 watch(
   () => auth.user?.id,
   (id) => {
+    popupQueue.value = [];
     if (id) {
       inbox.bind(id);
       refreshInbox();
     } else {
       inbox.clear();
-      popupQueue.value = [];
     }
   },
   { immediate: true },
@@ -65,7 +66,6 @@ watch([noticesUnread, messageUnreadCount], ([noticeCount, msgCount]) => {
 
 // 新公告弹窗队列：feed 按 seq 正序，水位之后的新条目逐条展示；
 // 首次建立基线时静默记录水位，避免登录即连环弹窗。
-const popupQueue = ref([]);
 const popupOpen = computed(() => popupQueue.value.length > 0);
 const popupNotice = computed(() => popupQueue.value[0] ?? null);
 
