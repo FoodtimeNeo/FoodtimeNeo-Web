@@ -177,7 +177,7 @@ function closeLightbox() {
 
       <!-- 单击放大提示 -->
       <div class="community-image-viewer__zoom-hint" aria-hidden="true">
-        <span>🔍 点击放大</span>
+        <span>点击放大</span>
       </div>
     </div>
 
