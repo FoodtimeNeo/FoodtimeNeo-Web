@@ -7,6 +7,10 @@ const pending = new Map();
 const publicResources = new Set();
 let unauthorized = () => {};
 let blocked = false;
+let gate = () => Promise.resolve();
+export function setMediaGate(ready) {
+  gate = ready;
+}
 export function allowMediaSession() {
   blocked = false;
   publicResources.clear();
@@ -43,6 +47,12 @@ export function acquireMedia(value) {
     pending.set(source, task);
     task.promise = (async () => {
       try {
+        await gate();
+        if (
+          generation !== mediaRevision.value ||
+          task.controller.signal.aborted
+        )
+          throw new Error('图片请求已失效');
         const response = await fetch(source, {
           credentials: 'same-origin',
           redirect: 'error',

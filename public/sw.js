@@ -1,6 +1,10 @@
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'FOODTIME_MEDIA_POLICY')
+    event.ports?.[0]?.postMessage({ version: 2 });
+});
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
