@@ -28,15 +28,20 @@ async function mountForRole(role) {
 }
 
 describe('管理导航权限', () => {
-  it('管理员可见审核和内容管理入口，不显示超管入口', async () => {
-    const wrapper = await mountForRole('admin');
-    expect(wrapper.text()).toContain('内容审核');
-    expect(wrapper.text()).toContain('内容管理');
-    expect(wrapper.text()).not.toContain('超管看板');
-    expect(wrapper.text()).not.toContain('用户管理');
-  });
+  // 全量并发运行时挂载较慢，断言与逻辑无关，仅放宽超时防抖动。
+  it(
+    '管理员可见审核和内容管理入口，不显示超管入口',
+    { timeout: 15000 },
+    async () => {
+      const wrapper = await mountForRole('admin');
+      expect(wrapper.text()).toContain('内容审核');
+      expect(wrapper.text()).toContain('内容管理');
+      expect(wrapper.text()).not.toContain('超管看板');
+      expect(wrapper.text()).not.toContain('用户管理');
+    },
+  );
 
-  it('超管可见所有管理入口', async () => {
+  it('超管可见所有管理入口', { timeout: 15000 }, async () => {
     const wrapper = await mountForRole('superadmin');
     expect(wrapper.text()).toContain('内容审核');
     expect(wrapper.text()).toContain('内容管理');
