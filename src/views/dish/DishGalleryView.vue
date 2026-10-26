@@ -64,7 +64,7 @@ watch(page, () => {
             :aria-current="index === activeIndex"
             @click="activeIndex = index"
           >
-            <MediaImage :src="image.imageUrl" alt="" />
+            <MediaImage :src="image.imageUrl" alt="" :retryable="false" />
           </button>
         </li>
       </ul>

@@ -101,6 +101,7 @@ async function remove() {
           :src="post.author.avatar"
           alt=""
           class="author-avatar"
+          compact
         /><span class="author-name">{{ post.author?.name || '同学' }}</span
         ><time>{{ new Date(post.createdAt).toLocaleString('zh-CN') }}</time>
       </header>

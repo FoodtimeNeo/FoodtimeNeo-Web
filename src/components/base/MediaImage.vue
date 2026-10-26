@@ -9,6 +9,8 @@ const props = defineProps({
   size: { type: String, default: 'thumb' },
   eager: { type: Boolean, default: false },
   fit: { type: String, default: 'cover' },
+  compact: { type: Boolean, default: false },
+  retryable: { type: Boolean, default: true },
   frame: {
     type: String,
     default: 'plain',
@@ -44,7 +46,7 @@ onBeforeUnmount(() => observer?.disconnect());
   <div
     ref="frameElement"
     class="media-image"
-    :class="`media-image--${frame}`"
+    :class="[`media-image--${frame}`, { 'media-image--compact': compact }]"
     :aria-busy="loading"
   >
     <img
@@ -60,7 +62,7 @@ onBeforeUnmount(() => observer?.disconnect());
       @error="failed = true"
     />
     <button
-      v-else-if="failed"
+      v-else-if="failed && retryable"
       type="button"
       class="media-image__retry"
       aria-label="重新加载图片"
@@ -110,6 +112,9 @@ span {
   background: transparent;
   color: var(--ft-color-text-muted);
   cursor: pointer;
+}
+.media-image--compact {
+  min-height: 0;
 }
 
 @media (max-width: 768px) {
