@@ -3,6 +3,7 @@ import {
   acquireMedia,
   allowMediaSession,
   invalidateMedia,
+  setMediaGate,
 } from './mediaLoader.js';
 
 const url = '/api/v1/media/00000000-0000-4000-8000-000000000001?size=thumb';
@@ -16,6 +17,7 @@ const response = (policy = 'private, no-cache', status = 200) => ({
   blob: async () => new Blob(['image']),
 });
 beforeEach(() => {
+  setMediaGate(() => Promise.resolve());
   allowMediaSession();
   invalidateMedia();
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response()));
@@ -60,10 +62,26 @@ it('退出或切号后迟到响应不能创建展示引用', async () => {
       }),
   );
   const request = acquireMedia(url);
+  await Promise.resolve();
   invalidateMedia();
   resolve(response());
   await expect(request.promise).rejects.toThrow('失效');
   expect(URL.createObjectURL).not.toHaveBeenCalled();
+  request.release();
+});
+it('旧Worker迁移确认前不会向可能被Cache-First拦截的媒体地址发请求', async () => {
+  let ready;
+  setMediaGate(
+    () =>
+      new Promise((resolve) => {
+        ready = resolve;
+      }),
+  );
+  const request = acquireMedia(url);
+  expect(fetch).not.toHaveBeenCalled();
+  ready();
+  await request.promise;
+  expect(fetch).toHaveBeenCalledOnce();
   request.release();
 });
 it('no-store预览不成为后续展示的可复用条目，失败不回退旧图片', async () => {
