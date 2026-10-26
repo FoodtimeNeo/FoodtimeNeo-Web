@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import MediaImage from '@/components/base/MediaImage.vue';
 
 const props = defineProps({
   post: {
@@ -47,7 +48,7 @@ function handleClick() {
     @keydown.space.prevent="handleClick"
   >
     <div class="community-post-card__cover-wrap" :style="aspectStyle">
-      <img
+      <MediaImage
         v-if="coverImage"
         :src="coverImage"
         :alt="post.title"

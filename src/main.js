@@ -7,9 +7,27 @@ import router from '@/router/index.js';
 import { installApi } from '@/api/index.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import '@/assets/styles/global.scss';
+import {
+  invalidateMedia,
+  setMediaUnauthorizedHandler,
+} from '@/utils/mediaLoader.js';
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);
+setMediaUnauthorizedHandler(() => useAuthStore().clear());
+router.afterEach(() => invalidateMedia());
+window.addEventListener('pagehide', invalidateMedia);
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    invalidateMedia();
+    useAuthStore().refresh();
+  }
+});
+document.addEventListener('visibilitychange', () => {
+  invalidateMedia();
+  if (!document.hidden && useAuthStore().isAuthenticated)
+    useAuthStore().refresh();
+});
 installApi({
   router,
   clearAuth: () => useAuthStore().clear(),
@@ -23,6 +41,10 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch((err) => {
       console.warn('媒体缓存 ServiceWorker 注册失败', err);
     });
+    navigator.serviceWorker.addEventListener(
+      'controllerchange',
+      invalidateMedia,
+    );
   });
 }
 app.mount('#app');
