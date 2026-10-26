@@ -15,11 +15,33 @@ export const routes = [
     },
   },
   {
+    path: '/inbox',
+    name: 'inboxView',
+    component: () => import('@/views/InboxView.vue'),
+    meta: {
+      title: '消息信箱',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/admin/reviews',
     name: 'managedReviews',
     component: () => import('@/views/admin/ManagedReviewsView.vue'),
     meta: {
       title: '正式评论管理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
+    path: '/admin/notices',
+    name: 'adminNotices',
+    component: () => import('@/views/admin/AdminNoticesView.vue'),
+    meta: {
+      title: '公告管理',
       layout: 'admin',
       requiresAuth: true,
       requiresAdmin: true,

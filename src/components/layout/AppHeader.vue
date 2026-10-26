@@ -7,10 +7,12 @@ import {
   resolveActiveNavigation,
 } from './navigation.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import { useInboxStore } from '@/store/useInboxStore.js';
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const inbox = useInboxStore();
 const navigationItems = computed(() => getNavigationItems(auth.isAdmin));
 const activeName = computed(() => resolveActiveNavigation(route));
 </script>
@@ -53,6 +55,21 @@ const activeName = computed(() => resolveActiveNavigation(route));
       </nav>
 
       <span class="app-header__account">
+        <RouterLink
+          v-if="auth.isAuthenticated"
+          class="app-header__inbox"
+          :to="{ name: 'inboxView' }"
+          :class="{ 'is-active': route.name === 'inboxView' }"
+        >
+          信箱
+          <span
+            v-if="inbox.hasUnread"
+            class="app-header__dot"
+            role="status"
+            :aria-label="`有 ${inbox.unreadCount} 条未读`"
+            >{{ inbox.unreadCount > 99 ? '99+' : inbox.unreadCount }}</span
+          >
+        </RouterLink>
         {{ auth.isAuthenticated ? auth.displayName : '访客模式' }}
       </span>
     </div>
@@ -124,10 +141,43 @@ const activeName = computed(() => resolveActiveNavigation(route));
 }
 
 .app-header__account {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   flex: none;
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
   font-family: var(--ft-font-family-note);
+}
+
+.app-header__inbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  font-weight: 700;
+}
+
+.app-header__inbox.is-active {
+  border-color: var(--zine-stamp-red);
+  color: var(--zine-stamp-red);
+}
+
+.app-header__dot {
+  position: absolute;
+  top: 2px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--zine-stamp-red);
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
 }
 
 .app-header__admin {
