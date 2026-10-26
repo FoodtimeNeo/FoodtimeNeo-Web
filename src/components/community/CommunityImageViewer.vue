@@ -18,6 +18,12 @@ const props = defineProps({
 
 const currentIndex = ref(0);
 const isLightboxOpen = ref(false);
+const stageRatio = computed(() => {
+  const first = props.images[0];
+  return first?.width > 0 && first?.height > 0
+    ? `${first.width} / ${first.height}`
+    : '4 / 3';
+});
 const { source: lightboxSource } = useMediaSource(
   () => mediaVariant(props.images[currentIndex.value]?.url, 'full'),
   isLightboxOpen,
@@ -101,6 +107,7 @@ function closeLightbox() {
     <!-- 主轮播容器 -->
     <div
       class="community-image-viewer__stage"
+      :style="{ aspectRatio: stageRatio }"
       tabindex="0"
       role="region"
       aria-label="图片轮播"
@@ -219,6 +226,7 @@ function closeLightbox() {
     position: relative;
     width: 100%;
     max-height: 520px;
+    min-height: 280px;
     background: var(--ft-color-surface-ink, #f1ece2);
     border-radius: var(--ft-radius-md, 10px);
     overflow: hidden;
@@ -239,6 +247,7 @@ function closeLightbox() {
     flex: 0 0 100%;
     width: 100%;
     display: flex;
+    height: 100%;
     align-items: center;
     justify-content: center;
     min-height: 280px;

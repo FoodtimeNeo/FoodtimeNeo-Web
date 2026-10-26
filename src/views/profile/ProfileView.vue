@@ -52,6 +52,7 @@ async function logout() {
       <article class="profile-page__identity torn-edge">
         <div class="profile-page__avatar" role="img" aria-label="个人头像">
           <MediaImage
+            compact
             :src="profile.avatarUrl || ''"
             alt=""
             :empty="Array.from(profile.displayName?.trim() || '我')[0]"

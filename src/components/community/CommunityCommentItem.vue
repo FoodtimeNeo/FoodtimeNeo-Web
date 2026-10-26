@@ -31,6 +31,7 @@ async function like() {
     <MediaImage
       v-if="item.author?.avatar && !item.deleted"
       class="avatar"
+      compact
       :src="item.author.avatar"
       alt=""
     />
