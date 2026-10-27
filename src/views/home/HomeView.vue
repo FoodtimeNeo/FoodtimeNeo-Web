@@ -113,18 +113,52 @@ onUnmounted(() => {
 
 <template>
   <div class="home-page">
-    <header class="home-page__hero">
+    <header class="home-page__hero hero-appear">
       <div class="home-page__hero-main">
-        <span class="sticker sticker--r-2">食堂日志 · 2026</span>
-        <h1 class="home-page__title"><span>北交</span><span>干饭吧</span></h1>
-        <p class="home-page__intro handwrite">
+        <div class="hero-stagger-1">
+          <span class="sticker sticker--r-2">食堂日志 · 2026</span>
+        </div>
+        <h1 class="home-page__title hero-stagger-2">
+          <span>北交</span><span>干饭吧</span>
+        </h1>
+        <p class="home-page__intro handwrite hero-stagger-3">
           把每次排队、踩雷和真香都记下来。
         </p>
-        <RouterLink class="button-ink is-primary" :to="{ name: 'canteenList' }">
-          翻开食堂手账
-        </RouterLink>
+
+        <!-- 证明数据纸条 (Proof Points) -->
+        <div class="home-page__proof-ribbon hero-stagger-4">
+          <div class="proof-item">
+            <span class="proof-num">7</span>
+            <span class="proof-label">所食堂全收录</span>
+          </div>
+          <span class="proof-divider" aria-hidden="true">/</span>
+          <div class="proof-item">
+            <span class="proof-num">130+</span>
+            <span class="proof-label">档口避雷</span>
+          </div>
+          <span class="proof-divider" aria-hidden="true">/</span>
+          <div class="proof-item">
+            <span class="proof-num">3k+</span>
+            <span class="proof-label">实吃手账笔记</span>
+          </div>
+        </div>
+
+        <div class="home-page__hero-actions hero-stagger-5">
+          <RouterLink
+            class="button-ink is-primary"
+            :to="{ name: 'canteenList' }"
+          >
+            翻开食堂手账
+          </RouterLink>
+          <RouterLink
+            class="button-ink hero-secondary-link"
+            :to="{ name: 'community' }"
+          >
+            看看大家在吃啥 →
+          </RouterLink>
+        </div>
       </div>
-      <aside class="home-page__hero-note">
+      <aside class="home-page__hero-note hero-stagger-3">
         <p class="home-page__eyebrow">BEIJIAO CANTEEN FIELD NOTES</p>
         <p>这不是餐饮官网，是一群爱吃饭的同学共同写下的校园美食笔记。</p>
         <span class="sticker sticker--r2">今日食堂档案</span>
@@ -242,6 +276,77 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+@keyframes heroElemAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.hero-appear {
+  --hero-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --hero-duration: 480ms;
+
+  .hero-stagger-1 {
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 40ms both;
+  }
+  .hero-stagger-2 {
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 100ms both;
+  }
+  .hero-stagger-3 {
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 160ms both;
+  }
+  .hero-stagger-4 {
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 220ms both;
+  }
+  .hero-stagger-5 {
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 280ms both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-appear [class*='hero-stagger-'],
+  .home-page__hero-sketch,
+  .community-hot-badge::before {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  .community-hot-badge::before {
+    display: none !important;
+  }
+}
+
+@keyframes heroSketchFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+}
+
+@keyframes stampPulseRing {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  60%,
+  100% {
+    transform: scale(1.3, 1.45);
+    opacity: 0;
+  }
+}
+
 .home-page {
   width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));
   margin: var(--ft-space-6) auto;
@@ -250,32 +355,13 @@ onUnmounted(() => {
     position: relative;
     display: grid;
     grid-template-columns: 1.25fr 0.75fr;
-    min-height: 430px;
+    min-height: 420px;
     margin-bottom: var(--ft-space-5);
     overflow: hidden;
-    border: 1px solid var(--ft-color-secondary);
+    border: 1.5px solid var(--ft-color-secondary);
     background: var(--ft-color-surface);
-    box-shadow:
-      0 12px 26px rgb(58 36 24 / 16%),
-      inset 0 2px 0 rgb(255 255 255 / 34%);
-    clip-path: polygon(
-      0 4%,
-      8% 1%,
-      16% 4%,
-      24% 1%,
-      32% 4%,
-      40% 1%,
-      48% 4%,
-      56% 1%,
-      64% 4%,
-      72% 1%,
-      80% 4%,
-      88% 1%,
-      90% 4%,
-      100% 4%,
-      100% 100%,
-      0 100%
-    );
+    box-shadow: 6px 6px 0 var(--ft-color-secondary);
+    border-radius: var(--ft-radius-sm, 2px);
   }
 
   &__hero-main {
@@ -311,6 +397,7 @@ onUnmounted(() => {
     opacity: 0.34;
     mix-blend-mode: multiply;
     pointer-events: none;
+    animation: heroSketchFloat 4.2s ease-in-out infinite;
   }
 
   &__eyebrow {
@@ -336,6 +423,57 @@ onUnmounted(() => {
     font-size: var(--ft-font-size-lg);
     color: var(--ft-color-primary);
     font-size: clamp(20px, 2.5vw, 32px);
+  }
+
+  &__proof-ribbon {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ft-space-2);
+    margin: var(--ft-space-2) 0 var(--ft-space-3);
+    padding: 6px 14px;
+    background: var(--zine-paper-card-alt, #f7efd9);
+    border: 1px dashed rgb(58 36 24 / 32%);
+    border-radius: var(--ft-radius-sm, 2px);
+    transform: rotate(-0.5deg);
+    box-shadow: 2px 2px 0 rgb(58 36 24 / 8%);
+
+    .proof-item {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .proof-num {
+      font-family: var(--ft-font-family-title);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ft-color-primary);
+    }
+
+    .proof-label {
+      font-size: 11px;
+      color: var(--ft-color-text-muted);
+    }
+
+    .proof-divider {
+      color: var(--ft-color-border);
+      font-size: 12px;
+      user-select: none;
+    }
+  }
+
+  &__hero-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--ft-space-2);
+    flex-wrap: wrap;
+    margin-top: var(--ft-space-1);
+  }
+
+  .hero-secondary-link {
+    font-size: 14px;
+    padding: 8px 16px;
+    text-decoration: none;
   }
 
   &__section {
@@ -368,7 +506,7 @@ onUnmounted(() => {
   .title-with-badge {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--ft-space-1, 8px);
     flex-wrap: wrap;
 
     .section-title {
@@ -377,15 +515,32 @@ onUnmounted(() => {
   }
 
   .community-hot-badge {
+    position: relative;
+    display: inline-block;
     font-size: 11px;
     font-weight: 800;
-    color: var(--ft-color-primary, #c9341e);
-    border: 1.5px solid var(--ft-color-primary, #c9341e);
+    color: var(--zine-stamp-red, #b72f1c);
+    border: 1.5px solid var(--zine-stamp-red, #b72f1c);
     padding: 1px 6px;
-    border-radius: 4px;
+    border-radius: var(--ft-radius-sm, 2px);
     transform: rotate(-2deg);
-    background: rgb(201 52 30 / 6%);
+    background: rgb(183 47 28 / 6%);
     line-height: 1.2;
+    transition: transform 180ms cubic-bezier(0.2, 0.8, 0.4, 1.25);
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border: 1.5px solid var(--zine-stamp-red, #b72f1c);
+      border-radius: inherit;
+      pointer-events: none;
+      animation: stampPulseRing 2.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+
+    &:hover {
+      transform: rotate(0deg) scale(1.08);
+    }
   }
 
   &__community-actions {
@@ -401,22 +556,25 @@ onUnmounted(() => {
     padding: 8px 16px;
     background: var(--ft-color-primary, #c9341e);
     color: #fff;
-    border: 1px solid var(--ft-color-primary-strong, #ab1f0b);
-    border-radius: var(--ft-radius-pill, 999px);
+    border: 1.5px solid var(--ft-color-primary-strong, #ab1f0b);
+    border-radius: var(--ft-radius-sm, 4px);
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 3px 8px rgb(201 52 30 / 25%);
-    transition: all var(--ft-transition-fast, 180ms ease);
+    box-shadow: 2px 2px 0 var(--ft-color-primary-strong, #ab1f0b);
+    transition:
+      transform var(--ft-transition-fast, 180ms ease),
+      box-shadow var(--ft-transition-fast, 180ms ease);
 
     &:hover {
       background: var(--ft-color-primary-strong, #ab1f0b);
-      transform: translateY(-1px);
-      box-shadow: 0 5px 12px rgb(201 52 30 / 35%);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 var(--ft-color-primary-strong, #ab1f0b);
     }
 
     &:active {
-      transform: translateY(1px);
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 var(--ft-color-primary-strong, #ab1f0b);
     }
   }
 
@@ -429,14 +587,14 @@ onUnmounted(() => {
   /* 紧凑对齐的瀑布流容器 */
   .home-community-waterfall {
     display: grid;
-    gap: 14px;
+    gap: var(--ft-space-2, 16px);
     align-items: start;
     width: 100%;
 
     &__col {
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: var(--ft-space-2, 16px);
       min-width: 0;
 
       :deep(.community-post-card) {
@@ -458,7 +616,7 @@ onUnmounted(() => {
     padding: 12px 28px;
     background: var(--zine-paper-card, #fffaf0);
     border: 2px solid var(--ft-color-secondary, #3a2418);
-    border-radius: var(--ft-radius-pill, 999px);
+    border-radius: var(--ft-radius-sm, 4px);
     box-shadow: 4px 4px 0 var(--ft-color-secondary, #3a2418);
     color: var(--ft-color-secondary, #3a2418);
     font-weight: 700;
@@ -503,6 +661,12 @@ onUnmounted(() => {
 
     &__hero-main {
       padding: 28px 20px;
+    }
+
+    &__proof-ribbon {
+      flex-wrap: wrap;
+      gap: var(--ft-space-1, 8px);
+      padding: 6px 10px;
     }
 
     &__hero-note {

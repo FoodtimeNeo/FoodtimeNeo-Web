@@ -49,7 +49,7 @@ const {
 useAutoHorizontalScroll(trackRef, {
   pauseWhen: computed(() => isDragging.value || isWheeling.value),
   loopItemCount: computed(() => props.canteens.length),
-  speed: 14,
+  speed: 36,
   pauseOnHover: true,
   pauseOnTouch: true,
 });
@@ -298,11 +298,7 @@ onUnmounted(() => {
       >
         <div class="canteen-card__media" :class="imageFrameClass(index)">
           <span class="canteen-card__postage" aria-hidden="true"></span>
-          <span
-            class="canteen-card__tape"
-            :class="index % 2 === 0 ? 'is-left' : 'is-right'"
-            aria-hidden="true"
-          ></span>
+          <span class="canteen-card__tape" aria-hidden="true"></span>
           <MediaImage
             :src="canteen.coverImageUrl || ''"
             :alt="`${canteen.name}封面图`"
@@ -382,7 +378,7 @@ onUnmounted(() => {
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 16px 28px 28px 4px;
+    padding: 24px 28px 36px 8px;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
     cursor: grab;
@@ -405,55 +401,137 @@ onUnmounted(() => {
   }
 }
 
+@keyframes cardBob0 {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0.8deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.2deg);
+  }
+}
+
+@keyframes cardBob1 {
+  0%,
+  100% {
+    transform: translateY(16px) rotate(-1.2deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-1.6deg);
+  }
+}
+
+@keyframes cardBob2 {
+  0%,
+  100% {
+    transform: translateY(-8px) rotate(0.6deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(0.2deg);
+  }
+}
+
+@keyframes cardBob3 {
+  0%,
+  100% {
+    transform: translateY(10px) rotate(-0.9deg);
+  }
+  50% {
+    transform: translateY(2px) rotate(-1.3deg);
+  }
+}
+
+@keyframes tapeSheen {
+  0%,
+  55% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(300%) skewX(-20deg);
+  }
+}
+
 .canteen-card {
   position: relative;
-  flex: 0 0 clamp(260px, 26vw, 300px);
-  width: clamp(260px, 26vw, 300px);
-  height: clamp(430px, 42vw, 490px);
+  flex: 0 0 clamp(260px, 24vw, 285px);
+  width: clamp(260px, 24vw, 285px);
+  height: clamp(415px, 38vw, 450px);
   margin-right: -16px;
   border: 1px solid var(--ft-color-secondary);
   background:
     radial-gradient(circle at 80% 10%, rgb(63 114 145 / 8%) 0, transparent 24%),
     linear-gradient(180deg, var(--zine-paper-card) 0%, #f8efd9 100%);
-  box-shadow: 6px 8px 0 rgb(58 36 24 / 14%);
+  box-shadow: 5px 6px 0 rgb(58 36 24 / 15%);
   display: grid;
   grid-template-rows: minmax(0, 56%) minmax(0, 44%);
-  padding: 10px;
+  padding: 9px;
   scroll-snap-align: start;
   cursor: pointer;
   will-change: transform;
   transition:
-    transform var(--ft-transition-fast),
-    box-shadow var(--ft-transition-fast);
+    transform var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1)),
+    box-shadow var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1));
 
   &:hover {
-    box-shadow: 9px 12px 0 rgb(58 36 24 / 20%);
-    z-index: 2;
+    box-shadow: 8px 12px 0 rgb(58 36 24 / 22%);
+    z-index: 5;
+    animation-play-state: paused;
   }
 
   &--0 {
-    transform: rotate(0.6deg) translateY(2px);
+    --tape-rot: -1.2deg;
+    transform: translateY(0px) rotate(0.8deg);
+    animation: cardBob0 3s ease-in-out infinite;
+
+    &:hover {
+      transform: translateY(-8px) rotate(0.8deg) scale(1.02);
+    }
   }
 
   &--1 {
-    transform: rotate(-0.8deg) translateY(12px);
+    --tape-rot: 1.5deg;
+    transform: translateY(16px) rotate(-1.2deg);
+    animation: cardBob1 3s ease-in-out 0.75s infinite;
+
+    &:hover {
+      transform: translateY(8px) rotate(-1.2deg) scale(1.02);
+    }
   }
 
   &--2 {
-    transform: rotate(0.5deg) translateY(-5px);
+    --tape-rot: -0.8deg;
+    transform: translateY(-8px) rotate(0.6deg);
+    animation: cardBob2 3s ease-in-out 1.5s infinite;
+
+    &:hover {
+      transform: translateY(-16px) rotate(0.6deg) scale(1.02);
+    }
   }
 
   &--3 {
-    transform: rotate(-0.4deg) translateY(8px);
+    --tape-rot: 1deg;
+    transform: translateY(10px) rotate(-0.9deg);
+    animation: cardBob3 3s ease-in-out 2.25s infinite;
+
+    &:hover {
+      transform: translateY(2px) rotate(-0.9deg) scale(1.02);
+    }
+  }
+
+  // 抓取拖拽时暂停浮动，避免坐标冲突
+  .is-dragging & {
+    animation-play-state: paused;
   }
 
   &__media {
     position: relative;
     min-height: 0;
     background: #fff;
-    padding: 8px 8px 16px;
-    box-shadow: 3px 3px 0 rgb(58 36 24 / 22%);
+    padding: 8px 8px 14px;
+    box-shadow: 2px 2px 0 rgb(58 36 24 / 16%);
     transform-origin: center;
+    transition: transform
+      var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1));
 
     &.is-rotate-left {
       transform: rotate(-1.2deg);
@@ -478,30 +556,39 @@ onUnmounted(() => {
     background: var(--zine-decor-postage) center / 100% 100% no-repeat;
     pointer-events: none;
     z-index: 1;
-    opacity: 0.72;
+    opacity: 0.6;
     mix-blend-mode: multiply;
   }
 
   &__tape {
     position: absolute;
-    top: -14px;
-    width: 80px;
-    height: 26px;
-    background: var(--zine-decor-tape-blue) center / contain no-repeat;
-    opacity: 0.8;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%) rotate(var(--tape-rot, -1deg));
+    width: 74px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(58, 36, 24, 0.16);
+    box-shadow: 0 1px 3px rgba(58, 36, 24, 0.08);
+    backdrop-filter: blur(1.5px);
     z-index: 2;
-    mix-blend-mode: multiply;
     pointer-events: none;
+    overflow: hidden;
+    border-radius: 1px;
 
-    &.is-left {
-      left: 12px;
-      transform: rotate(-7deg);
-    }
-
-    &.is-right {
-      right: 12px;
-      background-image: var(--zine-decor-tape-red);
-      transform: rotate(7deg);
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 40%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.65) 50%,
+        transparent 100%
+      );
+      transform: translateX(-150%) skewX(-20deg);
+      animation: tapeSheen 3.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
     }
   }
 
@@ -518,15 +605,16 @@ onUnmounted(() => {
     padding: 10px 4px 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__rant {
     margin: 0;
     color: var(--zine-stamp-red);
-    font-size: 16px;
+    font-size: 15px;
     font-family: var(--ft-font-family-note);
     line-height: 1.25;
+    min-height: 38px;
   }
 
   &__rant-text {
@@ -546,13 +634,12 @@ onUnmounted(() => {
   &__name {
     margin: 0;
     font-family: var(--ft-font-family-title);
-    font-size: 22px;
+    font-size: clamp(20px, 1.8vw, 22px);
     font-weight: 900;
     line-height: 1.1;
     color: var(--ft-color-secondary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
   }
 
   &__chips {
@@ -563,49 +650,64 @@ onUnmounted(() => {
 
   .zine-chip {
     display: inline-block;
-    padding: 2px 6px;
+    padding: 1px 6px;
     font-size: 11px;
     border: 1px solid var(--ft-color-secondary);
     background: #fff;
     border-radius: 2px;
     color: var(--ft-color-text-muted);
+    line-height: 1.3;
+    box-shadow: 1px 1px 0 rgba(58, 36, 24, 0.1);
   }
 
   .zine-rating-stamp {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     flex: none;
-    border: 2px solid var(--zine-stamp-red);
+    border: 1.5px solid var(--zine-stamp-red);
     color: var(--zine-stamp-red);
     font-weight: 900;
-    font-size: 15px;
+    font-size: 14px;
     font-family: var(--ft-font-family-title);
-    transform: rotate(-6deg);
+    transform: rotate(-5deg);
     border-radius: 50%;
+    transition: transform 180ms cubic-bezier(0.2, 0.8, 0.4, 1.25);
 
     &.is-unrated {
       width: auto;
-      min-width: 36px;
-      padding: 0 6px;
+      min-width: 34px;
+      height: 22px;
+      padding: 0 7px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12px;
       white-space: nowrap;
+      transform: rotate(-3deg);
     }
+  }
+
+  &.canteen-card:hover .zine-rating-stamp {
+    transform: rotate(-2deg) scale(1.08);
   }
 
   &__footer {
     margin-top: auto;
     display: flex;
     justify-content: flex-end;
+    padding-bottom: 2px;
   }
 
   &__more {
     font-size: 15px;
     color: var(--zine-stamp-blue);
     font-family: var(--ft-font-family-note);
+    transition: transform 160ms ease;
+  }
+
+  &.canteen-card:hover &__more {
+    transform: translateX(3px);
   }
 }
 
@@ -648,6 +750,30 @@ onUnmounted(() => {
     &__tape {
       display: none;
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canteen-card,
+  .canteen-card--0,
+  .canteen-card--1,
+  .canteen-card--2,
+  .canteen-card--3,
+  .canteen-card:hover,
+  .canteen-card--0:hover,
+  .canteen-card--1:hover,
+  .canteen-card--2:hover,
+  .canteen-card--3:hover,
+  .canteen-card__media,
+  .canteen-card.canteen-card:hover .canteen-card__media,
+  .canteen-card .zine-rating-stamp,
+  .canteen-card.canteen-card:hover .zine-rating-stamp,
+  .canteen-card__more,
+  .canteen-card.canteen-card:hover .canteen-card__more,
+  .canteen-card__tape::after {
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
   }
 }
 </style>
