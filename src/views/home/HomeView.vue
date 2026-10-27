@@ -331,18 +331,18 @@ onUnmounted(() => {
     transform: translateY(0) rotate(0deg);
   }
   50% {
-    transform: translateY(-4px) rotate(1.2deg);
+    transform: translateY(-8px) rotate(2deg);
   }
 }
 
 @keyframes stampPulseRing {
   0% {
     transform: scale(1);
-    opacity: 0.65;
+    opacity: 0.8;
   }
-  70%,
+  60%,
   100% {
-    transform: scale(1.22, 1.35);
+    transform: scale(1.3, 1.45);
     opacity: 0;
   }
 }

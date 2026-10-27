@@ -49,7 +49,7 @@ const {
 useAutoHorizontalScroll(trackRef, {
   pauseWhen: computed(() => isDragging.value || isWheeling.value),
   loopItemCount: computed(() => props.canteens.length),
-  speed: 14,
+  speed: 36,
   pauseOnHover: true,
   pauseOnTouch: true,
 });
@@ -411,7 +411,7 @@ onUnmounted(() => {
     transform: rotate(0.6deg) translateY(2px);
   }
   50% {
-    transform: rotate(0.6deg) translateY(-0.6px);
+    transform: rotate(1.2deg) translateY(-8px);
   }
 }
 
@@ -421,7 +421,7 @@ onUnmounted(() => {
     transform: rotate(-0.8deg) translateY(12px);
   }
   50% {
-    transform: rotate(-0.8deg) translateY(9.4px);
+    transform: rotate(-1.5deg) translateY(2px);
   }
 }
 
@@ -431,7 +431,7 @@ onUnmounted(() => {
     transform: rotate(0.5deg) translateY(-5px);
   }
   50% {
-    transform: rotate(0.5deg) translateY(-7.6px);
+    transform: rotate(0deg) translateY(-15px);
   }
 }
 
@@ -441,7 +441,7 @@ onUnmounted(() => {
     transform: rotate(-0.4deg) translateY(8px);
   }
   50% {
-    transform: rotate(-0.4deg) translateY(5.4px);
+    transform: rotate(-1deg) translateY(-2px);
   }
 }
 
