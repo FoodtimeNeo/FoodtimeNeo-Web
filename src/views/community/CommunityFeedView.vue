@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
@@ -27,6 +27,15 @@ const isCreateModalOpen = ref(false);
 const prefillData = ref({});
 const activePostId = ref('');
 const isDetailModalOpen = ref(false);
+const screenWidth = ref(
+  typeof window !== 'undefined' ? window.innerWidth : 1200,
+);
+
+function handleResize() {
+  if (typeof window !== 'undefined') screenWidth.value = window.innerWidth;
+}
+
+const columnCount = computed(() => (screenWidth.value <= 768 ? 2 : 3));
 
 function openCreateModal(prefill = null) {
   if (prefill) {
@@ -70,7 +79,7 @@ async function loadFeed(more = false) {
 
 // 响应式瀑布流分配算法（电脑端 3 列，手机端 2 列）
 const columns = computed(() => {
-  const colCount = 2;
+  const colCount = columnCount.value;
   const cols = Array.from({ length: colCount }, () => []);
   const colHeights = Array.from({ length: colCount }, () => 0);
 
@@ -116,11 +125,20 @@ function handlePostCreated() {
 
 onMounted(() => {
   loadFeed();
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', handleResize);
+  }
   if (route?.query?.action === 'new' || history.state?.prefill) {
     if (history.state?.prefill) {
       prefillData.value = history.state.prefill;
     }
     isCreateModalOpen.value = true;
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', handleResize);
   }
 });
 </script>
@@ -204,7 +222,7 @@ onMounted(() => {
       {{ loading ? '加载中…' : '加载更多' }}
     </button>
 
-    <!-- 右下角悬浮「+」发帖按钮 -->
+    <!-- 移动端快捷发帖按钮；桌面端使用页首主按钮 -->
     <button
       type="button"
       class="community-fab-btn"
@@ -241,12 +259,14 @@ onMounted(() => {
     padding: 8px 16px;
     border: 1px solid var(--ft-color-border);
     background: transparent;
-    border-radius: 8px;
+    border-radius: 0;
     color: inherit;
     cursor: pointer;
     &[aria-pressed='true'] {
       color: var(--ft-color-primary);
       border-color: currentColor;
+      background: var(--zine-paper-card);
+      box-shadow: 2px 2px 0 rgb(58 36 24 / 18%);
     }
   }
 }
@@ -318,18 +338,18 @@ onMounted(() => {
   background: var(--ft-color-primary, #c9341e);
   color: #fff;
   border: 1px solid var(--ft-color-primary-strong, #ab1f0b);
-  border-radius: var(--ft-radius-pill, 999px);
+  border-radius: 0;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgb(171 31 11 / 30%);
+  box-shadow: 2px 2px 0 var(--ft-color-primary-strong, #ab1f0b);
   transition: all var(--ft-transition-fast, 180ms ease);
   flex: none;
 
   &:hover {
     background: var(--ft-color-primary-strong, #ab1f0b);
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgb(171 31 11 / 40%);
+    box-shadow: 3px 3px 0 var(--ft-color-primary-strong, #ab1f0b);
   }
 
   .btn-plus {
@@ -355,7 +375,7 @@ onMounted(() => {
     0 6px 18px rgb(171 31 11 / 40%),
     0 2px 4px rgb(58 36 24 / 20%);
   cursor: pointer;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   z-index: 50;
@@ -393,6 +413,7 @@ onMounted(() => {
   }
 
   .community-fab-btn {
+    display: flex;
     right: 20px;
     bottom: calc(var(--app-mobile-tabbar-height, 72px) + 20px);
     width: 52px;
