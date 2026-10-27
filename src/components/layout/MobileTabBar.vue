@@ -26,7 +26,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
         :aria-current="activeName === item.name ? 'location' : undefined"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          String(index + 1).padStart(2, '0')
+          item.code || String(index).padStart(2, '0')
         }}</span>
         <span>{{ item.label }}</span>
       </RouterLink>
@@ -37,7 +37,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
         :title="`${item.label}将在后续阶段开放`"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          String(index + 1).padStart(2, '0')
+          item.code || String(index).padStart(2, '0')
         }}</span>
         <span>{{ item.label }}</span>
       </span>

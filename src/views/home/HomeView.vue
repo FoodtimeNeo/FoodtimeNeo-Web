@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
 import { fetchCommunityPosts } from '@/api/community.api.js';
-import CanteenEntryCard from '@/components/home/CanteenEntryCard.vue';
+import CanteenCarousel from '@/components/home/CanteenCarousel.vue';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
 import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
 import PostCreateModal from '@/components/community/PostCreateModal.vue';
@@ -16,7 +16,7 @@ const {
   error,
   loading,
   load,
-} = useAsyncData(fetchCanteens, { initial: [] });
+} = useAsyncData(fetchCanteens, { initial: [], cacheKey: 'canteens_list' });
 
 // 02 社区动态部分
 const communityPosts = ref([]);
@@ -149,11 +149,7 @@ onUnmounted(() => {
         @retry="load"
       />
       <EmptyState v-else-if="!canteens.length" title="暂无食堂" />
-      <ul v-else class="home-page__grid">
-        <li v-for="canteen in canteens" :key="canteen.id">
-          <CanteenEntryCard :canteen="canteen" />
-        </li>
-      </ul>
+      <CanteenCarousel v-else :canteens="canteens" />
     </section>
 
     <!-- 02 校园食记 · 社区动态（第二部分，饱满紧凑的真实多列瀑布流） -->

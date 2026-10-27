@@ -19,6 +19,8 @@ const emit = defineEmits(['update:modelValue', 'created']);
 
 const submitting = ref(false);
 const fileInputRef = ref(null);
+const requestId = ref(crypto.randomUUID());
+let submittedPayload = null;
 
 const form = reactive({
   title: '',
@@ -44,6 +46,8 @@ watch(
   () => props.modelValue,
   (val) => {
     if (val) {
+      requestId.value = crypto.randomUUID();
+      submittedPayload = null;
       cleanObjectUrls();
       formImages.value = [];
       if (props.initialData) {
@@ -94,7 +98,7 @@ function addFiles(files) {
 
   const selected = Array.from(files).slice(0, remaining);
   for (const file of selected) {
-    if (!file.type.startsWith('image/')) {
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
       ElMessage.warning(`文件 ${file.name} 不是支持的图片格式`);
       continue;
     }
@@ -148,17 +152,13 @@ function removeImage(index) {
 async function resolveImageUrls() {
   const urls = [];
   for (const item of formImages.value) {
-    if (item.file) {
-      try {
-        const uploadRes = await uploadImage(item.file);
-        urls.push(uploadRes?.imageUrl || item.previewUrl);
-      } catch {
-        // 如果后端在 Mock 模式下未提供真实 upload 接口，退回本地预览 URL 保证发帖流程通畅
-        urls.push(item.previewUrl);
-      }
-    } else {
-      urls.push(item.previewUrl);
+    if (item.file && !item.uploadedUrl) {
+      const uploaded = await uploadImage(item.file);
+      if (!uploaded?.imageUrl)
+        throw new Error('图片上传未返回有效引用，请重试');
+      item.uploadedUrl = uploaded.imageUrl;
     }
+    urls.push(item.uploadedUrl || item.previewUrl);
   }
   return urls;
 }
@@ -177,11 +177,24 @@ async function handleSubmit() {
     return;
   }
 
+  if (form.title.trim().length > 50 || form.content.trim().length > 2000) {
+    ElMessage.warning('标题最多50字，正文最多2000字');
+    return;
+  }
   submitting.value = true;
   try {
     const finalImageUrls = await resolveImageUrls();
 
+    const payloadKey = JSON.stringify([
+      form.title.trim(),
+      form.content.trim(),
+      finalImageUrls,
+    ]);
+    if (submittedPayload && submittedPayload !== payloadKey)
+      requestId.value = crypto.randomUUID();
+    submittedPayload = payloadKey;
     const post = await createCommunityPost({
+      clientRequestId: requestId.value,
       title: form.title.trim(),
       content: form.content.trim(),
       images: finalImageUrls,
@@ -215,6 +228,7 @@ async function handleSubmit() {
     destroy-on-close
     append-to-body
     :width="'min(560px, 94vw)'"
+    :style="{ boxSizing: 'border-box', maxWidth: 'calc(100% - 32px)' }"
     :show-close="true"
     @close="handleClose"
   >
@@ -259,7 +273,7 @@ async function handleSubmit() {
             <span class="label-badge">02</span> 美食心得
             <span class="required">*</span>
           </label>
-          <span class="char-count">{{ form.content.length }}/1000</span>
+          <span class="char-count">{{ form.content.length }}/2000</span>
         </div>
         <textarea
           id="post-content"
@@ -267,7 +281,7 @@ async function handleSubmit() {
           rows="4"
           class="post-create-form__textarea"
           placeholder="分享档口位置、推荐吃法、真实口感、排队情况或踩雷提醒..."
-          maxlength="1000"
+          maxlength="2000"
           :disabled="submitting"
         ></textarea>
       </div>
@@ -287,7 +301,7 @@ async function handleSubmit() {
         <input
           ref="fileInputRef"
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png"
           multiple
           class="hidden-file-input"
           :disabled="submitting || formImages.length >= 9"
@@ -302,6 +316,21 @@ async function handleSubmit() {
             class="photo-card"
           >
             <img :src="img.previewUrl" alt="实拍预览" />
+            <button
+              v-if="idx > 0"
+              type="button"
+              class="photo-card__move"
+              :disabled="submitting"
+              aria-label="将此图前移"
+              @click="
+                [formImages[idx - 1], formImages[idx]] = [
+                  formImages[idx],
+                  formImages[idx - 1],
+                ]
+              "
+            >
+              前移
+            </button>
             <span v-if="idx === 0" class="photo-card__cover-badge">封面</span>
             <button
               type="button"
@@ -328,9 +357,7 @@ async function handleSubmit() {
             <div v-if="formImages.length === 0" class="upload-guide">
               <span class="upload-icon">📸</span>
               <span class="upload-main-text">点击或拖拽上传实拍照片</span>
-              <span class="upload-sub-text"
-                >支持 JPG、PNG、WebP，单张 ≤ 10MB</span
-              >
+              <span class="upload-sub-text">支持 JPG、PNG，单张 ≤ 10MB</span>
             </div>
             <div v-else class="upload-add-more">
               <span class="add-icon">＋</span>
@@ -372,6 +399,14 @@ async function handleSubmit() {
 </template>
 
 <style scoped lang="scss">
+.photo-card__move {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  min-height: 44px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
 :deep(.post-create-dialog) {
   --el-dialog-bg-color: var(--zine-paper-card, #fffaf0);
   --el-dialog-padding-primary: 0;

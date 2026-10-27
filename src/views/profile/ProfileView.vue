@@ -69,6 +69,11 @@ async function logout() {
         <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
       <nav class="profile-page__links" aria-label="个人功能">
+        <RouterLink class="paper-link" :to="{ name: 'myReviewReplies' }"
+          ><span class="stamp">回复</span
+          ><span>我的回复<small>楼内讨论与审核状态</small></span
+          ><strong>→</strong></RouterLink
+        >
         <RouterLink class="paper-link" :to="{ name: 'myReviews' }"
           ><span class="stamp">01</span
           ><span>我的评论<small>已发布的点评</small></span

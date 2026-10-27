@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, watch } from 'vue';
+import { ElImageViewer } from 'element-plus';
 
 const props = defineProps({
   images: {
@@ -14,10 +15,13 @@ const props = defineProps({
 
 const currentIndex = ref(0);
 const isLightboxOpen = ref(false);
-
-const currentImage = computed(() => {
-  return props.images[currentIndex.value]?.url || '';
-});
+watch(
+  () => JSON.stringify(props.images.map(({ id, url }) => [id, url])),
+  () => {
+    currentIndex.value = 0;
+    isLightboxOpen.value = false;
+  },
+);
 
 // 触摸滑动逻辑
 let startX = 0;
@@ -86,6 +90,8 @@ function closeLightbox() {
       @touchend="handleTouchEnd"
       @keydown.left="prevImage"
       @keydown.right="nextImage"
+      @keydown.enter.prevent="openLightbox"
+      @keydown.space.prevent="openLightbox"
     >
       <div
         v-if="images.length > 0"
@@ -109,6 +115,15 @@ function closeLightbox() {
       <div v-else class="community-image-viewer__empty">
         <span>暂无配图</span>
       </div>
+
+      <span
+        v-if="images.length > 1"
+        class="community-image-viewer__counter"
+        role="status"
+        :aria-label="`第 ${currentIndex + 1} 张，共 ${images.length} 张`"
+      >
+        {{ currentIndex + 1 }} / {{ images.length }}
+      </span>
 
       <!-- 桌面端左右翻页按钮 -->
       <button
@@ -156,64 +171,15 @@ function closeLightbox() {
       ></button>
     </div>
 
-    <!-- 大图单击放大预览层 (Lightbox) -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="isLightboxOpen"
-          class="community-lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="全屏大图预览"
-          @click="closeLightbox"
-          @keydown.esc="closeLightbox"
-        >
-          <button
-            type="button"
-            class="community-lightbox__close"
-            aria-label="关闭预览"
-            @click="closeLightbox"
-          >
-            ×
-          </button>
-
-          <div class="community-lightbox__content" @click.stop>
-            <img
-              :src="currentImage"
-              :alt="`${alt} 大图预览`"
-              class="community-lightbox__img"
-            />
-          </div>
-
-          <div
-            v-if="images.length > 1"
-            class="community-lightbox__counter"
-            aria-hidden="true"
-          >
-            {{ currentIndex + 1 }} / {{ images.length }}
-          </div>
-
-          <button
-            v-if="images.length > 1 && currentIndex > 0"
-            type="button"
-            class="community-lightbox__nav community-lightbox__nav--prev"
-            aria-label="上一张"
-            @click.stop="prevImage"
-          >
-            ‹
-          </button>
-          <button
-            v-if="images.length > 1 && currentIndex < images.length - 1"
-            type="button"
-            class="community-lightbox__nav community-lightbox__nav--next"
-            aria-label="下一张"
-            @click.stop="nextImage"
-          >
-            ›
-          </button>
-        </div>
-      </Transition>
-    </Teleport>
+    <ElImageViewer
+      v-if="isLightboxOpen"
+      :url-list="images.map((image) => image.url)"
+      :initial-index="currentIndex"
+      :infinite="false"
+      :z-index="4000"
+      teleported
+      @close="closeLightbox"
+    />
   </div>
 </template>
 
@@ -223,6 +189,7 @@ function closeLightbox() {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  min-width: 0;
 
   &__stage {
     position: relative;
@@ -321,137 +288,56 @@ function closeLightbox() {
     backdrop-filter: blur(4px);
   }
 
+  &__counter {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 4px 10px;
+    border-radius: var(--ft-radius-pill, 999px);
+    background: rgb(0 0 0 / 65%);
+    color: #fff;
+    font-size: 13px;
+    pointer-events: none;
+  }
+
   &__dots {
     display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 0 8px;
     margin-top: 12px;
   }
 
   &__dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    border: none;
-    padding: 0;
-    background: var(--ft-color-border, #d5ccbc);
-    cursor: pointer;
-    transition: all 240ms ease;
-
-    &.is-active {
-      width: 18px;
-      border-radius: 4px;
-      background: var(--ft-color-primary, #c9341e);
-    }
-  }
-}
-
-/* Lightbox 弹窗 */
-.community-lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgb(0 0 0 / 92%);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: zoom-out;
-
-  &__close {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+    flex: 0 0 44px;
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    background: rgb(255 255 255 / 15%);
-    color: #fff;
     border: none;
-    font-size: 28px;
-    line-height: 40px;
+    padding: 0;
+    background: transparent;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    transition: background 180ms ease;
+    &::after {
+      content: '';
+      display: block;
+      margin: auto;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ft-color-border, #d5ccbc);
+    }
+    transition: all 240ms ease;
 
-    &:hover {
-      background: rgb(255 255 255 / 30%);
+    &.is-active {
+      &::after {
+        width: 18px;
+        border-radius: 4px;
+        background: var(--ft-color-primary, #c9341e);
+      }
     }
   }
-
-  &__content {
-    max-width: 90vw;
-    max-height: 90vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: default;
-  }
-
-  &__img {
-    max-width: 90vw;
-    max-height: 90vh;
-    object-fit: contain;
-    border-radius: 4px;
-    box-shadow: 0 10px 30px rgb(0 0 0 / 50%);
-  }
-
-  &__counter {
-    position: absolute;
-    bottom: 24px;
-    padding: 4px 14px;
-    background: rgb(255 255 255 / 20%);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: var(--ft-radius-pill, 999px);
-    backdrop-filter: blur(4px);
-  }
-
-  &__nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgb(255 255 255 / 15%);
-    color: #fff;
-    border: none;
-    font-size: 32px;
-    line-height: 42px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-    transition: background 180ms ease;
-
-    &:hover {
-      background: rgb(255 255 255 / 35%);
-    }
-
-    &--prev {
-      left: 24px;
-    }
-
-    &--next {
-      right: 24px;
-    }
-  }
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 220ms ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

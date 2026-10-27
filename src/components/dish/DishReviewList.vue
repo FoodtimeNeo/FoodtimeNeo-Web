@@ -1,5 +1,7 @@
 <script setup>
 import { formatTime } from '@/utils/recordLabels.js';
+import CommentLikeButton from './CommentLikeButton.vue';
+import ReviewReplySection from './ReviewReplySection.vue';
 /**
  * 菜品评论列表。字段对齐后端评论序列化：
  * { id, userId, userDisplayName, rating, content, createdAt }
@@ -7,6 +9,7 @@ import { formatTime } from '@/utils/recordLabels.js';
  */
 defineProps({
   reviews: { type: Array, required: true },
+  actions: { type: Object, required: true },
 });
 </script>
 
@@ -22,13 +25,21 @@ defineProps({
         </span>
       </div>
       <p class="dish-reviews__comment">{{ review.content }}</p>
-      <time
-        v-if="review.createdAt"
-        :datetime="review.createdAt"
-        class="dish-reviews__time"
-      >
-        {{ formatTime(review.createdAt) }}
-      </time>
+      <ReviewReplySection :review="review" :actions="actions">
+        <template #actions>
+          <time
+            v-if="review.createdAt"
+            :datetime="review.createdAt"
+            class="dish-reviews__time"
+          >
+            {{ formatTime(review.createdAt) }}
+          </time>
+          <CommentLikeButton
+            :target="review"
+            :save="(liked) => actions.setReviewLike(review.id, liked)"
+          />
+        </template>
+      </ReviewReplySection>
     </li>
   </ul>
 </template>
@@ -72,10 +83,15 @@ defineProps({
   }
 
   &__time {
-    display: block;
-    margin-top: var(--ft-space-1);
+    margin-right: auto;
     color: var(--ft-color-text-muted);
     font-size: var(--ft-font-size-sm);
+  }
+}
+@media (max-width: 600px) {
+  .dish-reviews__time {
+    flex-basis: 100%;
+    margin-right: 0;
   }
 }
 </style>

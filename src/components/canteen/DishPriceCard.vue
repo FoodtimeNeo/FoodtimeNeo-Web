@@ -1,7 +1,7 @@
 <script setup>
 import { formatPrice } from '@/utils/mediaUrl.js';
 /**
- * 档口页的菜品条目：菜名、后端评分快照与价格。
+ * 档口页的菜品条目：菜名、后端实时评分与价格。
  */
 defineProps({
   dish: { type: Object, required: true },

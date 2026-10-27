@@ -1,5 +1,5 @@
 import { http, ApiError } from './http.js';
-const types = ['review', 'dish', 'stall', 'photo'];
+const types = ['review', 'dish', 'stall', 'photo', 'dish-review-reply'];
 export const fetchAuditItems = (status = 'pending', page = 1, options = {}) =>
   http.get('/admin/moderation', {
     ...options,

@@ -8,7 +8,15 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 const { items, page, total, size, loading, error, load } =
   usePagedData(fetchModerationLogs);
-const types = { review: '点评', dish: '菜品', stall: '档口', photo: '图片' };
+const types = {
+  review: '点评',
+  dish: '菜品',
+  stall: '档口',
+  photo: '图片',
+  'dish-review-reply': '点评回复',
+  'community-post': '社区食记',
+  'community-comment': '社区评论／回复',
+};
 </script>
 <template>
   <section class="logs">

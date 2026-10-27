@@ -46,7 +46,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
           :aria-current="activeName === item.name ? 'location' : undefined"
         >
           <span aria-hidden="true">{{
-            String(index + 1).padStart(2, '0')
+            item.code || String(index).padStart(2, '0')
           }}</span>
           {{ item.label }}
         </RouterLink>

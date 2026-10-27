@@ -14,8 +14,9 @@ const canteens = { name: 'canteenList', meta: { title: '食堂' } };
 const detail = { name: 'canteenDetail', meta: { title: '第一食堂' } };
 
 describe('布局导航', () => {
-  it('主导航包含食堂、社区与我的入口，旧点评地址不匹配业务页面', () => {
+  it('主导航包含首页、食堂、社区与我的入口，旧点评地址不匹配业务页面', () => {
     expect(navigationItems.map((item) => item.name)).toEqual([
+      'home',
       'canteenList',
       'community',
       'profile',
@@ -62,12 +63,12 @@ describe('布局导航', () => {
     ]);
   });
   it('首页只有一个面包屑，食堂标签仍能进入食堂列表', () => {
-    const route = { matched: [home], meta: home.meta };
+    const route = { matched: [home], meta: home.meta, name: 'home' };
     expect(resolveBreadcrumbs(route)).toEqual([
       { name: 'home', title: '首页' },
     ]);
-    expect(resolveActiveNavigation(route)).toBeNull();
-    expect(navigationTarget(navigationItems[0], route)).toEqual({
+    expect(resolveActiveNavigation(route)).toBe('home');
+    expect(navigationTarget(navigationItems[1], route)).toEqual({
       name: 'canteenList',
     });
   });
@@ -105,11 +106,13 @@ describe('布局导航', () => {
 
   it('只有管理员在社区和我的之间有管理入口，所有管理页面均高亮管理', () => {
     expect(getNavigationItems(false).map((item) => item.label)).toEqual([
+      '首页',
       '食堂',
       '社区',
       '我的',
     ]);
     expect(getNavigationItems(true).map((item) => item.label)).toEqual([
+      '首页',
       '食堂',
       '社区',
       '管理',
@@ -132,8 +135,8 @@ describe('布局导航', () => {
   it('重复点击当前栏目保留详情页和参数，其他栏目正常切换', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     const route = router.resolve('/canteens/c1/stalls/s1/dishes/d1');
-    expect(navigationTarget(navigationItems[0], route)).toBe(route.fullPath);
-    expect(navigationTarget(navigationItems[2], route)).toEqual({
+    expect(navigationTarget(navigationItems[1], route)).toBe(route.fullPath);
+    expect(navigationTarget(navigationItems[3], route)).toEqual({
       name: 'profile',
     });
   });

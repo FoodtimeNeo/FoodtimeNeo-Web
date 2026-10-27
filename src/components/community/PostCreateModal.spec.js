@@ -103,6 +103,7 @@ describe('PostCreateModal', () => {
     // 验证调用了 uploadImage 和 createCommunityPost
     expect(uploadImage).toHaveBeenCalledWith(dummyFile);
     expect(createCommunityPost).toHaveBeenCalledWith({
+      clientRequestId: expect.any(String),
       title: '自制三明治',
       content: '全麦面包配煎蛋，美味健康！',
       images: ['/api/v1/media/img-real-1'],
@@ -110,6 +111,23 @@ describe('PostCreateModal', () => {
 
     // 发射了 created 事件
     expect(wrapper.emitted('created')).toBeTruthy();
+  });
+
+  it('上传失败保留草稿且不会提交本地预览', async () => {
+    uploadImage.mockRejectedValue(new Error('上传失败'));
+    const wrapper = mountModal();
+    await wrapper.find('#post-title').setValue('标题');
+    await wrapper.find('#post-content').setValue('正文');
+    const input = wrapper.find('input[type="file"]');
+    Object.defineProperty(input.element, 'files', {
+      value: [new File(['x'], 'photo.png', { type: 'image/png' })],
+    });
+    await input.trigger('change');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(createCommunityPost).not.toHaveBeenCalled();
+    expect(wrapper.find('#post-content').element.value).toBe('正文');
+    expect(wrapper.emitted('created')).toBeUndefined();
   });
 
   it('支持删除已选图片', async () => {
