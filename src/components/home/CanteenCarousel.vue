@@ -298,11 +298,7 @@ onUnmounted(() => {
       >
         <div class="canteen-card__media" :class="imageFrameClass(index)">
           <span class="canteen-card__postage" aria-hidden="true"></span>
-          <span
-            class="canteen-card__tape"
-            :class="index % 2 === 0 ? 'is-left' : 'is-right'"
-            aria-hidden="true"
-          ></span>
+          <span class="canteen-card__tape" aria-hidden="true"></span>
           <MediaImage
             :src="canteen.coverImageUrl || ''"
             :alt="`${canteen.name}封面图`"
@@ -457,18 +453,18 @@ onUnmounted(() => {
 
 .canteen-card {
   position: relative;
-  flex: 0 0 clamp(290px, 28vw, 330px);
-  width: clamp(290px, 28vw, 330px);
-  height: clamp(470px, 44vw, 530px);
-  margin-right: -22px;
+  flex: 0 0 clamp(260px, 24vw, 285px);
+  width: clamp(260px, 24vw, 285px);
+  height: clamp(415px, 38vw, 450px);
+  margin-right: -16px;
   border: 1px solid var(--ft-color-secondary);
   background:
     radial-gradient(circle at 80% 10%, rgb(63 114 145 / 8%) 0, transparent 24%),
     linear-gradient(180deg, var(--zine-paper-card) 0%, #f8efd9 100%);
-  box-shadow: 6px 8px 0 rgb(58 36 24 / 14%);
+  box-shadow: 5px 6px 0 rgb(58 36 24 / 15%);
   display: grid;
-  grid-template-rows: minmax(0, 60%) minmax(0, 40%);
-  padding: 10px;
+  grid-template-rows: minmax(0, 56%) minmax(0, 44%);
+  padding: 9px;
   scroll-snap-align: start;
   cursor: pointer;
   will-change: transform;
@@ -477,23 +473,27 @@ onUnmounted(() => {
     box-shadow var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1));
 
   &:hover {
-    box-shadow: 9px 12px 0 rgb(58 36 24 / 20%);
+    box-shadow: 8px 10px 0 rgb(58 36 24 / 22%);
     z-index: 2;
   }
 
   &--0 {
+    --tape-rot: -1.2deg;
     animation: gentleBob0 2.8s ease-in-out infinite;
   }
 
   &--1 {
+    --tape-rot: 1.5deg;
     animation: gentleBob1 2.8s ease-in-out 0.7s infinite;
   }
 
   &--2 {
+    --tape-rot: -0.8deg;
     animation: gentleBob2 2.8s ease-in-out 1.4s infinite;
   }
 
   &--3 {
+    --tape-rot: 1deg;
     animation: gentleBob3 2.8s ease-in-out 2.1s infinite;
   }
 
@@ -512,8 +512,8 @@ onUnmounted(() => {
     position: relative;
     min-height: 0;
     background: #fff;
-    padding: 9px 9px 20px;
-    box-shadow: 3px 3px 0 rgb(58 36 24 / 22%);
+    padding: 8px 8px 14px;
+    box-shadow: 2px 2px 0 rgb(58 36 24 / 16%);
     transform-origin: center;
     transition: transform
       var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1));
@@ -541,21 +541,25 @@ onUnmounted(() => {
     background: var(--zine-decor-postage) center / 100% 100% no-repeat;
     pointer-events: none;
     z-index: 1;
-    opacity: 0.72;
+    opacity: 0.6;
     mix-blend-mode: multiply;
   }
 
   &__tape {
     position: absolute;
-    top: -14px;
-    width: 80px;
-    height: 26px;
-    background: var(--zine-decor-tape-blue) center / contain no-repeat;
-    opacity: 0.8;
+    top: -11px;
+    left: 50%;
+    transform: translateX(-50%) rotate(var(--tape-rot, -1deg));
+    width: 74px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(58, 36, 24, 0.16);
+    box-shadow: 0 1px 3px rgba(58, 36, 24, 0.08);
+    backdrop-filter: blur(1.5px);
     z-index: 2;
-    mix-blend-mode: multiply;
     pointer-events: none;
     overflow: hidden;
+    border-radius: 1px;
 
     &::after {
       content: '';
@@ -565,22 +569,11 @@ onUnmounted(() => {
       background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.5) 50%,
+        rgba(255, 255, 255, 0.65) 50%,
         transparent 100%
       );
       transform: translateX(-150%) skewX(-20deg);
-      animation: tapeSheen 3.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-    }
-
-    &.is-left {
-      left: 12px;
-      transform: rotate(-7deg);
-    }
-
-    &.is-right {
-      right: 12px;
-      background-image: var(--zine-decor-tape-red);
-      transform: rotate(7deg);
+      animation: tapeSheen 3.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
     }
   }
 
