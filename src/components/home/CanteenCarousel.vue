@@ -378,7 +378,7 @@ onUnmounted(() => {
     min-width: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 16px 28px 28px 4px;
+    padding: 24px 28px 36px 8px;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
     cursor: grab;
@@ -401,43 +401,43 @@ onUnmounted(() => {
   }
 }
 
-@keyframes gentleBob0 {
+@keyframes cardBob0 {
   0%,
   100% {
-    transform: rotate(0.6deg) translateY(2px);
+    transform: translateY(0px) rotate(0.8deg);
   }
   50% {
-    transform: rotate(1.2deg) translateY(-8px);
+    transform: translateY(-8px) rotate(1.2deg);
   }
 }
 
-@keyframes gentleBob1 {
+@keyframes cardBob1 {
   0%,
   100% {
-    transform: rotate(-0.8deg) translateY(12px);
+    transform: translateY(16px) rotate(-1.2deg);
   }
   50% {
-    transform: rotate(-1.5deg) translateY(2px);
+    transform: translateY(8px) rotate(-1.6deg);
   }
 }
 
-@keyframes gentleBob2 {
+@keyframes cardBob2 {
   0%,
   100% {
-    transform: rotate(0.5deg) translateY(-5px);
+    transform: translateY(-8px) rotate(0.6deg);
   }
   50% {
-    transform: rotate(0deg) translateY(-15px);
+    transform: translateY(-16px) rotate(0.2deg);
   }
 }
 
-@keyframes gentleBob3 {
+@keyframes cardBob3 {
   0%,
   100% {
-    transform: rotate(-0.4deg) translateY(8px);
+    transform: translateY(10px) rotate(-0.9deg);
   }
   50% {
-    transform: rotate(-1deg) translateY(-2px);
+    transform: translateY(2px) rotate(-1.3deg);
   }
 }
 
@@ -473,34 +473,49 @@ onUnmounted(() => {
     box-shadow var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1));
 
   &:hover {
-    box-shadow: 8px 10px 0 rgb(58 36 24 / 22%);
-    z-index: 2;
+    box-shadow: 8px 12px 0 rgb(58 36 24 / 22%);
+    z-index: 5;
+    animation-play-state: paused;
   }
 
   &--0 {
     --tape-rot: -1.2deg;
-    animation: gentleBob0 2.8s ease-in-out infinite;
+    transform: translateY(0px) rotate(0.8deg);
+    animation: cardBob0 3s ease-in-out infinite;
+
+    &:hover {
+      transform: translateY(-8px) rotate(0.8deg) scale(1.02);
+    }
   }
 
   &--1 {
     --tape-rot: 1.5deg;
-    animation: gentleBob1 2.8s ease-in-out 0.7s infinite;
+    transform: translateY(16px) rotate(-1.2deg);
+    animation: cardBob1 3s ease-in-out 0.75s infinite;
+
+    &:hover {
+      transform: translateY(8px) rotate(-1.2deg) scale(1.02);
+    }
   }
 
   &--2 {
     --tape-rot: -0.8deg;
-    animation: gentleBob2 2.8s ease-in-out 1.4s infinite;
+    transform: translateY(-8px) rotate(0.6deg);
+    animation: cardBob2 3s ease-in-out 1.5s infinite;
+
+    &:hover {
+      transform: translateY(-16px) rotate(0.6deg) scale(1.02);
+    }
   }
 
   &--3 {
     --tape-rot: 1deg;
-    animation: gentleBob3 2.8s ease-in-out 2.1s infinite;
-  }
+    transform: translateY(10px) rotate(-0.9deg);
+    animation: cardBob3 3s ease-in-out 2.25s infinite;
 
-  // 悬停时轻微扶正卡片并暂停微浮动
-  &.canteen-card:hover {
-    animation-play-state: paused;
-    transform: translateY(-4px) rotate(0deg);
+    &:hover {
+      transform: translateY(2px) rotate(-0.9deg) scale(1.02);
+    }
   }
 
   // 抓取拖拽时暂停浮动，避免坐标冲突
@@ -587,24 +602,25 @@ onUnmounted(() => {
   &__content {
     position: relative;
     min-height: 0;
-    padding: 12px 4px 0;
+    padding: 10px 4px 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__rant {
     margin: 0;
     color: var(--zine-stamp-red);
-    font-size: 18px;
+    font-size: 15px;
     font-family: var(--ft-font-family-note);
     line-height: 1.25;
+    min-height: 38px;
   }
 
   &__rant-text {
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     overflow: hidden;
   }
 
@@ -618,9 +634,9 @@ onUnmounted(() => {
   &__name {
     margin: 0;
     font-family: var(--ft-font-family-title);
-    font-size: clamp(24px, 2.2vw, 28px);
+    font-size: clamp(20px, 1.8vw, 22px);
     font-weight: 900;
-    line-height: 1.08;
+    line-height: 1.1;
     color: var(--ft-color-secondary);
     overflow-wrap: anywhere;
     text-wrap: balance;
@@ -634,54 +650,64 @@ onUnmounted(() => {
 
   .zine-chip {
     display: inline-block;
-    padding: 2px 6px;
+    padding: 1px 6px;
     font-size: 11px;
     border: 1px solid var(--ft-color-secondary);
     background: #fff;
     border-radius: 2px;
     color: var(--ft-color-text-muted);
+    line-height: 1.3;
+    box-shadow: 1px 1px 0 rgba(58, 36, 24, 0.1);
   }
 
   .zine-rating-stamp {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     flex: none;
-    border: 2px solid var(--zine-stamp-red);
+    border: 1.5px solid var(--zine-stamp-red);
     color: var(--zine-stamp-red);
     font-weight: 900;
-    font-size: 15px;
+    font-size: 14px;
     font-family: var(--ft-font-family-title);
-    transform: rotate(-6deg);
+    transform: rotate(-5deg);
     border-radius: 50%;
     transition: transform 180ms cubic-bezier(0.2, 0.8, 0.4, 1.25);
 
     &.is-unrated {
       width: auto;
-      min-width: 36px;
-      padding: 0 6px;
+      min-width: 34px;
+      height: 22px;
+      padding: 0 7px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 12px;
       white-space: nowrap;
+      transform: rotate(-3deg);
     }
   }
 
   &.canteen-card:hover .zine-rating-stamp {
-    transform: rotate(-3deg) scale(1.08);
+    transform: rotate(-2deg) scale(1.08);
   }
 
   &__footer {
     margin-top: auto;
     display: flex;
     justify-content: flex-end;
+    padding-bottom: 2px;
   }
 
   &__more {
     font-size: 15px;
     color: var(--zine-stamp-blue);
     font-family: var(--ft-font-family-note);
+    transition: transform 160ms ease;
+  }
+
+  &.canteen-card:hover &__more {
+    transform: translateX(3px);
   }
 }
 
@@ -734,10 +760,16 @@ onUnmounted(() => {
   .canteen-card--2,
   .canteen-card--3,
   .canteen-card:hover,
+  .canteen-card--0:hover,
+  .canteen-card--1:hover,
+  .canteen-card--2:hover,
+  .canteen-card--3:hover,
   .canteen-card__media,
   .canteen-card.canteen-card:hover .canteen-card__media,
   .canteen-card .zine-rating-stamp,
   .canteen-card.canteen-card:hover .zine-rating-stamp,
+  .canteen-card__more,
+  .canteen-card.canteen-card:hover .canteen-card__more,
   .canteen-card__tape::after {
     transform: none !important;
     transition: none !important;
