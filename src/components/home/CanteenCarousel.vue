@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAutoHorizontalScroll } from '@/composables/useAutoHorizontalScroll.js';
 import { useDragScroll } from '@/composables/useDragScroll.js';
@@ -7,7 +7,7 @@ import MediaImage from '@/components/base/MediaImage.vue';
 
 /**
  * 首页食堂滑动窗口组件（仿照旧版滑动窗口样式）。
- * 支持鼠标抓取拖拽滚动与平滑自动横向跑马灯。
+ * 支持鼠标抓取拖拽滚动、平滑自动横向跑马灯以及鼠标滚轮上下滑动转换为横向滚动。
  */
 defineOptions({
   name: 'CanteenCarousel',
@@ -22,7 +22,13 @@ const props = defineProps({
 
 const emit = defineEmits(['select']);
 const router = useRouter();
+const rootRef = ref(null);
 const trackRef = ref(null);
+const isWheeling = ref(false);
+
+let wheelVelocity = 0;
+let wheelFrameId = 0;
+let snapRestoreTimer = null;
 
 const displayItems = computed(() =>
   props.canteens.length > 1
@@ -41,7 +47,7 @@ const {
 } = useDragScroll(trackRef);
 
 useAutoHorizontalScroll(trackRef, {
-  pauseWhen: isDragging,
+  pauseWhen: computed(() => isDragging.value || isWheeling.value),
   loopItemCount: computed(() => props.canteens.length),
   speed: 14,
   pauseOnHover: true,
@@ -76,7 +82,88 @@ function visibleChips(canteen) {
   return chips.length ? chips : ['校园招牌', '打卡推荐'];
 }
 
+function stopWheelAnimation() {
+  if (wheelFrameId) {
+    if (typeof window !== 'undefined' && window.cancelAnimationFrame) {
+      window.cancelAnimationFrame(wheelFrameId);
+    }
+    wheelFrameId = 0;
+  }
+  wheelVelocity = 0;
+  if (snapRestoreTimer) {
+    clearTimeout(snapRestoreTimer);
+    snapRestoreTimer = null;
+  }
+  isWheeling.value = false;
+}
+
+function scheduleSnapRestore() {
+  if (snapRestoreTimer) {
+    clearTimeout(snapRestoreTimer);
+  }
+  snapRestoreTimer = setTimeout(() => {
+    isWheeling.value = false;
+    snapRestoreTimer = null;
+  }, 100);
+}
+
+function applyScrollStep(track, delta) {
+  const loopDistance = getLoopDistance();
+  let nextScrollLeft = track.scrollLeft + delta;
+
+  if (loopDistance > 0 && props.canteens.length > 1) {
+    nextScrollLeft =
+      ((nextScrollLeft % loopDistance) + loopDistance) % loopDistance;
+    track.scrollLeft = nextScrollLeft;
+  } else {
+    const maxScroll = Math.max(0, track.scrollWidth - track.clientWidth);
+    const clamped = Math.max(0, Math.min(maxScroll, nextScrollLeft));
+    track.scrollLeft = clamped;
+    if (clamped <= 0 && delta < 0) {
+      wheelVelocity = 0;
+    } else if (clamped >= maxScroll && delta > 0) {
+      wheelVelocity = 0;
+    }
+  }
+}
+
+function wheelTick() {
+  const track = trackRef.value;
+  if (!track) {
+    stopWheelAnimation();
+    return;
+  }
+
+  // 动量衰减：每帧消耗当前剩余速度的 18%
+  const friction = 0.18;
+  const moveDelta = wheelVelocity * friction;
+
+  if (Math.abs(wheelVelocity) < 0.5) {
+    const finalDelta = wheelVelocity;
+    wheelVelocity = 0;
+    wheelFrameId = 0;
+    applyScrollStep(track, finalDelta);
+    scheduleSnapRestore();
+    return;
+  }
+
+  wheelVelocity -= moveDelta;
+  applyScrollStep(track, moveDelta);
+
+  if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+    wheelFrameId = window.requestAnimationFrame(wheelTick);
+  } else {
+    stopWheelAnimation();
+  }
+}
+
+function handlePointerDown(event) {
+  stopWheelAnimation();
+  onPointerDown(event);
+}
+
 function handleSelect(canteenId) {
+  stopWheelAnimation();
   if (wasDragged.value || !canteenId) {
     return;
   }
@@ -84,10 +171,104 @@ function handleSelect(canteenId) {
   emit('select', canteenId);
   router.push({ name: 'canteenDetail', params: { canteenId } });
 }
+
+function getLoopDistance() {
+  const target = trackRef.value;
+  if (!target) return 0;
+  const loopCount = props.canteens.length;
+  if (loopCount > 1 && target.children.length >= loopCount * 2) {
+    const firstItem = target.children[0];
+    const secondLoopFirstItem = target.children[loopCount];
+    if (firstItem && secondLoopFirstItem) {
+      const distance = secondLoopFirstItem.offsetLeft - firstItem.offsetLeft;
+      if (Number.isFinite(distance) && distance > 1) {
+        return distance;
+      }
+    }
+  }
+  const fallbackDistance = target.scrollWidth - target.clientWidth;
+  return Number.isFinite(fallbackDistance) && fallbackDistance > 1
+    ? fallbackDistance
+    : 0;
+}
+
+function handleWheel(event) {
+  const track = trackRef.value;
+  if (!track) {
+    return;
+  }
+
+  // 容器没有溢出不可滚动时，不拦截，保持默认垂直滚动
+  if (track.scrollWidth <= track.clientWidth) {
+    return;
+  }
+
+  const absY = Math.abs(event.deltaY);
+  const absX = Math.abs(event.deltaX);
+
+  if (absY === 0) {
+    return;
+  }
+
+  // 鼠标上下滚轮为主导时，阻止默认垂直滚动，转化为横向平滑动量滚动
+  if (absY >= absX) {
+    event.preventDefault();
+
+    let delta = event.deltaY;
+    if (event.deltaMode === 1) {
+      delta *= 40;
+    } else if (event.deltaMode === 2) {
+      delta *= track.clientWidth;
+    }
+
+    // 激活平滑滚动状态，临时屏蔽 CSS scroll-snap 避免冲突拉扯
+    isWheeling.value = true;
+    if (snapRestoreTimer) {
+      clearTimeout(snapRestoreTimer);
+      snapRestoreTimer = null;
+    }
+
+    // 累加滚轮脉冲动量
+    wheelVelocity += delta;
+
+    // 限制单次累计最大动量峰值，防止暴力拨轮导致速度过快
+    const maxVelocity = (track.clientWidth || 800) * 1.5;
+    wheelVelocity = Math.max(
+      -maxVelocity,
+      Math.min(maxVelocity, wheelVelocity),
+    );
+
+    // 立即启动动量衰减帧动画
+    if (
+      !wheelFrameId &&
+      typeof window !== 'undefined' &&
+      window.requestAnimationFrame
+    ) {
+      wheelFrameId = window.requestAnimationFrame(wheelTick);
+    } else if (typeof window === 'undefined' || !window.requestAnimationFrame) {
+      applyScrollStep(track, delta);
+    }
+  }
+}
+
+onMounted(() => {
+  const root = rootRef.value;
+  if (root) {
+    root.addEventListener('wheel', handleWheel, { passive: false });
+  }
+});
+
+onUnmounted(() => {
+  stopWheelAnimation();
+  const root = rootRef.value;
+  if (root) {
+    root.removeEventListener('wheel', handleWheel);
+  }
+});
 </script>
 
 <template>
-  <div class="canteen-carousel" data-test="canteen-carousel">
+  <div ref="rootRef" class="canteen-carousel" data-test="canteen-carousel">
     <div class="canteen-carousel__subhead">
       <span class="canteen-carousel__hint handwrite"
         >→ 划划看，发现心仪食堂</span
@@ -97,8 +278,8 @@ function handleSelect(canteenId) {
     <div
       ref="trackRef"
       class="canteen-carousel__track"
-      :class="{ 'is-dragging': isDragging }"
-      @pointerdown="onPointerDown"
+      :class="{ 'is-dragging': isDragging, 'is-wheeling': isWheeling }"
+      @pointerdown="handlePointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerEnd"
       @pointercancel="onPointerEnd"
@@ -207,6 +388,7 @@ function handleSelect(canteenId) {
     cursor: grab;
     touch-action: pan-x;
     user-select: none;
+    will-change: scroll-position;
 
     &::-webkit-scrollbar {
       display: none;
@@ -214,6 +396,11 @@ function handleSelect(canteenId) {
 
     &.is-dragging {
       cursor: grabbing;
+    }
+
+    &.is-wheeling {
+      scroll-snap-type: none !important;
+      scroll-behavior: auto !important;
     }
   }
 }
@@ -234,6 +421,7 @@ function handleSelect(canteenId) {
   padding: 10px;
   scroll-snap-align: start;
   cursor: pointer;
+  will-change: transform;
   transition:
     transform var(--ft-transition-fast),
     box-shadow var(--ft-transition-fast);

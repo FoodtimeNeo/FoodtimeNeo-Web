@@ -12,12 +12,16 @@ function createProxyAgent(target) {
     keepAlive: true,
     keepAliveMsecs: 30000,
     maxSockets: 50,
+    rejectUnauthorized: false,
   });
 }
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
-  const proxyTarget = developmentProxyTarget(env.VITE_API_PROXY_TARGET);
+  let proxyTarget = developmentProxyTarget(env.VITE_API_PROXY_TARGET);
+  if (proxyTarget === 'http://154.9.252.201') {
+    proxyTarget = 'https://154.9.252.201';
+  }
 
   return {
     plugins: [vue()],
@@ -34,7 +38,18 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: proxyTarget,
           changeOrigin: true,
+          secure: false,
           agent: createProxyAgent(proxyTarget),
+          configure: (proxy) => {
+            proxy.on('proxyRes', (proxyRes) => {
+              const sc = proxyRes.headers['set-cookie'];
+              if (sc) {
+                proxyRes.headers['set-cookie'] = sc.map((c) =>
+                  c.replace(/;\s*Secure/gi, ''),
+                );
+              }
+            });
+          },
         },
       },
     },
