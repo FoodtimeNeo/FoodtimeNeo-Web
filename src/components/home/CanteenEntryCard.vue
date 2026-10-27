@@ -41,13 +41,13 @@ defineProps({
   position: relative;
   display: block;
   border: 1px solid var(--ft-color-text);
-  background: linear-gradient(180deg, var(--zine-paper-card), #f8efd9);
+  background: var(--zine-paper-card, #fffaf0);
   box-shadow: 6px 8px 0 rgb(58 36 24 / 16%);
   color: inherit;
   text-decoration: none;
   transition:
-    transform var(--ft-transition-fast),
-    box-shadow var(--ft-transition-fast);
+    transform var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1)),
+    box-shadow var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1));
 
   &:hover {
     transform: translate(-3px, -4px) rotate(-0.5deg);
@@ -97,6 +97,11 @@ defineProps({
     transform: translateX(-50%) rotate(-5deg);
     mix-blend-mode: multiply;
     pointer-events: none;
+    transition: transform var(--ft-transition-fast, 180ms ease);
+  }
+
+  &:hover &__tape {
+    transform: translateX(-50%) rotate(-3deg) translateY(-1px);
   }
 
   &__name {
@@ -131,6 +136,15 @@ defineProps({
 
   .canteen-entry__tape {
     width: 72px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canteen-entry,
+  .canteen-entry:hover,
+  .canteen-entry:hover .canteen-entry__tape {
+    transform: none !important;
+    transition: none !important;
   }
 }
 </style>
