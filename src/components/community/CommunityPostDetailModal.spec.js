@@ -1,27 +1,28 @@
 import { describe, it, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import CommunityPostDetailModal from './CommunityPostDetailModal.vue';
-describe('帖子详情弹窗', () => {
-  it('打开时复用详情组件，关闭交还焦点由 ElDialog 管理', async () => {
+
+describe('CommunityPostDetailModal', () => {
+  it('打开时渲染毛玻璃弹窗与详情内容，关闭时触发 update:modelValue', async () => {
     const wrapper = mount(CommunityPostDetailModal, {
       props: { postId: 'p1', modelValue: true },
       global: {
         stubs: {
+          Teleport: true,
           CommunityPostContent: {
             props: ['postId'],
             template: '<div class="post-content-stub">{{ postId }}</div>',
           },
-          ElDialog: {
-            props: ['modelValue'],
-            emits: ['update:modelValue'],
-            template:
-              '<div v-if="modelValue"><slot/><button @click="$emit(\'update:modelValue\', false)">关闭</button></div>',
-          },
         },
       },
     });
+
+    expect(wrapper.find('.redbook-modal').exists()).toBe(true);
+    expect(wrapper.find('.redbook-modal__close-btn').exists()).toBe(true);
     expect(wrapper.text()).toContain('p1');
-    await wrapper.find('button').trigger('click');
+
+    await wrapper.find('.redbook-modal__close-btn').trigger('click');
+    expect(wrapper.emitted('update:modelValue')).toBeTruthy();
     expect(wrapper.emitted('update:modelValue')[0]).toEqual([false]);
   });
 });

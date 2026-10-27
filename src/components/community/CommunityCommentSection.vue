@@ -9,7 +9,7 @@ import {
 } from '@/api/community.api.js';
 import CommunityCommentItem from './CommunityCommentItem.vue';
 const props = defineProps({ postId: { type: String, required: true } });
-const emit = defineEmits(['changed']);
+const emit = defineEmits(['changed', 'replyTargetChange']);
 const roots = ref([]),
   threads = ref({}),
   hasMore = ref(false),
@@ -104,6 +104,7 @@ watch(
 );
 async function selectReply(item, root) {
   target.value = { item, root };
+  emit('replyTargetChange', { item, root });
   await nextTick();
   input.value?.focus();
 }
@@ -168,6 +169,19 @@ async function moreReplies(root) {
     error.value = e.message || '回复加载失败';
   }
 }
+
+defineExpose({
+  load,
+  selectReply,
+  setTarget: (val) => {
+    target.value = val;
+  },
+  focusInput: () => {
+    input.value?.focus();
+  },
+  roots,
+  threads,
+});
 </script>
 <template>
   <section class="community-comments" aria-label="评论与回复">
@@ -251,9 +265,9 @@ async function moreReplies(root) {
     </form>
   </section>
 </template>
-<style scoped>
+<style scoped lang="scss">
 .community-comments {
-  padding-top: 20px;
+  padding-top: 16px;
 }
 header,
 .composer-footer {
@@ -263,16 +277,20 @@ header,
   gap: 12px;
 }
 h2 {
-  font-size: 19px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ft-color-text, #333);
   margin: 0;
 }
 button {
-  min-height: 44px;
+  min-height: 36px;
   border: 0;
   background: transparent;
-  color: var(--ft-color-primary, #c9341e);
+  color: var(--ft-color-primary, #e60026);
+  font-size: 13px;
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 4px 8px;
+  transition: opacity 150ms ease;
 }
 button:disabled {
   opacity: 0.55;
@@ -280,48 +298,90 @@ button:disabled {
 }
 .compact-replies {
   margin-left: 42px;
-  padding: 0 12px;
-  border-radius: 8px;
-  background: var(--ft-color-bg, #f1ece2);
+  padding: 4px 14px;
+  border-radius: 10px;
+  background: var(--ft-color-bg, #f7f6f5);
+  margin-bottom: 8px;
 }
 .comment-thread {
-  border-bottom: 1px solid var(--ft-color-border);
+  border-bottom: 1px solid rgb(0 0 0 / 5%);
+  padding-bottom: 6px;
 }
 .more-replies {
   margin-left: 42px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 0;
 }
 .comment-composer {
-  margin-top: 20px;
+  margin-top: 18px;
   display: grid;
   gap: 8px;
+  background: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgb(0 0 0 / 6%);
 }
 textarea {
   width: 100%;
   box-sizing: border-box;
   resize: vertical;
-  padding: 12px;
-  border: 1px solid var(--ft-color-border);
+  padding: 10px 12px;
+  border: 1px solid var(--ft-color-border, #e5e5e5);
   border-radius: 8px;
-  background: var(--zine-paper-card, #fffaf0);
+  background: #faf9f7;
   color: inherit;
   font: inherit;
+  font-size: 14px;
+  transition: border-color 160ms ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--ft-color-primary, #e60026);
+    background: #fff;
+  }
 }
 .composer-footer {
   font-size: 12px;
-  color: var(--ft-color-text-secondary, #706458);
+  color: var(--ft-color-text-secondary, #8c827a);
 }
 .community-comments__send-btn {
-  background: var(--ft-color-primary, #c9341e);
+  background: var(--ft-color-primary, #e60026);
   color: white;
-  border-radius: 6px;
-  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  padding: 6px 16px;
+  box-shadow: 0 2px 8px rgb(230 0 38 / 20%);
+  transition:
+    transform 140ms ease,
+    background 140ms ease;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.02);
+  }
 }
 .reply-selection {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 10px;
-  background: var(--ft-color-bg, #f1ece2);
+  background: rgb(230 0 38 / 8%);
+  color: var(--ft-color-primary, #e60026);
+  font-size: 12px;
+  font-weight: 500;
   border-radius: 6px;
+
+  button {
+    min-height: auto;
+    padding: 0;
+    color: #888;
+    font-size: 12px;
+    &:hover {
+      color: #333;
+    }
+  }
 }
 [role='alert'] {
-  color: var(--ft-color-primary, #c9341e);
+  color: var(--ft-color-primary, #e60026);
 }
 </style>
