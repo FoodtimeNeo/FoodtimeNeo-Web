@@ -70,7 +70,7 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--ft-space-3);
     margin: var(--ft-space-3) 0 0;
     padding: 0;
