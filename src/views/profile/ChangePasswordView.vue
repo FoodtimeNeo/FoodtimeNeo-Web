@@ -84,8 +84,20 @@ async function submit() {
 form {
   display: grid;
   gap: 16px;
+  margin-top: var(--ft-space-3);
+  padding: var(--ft-space-4);
+  border: 2px solid var(--ft-color-text);
+  background: var(--zine-paper-card);
+  box-shadow: 6px 6px 0 rgb(58 36 24 / 16%);
 }
 [role='alert'] {
   color: var(--ft-color-danger);
+}
+
+@media (max-width: 768px) {
+  form {
+    padding: var(--app-mobile-card-padding);
+    box-shadow: var(--app-mobile-shadow);
+  }
 }
 </style>
