@@ -52,6 +52,7 @@ async function logout() {
       <article class="profile-page__identity torn-edge">
         <div class="profile-page__avatar" role="img" aria-label="个人头像">
           <MediaImage
+            compact
             :src="profile.avatarUrl || ''"
             alt=""
             :empty="Array.from(profile.displayName?.trim() || '我')[0]"
@@ -69,6 +70,11 @@ async function logout() {
         <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
       <nav class="profile-page__links" aria-label="个人功能">
+        <RouterLink class="paper-link" :to="{ name: 'inboxView' }"
+          ><span class="stamp">信箱</span
+          ><span>消息信箱<small>公告与系统消息</small></span
+          ><strong>→</strong></RouterLink
+        >
         <RouterLink class="paper-link" :to="{ name: 'myReviewReplies' }"
           ><span class="stamp">回复</span
           ><span>我的回复<small>楼内讨论与审核状态</small></span
@@ -190,5 +196,13 @@ h2 {
 .profile-page__logout {
   color: var(--ft-color-danger);
   border-color: var(--ft-color-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-page__links a.paper-link,
+  .profile-page__links a.paper-link:hover {
+    transform: none;
+    transition: none;
+  }
 }
 </style>

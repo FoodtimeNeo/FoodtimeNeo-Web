@@ -37,10 +37,10 @@ const router = useRouter();
   }
 }
 .community-detail-card {
-  background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 12px 36px rgb(58 36 24 / 8%);
-  border: 1px solid rgb(213 204 188 / 30%);
+  background: var(--zine-paper-card);
+  border-radius: 0;
+  box-shadow: 5px 6px 0 rgb(58 36 24 / 16%);
+  border: 1px solid var(--ft-color-secondary);
   overflow: hidden;
   min-height: 600px;
 }

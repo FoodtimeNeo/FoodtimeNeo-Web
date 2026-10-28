@@ -25,6 +25,7 @@ const communityTotal = ref(0);
 const isCreateModalOpen = ref(false);
 const activePostId = ref('');
 const isDetailModalOpen = ref(false);
+let sectionObserver = null;
 
 const screenWidth = ref(
   typeof window !== 'undefined' ? window.innerWidth : 1200,
@@ -101,6 +102,27 @@ onMounted(() => {
   loadCommunityPosts();
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', handleResize);
+
+    if ('IntersectionObserver' in window) {
+      sectionObserver = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              sectionObserver?.unobserve(entry.target);
+            }
+          }
+        },
+        { threshold: 0.3 },
+      );
+      document
+        .querySelectorAll('.home-page__section')
+        .forEach((section) => sectionObserver.observe(section));
+    } else {
+      document
+        .querySelectorAll('.home-page__section')
+        .forEach((section) => section.classList.add('is-visible'));
+    }
   }
 });
 
@@ -108,6 +130,8 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleResize);
   }
+  sectionObserver?.disconnect();
+  sectionObserver = null;
 });
 </script>
 
@@ -291,33 +315,35 @@ onUnmounted(() => {
 
 .hero-appear {
   --hero-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --hero-duration: 480ms;
+  --hero-duration: 800ms;
 
   .hero-stagger-1 {
-    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 40ms both;
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 50ms both;
   }
   .hero-stagger-2 {
-    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 100ms both;
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 110ms both;
   }
   .hero-stagger-3 {
-    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 160ms both;
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 170ms both;
   }
   .hero-stagger-4 {
-    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 220ms both;
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 230ms both;
   }
   .hero-stagger-5 {
-    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 280ms both;
+    animation: heroElemAppear var(--hero-duration) var(--hero-ease) 290ms both;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-appear [class*='hero-stagger-'],
+  .home-page__section,
   .home-page__hero-sketch,
   .community-hot-badge::before {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
+    transition: none !important;
   }
 
   .community-hot-badge::before {
@@ -478,6 +504,19 @@ onUnmounted(() => {
 
   &__section {
     position: relative;
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+    transition:
+      opacity 0.8s cubic-bezier(0.33, 1, 0.68, 1),
+      transform 1.05s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.8s cubic-bezier(0.33, 1, 0.68, 1);
+
+    &.is-visible {
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
   }
 
   &__grid {

@@ -223,7 +223,6 @@ function formatPostTime(isoString) {
       <div class="loading-spinner"></div>
       <span>食记加载中…</span>
     </div>
-
     <article
       v-if="post && !error"
       class="community-post-content"

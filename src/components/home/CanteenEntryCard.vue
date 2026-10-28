@@ -147,4 +147,28 @@ defineProps({
     transition: none !important;
   }
 }
+@media (prefers-reduced-motion: no-preference) {
+  .canteen-entry {
+    animation: catalogCardIn 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @for $i from 1 through 8 {
+    .canteen-entry:nth-child(#{$i}) {
+      animation-delay: #{($i - 1) * 55}ms;
+    }
+  }
+}
+
+@keyframes catalogCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
 </style>

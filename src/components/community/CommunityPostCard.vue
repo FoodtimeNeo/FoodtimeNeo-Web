@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import MediaImage from '@/components/base/MediaImage.vue';
 
 const props = defineProps({
   post: {
@@ -47,7 +48,7 @@ function handleClick() {
     @keydown.space.prevent="handleClick"
   >
     <div class="community-post-card__cover-wrap" :style="aspectStyle">
-      <img
+      <MediaImage
         v-if="coverImage"
         :src="coverImage"
         :alt="post.title"
@@ -92,10 +93,10 @@ function handleClick() {
   display: flex;
   flex-direction: column;
   background: var(--zine-paper-card, #fffaf0);
-  border: 1px solid var(--ft-color-border, #d5ccbc);
-  border-radius: var(--ft-radius-md, 10px);
+  border: 1px solid var(--ft-color-secondary, #3a2418);
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 4px 10px rgb(58 36 24 / 8%);
+  box-shadow: 3px 3px 0 rgb(58 36 24 / 14%);
   cursor: pointer;
   transition:
     transform var(--ft-transition-fast, 180ms ease),
@@ -106,8 +107,8 @@ function handleClick() {
 
   &:hover,
   &:focus-visible {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgb(58 36 24 / 14%);
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 rgb(58 36 24 / 22%);
     border-color: var(--ft-color-secondary-soft, #6a4b3a);
   }
 
@@ -149,12 +150,11 @@ function handleClick() {
     top: 8px;
     right: 8px;
     padding: 2px 7px;
-    background: rgb(0 0 0 / 55%);
-    color: #fff;
+    background: rgb(58 36 24 / 78%);
+    color: var(--zine-paper-card);
     font-size: 11px;
     font-weight: 600;
-    border-radius: var(--ft-radius-pill, 999px);
-    backdrop-filter: blur(4px);
+    border: 1px solid var(--zine-paper-card);
   }
 
   &__pending-badge {
@@ -162,16 +162,16 @@ function handleClick() {
     top: 8px;
     left: 8px;
     padding: 2px 8px;
-    background: #e6a23c;
-    color: #fff;
+    background: var(--zine-stamp-red, #b72f1c);
+    color: var(--zine-paper-card);
     font-size: 11px;
     font-weight: 700;
-    border-radius: 4px;
-    box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+    border: 1px solid var(--ft-color-secondary);
+    box-shadow: 2px 2px 0 rgb(58 36 24 / 18%);
   }
 
   &__body {
-    padding: 10px 12px 12px;
+    padding: var(--ft-space-1) var(--ft-space-2) var(--ft-space-2);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -203,6 +203,19 @@ function handleClick() {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-post-card,
+  .community-post-card__image {
+    transition: none;
+  }
+
+  .community-post-card:hover,
+  .community-post-card:focus-visible,
+  .community-post-card:hover .community-post-card__image {
+    transform: none;
   }
 }
 </style>

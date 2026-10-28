@@ -79,10 +79,12 @@ describe('CommunityFeedView', () => {
     expect(wrapper.text()).toContain('明湖酸汤粉');
     expect(wrapper.text()).toContain('学二牛肉拉面');
     const cols = wrapper.findAll('.community-waterfall__col');
-    expect(cols.length).toBe(2);
+    expect(cols.length).toBe(3);
   });
 
   it('在移动端视口下以两列渲染瀑布流', async () => {
+    const originalInnerWidth = window.innerWidth;
+    window.innerWidth = 375;
     // 模拟移动端 mediaQuery
     window.matchMedia = vi.fn().mockImplementation((query) => ({
       matches: query.includes('768px'),
@@ -118,6 +120,7 @@ describe('CommunityFeedView', () => {
 
     const cols = wrapper.findAll('.community-waterfall__col');
     expect(cols.length).toBe(2);
+    window.innerWidth = originalInnerWidth;
   });
 
   it('点击卡片在当前页弹出小红书详情弹窗而不单开页面', async () => {

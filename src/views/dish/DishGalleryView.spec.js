@@ -39,15 +39,23 @@ it('图册只展示分页接口批准的图片，翻页不沿用上页选中索�
   });
   await flushPromises();
   await wrapper.findAll('.dish-gallery__thumb')[1].trigger('click');
-  expect(wrapper.get('.dish-gallery__stage img').attributes('src')).toBe(
-    second,
-  );
+  expect(
+    wrapper
+      .get('.dish-gallery__stage')
+      .findComponent({ name: 'MediaImage' })
+      .props('src'),
+  ).toBe(second);
   await wrapper
     .findAll('button')
     .find((b) => b.text() === '下一页')
     .trigger('click');
   await flushPromises();
-  expect(wrapper.get('.dish-gallery__stage img').attributes('src')).toBe(first);
+  expect(
+    wrapper
+      .get('.dish-gallery__stage')
+      .findComponent({ name: 'MediaImage' })
+      .props('src'),
+  ).toBe(first);
   expect(fetchDishImages.mock.calls.at(-1).slice(0, 2)).toEqual(['d1', 2]);
 });
 it('没有approved图片时展示空态', async () => {
