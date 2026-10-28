@@ -63,6 +63,12 @@ const { query, matches: filteredStalls } = useCatalogSearch(
           <span class="sticker sticker--r-1">食堂档案</span>
           <h1 class="section-title">{{ canteen.name }}</h1>
           <p class="dropcap">选择档口，继续查看菜单和菜品。</p>
+          <div
+            v-if="!stallsLoading && !stallsError"
+            class="canteen-detail__hero-meta"
+          >
+            <span class="stamp">{{ stalls.length }} 个档口</span>
+          </div>
           <RouterLink
             class="button-ink"
             :to="{ name: 'stallSubmission', params: { canteenId } }"
@@ -170,6 +176,12 @@ const { query, matches: filteredStalls } = useCatalogSearch(
     p {
       color: var(--ft-color-secondary-soft);
     }
+  }
+
+  &__hero-meta {
+    display: flex;
+    gap: var(--ft-space-1);
+    margin: var(--ft-space-1) 0 var(--ft-space-2);
   }
 
   &__subtitle {

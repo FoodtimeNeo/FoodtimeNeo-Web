@@ -94,24 +94,28 @@ async function like() {
     </div>
   </article>
 </template>
-<style scoped>
+<style scoped lang="scss">
 .comment-item {
   display: flex;
-  gap: 10px;
-  padding: 14px 0;
+  gap: 12px;
+  padding: 12px 0;
+  transition: background 150ms ease;
 }
 .avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 6%);
 }
 .avatar-fallback {
   display: grid;
   place-items: center;
-  background: var(--ft-color-border);
-  color: var(--ft-color-text);
+  background: var(--ft-color-surface-ink, #ece5d8);
+  color: var(--ft-color-text-secondary, #706458);
+  font-weight: 600;
+  font-size: 13px;
 }
 .comment-copy {
   flex: 1;
@@ -122,35 +126,59 @@ p {
 }
 .comment-author,
 .reply-target {
-  color: var(--ft-color-text-secondary, #706458);
+  color: var(--ft-color-text-secondary, #8c827a);
   font-size: 13px;
+  font-weight: 500;
+}
+.reply-target {
+  color: var(--ft-color-primary, #e60026);
+  font-weight: 600;
 }
 .comment-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  line-height: 1.7;
+  line-height: 1.6;
   margin-top: 4px;
-  font-size: 15px;
+  font-size: 14px;
+  color: var(--ft-color-text, #262626);
 }
 .comment-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   font-size: 12px;
-  color: var(--ft-color-text-secondary, #706458);
+  color: var(--ft-color-text-muted, #999);
+  margin-top: 6px;
 }
 button {
-  min-height: 44px;
-  padding: 4px 8px;
+  min-height: 32px;
+  padding: 2px 6px;
   border: 0;
-  color: inherit;
+  color: var(--ft-color-text-secondary, #666);
   background: transparent;
   cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color 150ms ease;
+
+  &:hover {
+    color: var(--ft-color-primary, #e60026);
+  }
+}
+.comment-like[aria-pressed='true'] {
+  color: var(--ft-color-primary, #e60026);
+  font-weight: 600;
+}
+.delete-button:hover {
+  color: #c9341e;
 }
 .tombstone {
-  font-size: 14px;
-  color: var(--ft-color-text-secondary, #706458);
+  font-size: 13px;
+  color: var(--ft-color-text-muted, #999);
+  font-style: italic;
   padding-top: 4px;
 }
 </style>

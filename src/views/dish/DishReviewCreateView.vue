@@ -174,7 +174,10 @@ async function submitReview() {
         <strong>{{ dish.name }}</strong
         ><span>{{ dish.diningHallName }} · {{ dish.stallName }}</span>
       </div>
-      <StarRatingInput v-model="form.rating" :disabled="submitting" />
+      <div class="review-create__rating">
+        <span>你的评分</span>
+        <StarRatingInput v-model="form.rating" :disabled="submitting" />
+      </div>
       <label class="review-create__comment"
         ><span>文字点评</span
         ><textarea v-model="form.content" rows="6" :disabled="submitting" />
@@ -291,6 +294,15 @@ async function submitReview() {
     }
   }
 
+  &__rating {
+    display: grid;
+    gap: var(--ft-space-1);
+    padding: var(--ft-space-2);
+    border: 1px dashed var(--ft-color-secondary);
+    background: var(--zine-paper-card-alt);
+    font-weight: 700;
+  }
+
   &__photo-upload {
     display: grid;
     gap: var(--ft-space-1);
@@ -323,6 +335,9 @@ async function submitReview() {
 
   &__message {
     margin: 0;
+    padding: var(--ft-space-1) var(--ft-space-2);
+    border-left: 3px solid var(--ft-color-danger);
+    background: var(--zine-stamp-red-soft);
     color: var(--ft-color-danger);
     font-weight: 700;
   }
@@ -332,6 +347,8 @@ async function submitReview() {
     flex-wrap: wrap;
     align-items: center;
     gap: var(--ft-space-2);
+    padding-top: var(--ft-space-2);
+    border-top: 1px dashed var(--ft-color-border);
 
     a {
       color: var(--ft-color-primary);

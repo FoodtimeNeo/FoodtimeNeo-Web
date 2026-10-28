@@ -72,6 +72,7 @@ const links = computed(() => [
     gap: var(--ft-space-1);
     margin: var(--ft-space-3) 0;
     border-bottom: 2px solid var(--ft-color-text);
+    overflow-x: auto;
 
     a {
       min-height: 44px;
@@ -84,6 +85,7 @@ const links = computed(() => [
     a[aria-current='page'] {
       background: var(--ft-color-text);
       color: var(--zine-paper-card);
+      box-shadow: 2px 2px 0 var(--ft-color-primary);
     }
   }
 }

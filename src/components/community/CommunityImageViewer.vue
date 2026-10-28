@@ -220,48 +220,63 @@ function closeLightbox() {
   flex-direction: column;
   align-items: center;
   width: 100%;
+  height: 100%;
   min-width: 0;
+  justify-content: center;
 
   &__stage {
     position: relative;
     width: 100%;
-    max-height: 520px;
+    height: 100%;
     min-height: 280px;
-    background: var(--ft-color-surface-ink, #f1ece2);
-    border-radius: var(--ft-radius-md, 10px);
+    max-height: 600px;
+    background: radial-gradient(circle at center, #faf8f5 0%, #ece7df 100%);
+    border-radius: var(--ft-radius-md, 14px);
     overflow: hidden;
     cursor: zoom-in;
     touch-action: pan-y pinch-zoom;
-    box-shadow: 0 4px 12px rgb(58 36 24 / 10%);
-    border: 1px solid var(--ft-color-border, #d5ccbc);
+    box-shadow: 0 6px 20px rgb(58 36 24 / 8%);
+    border: 1px solid rgb(213 204 188 / 45%);
+    display: flex;
+    align-items: center;
   }
 
   &__track {
     display: flex;
     width: 100%;
     height: 100%;
+    align-items: center;
     transition: transform 320ms cubic-bezier(0.25, 1, 0.5, 1);
   }
 
   &__slide {
     flex: 0 0 100%;
     width: 100%;
-    display: flex;
     height: 100%;
+    display: flex;
     align-items: center;
     justify-content: center;
     min-height: 280px;
-    max-height: 520px;
-    background: #000;
+    max-height: 600px;
+    background: transparent;
+    padding: 12px;
+    box-sizing: border-box;
   }
 
   &__img {
     max-width: 100%;
-    max-height: 520px;
+    max-height: 100%;
     object-fit: contain;
     display: block;
     user-select: none;
     -webkit-user-drag: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 6%);
+    transition: transform 220ms ease;
+
+    &:hover {
+      transform: scale(1.01);
+    }
   }
 
   &__empty {
@@ -270,41 +285,45 @@ function closeLightbox() {
     align-items: center;
     justify-content: center;
     color: var(--ft-color-text-muted, #6e5547);
+    font-size: 14px;
   }
 
   &__nav-btn {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 38px;
-    height: 38px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: rgb(0 0 0 / 45%);
-    color: #fff;
-    border: none;
+    background: rgb(255 255 255 / 78%);
+    color: #333;
+    border: 1px solid rgb(255 255 255 / 60%);
     font-size: 26px;
-    line-height: 34px;
+    line-height: 36px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
     transition:
       background 180ms ease,
-      transform 180ms ease;
+      transform 180ms ease,
+      box-shadow 180ms ease;
     z-index: 2;
 
     &:hover {
-      background: rgb(0 0 0 / 75%);
+      background: #fff;
       transform: translateY(-50%) scale(1.08);
+      box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
     }
 
     &--prev {
-      left: 12px;
+      left: 14px;
     }
 
     &--next {
-      right: 12px;
+      right: 14px;
     }
   }
 
@@ -312,13 +331,17 @@ function closeLightbox() {
     position: absolute;
     bottom: 12px;
     right: 12px;
-    padding: 3px 8px;
-    background: rgb(0 0 0 / 55%);
+    padding: 4px 10px;
+    background: rgb(0 0 0 / 45%);
     color: #fff;
     font-size: 11px;
     border-radius: var(--ft-radius-pill, 999px);
     pointer-events: none;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: opacity 180ms ease;
   }
 
   &__counter {
@@ -327,10 +350,12 @@ function closeLightbox() {
     right: 12px;
     padding: 4px 10px;
     border-radius: var(--ft-radius-pill, 999px);
-    background: rgb(0 0 0 / 65%);
+    background: rgb(0 0 0 / 50%);
     color: #fff;
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 500;
     pointer-events: none;
+    backdrop-filter: blur(6px);
   }
 
   &__dots {
@@ -345,9 +370,9 @@ function closeLightbox() {
   }
 
   &__dot {
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: none;
     padding: 0;
@@ -361,14 +386,14 @@ function closeLightbox() {
       height: 7px;
       border-radius: 50%;
       background: var(--ft-color-border, #d5ccbc);
+      transition: all 240ms ease;
     }
-    transition: all 240ms ease;
 
     &.is-active {
       &::after {
         width: 18px;
         border-radius: 4px;
-        background: var(--ft-color-primary, #c9341e);
+        background: var(--ft-color-primary, #e60026);
       }
     }
   }

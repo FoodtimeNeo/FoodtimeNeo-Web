@@ -284,10 +284,16 @@ async function submit() {
 form {
   display: grid;
   gap: 20px;
+  margin-top: var(--ft-space-3);
+  padding: var(--ft-space-4);
+  border: 2px solid var(--ft-color-text);
+  background: var(--zine-paper-card);
+  box-shadow: 6px 6px 0 rgb(58 36 24 / 16%);
 }
 label {
   display: grid;
   gap: 8px;
+  font-weight: 700;
 }
 input,
 textarea {
@@ -305,7 +311,8 @@ textarea {
 }
 .submission-page__feedback {
   padding: 12px;
-  border: 1px solid var(--ft-color-danger);
+  border: 1px dashed var(--ft-color-danger);
+  background: var(--zine-stamp-red-soft);
 }
 .submission-page__feedback button {
   min-height: 44px;
@@ -318,5 +325,12 @@ textarea {
 }
 .submission-page__field-error {
   margin: -12px 0 0;
+}
+
+@media (max-width: 768px) {
+  form {
+    padding: var(--app-mobile-card-padding);
+    box-shadow: var(--app-mobile-shadow);
+  }
 }
 </style>

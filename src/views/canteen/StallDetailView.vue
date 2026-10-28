@@ -51,6 +51,9 @@ const sortedDishes = computed(() =>
         <span class="sticker sticker--r-1">档口菜单</span>
         <h1 class="section-title">{{ data.stall.name }}</h1>
         <p class="handwrite">今天想吃什么，就从这张菜单里慢慢挑。</p>
+        <span class="stall-detail__dish-count stamp"
+          >{{ data.dishes.length }} 道菜品</span
+        >
         <RouterLink
           class="button-ink"
           :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"
@@ -144,6 +147,11 @@ const sortedDishes = computed(() =>
     margin: var(--ft-space-3) 0 0;
     padding: 0;
     list-style: none;
+  }
+
+  &__dish-count {
+    align-self: flex-start;
+    margin: var(--ft-space-1) 0 var(--ft-space-2);
   }
 }
 

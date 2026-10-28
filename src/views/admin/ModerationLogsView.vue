@@ -64,26 +64,13 @@ article {
   margin: 20px 0;
   background: var(--zine-paper-card);
   box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
-  clip-path: polygon(
-    0 2%,
-    7% 0,
-    15% 2%,
-    26% 0,
-    38% 2%,
-    52% 0,
-    66% 2%,
-    79% 0,
-    91% 2%,
-    100% 0,
-    100% 100%,
-    0 100%
-  );
+  clip-path: none;
 }
 article:nth-of-type(even) {
-  transform: rotate(0.35deg);
+  transform: none;
 }
 article:nth-of-type(odd) {
-  transform: rotate(-0.25deg);
+  transform: none;
 }
 h3 {
   margin-top: 0;

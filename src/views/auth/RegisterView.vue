@@ -110,7 +110,9 @@ async function handleSubmit() {
         autocomplete="new-password"
         :error="errors.password"
       />
-      <p>8–128 位 ASCII 字符，须包含字母和数字。</p>
+      <p class="auth-view__hint">
+        密码：8–128 位 ASCII 字符，须包含字母和数字。
+      </p>
       <InkButton
         variant="primary"
         type="submit"
@@ -154,6 +156,14 @@ form {
   display: flex;
   flex-direction: column;
   gap: var(--ft-space-2);
+}
+.auth-view form :deep(.button-ink) {
+  width: 100%;
+}
+.auth-view__hint {
+  margin: calc(-1 * var(--ft-space-1)) 0 0;
+  color: var(--ft-color-text-muted);
+  font-size: var(--ft-font-size-sm);
 }
 .auth-view__error {
   color: var(--ft-color-danger);

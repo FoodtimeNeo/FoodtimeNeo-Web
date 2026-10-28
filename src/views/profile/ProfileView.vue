@@ -197,4 +197,12 @@ h2 {
   color: var(--ft-color-danger);
   border-color: var(--ft-color-danger);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-page__links a.paper-link,
+  .profile-page__links a.paper-link:hover {
+    transform: none;
+    transition: none;
+  }
+}
 </style>

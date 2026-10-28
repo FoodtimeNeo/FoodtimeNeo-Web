@@ -107,6 +107,9 @@ form {
   flex-direction: column;
   gap: var(--ft-space-2);
 }
+.auth-view form :deep(.button-ink) {
+  width: 100%;
+}
 .auth-view__error {
   color: var(--ft-color-danger);
   overflow-wrap: anywhere;
