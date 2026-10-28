@@ -1,24 +1,54 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import { safeMediaUrl } from '@/utils/mediaUrl.js';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { mediaVariant } from '@/utils/mediaUrl.js';
+import { useMediaSource } from '@/composables/useMediaSource.js';
 const props = defineProps({
   src: { type: String, default: '' },
   alt: { type: String, default: '' },
   empty: { type: String, default: '暂未上传图片' },
+  size: { type: String, default: 'thumb' },
+  eager: { type: Boolean, default: false },
+  fit: { type: String, default: 'cover' },
+  compact: { type: Boolean, default: false },
+  retryable: { type: Boolean, default: true },
   frame: {
     type: String,
     default: 'plain',
     validator: (value) => ['plain', 'polaroid', 'polygon'].includes(value),
   },
 });
-const source = computed(() => safeMediaUrl(props.src));
-const failed = ref(false);
-watch(source, () => {
-  failed.value = false;
+const frameElement = ref(null);
+const visible = ref(props.eager);
+const { source, failed, loading, retry } = useMediaSource(
+  () => mediaVariant(props.src, props.size),
+  visible,
+);
+let observer;
+onMounted(() => {
+  if (props.eager || typeof IntersectionObserver === 'undefined')
+    visible.value = true;
+  else {
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          visible.value = true;
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '120px' },
+    );
+    observer.observe(frameElement.value);
+  }
 });
+onBeforeUnmount(() => observer?.disconnect());
 </script>
 <template>
-  <div class="media-image" :class="`media-image--${frame}`">
+  <div
+    ref="frameElement"
+    class="media-image"
+    :class="[`media-image--${frame}`, { 'media-image--compact': compact }]"
+    :aria-busy="loading"
+  >
     <img
       v-if="source && !failed"
       :key="source"
@@ -27,9 +57,20 @@ watch(source, () => {
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
       loading="lazy"
+      decoding="async"
+      :style="{ objectFit: fit }"
       @error="failed = true"
     />
-    <span v-else role="img" :aria-label="empty">{{ empty }}</span>
+    <button
+      v-else-if="failed && retryable"
+      type="button"
+      class="media-image__retry"
+      aria-label="重新加载图片"
+      @click.stop="retry"
+    >
+      重试
+    </button>
+    <span v-else-if="!src" role="img" :aria-label="empty">{{ empty }}</span>
   </div>
 </template>
 <style scoped>
@@ -63,6 +104,17 @@ span {
   padding: 16px;
   text-align: center;
   color: var(--ft-color-text-muted);
+}
+.media-image__retry {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ft-color-text-muted);
+  cursor: pointer;
+}
+.media-image--compact {
+  min-height: 0;
 }
 
 @media (max-width: 768px) {

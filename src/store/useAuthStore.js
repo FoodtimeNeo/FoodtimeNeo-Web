@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { allowMediaSession, invalidateMedia } from '@/utils/mediaLoader.js';
 import { clearSession } from '@/utils/authSession.js';
 import { ApiError, invalidateSession } from '@/api/http.js';
 import {
@@ -30,11 +31,16 @@ export const useAuthStore = defineStore('auth', {
   },
   actions: {
     setSession({ user }) {
+      if (this.user?.id !== user?.id || this.user?.role !== user?.role) {
+        allowMediaSession();
+        invalidateMedia();
+      }
       this.user = normalizeUser(user);
       this.initialized = true;
       this.revision += 1;
     },
     clear() {
+      invalidateMedia();
       this.user = null;
       this.initialized = true;
       this.revision += 1;
@@ -67,6 +73,7 @@ export const useAuthStore = defineStore('auth', {
       return pendingRefresh.get(this);
     },
     async login(params) {
+      invalidateMedia();
       this.revision += 1;
       const data = await loginApi(params);
       this.setSession({ user: data.user });

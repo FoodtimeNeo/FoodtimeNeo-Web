@@ -47,7 +47,13 @@ watch(page, () => {
     <EmptyState v-else-if="!images.length" title="还没有图片" />
     <template v-else>
       <figure class="dish-gallery__stage">
-        <MediaImage :src="images[activeIndex]?.imageUrl || ''" alt="菜品图片" />
+        <MediaImage
+          :src="images[activeIndex]?.imageUrl || ''"
+          size="full"
+          eager
+          fit="contain"
+          alt="菜品图片"
+        />
       </figure>
       <ul v-if="images.length > 1" class="dish-gallery__thumbs">
         <li v-for="(image, index) in images" :key="image.id">
@@ -58,7 +64,7 @@ watch(page, () => {
             :aria-current="index === activeIndex"
             @click="activeIndex = index"
           >
-            <MediaImage :src="image.imageUrl" alt="" />
+            <MediaImage :src="image.imageUrl" alt="" :retryable="false" />
           </button>
         </li>
       </ul>

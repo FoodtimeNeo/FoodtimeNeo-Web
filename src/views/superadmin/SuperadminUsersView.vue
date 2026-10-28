@@ -76,6 +76,7 @@ async function submit() {
     <article v-for="row in !loading && !error ? items : []" :key="row.id">
       <div class="identity">
         <MediaImage
+          compact
           :src="row.avatarUrl || ''"
           alt="用户头像"
           empty="未设置头像"

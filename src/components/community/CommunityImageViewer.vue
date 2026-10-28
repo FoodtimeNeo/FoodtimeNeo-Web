@@ -1,6 +1,9 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { ElImageViewer } from 'element-plus';
+import MediaImage from '@/components/base/MediaImage.vue';
+import { useMediaSource } from '@/composables/useMediaSource.js';
+import { mediaVariant } from '@/utils/mediaUrl.js';
 
 const props = defineProps({
   images: {
@@ -15,6 +18,28 @@ const props = defineProps({
 
 const currentIndex = ref(0);
 const isLightboxOpen = ref(false);
+const stageRatio = computed(() => {
+  const first = props.images[0];
+  return first?.width > 0 && first?.height > 0
+    ? `${first.width} / ${first.height}`
+    : '4 / 3';
+});
+const { source: lightboxSource } = useMediaSource(
+  () => mediaVariant(props.images[currentIndex.value]?.url, 'full'),
+  isLightboxOpen,
+);
+const lightboxUrls = computed(() =>
+  props.images.map((_, index) =>
+    index === currentIndex.value && lightboxSource.value
+      ? lightboxSource.value
+      : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
+  ),
+);
+const nearCurrent = (index) =>
+  index === currentIndex.value ||
+  (index === currentIndex.value + 1 &&
+    !navigator.connection?.saveData &&
+    !/2g/.test(navigator.connection?.effectiveType || ''));
 watch(
   () => JSON.stringify(props.images.map(({ id, url }) => [id, url])),
   () => {
@@ -82,6 +107,7 @@ function closeLightbox() {
     <!-- 主轮播容器 -->
     <div
       class="community-image-viewer__stage"
+      :style="{ aspectRatio: stageRatio }"
       tabindex="0"
       role="region"
       aria-label="图片轮播"
@@ -104,11 +130,15 @@ function closeLightbox() {
           class="community-image-viewer__slide"
           @click="openLightbox"
         >
-          <img
+          <MediaImage
+            v-if="nearCurrent(idx)"
             :src="img.url"
             :alt="`${alt} 第 ${idx + 1} 张`"
             class="community-image-viewer__img"
             loading="lazy"
+            size="full"
+            :eager="idx === currentIndex"
+            fit="contain"
           />
         </div>
       </div>
@@ -147,7 +177,7 @@ function closeLightbox() {
 
       <!-- 单击放大提示 -->
       <div class="community-image-viewer__zoom-hint" aria-hidden="true">
-        <span>🔍 点击放大</span>
+        <span>点击放大</span>
       </div>
     </div>
 
@@ -173,12 +203,13 @@ function closeLightbox() {
 
     <ElImageViewer
       v-if="isLightboxOpen"
-      :url-list="images.map((image) => image.url)"
+      :url-list="lightboxUrls"
       :initial-index="currentIndex"
       :infinite="false"
       :z-index="4000"
       teleported
       @close="closeLightbox"
+      @switch="goToIndex"
     />
   </div>
 </template>
