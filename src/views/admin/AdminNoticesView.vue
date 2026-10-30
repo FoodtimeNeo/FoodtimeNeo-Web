@@ -234,40 +234,33 @@ function openPreview() {
         </p>
       </div>
 
-      <div class="apply-space" aria-hidden="true"></div>
-      <Teleport to="body"
-        ><footer class="apply">
-          <nav aria-label="公告分页">
-            <button
-              :disabled="page <= 1 || loading || writing"
-              @click="turn(-1)"
-            >
-              上一页</button
-            ><span
-              >第 {{ page }} / {{ Math.max(1, Math.ceil(total / 6)) }} 页 · 共
-              {{ total }} 条</span
-            ><button
-              :disabled="page * 6 >= total || loading || writing"
-              @click="turn(1)"
-            >
-              下一页
-            </button>
-          </nav>
-          <p>
-            待设置：<strong>{{ selected?.title || '暂不显示公告' }}</strong>
-          </p>
-          <button v-if="selected" :disabled="writing" @click="openPreview">
-            查看全文</button
-          ><button v-if="selected" :disabled="writing" @click="edit">
-            编辑</button
+      <footer class="apply">
+        <nav aria-label="公告分页">
+          <button :disabled="page <= 1 || loading || writing" @click="turn(-1)">
+            上一页</button
+          ><span
+            >第 {{ page }} / {{ Math.max(1, Math.ceil(total / 6)) }} 页 · 共
+            {{ total }} 条</span
           ><button
-            :disabled="!ready || writing || (selected?.id || null) === active"
-            @click="apply"
+            :disabled="page * 6 >= total || loading || writing"
+            @click="turn(1)"
           >
-            {{ writing ? '保存中…' : '确认设置' }}
+            下一页
           </button>
-        </footer></Teleport
-      >
+        </nav>
+        <p>
+          待设置：<strong>{{ selected?.title || '暂不显示公告' }}</strong>
+        </p>
+        <button v-if="selected" :disabled="writing" @click="openPreview">
+          查看全文</button
+        ><button v-if="selected" :disabled="writing" @click="edit">编辑</button
+        ><button
+          :disabled="!ready || writing || (selected?.id || null) === active"
+          @click="apply"
+        >
+          {{ writing ? '保存中…' : '确认设置' }}
+        </button>
+      </footer>
     </div>
     <dialog ref="reader" aria-label="公告全文">
       <button @click="reader.close()">关闭</button
@@ -338,18 +331,14 @@ textarea {
 .settings {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  height: min(760px, calc(100dvh - 180px));
-  min-height: 400px;
+  gap: 16px;
 }
 .settings > p {
   margin: 0;
 }
 .options {
-  overflow: auto;
-  flex: 1;
-  min-height: 0;
   border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
 }
 .options label {
   display: flex;
@@ -360,6 +349,9 @@ textarea {
   border-bottom: 1px solid var(--ft-color-secondary);
   overflow-wrap: anywhere;
 }
+.options label:last-child {
+  border-bottom: none;
+}
 small {
   display: block;
   color: var(--ft-color-text-muted);
@@ -369,22 +361,14 @@ input[type='radio'] {
   height: 24px;
   flex-shrink: 0;
 }
-.apply-space {
-  min-height: 220px;
-  flex-shrink: 0;
-}
 .apply {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(1100px, calc(100% - 28px));
-  box-sizing: border-box;
-  bottom: 16px;
-  z-index: 90;
-  flex-shrink: 0;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
   background: var(--zine-paper-card);
   border-top: 2px solid var(--ft-color-text);
-  padding: 12px 0;
+  padding: 16px 0;
 }
 .apply nav {
   width: 100%;
@@ -416,12 +400,6 @@ dialog::backdrop {
 @media (max-width: 700px) {
   .editor {
     grid-template-columns: 1fr;
-  }
-  .settings {
-    height: calc(100dvh - 160px);
-  }
-  .apply {
-    bottom: calc(80px + env(safe-area-inset-bottom));
   }
   .apply nav {
     width: 100%;
