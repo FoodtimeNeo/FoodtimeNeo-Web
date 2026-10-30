@@ -130,7 +130,7 @@ const metricCards = computed(() => {
       label: '在线用户',
       value: d.onlineUsers,
       tone: 'green',
-      desc: '当前活跃会话用户',
+      desc: '最近 5 分钟活跃用户',
       tag: '实时在校',
     },
   ];
@@ -355,7 +355,7 @@ onMounted(load);
             <span class="highlight-ratio">
               {{ formatPercent(data.onlineUsers, data.registeredUsers) }}
             </span>
-            <span class="note">（会话有效活跃人数）</span>
+            <span class="note">（最近 5 分钟活跃用户）</span>
           </p>
         </div>
 
