@@ -155,7 +155,12 @@ async function submitReview() {
     >
     <header class="review-create__header">
       <h1 class="section-title">写点评</h1>
-      <p>审核通过后展示。</p>
+      <img
+        src="@/assets/images/decoration02/A/illustrations/A_food-tray-lineart.png"
+        alt=""
+        class="review-create__decor-doodle"
+        aria-hidden="true"
+      />
     </header>
     <LoadingState v-if="targetLoading" message="正在读取菜品…" />
     <ErrorState
@@ -234,10 +239,22 @@ async function submitReview() {
   }
 
   &__header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
     max-width: 760px;
 
-    p {
-      color: var(--ft-color-text-muted);
+    .section-title {
+      margin: 0;
+    }
+
+    .review-create__decor-doodle {
+      width: 42px;
+      height: auto;
+      opacity: 0.85;
+      transform: rotate(4deg);
+      pointer-events: none;
+      filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
     }
   }
 

@@ -270,9 +270,12 @@ onUnmounted(() => {
 <template>
   <div ref="rootRef" class="canteen-carousel" data-test="canteen-carousel">
     <div class="canteen-carousel__subhead">
-      <span class="canteen-carousel__hint handwrite"
-        >→ 划划看，发现心仪食堂</span
-      >
+      <img
+        src="@/assets/images/decoration02/A/illustrations/A_chopsticks-lineart.png"
+        alt=""
+        class="canteen-carousel__decor-chopsticks"
+        aria-hidden="true"
+      />
     </div>
 
     <div
@@ -308,13 +311,12 @@ onUnmounted(() => {
         </div>
 
         <div class="canteen-card__content">
-          <p class="canteen-card__rant handwrite">
+          <p
+            v-if="canteen.intro || canteen.description"
+            class="canteen-card__rant handwrite"
+          >
             <span class="canteen-card__rant-text">
-              “{{
-                canteen.intro ||
-                canteen.description ||
-                '食堂招牌打卡，翻开手账看看大家怎么说！'
-              }}”
+              “{{ canteen.intro || canteen.description }}”
             </span>
           </p>
 
@@ -362,12 +364,13 @@ onUnmounted(() => {
     margin-bottom: var(--ft-space-1, 8px);
   }
 
-  &__hint {
-    color: var(--zine-stamp-red);
-    font-size: 22px;
-    font-family: var(--ft-font-family-note);
-    transform: rotate(2deg);
-    user-select: none;
+  &__decor-chopsticks {
+    width: 32px;
+    height: auto;
+    opacity: 0.82;
+    transform: rotate(15deg);
+    pointer-events: none;
+    filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
   }
 
   &__track {

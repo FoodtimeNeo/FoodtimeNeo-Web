@@ -55,7 +55,6 @@ async function remove() {
 <template>
   <section class="reviews">
     <h2 class="section-title">评论管理</h2>
-    <p>查看审核通过的正式评论。删除须填写原因，评分和评论数实时更新。</p>
     <RouterLink :to="{ name: 'adminAudit' }">查看投稿审核记录 →</RouterLink>
     <form class="search" @submit.prevent="search()">
       <label

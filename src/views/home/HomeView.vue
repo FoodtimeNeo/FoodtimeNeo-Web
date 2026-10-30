@@ -145,12 +145,9 @@ onUnmounted(() => {
         <h1 class="home-page__title hero-stagger-2">
           <span>北交</span><span>干饭吧</span>
         </h1>
-        <p class="home-page__intro handwrite hero-stagger-3">
-          把每次排队、踩雷和真香都记下来。
-        </p>
 
         <!-- 证明数据纸条 (Proof Points) -->
-        <div class="home-page__proof-ribbon hero-stagger-4">
+        <div class="home-page__proof-ribbon hero-stagger-3">
           <div class="proof-item">
             <span class="proof-num">7</span>
             <span class="proof-label">所食堂全收录</span>
@@ -182,9 +179,29 @@ onUnmounted(() => {
           </RouterLink>
         </div>
       </div>
-      <aside class="home-page__hero-note hero-stagger-3">
-        <p class="home-page__eyebrow">BEIJIAO CANTEEN FIELD NOTES</p>
-        <p>这不是餐饮官网，是一群爱吃饭的同学共同写下的校园美食笔记。</p>
+      <aside
+        class="home-page__hero-note hero-stagger-3"
+        aria-label="今日食堂档案"
+      >
+        <div class="hero-polaroid-card">
+          <img
+            src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
+            alt=""
+            class="hero-tape-decor"
+            aria-hidden="true"
+          />
+          <img
+            src="@/assets/images/decoration02/A/stickers/A_polaroid-noodle.png"
+            alt="校园食堂风味手账"
+            class="hero-polaroid-media"
+          />
+          <img
+            src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
+            alt=""
+            class="hero-stamp-decor"
+            aria-hidden="true"
+          />
+        </div>
         <span class="sticker sticker--r2">今日食堂档案</span>
       </aside>
       <span class="home-page__hero-sketch" aria-hidden="true"></span>
@@ -196,10 +213,17 @@ onUnmounted(() => {
         <span class="section-rule__index">01</span>
         <span class="section-rule__line"></span>
       </div>
-      <h2 id="canteens-title" class="section-title">
-        选择今天的<span class="zine-highlight">食堂</span>
-      </h2>
-      <p class="section-subtitle">从真实食堂档案开始，继续翻到档口和菜品。</p>
+      <div class="section-title-wrap">
+        <h2 id="canteens-title" class="section-title">
+          选择今天的<span class="zine-highlight">食堂</span>
+        </h2>
+        <img
+          src="@/assets/images/decoration02/A/illustrations/A_rice-bowl-lineart.png"
+          alt=""
+          class="section-title-doodle"
+          aria-hidden="true"
+        />
+      </div>
       <LoadingState v-if="loading" />
       <ErrorState
         v-else-if="error"
@@ -226,10 +250,13 @@ onUnmounted(() => {
               校园食记 · <span class="zine-highlight">社区动态</span>
             </h2>
             <span class="community-hot-badge">今日热门</span>
+            <img
+              src="@/assets/images/decoration02/C/illustrations/C_doodle-sparkles.png"
+              alt=""
+              class="community-title-sparkle"
+              aria-hidden="true"
+            />
           </div>
-          <p class="section-subtitle">
-            随手拍、聊美味，看看同学们今天都在打卡什么好吃的。
-          </p>
         </div>
         <div class="home-page__community-actions">
           <button
@@ -395,21 +422,64 @@ onUnmounted(() => {
   }
 
   &__hero-note {
+    position: relative;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
-    padding: 36px 24px;
+    padding: 28px 20px 20px;
     border-left: 1px dashed rgb(58 36 24 / 35%);
     background: rgb(241 236 226 / 64%);
 
-    p {
-      color: var(--ft-color-secondary-soft);
-      line-height: 1.8;
+    .hero-polaroid-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: var(--ft-space-2);
+      transform: rotate(2deg);
+      transition: transform var(--ft-transition-normal);
+
+      &:hover {
+        transform: rotate(0deg) scale(1.03);
+      }
+    }
+
+    .hero-tape-decor {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-3deg);
+      width: 100px;
+      height: auto;
+      z-index: 2;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 2px rgba(58, 36, 24, 0.15));
+    }
+
+    .hero-polaroid-media {
+      max-width: 168px;
+      width: 100%;
+      height: auto;
+      border-radius: 2px;
+      filter: drop-shadow(2px 4px 6px rgba(58, 36, 24, 0.16));
+    }
+
+    .hero-stamp-decor {
+      position: absolute;
+      right: -12px;
+      bottom: -10px;
+      width: 68px;
+      height: auto;
+      z-index: 3;
+      transform: rotate(-10deg);
+      pointer-events: none;
+      filter: drop-shadow(1px 2px 2px rgba(58, 36, 24, 0.18));
     }
 
     .sticker {
-      align-self: flex-start;
-      margin-top: var(--ft-space-2);
+      align-self: center;
+      margin-top: var(--ft-space-1);
     }
   }
 
@@ -551,6 +621,34 @@ onUnmounted(() => {
     .section-title {
       margin: 0;
     }
+  }
+
+  .section-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: var(--ft-space-3, 20px);
+
+    .section-title {
+      margin: 0;
+    }
+  }
+
+  .section-title-doodle {
+    width: 38px;
+    height: auto;
+    opacity: 0.85;
+    transform: rotate(-4deg);
+    pointer-events: none;
+    filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
+  }
+
+  .community-title-sparkle {
+    width: 22px;
+    height: auto;
+    opacity: 0.88;
+    transform: rotate(10deg);
+    pointer-events: none;
   }
 
   .community-hot-badge {

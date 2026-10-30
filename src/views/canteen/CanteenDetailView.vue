@@ -62,7 +62,12 @@ const { query, matches: filteredStalls } = useCatalogSearch(
         <div class="canteen-detail__hero-content">
           <span class="sticker sticker--r-1">食堂档案</span>
           <h1 class="section-title">{{ canteen.name }}</h1>
-          <p class="dropcap">选择档口，继续查看菜单和菜品。</p>
+          <img
+            src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
+            alt=""
+            class="canteen-detail__stamp-decor"
+            aria-hidden="true"
+          />
           <div
             v-if="!stallsLoading && !stallsError"
             class="canteen-detail__hero-meta"
@@ -161,6 +166,7 @@ const { query, matches: filteredStalls } = useCatalogSearch(
   }
 
   &__hero-content {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -172,10 +178,18 @@ const { query, matches: filteredStalls } = useCatalogSearch(
       font-size: clamp(44px, 6vw, 68px);
       line-height: 0.95;
     }
+  }
 
-    p {
-      color: var(--ft-color-secondary-soft);
-    }
+  &__stamp-decor {
+    position: absolute;
+    top: 18px;
+    right: 24px;
+    width: 82px;
+    height: auto;
+    opacity: 0.88;
+    transform: rotate(-6deg);
+    pointer-events: none;
+    filter: drop-shadow(2px 3px 0 rgba(58, 36, 24, 0.08));
   }
 
   &__hero-meta {

@@ -1,11 +1,14 @@
 <template>
   <footer class="app-footer torn-edge">
     <div class="app-footer__inner">
-      <div>
+      <div class="app-footer__brand-block">
         <p class="app-footer__title">食堂日记 / BJTU Canteen Zine</p>
-        <p class="app-footer__desc handwrite">
-          “今天排队 20 分钟，值不值看这口。”
-        </p>
+        <img
+          src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
+          alt=""
+          class="app-footer__tape-decor"
+          aria-hidden="true"
+        />
       </div>
       <div class="app-footer__actions">
         <RouterLink :to="{ name: 'landing' }" class="app-footer__portal-link">
@@ -48,6 +51,21 @@
   gap: 12px;
   margin: 0 auto;
   padding: 16px var(--zine-page-padding);
+}
+
+.app-footer__brand-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-footer__tape-decor {
+  width: 58px;
+  height: auto;
+  opacity: 0.85;
+  transform: rotate(-3deg);
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 2px rgba(58, 36, 24, 0.12));
 }
 
 .app-footer__title,

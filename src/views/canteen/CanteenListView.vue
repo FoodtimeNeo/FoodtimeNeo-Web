@@ -26,8 +26,17 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
       <span class="section-rule__index">02</span>
       <span class="section-rule__line"></span>
     </div>
-    <h1 class="section-title">全部<span class="zine-highlight">食堂</span></h1>
-    <p class="section-subtitle">一张张食堂拍立得，点进去继续翻档口。</p>
+    <div class="canteen-list__header">
+      <h1 class="section-title">
+        全部<span class="zine-highlight">食堂</span>
+      </h1>
+      <img
+        src="@/assets/images/decoration02/A/illustrations/A_food-tray-lineart.png"
+        alt=""
+        class="canteen-list__header-doodle"
+        aria-hidden="true"
+      />
+    </div>
 
     <LoadingState v-if="loading" message="正在翻开食堂手账…" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
@@ -67,6 +76,26 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
 .canteen-list {
   width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));
   margin: var(--ft-space-6) auto;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: var(--ft-space-3);
+
+    .section-title {
+      margin: 0;
+    }
+  }
+
+  &__header-doodle {
+    width: 44px;
+    height: auto;
+    opacity: 0.85;
+    transform: rotate(3deg);
+    pointer-events: none;
+    filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
+  }
 
   &__grid {
     display: grid;
