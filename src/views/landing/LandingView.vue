@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import appScreenImg from '@/assets/images/app-preview-screen.png';
@@ -22,7 +22,6 @@ const isHovering = ref(false);
 function handleMouseMove(event) {
   if (typeof window === 'undefined') return;
   const { innerWidth, innerHeight } = window;
-  // 归一化为 -1 ~ 1
   mouseX.value = (event.clientX / innerWidth - 0.5) * 2;
   mouseY.value = (event.clientY / innerHeight - 0.5) * 2;
   isHovering.value = true;
@@ -38,13 +37,12 @@ const deviceTransformStyle = computed(() => {
   if (!isHovering.value) {
     return {
       transform:
-        'perspective(1200px) rotateX(4deg) rotateY(-8deg) rotateZ(1deg)',
+        'perspective(1200px) rotateX(3deg) rotateY(-7deg) rotateZ(0.5deg)',
       transition: 'transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
     };
   }
-  // 倾斜范围限制在 -14deg ~ 14deg
-  const rotX = -mouseY.value * 12 + 4;
-  const rotY = mouseX.value * 14 - 8;
+  const rotX = -mouseY.value * 10 + 3;
+  const rotY = mouseX.value * 12 - 7;
   return {
     transform: `perspective(1200px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) rotateZ(0.5deg)`,
     transition: 'transform 0.15s ease-out',
@@ -53,12 +51,12 @@ const deviceTransformStyle = computed(() => {
 
 const glareStyle = computed(() => {
   if (!isHovering.value) {
-    return { opacity: 0.35, transform: 'translate(0%, 0%) rotate(45deg)' };
+    return { opacity: 0.25, transform: 'translate(0%, 0%) rotate(45deg)' };
   }
-  const moveX = (mouseX.value * 30).toFixed(1);
-  const moveY = (mouseY.value * 30).toFixed(1);
+  const moveX = (mouseX.value * 25).toFixed(1);
+  const moveY = (mouseY.value * 25).toFixed(1);
   return {
-    opacity: 0.55,
+    opacity: 0.45,
     transform: `translate(${moveX}%, ${moveY}%) rotate(45deg)`,
     transition: 'transform 0.15s ease-out, opacity 0.2s ease',
   };
@@ -76,6 +74,10 @@ function handleDownloadTrigger() {
   }, 4000);
 }
 
+onUnmounted(() => {
+  if (toastTimer) clearTimeout(toastTimer);
+});
+
 // 快速跳转网页版
 function goToWeb() {
   if (auth.isAuthenticated) {
@@ -84,26 +86,6 @@ function goToWeb() {
     router.push({ name: 'login' });
   }
 }
-
-// 监听窗口尺寸以保持最佳视口
-const isMobile = ref(false);
-function checkViewport() {
-  if (typeof window !== 'undefined') {
-    isMobile.value = window.innerWidth <= 840;
-  }
-}
-
-onMounted(() => {
-  checkViewport();
-  window.addEventListener('resize', checkViewport, { passive: true });
-});
-
-onUnmounted(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', checkViewport);
-  }
-  if (toastTimer) clearTimeout(toastTimer);
-});
 </script>
 
 <template>
@@ -112,10 +94,9 @@ onUnmounted(() => {
     @mousemove="handleMouseMove"
     @mouseleave="handleMouseLeave"
   >
-    <!-- 背景流光与环境光晕 -->
-    <div class="ambient-glow ambient-glow--primary" aria-hidden="true"></div>
-    <div class="ambient-glow ambient-glow--secondary" aria-hidden="true"></div>
-    <div class="ambient-grid-overlay" aria-hidden="true"></div>
+    <!-- 温润米白底纸与柔和氛围光晕 -->
+    <div class="ambient-glow ambient-glow--warm" aria-hidden="true"></div>
+    <div class="ambient-glow ambient-glow--red" aria-hidden="true"></div>
 
     <!-- 顶部极简毛玻璃导航 -->
     <header class="landing-header">
@@ -169,7 +150,7 @@ onUnmounted(() => {
             汇聚交大各大食堂档口真实口碑、出餐避峰与同学食记。一键装入手机，让每一次干饭都满怀期待。
           </p>
 
-          <!-- 核心下载操作卡片 -->
+          <!-- 核心下载操作区 -->
           <div class="download-action-area">
             <div class="download-main-row">
               <a
@@ -179,7 +160,6 @@ onUnmounted(() => {
                 data-testid="hero-download-btn"
                 @click="handleDownloadTrigger"
               >
-                <div class="btn-glow-aura" aria-hidden="true"></div>
                 <div class="btn-icon" aria-hidden="true">
                   <svg
                     viewBox="0 0 24 24"
@@ -200,9 +180,10 @@ onUnmounted(() => {
                     >{{ APK_FILE_NAME }} · {{ APK_SIZE }}</span
                   >
                 </div>
+                <span class="btn-shimmer" aria-hidden="true"></span>
               </a>
 
-              <!-- 手机扫码直装悬停微卡 -->
+              <!-- 手机扫码直装微卡 -->
               <div class="qr-chip-card" data-testid="qr-float-card">
                 <div class="qr-thumb">
                   <svg
@@ -212,21 +193,21 @@ onUnmounted(() => {
                   >
                     <rect width="100" height="100" fill="#fff" rx="4" />
                     <!-- 定位角标 -->
-                    <rect x="8" y="8" width="24" height="24" fill="#140f0d" />
+                    <rect x="8" y="8" width="24" height="24" fill="#3a2418" />
                     <rect x="12" y="12" width="16" height="16" fill="#fff" />
                     <rect x="16" y="16" width="8" height="8" fill="#c9341e" />
-                    <rect x="68" y="8" width="24" height="24" fill="#140f0d" />
+                    <rect x="68" y="8" width="24" height="24" fill="#3a2418" />
                     <rect x="72" y="12" width="16" height="16" fill="#fff" />
                     <rect x="76" y="16" width="8" height="8" fill="#c9341e" />
-                    <rect x="8" y="68" width="24" height="24" fill="#140f0d" />
+                    <rect x="8" y="68" width="24" height="24" fill="#3a2418" />
                     <rect x="12" y="72" width="16" height="16" fill="#fff" />
                     <rect x="16" y="76" width="8" height="8" fill="#c9341e" />
                     <!-- 仿真数据码块 -->
-                    <rect x="40" y="10" width="8" height="8" fill="#140f0d" />
-                    <rect x="52" y="14" width="6" height="6" fill="#140f0d" />
-                    <rect x="36" y="24" width="12" height="6" fill="#140f0d" />
-                    <rect x="12" y="40" width="6" height="12" fill="#140f0d" />
-                    <rect x="24" y="44" width="8" height="8" fill="#140f0d" />
+                    <rect x="40" y="10" width="8" height="8" fill="#3a2418" />
+                    <rect x="52" y="14" width="6" height="6" fill="#3a2418" />
+                    <rect x="36" y="24" width="12" height="6" fill="#3a2418" />
+                    <rect x="12" y="40" width="6" height="12" fill="#3a2418" />
+                    <rect x="24" y="44" width="8" height="8" fill="#3a2418" />
                     <rect x="40" y="40" width="20" height="20" fill="#c9341e" />
                     <text
                       x="50"
@@ -238,12 +219,12 @@ onUnmounted(() => {
                     >
                       BJTU
                     </text>
-                    <rect x="68" y="40" width="10" height="6" fill="#140f0d" />
-                    <rect x="82" y="48" width="8" height="8" fill="#140f0d" />
-                    <rect x="36" y="68" width="8" height="12" fill="#140f0d" />
-                    <rect x="50" y="76" width="14" height="6" fill="#140f0d" />
-                    <rect x="72" y="72" width="8" height="10" fill="#140f0d" />
-                    <rect x="84" y="68" width="8" height="16" fill="#140f0d" />
+                    <rect x="68" y="40" width="10" height="6" fill="#3a2418" />
+                    <rect x="82" y="48" width="8" height="8" fill="#3a2418" />
+                    <rect x="36" y="68" width="8" height="12" fill="#3a2418" />
+                    <rect x="50" y="76" width="14" height="6" fill="#3a2418" />
+                    <rect x="72" y="72" width="8" height="10" fill="#3a2418" />
+                    <rect x="84" y="68" width="8" height="16" fill="#3a2418" />
                   </svg>
                 </div>
                 <div class="qr-text">
@@ -268,11 +249,8 @@ onUnmounted(() => {
         <div class="hero-right">
           <div class="device-viewport">
             <div class="device-stand" :style="deviceTransformStyle">
-              <!-- 精密手机机身 -->
+              <!-- 精密浅钛银中框机身 -->
               <div class="phone-chassis">
-                <!-- 机身边框反光与侧键 -->
-                <div class="phone-rim phone-rim--left"></div>
-                <div class="phone-rim phone-rim--right"></div>
                 <div class="phone-island">
                   <span class="island-camera"></span>
                 </div>
@@ -353,22 +331,33 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-// 高端暗调与深朱砂红主题设计令牌
-$color-bg: #0d0a08;
-$color-surface: #17120f;
-$color-primary: #c9341e;
-$color-primary-light: #e63e26;
-$color-secondary: #214358;
-$color-text: #f5ede6;
-$color-text-dim: #9e8f85;
-$color-border: rgb(255 255 255 / 12%);
+// 与项目完全契合的高质感米白纸质与水墨朱红设计体系
+$c-bg: #f7f4ed;
+$c-bg-card: #fffdfa;
+$c-primary: #c9341e;
+$c-primary-hover: #b02713;
+$c-text-main: #3a2418;
+$c-text-muted: #6e584a;
+$c-border-soft: #e5ded3;
+$c-border-strong: #3a2418;
 
 .landing-viewport {
   position: relative;
   width: 100vw;
   min-height: 100vh;
-  background-color: $color-bg;
-  color: $color-text;
+  background-color: $c-bg;
+  background-image:
+    radial-gradient(
+      circle at 12% 18%,
+      rgb(201 52 30 / 3.5%) 0%,
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 88% 82%,
+      rgb(216 192 139 / 20%) 0%,
+      transparent 45%
+    );
+  color: $c-text-main;
   font-family: var(
     --ft-font-family,
     -apple-system,
@@ -388,58 +377,46 @@ $color-border: rgb(255 255 255 / 12%);
   }
 }
 
-// ---------------- 环境流光背景 ----------------
+// ---------------- 柔和暖色环境光晕 ----------------
 .ambient-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(100px);
+  filter: blur(90px);
   pointer-events: none;
   z-index: 0;
 
-  &--primary {
+  &--warm {
     width: 600px;
     height: 600px;
-    top: -120px;
-    right: 8%;
+    top: -100px;
+    right: 5%;
     background: radial-gradient(
       circle,
-      rgb(201 52 30 / 22%) 0%,
+      rgb(240 215 160 / 35%) 0%,
       transparent 70%
     );
   }
 
-  &--secondary {
+  &--red {
     width: 500px;
     height: 500px;
-    bottom: -100px;
-    left: 4%;
+    bottom: -80px;
+    left: 2%;
     background: radial-gradient(
       circle,
-      rgb(33 67 88 / 26%) 0%,
+      rgb(201 52 30 / 7%) 0%,
       transparent 70%
     );
   }
-}
-
-.ambient-grid-overlay {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, rgb(255 255 255 / 2.5%) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 2.5%) 1px, transparent 1px);
-  background-size: 40px 40px;
-  pointer-events: none;
-  z-index: 0;
-  mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 80%);
 }
 
 // ---------------- 顶部极简毛玻璃导航 ----------------
 .landing-header {
   position: relative;
   z-index: 10;
-  border-bottom: 1px solid $color-border;
-  background: rgb(13 10 8 / 65%);
-  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgb(58 36 24 / 8%);
+  background: rgb(247 244 237 / 88%);
+  backdrop-filter: blur(16px);
   padding: 14px 0;
 
   &__inner {
@@ -457,28 +434,29 @@ $color-border: rgb(255 255 255 / 12%);
     gap: 12px;
 
     .brand-emblem {
-      background: $color-primary;
+      background: $c-primary;
       color: #fff;
       font-weight: 900;
       font-size: 12px;
       letter-spacing: 1px;
       padding: 3px 8px;
       border-radius: 4px;
-      box-shadow: 0 2px 8px rgb(201 52 30 / 40%);
+      transform: rotate(-2deg);
+      box-shadow: 2px 2px 0 rgb(58 36 24 / 20%);
     }
 
     .brand-title {
       margin: 0;
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.2px;
-      color: #fff;
+      font-size: 19px;
+      font-weight: 900;
+      font-family: var(--ft-font-family-title, serif);
+      color: $c-text-main;
       line-height: 1.2;
     }
 
     .brand-caption {
       font-size: 11px;
-      color: $color-text-dim;
+      color: $c-text-muted;
       letter-spacing: 0.5px;
     }
   }
@@ -491,14 +469,15 @@ $color-border: rgb(255 255 255 / 12%);
     .header-link-btn {
       background: transparent;
       border: none;
-      color: $color-text-dim;
+      color: $c-text-muted;
       font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
       padding: 6px 10px;
       transition: color 0.2s ease;
 
       &:hover {
-        color: #fff;
+        color: $c-primary;
       }
     }
 
@@ -506,19 +485,21 @@ $color-border: rgb(255 255 255 / 12%);
       display: inline-flex;
       align-items: center;
       padding: 7px 18px;
-      background: rgb(255 255 255 / 10%);
-      color: #fff;
-      border: 1px solid rgb(255 255 255 / 18%);
+      background: rgb(58 36 24 / 6%);
+      color: $c-text-main;
+      border: 1px solid rgb(58 36 24 / 16%);
       border-radius: 999px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       text-decoration: none;
       transition: all 0.2s ease;
 
       &:hover {
-        background: #fff;
-        color: #000;
-        border-color: #fff;
+        background: $c-primary;
+        color: #fff;
+        border-color: $c-primary;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgb(201 52 30 / 25%);
       }
     }
   }
@@ -531,7 +512,7 @@ $color-border: rgb(255 255 255 / 12%);
   flex: 1;
   display: flex;
   align-items: center;
-  padding: 40px 0;
+  padding: 36px 0;
 
   &__container {
     max-width: 1240px;
@@ -539,15 +520,15 @@ $color-border: rgb(255 255 255 / 12%);
     margin: 0 auto;
     padding: 0 28px;
     display: grid;
-    grid-template-columns: 1.15fr 1fr;
+    grid-template-columns: 1.18fr 1fr;
     align-items: center;
     gap: 56px;
 
     @media (max-width: 960px) {
       grid-template-columns: 1fr;
       text-align: center;
-      gap: 40px;
-      padding: 24px;
+      gap: 36px;
+      padding: 20px;
     }
   }
 }
@@ -558,45 +539,59 @@ $color-border: rgb(255 255 255 / 12%);
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: rgb(255 255 255 / 7%);
-    border: 1px solid rgb(255 255 255 / 14%);
+    background: #fff;
+    border: 1px solid $c-border-soft;
     padding: 6px 14px;
     border-radius: 999px;
     font-size: 12px;
-    font-weight: 600;
-    color: #e5ded7;
-    margin-bottom: 24px;
+    font-weight: 700;
+    color: $c-text-muted;
+    box-shadow: 0 2px 6px rgb(58 36 24 / 5%);
+    margin-bottom: 22px;
 
     .pulse-indicator {
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: $color-primary-light;
-      box-shadow: 0 0 10px $color-primary;
+      background: $c-primary;
+      box-shadow: 0 0 8px rgb(201 52 30 / 60%);
     }
   }
 
   .hero-headline {
-    margin: 0 0 20px;
-    font-size: clamp(38px, 5.2vw, 58px);
+    margin: 0 0 18px;
+    font-size: clamp(38px, 5.2vw, 56px);
     font-weight: 900;
-    line-height: 1.12;
-    letter-spacing: -1px;
-    color: #fff;
+    line-height: 1.15;
+    font-family: var(--ft-font-family-title, serif);
+    color: $c-text-main;
+    letter-spacing: -0.5px;
 
     .headline-gradient {
-      background: linear-gradient(135deg, #fff 30%, #f0a295 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: $c-primary;
+      display: inline-block;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 2px;
+        width: 100%;
+        height: 8px;
+        background: rgb(238 197 63 / 35%);
+        z-index: -1;
+        border-radius: 4px;
+      }
     }
   }
 
   .hero-subtext {
-    margin: 0 0 36px;
+    margin: 0 0 32px;
     font-size: clamp(16px, 1.8vw, 18px);
-    line-height: 1.65;
-    color: $color-text-dim;
-    max-width: 540px;
+    line-height: 1.7;
+    color: $c-text-muted;
+    max-width: 530px;
 
     @media (max-width: 960px) {
       margin-left: auto;
@@ -609,8 +604,8 @@ $color-border: rgb(255 255 255 / 12%);
   .download-main-row {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 20px;
+    gap: 18px;
+    margin-bottom: 18px;
     flex-wrap: wrap;
 
     @media (max-width: 960px) {
@@ -623,45 +618,48 @@ $color-border: rgb(255 255 255 / 12%);
     }
   }
 
-  // 极具现代触感的主下载大按钮
+  // 经典朱红主下载大按钮
   .cta-download-btn {
     position: relative;
     overflow: hidden;
     display: inline-flex;
     align-items: center;
     gap: 16px;
-    padding: 16px 32px;
-    background: linear-gradient(135deg, $color-primary 0%, #a82411 100%);
-    border: 1px solid rgb(255 255 255 / 22%);
+    padding: 15px 32px;
+    background: linear-gradient(135deg, $c-primary 0%, #aa230e 100%);
+    border: 1px solid #991d0a;
     border-radius: 16px;
     color: #fff;
     text-decoration: none;
     box-shadow:
-      0 12px 32px rgb(201 52 30 / 42%),
-      inset 0 1px 1px rgb(255 255 255 / 35%);
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      0 10px 24px rgb(201 52 30 / 32%),
+      0 4px 0 #8b1806;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 
     &:hover {
-      transform: translateY(-2px) scale(1.02);
+      transform: translateY(-2px);
       box-shadow:
-        0 18px 40px rgb(201 52 30 / 55%),
-        inset 0 1px 2px rgb(255 255 255 / 50%);
-      background: linear-gradient(
-        135deg,
-        $color-primary-light 0%,
-        #b82b16 100%
-      );
+        0 14px 28px rgb(201 52 30 / 40%),
+        0 6px 0 #8b1806;
+      background: linear-gradient(135deg, #d63820 0%, #b82813 100%);
+
+      .btn-shimmer {
+        transform: translateX(100%);
+      }
     }
 
     &:active {
-      transform: translateY(1px) scale(0.99);
+      transform: translateY(2px);
+      box-shadow:
+        0 4px 12px rgb(201 52 30 / 25%),
+        0 2px 0 #8b1806;
     }
 
     .btn-icon {
-      width: 42px;
-      height: 42px;
-      background: rgb(255 255 255 / 15%);
-      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      background: rgb(255 255 255 / 18%);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -689,27 +687,44 @@ $color-border: rgb(255 255 255 / 12%);
 
       .btn-meta {
         font-size: 12px;
-        color: rgb(255 255 255 / 80%);
+        color: rgb(255 255 255 / 85%);
       }
+    }
+
+    .btn-shimmer {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 80%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgb(255 255 255 / 25%),
+        transparent
+      );
+      transform: skewX(-20deg);
+      transition: transform 0.8s ease;
+      pointer-events: none;
     }
   }
 
-  // 扫码微卡
+  // 扫码微卡（白底米褐边框）
   .qr-chip-card {
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    background: rgb(255 255 255 / 5%);
-    border: 1px solid rgb(255 255 255 / 10%);
-    padding: 10px 16px;
+    background: $c-bg-card;
+    border: 1px solid $c-border-soft;
+    padding: 9px 15px;
     border-radius: 14px;
-    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgb(58 36 24 / 6%);
     transition: all 0.2s ease;
 
     &:hover {
-      background: rgb(255 255 255 / 8%);
-      border-color: rgb(255 255 255 / 20%);
+      border-color: $c-primary;
       transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgb(58 36 24 / 10%);
     }
 
     .qr-thumb {
@@ -718,6 +733,7 @@ $color-border: rgb(255 255 255 / 12%);
       border-radius: 6px;
       overflow: hidden;
       flex-shrink: 0;
+      border: 1px solid #ebd9c2;
 
       .qr-svg-view {
         width: 100%;
@@ -733,13 +749,13 @@ $color-border: rgb(255 255 255 / 12%);
 
       .qr-label {
         font-size: 13px;
-        font-weight: 700;
-        color: #fff;
+        font-weight: 800;
+        color: $c-text-main;
       }
 
       .qr-sub {
         font-size: 11px;
-        color: $color-text-dim;
+        color: $c-text-muted;
       }
     }
   }
@@ -749,19 +765,19 @@ $color-border: rgb(255 255 255 / 12%);
     align-items: center;
     gap: 10px;
     font-size: 12px;
-    color: $color-text-dim;
+    color: $c-text-muted;
 
     @media (max-width: 960px) {
       justify-content: center;
     }
 
     .spec-divider {
-      color: rgb(255 255 255 / 15%);
+      color: rgb(58 36 24 / 20%);
     }
   }
 }
 
-// ---------------- 右侧：高精度 3D 拟物机身 ----------------
+// ---------------- 右侧：浅钛金高精度 3D 拟物机身 ----------------
 .hero-right {
   display: flex;
   justify-content: center;
@@ -779,39 +795,39 @@ $color-border: rgb(255 255 255 / 12%);
     will-change: transform;
   }
 
+  // 精密浅钛金白外壳
   .phone-chassis {
     position: relative;
     z-index: 2;
-    background: #121010;
-    border: 10px solid #231f1c;
+    background: #2b231d;
+    border: 9px solid #e5ded3;
     border-radius: 46px;
     box-shadow:
-      0 28px 60px rgb(0 0 0 / 65%),
-      0 0 0 1px rgb(255 255 255 / 10%),
-      inset 0 0 6px rgb(255 255 255 / 12%);
+      0 24px 50px rgb(58 36 24 / 18%),
+      0 0 0 1px rgb(58 36 24 / 12%),
+      inset 0 0 3px rgb(0 0 0 / 25%);
     overflow: hidden;
   }
 
   .phone-island {
     position: absolute;
-    top: 10px;
+    top: 9px;
     left: 50%;
     transform: translateX(-50%);
-    width: 72px;
-    height: 18px;
-    background: #000;
+    width: 68px;
+    height: 16px;
+    background: #1a1410;
     border-radius: 20px;
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-right: 14px;
+    padding-right: 12px;
 
     .island-camera {
-      width: 7px;
-      height: 7px;
-      background: #17212d;
-      border: 1px solid #28374a;
+      width: 6px;
+      height: 6px;
+      background: #2a333d;
       border-radius: 50%;
     }
   }
@@ -819,7 +835,7 @@ $color-border: rgb(255 255 255 / 12%);
   .phone-display {
     position: relative;
     width: 100%;
-    background: #000;
+    background: #fff;
     overflow: hidden;
     line-height: 0;
 
@@ -840,7 +856,7 @@ $color-border: rgb(255 255 255 / 12%);
       background: linear-gradient(
         135deg,
         transparent 35%,
-        rgb(255 255 255 / 20%) 50%,
+        rgb(255 255 255 / 22%) 50%,
         transparent 65%
       );
       pointer-events: none;
@@ -850,16 +866,16 @@ $color-border: rgb(255 255 255 / 12%);
 
   .phone-shadow {
     position: absolute;
-    bottom: -32px;
-    left: 10%;
-    width: 80%;
-    height: 28px;
+    bottom: -28px;
+    left: 8%;
+    width: 84%;
+    height: 26px;
     background: radial-gradient(
       ellipse at center,
-      rgb(0 0 0 / 75%) 0%,
+      rgb(58 36 24 / 28%) 0%,
       transparent 75%
     );
-    filter: blur(10px);
+    filter: blur(8px);
     z-index: 1;
     pointer-events: none;
   }
@@ -869,9 +885,9 @@ $color-border: rgb(255 255 255 / 12%);
 .landing-footer {
   position: relative;
   z-index: 10;
-  border-top: 1px solid rgb(255 255 255 / 8%);
-  padding: 16px 0;
-  background: rgb(13 10 8 / 80%);
+  border-top: 1px solid rgb(58 36 24 / 8%);
+  padding: 15px 0;
+  background: rgb(247 244 237 / 85%);
 
   &__inner {
     max-width: 1240px;
@@ -881,7 +897,7 @@ $color-border: rgb(255 255 255 / 12%);
     align-items: center;
     justify-content: space-between;
     font-size: 12px;
-    color: $color-text-dim;
+    color: $c-text-muted;
     flex-wrap: wrap;
     gap: 12px;
 
@@ -898,17 +914,18 @@ $color-border: rgb(255 255 255 / 12%);
 
     .footer-link,
     .footer-btn {
-      color: $color-text-dim;
+      color: $c-text-muted;
       text-decoration: none;
       background: transparent;
       border: none;
       font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
       padding: 0;
       transition: color 0.2s ease;
 
       &:hover {
-        color: #fff;
+        color: $c-primary;
       }
     }
   }
@@ -917,14 +934,14 @@ $color-border: rgb(255 255 255 / 12%);
 // ---------------- 下载 Toast ----------------
 .download-toast {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
+  bottom: 28px;
+  right: 28px;
   z-index: 999;
-  background: #1f1a17;
-  border: 1px solid rgb(255 255 255 / 16%);
+  background: #fff;
+  border: 1px solid rgb(58 36 24 / 16%);
   border-radius: 14px;
   padding: 14px 18px;
-  box-shadow: 0 16px 36px rgb(0 0 0 / 60%);
+  box-shadow: 0 12px 32px rgb(58 36 24 / 18%);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -944,14 +961,14 @@ $color-border: rgb(255 255 255 / 12%);
 
     .toast-headline {
       font-size: 14px;
-      font-weight: 700;
-      color: #fff;
+      font-weight: 800;
+      color: $c-text-main;
       margin-bottom: 2px;
     }
 
     .toast-subline {
       font-size: 12px;
-      color: $color-text-dim;
+      color: $c-text-muted;
       line-height: 1.4;
     }
   }
@@ -959,13 +976,13 @@ $color-border: rgb(255 255 255 / 12%);
   .toast-dismiss {
     background: transparent;
     border: none;
-    color: #888;
+    color: #999;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     padding: 4px;
 
     &:hover {
-      color: #fff;
+      color: $c-text-main;
     }
   }
 }
