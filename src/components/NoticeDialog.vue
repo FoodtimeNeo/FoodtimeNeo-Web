@@ -1,53 +1,51 @@
 <script setup>
 import { ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { ElDialog } from 'element-plus';
-import { markNoticeRead } from '@/api/notice.api.js';
+import { confirmNotice } from '@/api/notice.api.js';
+import NoticeMarkdown from './NoticeMarkdown.vue';
 import { formatTime } from '@/utils/recordLabels.js';
 
 const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false,
-  },
-  notice: {
-    type: Object,
-    default: null,
-  },
+  modelValue: { type: Boolean, default: false },
+  notice: { type: Object, default: null },
 });
-
-const emit = defineEmits(['update:modelValue', 'read']);
-
-const router = useRouter();
-const reading = ref(false);
-const readError = ref('');
+const emit = defineEmits(['update:modelValue', 'confirmed']);
+const dontShowAgain = ref(false);
+const saving = ref(false);
+const failure = ref('');
+let generation = 0;
+watch(
+  () => [props.modelValue, props.notice?.id],
+  () => {
+    generation++;
+    dontShowAgain.value = false;
+    saving.value = false;
+    failure.value = '';
+  },
+  { flush: 'sync' },
+);
 
 function close() {
-  emit('update:modelValue', false);
+  if (!saving.value) emit('update:modelValue', false);
 }
-
-function goInbox() {
-  close();
-  router.push({ name: 'inboxView' });
+async function confirm() {
+  if (saving.value || !props.notice?.id) return;
+  const ticket = generation,
+    id = props.notice.id;
+  saving.value = true;
+  failure.value = '';
+  try {
+    await confirmNotice(id, dontShowAgain.value);
+    if (ticket !== generation) return;
+    emit('confirmed', id);
+    emit('update:modelValue', false);
+  } catch (error) {
+    if (ticket === generation)
+      failure.value = error.message || '确认失败，请重试';
+  } finally {
+    if (ticket === generation) saving.value = false;
+  }
 }
-
-// 打开详情即标记已读；成功后通知外层刷新未读数。
-watch(
-  () => props.modelValue,
-  async (open) => {
-    if (!open || !props.notice?.id || props.notice?.isRead) return;
-    reading.value = true;
-    readError.value = '';
-    try {
-      await markNoticeRead(props.notice.id);
-      emit('read', props.notice.id);
-    } catch (error) {
-      readError.value = error.message || '标记已读失败';
-    } finally {
-      reading.value = false;
-    }
-  },
-);
 </script>
 
 <template>
@@ -57,36 +55,36 @@ watch(
     title="系统公告"
     destroy-on-close
     append-to-body
-    :width="'min(560px, 94vw)'"
-    :style="{ boxSizing: 'border-box', maxWidth: 'calc(100% - 32px)' }"
-    :show-close="true"
+    :width="'min(640px, 94vw)'"
+    :close-on-click-modal="false"
+    :close-on-press-escape="!saving"
+    :show-close="!saving"
     @close="close"
   >
-    <article v-if="notice" class="notice-dialog__body">
-      <h2 class="notice-dialog__title">{{ notice.title }}</h2>
-      <p class="notice-dialog__meta">{{ formatTime(notice.publishedAt) }}</p>
-      <p class="notice-dialog__content">{{ notice.body }}</p>
-      <p v-if="readError" class="notice-dialog__error" role="alert">
-        {{ readError }}
+    <article v-if="notice">
+      <p class="notice-dialog__meta">
+        {{ formatTime(notice.createdTime || notice.publishedAt) }}
+      </p>
+      <div class="notice-dialog__reader" tabindex="0" aria-label="公告正文">
+        <NoticeMarkdown :content="notice.content" />
+      </div>
+      <p v-if="failure" class="notice-dialog__error" role="alert">
+        {{ failure }}
       </p>
     </article>
     <template #footer>
       <div class="notice-dialog__footer">
-        <button
-          type="button"
-          class="notice-dialog__link"
-          :disabled="reading"
-          @click="goInbox"
-        >
-          去信箱看看
-        </button>
+        <label class="notice-dialog__choice">
+          <input v-model="dontShowAgain" type="checkbox" :disabled="saving" />
+          下次不再显示
+        </label>
         <button
           type="button"
           class="notice-dialog__confirm"
-          :disabled="reading"
-          @click="close"
+          :disabled="saving"
+          @click="confirm"
         >
-          {{ reading ? '标记中…' : '知道了' }}
+          {{ saving ? '保存中…' : '确认' }}
         </button>
       </div>
     </template>
@@ -94,43 +92,57 @@ watch(
 </template>
 
 <style scoped>
-.notice-dialog__title {
-  margin: 0 0 8px;
-  font-family: var(--ft-font-family-title);
-}
 .notice-dialog__meta {
-  margin: 0 0 12px;
   color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-sm);
+  font-size: 13px;
 }
-.notice-dialog__content {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+.notice-dialog__reader {
+  max-height: 58dvh;
+  overflow-y: auto;
+  padding: 4px 8px 8px 0;
 }
-.notice-dialog__error {
-  color: var(--ft-color-danger);
+.notice-dialog__reader:focus-visible {
+  outline: 2px solid var(--ft-color-primary);
+  outline-offset: 2px;
 }
 .notice-dialog__footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
-.notice-dialog__link,
-.notice-dialog__confirm {
+.notice-dialog__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   min-height: 44px;
-  padding: 8px 16px;
-  border: 1px solid var(--ft-color-text);
-  background: var(--zine-paper-card);
   cursor: pointer;
 }
-.notice-dialog__confirm {
-  color: #fff;
-  background: var(--ft-color-primary);
+.notice-dialog__choice input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--ft-color-primary);
 }
-.notice-dialog__link:disabled,
+.notice-dialog__confirm {
+  min-height: 44px;
+  min-width: 88px;
+  padding: 8px 20px;
+  border: 1px solid var(--ft-color-text);
+  background: var(--ft-color-primary);
+  color: #fff;
+  cursor: pointer;
+}
+.notice-dialog__confirm:focus-visible,
+.notice-dialog__choice input:focus-visible {
+  outline: 2px solid var(--ft-color-text);
+  outline-offset: 3px;
+}
 .notice-dialog__confirm:disabled {
   opacity: 0.6;
-  cursor: default;
+  cursor: wait;
+}
+.notice-dialog__error {
+  color: var(--ft-color-danger);
 }
 </style>

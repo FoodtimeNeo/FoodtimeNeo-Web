@@ -1,31 +1,18 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
-import { createMemoryHistory, createRouter } from 'vue-router';
-
-const api = vi.hoisted(() => ({ markNoticeRead: vi.fn() }));
+const api = vi.hoisted(() => ({ confirmNotice: vi.fn() }));
 vi.mock('@/api/notice.api.js', () => api);
-
 import NoticeDialog from './NoticeDialog.vue';
 
 const notice = {
   id: 'n1',
-  title: '停水通知',
-  body: '明日停水半天',
-  publishedAt: '2026-10-20T08:00:00Z',
+  content: '# 停水通知\n\n明日 **停水**\n\n- 提前储水',
+  createdTime: '2026-10-20T08:00:00Z',
 };
-
-function mountDialog(props = {}) {
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: '/', name: 'home', component: { template: '<div />' } },
-      { path: '/inbox', name: 'inboxView', component: { template: '<div />' } },
-    ],
-  });
-  const wrapper = mount(NoticeDialog, {
-    props: { modelValue: false, notice: null, ...props },
+function mountDialog() {
+  return mount(NoticeDialog, {
+    props: { modelValue: true, notice },
     global: {
-      plugins: [router],
       stubs: {
         ElDialog: {
           template: '<div><slot /><slot name="footer" /></div>',
@@ -34,52 +21,51 @@ function mountDialog(props = {}) {
       },
     },
   });
-  return { wrapper, router };
 }
-
 beforeEach(() => {
   vi.resetAllMocks();
-  api.markNoticeRead.mockResolvedValue(undefined);
+  api.confirmNotice.mockResolvedValue({ isRead: true });
 });
-
-it('打开详情即标记已读并通知外层刷新', async () => {
-  const { wrapper } = mountDialog({ notice });
-  await wrapper.setProps({ modelValue: true });
+it('渲染 Markdown，打开时不写已读，默认不免弹', async () => {
+  const wrapper = mountDialog();
+  expect(wrapper.find('h1').text()).toBe('停水通知');
+  expect(wrapper.find('strong').text()).toBe('停水');
+  expect(wrapper.find('li').text()).toBe('提前储水');
+  expect(api.confirmNotice).not.toHaveBeenCalled();
+  await wrapper.find('button').trigger('click');
   await flushPromises();
-  expect(api.markNoticeRead).toHaveBeenCalledWith('n1');
-  expect(wrapper.emitted('read')).toEqual([['n1']]);
-  expect(wrapper.text()).toContain('停水通知');
-  expect(wrapper.text()).toContain('明日停水半天');
-});
-
-it('已读公告打开时不再重复标记', async () => {
-  const { wrapper } = mountDialog({
-    notice: { ...notice, isRead: true },
-  });
-  await wrapper.setProps({ modelValue: true });
-  await flushPromises();
-  expect(api.markNoticeRead).not.toHaveBeenCalled();
-  expect(wrapper.emitted('read')).toBeUndefined();
-});
-
-it('去信箱看看关闭弹窗并跳转信箱', async () => {
-  const { wrapper, router } = mountDialog({ modelValue: true, notice });
-  await flushPromises();
-  await wrapper
-    .findAll('button')
-    .find((button) => button.text() === '去信箱看看')
-    .trigger('click');
-  await flushPromises();
+  expect(api.confirmNotice).toHaveBeenCalledWith('n1', false);
+  expect(wrapper.emitted('confirmed')).toEqual([['n1']]);
   expect(wrapper.emitted('update:modelValue')).toEqual([[false]]);
-  expect(router.currentRoute.value.name).toBe('inboxView');
 });
-
-it('知道了仅关闭弹窗', async () => {
-  const { wrapper } = mountDialog({ modelValue: true, notice });
+it('勾选后确认才保存免弹；失败保持弹窗和选择并允许重试', async () => {
+  const wrapper = mountDialog();
+  await wrapper.find('input').setValue(true);
+  expect(api.confirmNotice).not.toHaveBeenCalled();
+  api.confirmNotice.mockRejectedValueOnce(new Error('网络不可用'));
+  await wrapper.find('button').trigger('click');
   await flushPromises();
-  await wrapper
-    .findAll('button')
-    .find((button) => button.text() === '知道了')
-    .trigger('click');
-  expect(wrapper.emitted('update:modelValue')).toEqual([[false]]);
+  expect(api.confirmNotice).toHaveBeenCalledWith('n1', true);
+  expect(wrapper.find('[role="alert"]').text()).toBe('网络不可用');
+  expect(wrapper.find('input').element.checked).toBe(true);
+  expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+  await wrapper.find('button').trigger('click');
+  await flushPromises();
+  expect(wrapper.emitted('confirmed')).toEqual([['n1']]);
+});
+it('切换公告或账号后丢弃旧确认结果', async () => {
+  let resolve;
+  api.confirmNotice.mockImplementation(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const wrapper = mountDialog();
+  await wrapper.find('button').trigger('click');
+  await wrapper.setProps({ notice: { ...notice, id: 'n2' } });
+  resolve({});
+  await flushPromises();
+  expect(wrapper.emitted('confirmed')).toBeUndefined();
+  expect(wrapper.emitted('update:modelValue')).toBeUndefined();
 });

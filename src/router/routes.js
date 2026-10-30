@@ -44,7 +44,7 @@ export const routes = [
       title: '公告管理',
       layout: 'admin',
       requiresAuth: true,
-      requiresAdmin: true,
+      requiresSuperadmin: true,
     },
   },
   {
