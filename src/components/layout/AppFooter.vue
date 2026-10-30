@@ -7,7 +7,12 @@
           “今天排队 20 分钟，值不值看这口。”
         </p>
       </div>
-      <p class="app-footer__meta">2026 · 北交干饭吧 · 学生自制版本</p>
+      <div class="app-footer__actions">
+        <RouterLink :to="{ name: 'landing' }" class="app-footer__portal-link">
+          进入官网 →
+        </RouterLink>
+        <p class="app-footer__meta">2026 · 北交干饭吧 · 学生自制版本</p>
+      </div>
     </div>
     <span
       class="app-footer__decor app-footer__decor--stamp"
@@ -65,6 +70,39 @@
 .app-footer__meta {
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
+}
+
+.app-footer__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+  }
+}
+
+.app-footer__portal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ft-font-size-sm);
+  font-weight: 700;
+  color: var(--ft-color-primary);
+  text-decoration: none;
+  padding: 3px 10px;
+  border-radius: var(--ft-radius-sm);
+  border: 1px dashed var(--ft-color-primary);
+  background: rgb(201 52 30 / 6%);
+  transition: all var(--ft-transition-fast);
+
+  &:hover {
+    background: var(--ft-color-primary);
+    color: #fff;
+    border-style: solid;
+    transform: translateX(2px);
+  }
 }
 
 .app-footer__decor {

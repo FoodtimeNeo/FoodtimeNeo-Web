@@ -4,6 +4,21 @@
  */
 export const routes = [
   {
+    path: '/landing',
+    name: 'landing',
+    component: () => import('@/views/landing/LandingView.vue'),
+    meta: {
+      title: '官网 · 下载安卓客户端',
+      layout: 'blank',
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/download',
+    name: 'download',
+    redirect: { name: 'landing' },
+  },
+  {
     path: '/profile/review-replies',
     name: 'myReviewReplies',
     component: () => import('@/views/profile/MyReviewRepliesView.vue'),

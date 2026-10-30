@@ -49,6 +49,21 @@ describe('LoginView', () => {
     });
     expect(replace).toHaveBeenCalledWith('/profile');
   });
+
+  it('展示左上角“进入官网”与下方“下载安卓安装包”入口', () => {
+    const wrapper = mount(LoginView);
+    const portalLink = wrapper.find('.auth-view__portal-link');
+    expect(portalLink.exists()).toBe(true);
+    expect(portalLink.text()).toContain('进入官网');
+
+    const downloadBtn = wrapper.find('[data-testid="login-download-apk-btn"]');
+    expect(downloadBtn.exists()).toBe(true);
+    expect(downloadBtn.attributes('href')).toBe(
+      '/downloads/FoodtimeNeo-Android.apk',
+    );
+    expect(downloadBtn.attributes('download')).toBe('FoodtimeNeo-Android.apk');
+    expect(downloadBtn.text()).toContain('下载安卓安装包');
+  });
 });
 
 async function flushPromises() {

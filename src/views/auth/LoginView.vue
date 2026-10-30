@@ -9,6 +9,11 @@ import {
   validatePassword,
   safeRedirect,
 } from '@/utils/authValidators.js';
+import {
+  APK_DOWNLOAD_URL,
+  APK_FILE_NAME,
+  APK_SIZE,
+} from '@/constants/download.js';
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
@@ -43,6 +48,11 @@ async function handleSubmit() {
 </script>
 <template>
   <section class="auth-view">
+    <div class="auth-view__top-nav">
+      <RouterLink :to="{ name: 'landing' }" class="auth-view__portal-link">
+        <span aria-hidden="true">←</span> 进入官网
+      </RouterLink>
+    </div>
     <span class="sticker sticker--r-2">食堂手账 · SIGN IN</span>
     <h1><span>欢迎回来</span>登录</h1>
     <p class="auth-view__intro handwrite">先吃饱，再翻开今天的食堂档案。</p>
@@ -71,6 +81,24 @@ async function handleSubmit() {
     <p>
       还没有账号？<RouterLink :to="{ name: 'register' }">去注册</RouterLink>
     </p>
+
+    <div class="auth-view__download-divider" aria-hidden="true">
+      <span>或使用手机客户端</span>
+    </div>
+    <div class="auth-view__download-box">
+      <a
+        :href="APK_DOWNLOAD_URL"
+        :download="APK_FILE_NAME"
+        class="auth-view__download-btn button-ink is-stamp-blue"
+        data-testid="login-download-apk-btn"
+      >
+        <span class="btn-icon" aria-hidden="true">📥</span>
+        <span>下载安卓安装包</span>
+      </a>
+      <span class="auth-view__download-hint">
+        官方客户端 · {{ APK_SIZE }} · 免商店直装
+      </span>
+    </div>
   </section>
 </template>
 <style scoped lang="scss">
@@ -116,6 +144,76 @@ form {
 }
 a {
   color: var(--ft-color-primary);
+}
+
+.auth-view__top-nav {
+  margin-bottom: var(--ft-space-2);
+}
+
+.auth-view__portal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ft-font-size-sm);
+  font-weight: 700;
+  color: var(--ft-color-secondary);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: var(--ft-radius-sm);
+  background: rgb(58 36 24 / 6%);
+  transition: all var(--ft-transition-fast);
+
+  &:hover {
+    color: var(--ft-color-primary);
+    background: rgb(201 52 30 / 10%);
+    transform: translateX(-2px);
+  }
+}
+
+.auth-view__download-divider {
+  display: flex;
+  align-items: center;
+  margin: var(--ft-space-3) 0 var(--ft-space-2);
+  color: var(--ft-color-text-muted);
+  font-size: var(--ft-font-size-xs);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px dashed var(--ft-color-border);
+  }
+
+  span {
+    padding: 0 10px;
+  }
+}
+
+.auth-view__download-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+
+  .auth-view__download-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    padding: 10px 16px;
+    font-weight: 700;
+
+    .btn-icon {
+      font-size: 16px;
+    }
+  }
+
+  .auth-view__download-hint {
+    font-size: var(--ft-font-size-xs);
+    color: var(--ft-color-text-muted);
+  }
 }
 
 @media (max-width: 520px) {
