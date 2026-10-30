@@ -15,6 +15,7 @@ const links = computed(() => [
   ...(auth.isSuperadmin
     ? [
         { name: 'adminNotices', label: '公告管理' },
+        { name: 'superadminAnalytics', label: '数据分析' },
         { name: 'superadminUsers', label: '用户管理' },
       ]
     : []),

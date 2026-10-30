@@ -49,5 +49,6 @@ describe('管理导航权限', () => {
     expect(wrapper.text()).not.toContain('超管看板');
     expect(wrapper.text()).toContain('用户管理');
     expect(wrapper.text()).toContain('公告管理');
+    expect(wrapper.text()).toContain('数据分析');
   });
 });

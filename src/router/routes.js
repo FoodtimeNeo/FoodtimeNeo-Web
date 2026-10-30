@@ -268,6 +268,17 @@ export const routes = [
     },
   },
   {
+    path: '/superadmin/analytics',
+    name: 'superadminAnalytics',
+    component: () => import('@/views/superadmin/SuperadminAnalyticsView.vue'),
+    meta: {
+      title: '数据分析',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
     path: '/superadmin/users',
     name: 'superadminUsers',
     component: () => import('@/views/superadmin/SuperadminUsersView.vue'),
