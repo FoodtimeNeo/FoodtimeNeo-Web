@@ -20,3 +20,14 @@ it('原始 HTML 和危险链接不执行，正常 HTTPS 链接可用', () => {
   expect(node.querySelector('[src^="file:"]')).toBeNull();
   expect(node.querySelector('a').href).toBe('https://example.com/');
 });
+
+import { noticeHeading } from './noticeMarkdown.js';
+it('提取最上级第一个标题，忽略代码块并移除行内标记', () => {
+  expect(
+    noticeHeading(
+      '```md\n# 假标题\n```\n\n## 次级\n\n# **最高** [链接](https://example.com)\n\n# 第二个',
+    ),
+  ).toBe('最高 链接');
+  expect(noticeHeading('Setext 标题\n===')).toBe('Setext 标题');
+  expect(noticeHeading('没有标题')).toBe('');
+});

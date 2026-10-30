@@ -38,3 +38,16 @@ export const updateAdminNotice = (id, input) =>
 
 export const deleteAdminNotice = (id) =>
   http.delete(`/admin/notices/${encodeURIComponent(id)}`);
+
+export const searchAdminNotices = (page, q, options = {}) =>
+  http.get('/admin/notices/search', {
+    ...options,
+    params: { page, size: 6, q },
+  });
+export const fetchNoticeSettings = () => http.get('/admin/notices/settings');
+export const setNoticeSettings = (noticeId) =>
+  http.put('/admin/notices/settings', { noticeId });
+export const saveNoticeMarkdown = (content, id = null) =>
+  id
+    ? http.put(`/admin/notices/${encodeURIComponent(id)}/markdown`, { content })
+    : http.post('/admin/notices/markdown', { content });
