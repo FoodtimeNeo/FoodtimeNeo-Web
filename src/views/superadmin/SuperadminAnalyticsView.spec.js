@@ -95,9 +95,8 @@ it('正确加载并渲染平台数据看板概览、核心指标与在线统计'
   // 等待数据加载完成
   await vi.waitFor(() => expect(wrapper.text()).toContain('平台总览'));
 
-  // 验证页头与副标题
+  // 验证页头
   expect(wrapper.text()).toContain('数据看板');
-  expect(wrapper.text()).toContain('校园里的每一份热闹，都在这里慢慢长大。');
   expect(wrapper.text()).toContain('MOCK 预览数据');
 
   // 验证当前在线 Hero 卡片

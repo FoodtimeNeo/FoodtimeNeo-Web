@@ -126,10 +126,17 @@ const params = computed(() => ({
           <span class="section-rule__index">05</span>
           <span class="section-rule__line"></span>
         </div>
-        <h2 id="reviews-title" class="section-title">
-          同学们的<span class="zine-highlight">评论</span>
-        </h2>
-        <p class="section-subtitle">星级和文字都来自审核通过的真实点评。</p>
+        <div class="dish-reviews__header">
+          <h2 id="reviews-title" class="section-title">
+            同学们的<span class="zine-highlight">评论</span>
+          </h2>
+          <img
+            src="@/assets/images/decoration02/C/illustrations/C_doodle-heart.png"
+            alt=""
+            class="dish-reviews__decor-heart"
+            aria-hidden="true"
+          />
+        </div>
         <LoadingState v-if="reviewLoading" />
         <ErrorState
           v-else-if="reviewError"
@@ -274,6 +281,25 @@ const params = computed(() => ({
     margin: var(--ft-space-4) 0 0;
     font-family: var(--ft-font-family-title);
     font-size: var(--ft-font-size-xl);
+  }
+
+  .dish-reviews__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: var(--ft-space-3);
+
+    .section-title {
+      margin: 0;
+    }
+
+    .dish-reviews__decor-heart {
+      width: 26px;
+      height: auto;
+      opacity: 0.85;
+      transform: rotate(10deg);
+      pointer-events: none;
+    }
   }
 }
 

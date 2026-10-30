@@ -148,9 +148,12 @@ onUnmounted(() => {
     <header class="community-feed-view__header">
       <div class="community-feed-view__banner">
         <h1 class="community-feed-view__title">校园食记 · 社区</h1>
-        <p class="community-feed-view__subtitle">
-          随手拍、聊美味，发现更多好吃的校园美食
-        </p>
+        <img
+          src="@/assets/images/decoration02/C/illustrations/C_doodle-sparkles.png"
+          alt=""
+          class="community-feed-view__banner-sparkle"
+          aria-hidden="true"
+        />
       </div>
       <!-- 入口一：在社区页右上角放置加号发帖按钮 -->
       <button
@@ -294,8 +297,8 @@ onUnmounted(() => {
 
   &__banner {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 10px;
   }
 
   &__title {
@@ -307,10 +310,12 @@ onUnmounted(() => {
     letter-spacing: 0.5px;
   }
 
-  &__subtitle {
-    margin: 0;
-    font-size: 14px;
-    color: var(--ft-color-text-muted, #6e5547);
+  &__banner-sparkle {
+    width: 24px;
+    height: auto;
+    opacity: 0.85;
+    transform: rotate(10deg);
+    pointer-events: none;
   }
 }
 

@@ -55,7 +55,12 @@ async function handleSubmit() {
     </div>
     <span class="sticker sticker--r-2">食堂手账 · SIGN IN</span>
     <h1><span>欢迎回来</span>登录</h1>
-    <p class="auth-view__intro handwrite">先吃饱，再翻开今天的食堂档案。</p>
+    <img
+      src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
+      alt=""
+      class="auth-view__stamp-decor"
+      aria-hidden="true"
+    />
     <form ref="formElement" novalidate @submit.prevent="handleSubmit">
       <p v-if="serverError" role="alert" class="auth-view__error">
         {{ serverError }}
@@ -125,10 +130,16 @@ h1 {
     font-weight: 400;
   }
 }
-.auth-view__intro {
-  margin: -8px 0 var(--ft-space-3);
-  color: var(--ft-color-primary);
-  font-size: 20px;
+.auth-view__stamp-decor {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 76px;
+  height: auto;
+  opacity: 0.86;
+  transform: rotate(10deg);
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 2px rgba(58, 36, 24, 0.12));
 }
 form {
   display: flex;

@@ -312,7 +312,6 @@ onMounted(load);
           </span>
         </div>
         <h2 id="analytics-title">数据看板</h2>
-        <p class="subtitle">校园里的每一份热闹，都在这里慢慢长大。</p>
       </div>
 
       <div class="analytics__meta">
@@ -383,7 +382,6 @@ onMounted(load);
               stroke-width="2.5"
             />
           </svg>
-          <span class="doodle-caption">干饭热度高涨中</span>
         </div>
       </section>
 

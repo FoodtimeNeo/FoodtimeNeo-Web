@@ -238,10 +238,13 @@ async function handleSubmit() {
         <div class="header-main">
           <span class="header-stamp">食记</span>
           <h2 class="header-title">写一页美食手账</h2>
+          <img
+            src="@/assets/images/decoration02/B/stickers/B_green-tape-strip.png"
+            alt=""
+            class="header-tape-accent"
+            aria-hidden="true"
+          />
         </div>
-        <p class="header-subtitle">
-          随手拍、聊美味，把真实的味蕾体验分享给全校同学
-        </p>
       </div>
     </template>
 
@@ -370,9 +373,7 @@ async function handleSubmit() {
       <!-- 审核提示 -->
       <div class="post-create-form__audit-tip">
         <span class="tip-stamp">保真</span>
-        <span class="tip-text"
-          >为了营造真实健康的校园美食手账氛围，新发的帖子将在审核通过后展示。</span
-        >
+        <span class="tip-text">新发布的帖子将在审核通过后展示。</span>
       </div>
 
       <!-- 操作按钮 -->
@@ -465,6 +466,22 @@ async function handleSubmit() {
     display: flex;
     align-items: center;
     gap: 10px;
+  }
+
+  .header-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+  }
+
+  .header-tape-accent {
+    width: 48px;
+    height: auto;
+    opacity: 0.82;
+    transform: rotate(8deg);
+    pointer-events: none;
+    margin-left: auto;
   }
 
   .header-stamp {
