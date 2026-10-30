@@ -23,7 +23,7 @@ describe('信箱路由', () => {
         title: '公告管理',
         layout: 'admin',
         requiresAuth: true,
-        requiresAdmin: true,
+        requiresSuperadmin: true,
       },
     });
   });

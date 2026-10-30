@@ -1,5 +1,14 @@
 import { http } from './http.js';
 
+export const fetchCurrentNotice = (options = {}) =>
+  http.get('/users/me/notices/current', options);
+export const confirmNotice = (id, dontShowAgain) =>
+  http.post('/users/me/notices/' + encodeURIComponent(id) + '/confirm', {
+    dontShowAgain,
+  });
+export const fetchUnreadNoticeCount = (options = {}) =>
+  http.get('/users/me/notices/unread-count', options);
+
 export const fetchNoticeFeed = (sinceSeq = 0, limit = 20, options = {}) =>
   http.get('/users/me/notices/feed', {
     ...options,

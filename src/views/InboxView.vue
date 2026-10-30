@@ -32,7 +32,7 @@ const actionError = ref('');
 const actingId = ref(null);
 
 function openNotice(row) {
-  activeNotice.value = { ...row, isRead: true };
+  activeNotice.value = row;
   noticeOpen.value = true;
 }
 
@@ -125,9 +125,9 @@ async function readAllMessages() {
           :key="row.id"
           class="inbox-page__item"
         >
-          <h2>{{ row.title }}</h2>
+          <h2>系统公告</h2>
           <p class="inbox-page__meta">{{ formatTime(row.publishedAt) }}</p>
-          <p class="inbox-page__preview">{{ row.body }}</p>
+          <p class="inbox-page__preview">{{ row.content }}</p>
           <button type="button" @click="openNotice(row)">查看详情</button>
         </article>
       </template>
@@ -198,7 +198,7 @@ async function readAllMessages() {
     <NoticeDialog
       v-model="noticeOpen"
       :notice="activeNotice"
-      @read="onNoticeRead"
+      @confirmed="onNoticeRead"
     />
   </div>
 </template>
