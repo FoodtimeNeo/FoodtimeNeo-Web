@@ -71,6 +71,7 @@ describe('resolveNavigation', () => {
     ['adminAudit', '/admin/audit', 'requiresAdmin'],
     ['adminManage', '/admin/manage', 'requiresAdmin'],
     ['superadmin', '/superadmin', 'requiresSuperadmin'],
+    ['superadminAnalytics', '/superadmin/analytics', 'requiresSuperadmin'],
     ['superadminUsers', '/superadmin/users', 'requiresSuperadmin'],
   ])(
     '%s 路由按访客、用户、管理员和超管的权限放行',

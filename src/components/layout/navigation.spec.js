@@ -124,6 +124,7 @@ describe('布局导航', () => {
       'adminManage',
       'managedReviews',
       'moderationLogs',
+      'superadminAnalytics',
       'superadminUsers',
     ]) {
       expect(resolveActiveNavigation(router.resolve({ name }))).toBe(
