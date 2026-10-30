@@ -43,6 +43,8 @@
 >    本项目严格遵循工程规范，`main` 仅作正式发布归档（故提交较少）。**查看完整开发轨迹与最新代码，请务必切换至 [👉 develop 分支](https://github.com/FoodtimeNeo/FoodtimeNeo-Web/tree/develop)**（或查看 [PR 审查记录](https://github.com/FoodtimeNeo/FoodtimeNeo-Web/pulls?q=is%3Apr+is%3Aclosed)）。
 > 2. 📦 **本项目共有 3 个独立仓库，当前仅为 Web 前端**  
 >    系统采用三端解耦架构，由三个独立仓库组成：**[🌐 Web 前端 (本仓库)](https://github.com/FoodtimeNeo/FoodtimeNeo-Web)** ｜ **[⚙️ 后端 API (FoodtimeNeo-Backend)](https://github.com/FoodtimeNeo/FoodtimeNeo-Backend)** ｜ **[📱 安卓端 (FoodtimeNeo-Android)](https://github.com/FoodtimeNeo/FoodtimeNeo-Android)**。各仓库独立维护，单端合并并不代表全项目发布。
+> 3. ⚠️ **拉取更新后请先同步依赖（新引入 Markdown 渲染与安全过滤库）**  
+>    最新公告系统已接入 Markdown 渲染与安全清洗，引入了 `markdown-it` 与 `dompurify` 依赖。每次从远端执行 `git pull` 后，**请务必先行执行 `npm install`（或 `npm ci`）**，避免因缺失依赖导致单元测试（如 `NoticeDialog.spec.js`、`noticeMarkdown.spec.js` 等测试文件）报错或本地运行异常。
 
 ---
 
@@ -154,16 +156,17 @@ flowchart TD
 
 ## 🛠️ 技术栈与工程实践
 
-| 维度          | 选用技术 / 方案                  | 选型优势与工程实践                                         |
-| :------------ | :------------------------------- | :--------------------------------------------------------- |
-| **核心框架**  | `Vue 3.5` (Composition API)      | 全面拥抱 `<script setup>` 与组合式函数，逻辑高度内聚       |
-| **构建工具**  | `Vite 8.0`                       | 秒级极速热重载 (HMR)，开箱即用的现代化 ESM 打包工具链      |
-| **状态管理**  | `Pinia 2.3`                      | 轻量化、类型安全的状态管理，严格区分页面局部与全局跨端状态 |
-| **路由系统**  | `Vue Router 4.5`                 | 集中式路由表设计，配套严格的全景权限守卫与动态标题拦截     |
-| **UI 基础库** | `Element Plus 2.9`               | 深度定制手账风格变量，与原生手账风格无缝融合               |
-| **网络通信**  | `Axios 1.7`                      | 封装支持 Cookie / CSRF 校验，支持请求中断与同站反向代理    |
-| **测试套件**  | `Vitest 4.1` + `@vue/test-utils` | **222 项测试全绿**，覆盖组件、视图、组合式函数与接口层     |
-| **代码规范**  | `ESLint 10` + `Prettier 3`       | 全项目 **0 Warning** 零容忍质量门禁，保持代码格式高度一致  |
+| 维度           | 选用技术 / 方案                  | 选型优势与工程实践                                         |
+| :------------- | :------------------------------- | :--------------------------------------------------------- |
+| **核心框架**   | `Vue 3.5` (Composition API)      | 全面拥抱 `<script setup>` 与组合式函数，逻辑高度内聚       |
+| **构建工具**   | `Vite 8.0`                       | 秒级极速热重载 (HMR)，开箱即用的现代化 ESM 打包工具链      |
+| **状态管理**   | `Pinia 2.3`                      | 轻量化、类型安全的状态管理，严格区分页面局部与全局跨端状态 |
+| **路由系统**   | `Vue Router 4.5`                 | 集中式路由表设计，配套严格的全景权限守卫与动态标题拦截     |
+| **UI 基础库**  | `Element Plus 2.9`               | 深度定制手账风格变量，与原生手账风格无缝融合               |
+| **网络通信**   | `Axios 1.7`                      | 封装支持 Cookie / CSRF 校验，支持请求中断与同站反向代理    |
+| **安全与渲染** | `markdown-it` + `dompurify`      | Markdown 公告与富文本解析渲染，严格执行 DOMPurify XSS 净化 |
+| **测试套件**   | `Vitest 4.1` + `@vue/test-utils` | **222 项测试全绿**，覆盖组件、视图、组合式函数与接口层     |
+| **代码规范**   | `ESLint 10` + `Prettier 3`       | 全项目 **0 Warning** 零容忍质量门禁，保持代码格式高度一致  |
 
 ---
 
@@ -178,13 +181,26 @@ node -v   # >= v24.0.0
 npm -v    # >= 10.0.0
 ```
 
-### 2. 安装依赖
+### 2. 安装依赖与更新提示
+
+首次克隆项目或在执行 `git pull` 同步团队最新提交后，**必须先执行安装/更新依赖**：
 
 ```sh
+npm install
+# 或使用严格锁版本安装
 npm ci
 ```
 
-_(注：Windows PowerShell 下若执行策略受限，可使用 `npm.cmd ci`)_
+_(注：Windows PowerShell 下若执行策略受限，可使用 `npm.cmd install` 或 `npm.cmd ci`)_
+
+> [!WARNING]
+> **团队协同依赖同步提醒**：  
+> 系统已接入 Markdown 登录公告渲染与 XSS 安全清洗功能，新增核心依赖：
+>
+> - `markdown-it`：轻量、规范的 Markdown 语法解析器
+> - `dompurify`：防御 XSS 攻击的 DOM 清洗过滤库
+>
+> 若拉取最新代码后未执行 `npm install`，直接运行 `npm test` 或 `npm run check` 将抛出 `Failed to resolve import "markdown-it" / "dompurify"` 异常（导致 5 个相关测试用例失败）。请团队成员在拉取代码后保持同步更新依赖的习惯。
 
 ### 3. 本地启动开发服务器
 
