@@ -59,7 +59,7 @@ describe('LoginView', () => {
     const downloadBtn = wrapper.find('[data-testid="login-download-apk-btn"]');
     expect(downloadBtn.exists()).toBe(true);
     expect(downloadBtn.attributes('href')).toBe(
-      '/downloads/FoodtimeNeo-Android.apk',
+      '/downloads/FoodtimeNeo-Android.apk?v=1.0.1-5',
     );
     expect(downloadBtn.attributes('download')).toBe('FoodtimeNeo-Android.apk');
     expect(downloadBtn.text()).toContain('下载安卓安装包');

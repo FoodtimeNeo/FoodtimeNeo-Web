@@ -4,6 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { developmentProxyTarget } from './scripts/dev/proxy-target.js';
+import { productionCsp } from './scripts/security/policy.js';
 
 function createProxyAgent(target) {
   const isHttps = target.startsWith('https:');
@@ -12,7 +13,7 @@ function createProxyAgent(target) {
     keepAlive: true,
     keepAliveMsecs: 30000,
     maxSockets: 50,
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
   });
 }
 
@@ -24,7 +25,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    plugins: [vue()],
+    plugins: [vue(), productionCsp()],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -38,7 +39,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: proxyTarget,
           changeOrigin: true,
-          secure: false,
+          secure: true,
           agent: createProxyAgent(proxyTarget),
           configure: (proxy) => {
             proxy.on('proxyRes', (proxyRes) => {

@@ -76,11 +76,7 @@ function goToWeb() {
         </div>
 
         <div class="nav-actions">
-          <button
-            type="button"
-            class="nav-web-link"
-            @click="goToWeb"
-          >
+          <button type="button" class="nav-web-link" @click="goToWeb">
             {{ auth.isAuthenticated ? '进入网页版首页' : '网页版登录' }}
           </button>
           <a
@@ -120,7 +116,8 @@ function goToWeb() {
 
           <!-- 关键简介段落：字号放大至 21px，行距舒展呼吸 -->
           <p class="card-hero-desc">
-            <strong>北交干饭吧 (FoodTime)</strong> 是一个专注于校园食堂的美食指南、菜品点评与 UGC 社区平台。
+            <strong>北交干饭吧 (FoodTime)</strong>
+            是一个专注于校园食堂的美食指南、菜品点评与 UGC 社区平台。
           </p>
 
           <!-- 核心操作区：深红超大下载按钮（带扫光动效） + 右侧纯黑按键“进入网页端” -->
@@ -185,7 +182,9 @@ function goToWeb() {
             </div>
             <div class="app-feed-section">
               <span class="username">吃货小明</span>
-              <p class="feed-text">这个红烧肉饭真的绝了！分量大，味道好，强烈推荐！</p>
+              <p class="feed-text">
+                这个红烧肉饭真的绝了！分量大，味道好，强烈推荐！
+              </p>
               <img :src="dishImgBeef" alt="第一食堂菜品" />
               <img :src="dishImgNoodle" alt="第二食堂菜品" />
               <img :src="dishImgChicken" alt="红烧肉盖饭" />
@@ -196,7 +195,10 @@ function goToWeb() {
         <!-- ---------------- 右侧手账组件：与底图天然食堂插画与印章完美融合 ---------------- -->
         <section class="zine-right-collage">
           <!-- 黄色方格便利贴（精准置于右上空白，微风晃动动画） -->
-          <div class="yellow-sticky-note note-breeze-anim" data-testid="qr-float-card">
+          <div
+            class="yellow-sticky-note note-breeze-anim"
+            data-testid="qr-float-card"
+          >
             <img
               :src="androidApkSticker"
               alt="Android APK 校园美食指南"
@@ -210,11 +212,7 @@ function goToWeb() {
 
           <!-- 圆形红色复古印章（与底图印章位置完美呼应） -->
           <div class="circular-red-stamp" aria-hidden="true">
-            <img
-              :src="redStamp"
-              alt="Good Food Stamp"
-              class="stamp-real-img"
-            />
+            <img :src="redStamp" alt="Good Food Stamp" class="stamp-real-img" />
           </div>
         </section>
       </div>
@@ -231,11 +229,15 @@ function goToWeb() {
         <div class="banner-content-inner">
           <p class="banner-handwrite-text handwrite">
             今天吃什么，一眼找到；
-            <span class="highlight-ink-underlined">这道值不值，一看就知道。</span>
+            <span class="highlight-ink-underlined"
+              >这道值不值，一看就知道。</span
+            >
           </p>
 
           <div class="banner-sticky-subnote">
-            <span class="subnote-text handwrite">真实的点评，让每一顿饭都不再随便</span>
+            <span class="subnote-text handwrite"
+              >真实的点评，让每一顿饭都不再随便</span
+            >
           </div>
         </div>
       </footer>
@@ -263,10 +265,12 @@ function goToWeb() {
               <code>{{ APK_FILE_NAME }} ({{ APK_SIZE }})</code>。
             </li>
             <li>
-              <strong>2. 允许安装</strong>：若系统弹出“未知来源应用”安全警示，点击【设置/继续安装】并勾选【允许来自此来源的应用】。
+              <strong>2. 允许安装</strong
+              >：若系统弹出“未知来源应用”安全警示，点击【设置/继续安装】并勾选【允许来自此来源的应用】。
             </li>
             <li>
-              <strong>3. 开箱干饭</strong>：安装完成后桌面点击图标，免复杂设置直接使用！
+              <strong>3. 开箱干饭</strong
+              >：安装完成后桌面点击图标，免复杂设置直接使用！
             </li>
           </ol>
           <div class="guide-modal-actions">
@@ -350,7 +354,14 @@ $c-tape-yellow: #f5e8b4;
   background-attachment: scroll;
   background-color: #f7efe4;
   color: $c-ink-black;
-  font-family: var(--ft-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(
+    --ft-font-family,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif
+  );
   overflow-x: hidden;
   margin: 0;
   padding: 0;
@@ -371,7 +382,11 @@ $c-tape-yellow: #f5e8b4;
     left: 20%;
     width: 380px;
     height: 380px;
-    background: radial-gradient(circle, rgba(255, 235, 190, 0.6) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(255, 235, 190, 0.6) 0%,
+      transparent 70%
+    );
   }
 
   &--2 {
@@ -379,7 +394,11 @@ $c-tape-yellow: #f5e8b4;
     right: 15%;
     width: 420px;
     height: 420px;
-    background: radial-gradient(circle, rgba(255, 220, 200, 0.45) 0%, transparent 70%);
+    background: radial-gradient(
+      circle,
+      rgba(255, 220, 200, 0.45) 0%,
+      transparent 70%
+    );
     animation-delay: -5s;
   }
 }
@@ -532,7 +551,10 @@ $c-tape-yellow: #f5e8b4;
   margin: 0 auto;
   display: grid;
   // 左侧文字区域占 1.6fr，中间手机占 0.95fr，右侧占 0.5fr
-  grid-template-columns: minmax(500px, 1.6fr) minmax(280px, 0.95fr) minmax(130px, 0.5fr);
+  grid-template-columns: minmax(500px, 1.6fr) minmax(280px, 0.95fr) minmax(
+      130px,
+      0.5fr
+    );
   align-items: center;
   gap: clamp(16px, 2.5vw, 38px);
   min-height: calc(100vh - 165px);
@@ -784,7 +806,9 @@ $c-tape-yellow: #f5e8b4;
     position: relative;
     z-index: 15;
     cursor: pointer;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+    transition:
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      filter 0.3s ease;
 
     &:hover {
       filter: brightness(1.02);
@@ -808,7 +832,8 @@ $c-tape-yellow: #f5e8b4;
 }
 
 @keyframes phoneTiltFloat {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(-3.5deg) translateY(0);
   }
   50% {
@@ -927,7 +952,8 @@ $c-tape-yellow: #f5e8b4;
 // ---------------- 动画与动态系统（丰富灵动的现代手账动效） ----------------
 // 按钮流光扫光
 @keyframes btnShimmerSweep {
-  0%, 65% {
+  0%,
+  65% {
     left: -100%;
   }
   100% {
@@ -957,7 +983,8 @@ $c-tape-yellow: #f5e8b4;
 
 // 便签微风摆动
 @keyframes noteBreeze {
-  0%, 100% {
+  0%,
+  100% {
     transform: rotate(0deg);
   }
   50% {
@@ -971,7 +998,8 @@ $c-tape-yellow: #f5e8b4;
 
 // 小笑脸可爱跳动
 @keyframes subtleBounce {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) rotate(6deg);
   }
   50% {
