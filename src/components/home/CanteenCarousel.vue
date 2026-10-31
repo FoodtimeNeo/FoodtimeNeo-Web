@@ -270,12 +270,9 @@ onUnmounted(() => {
 <template>
   <div ref="rootRef" class="canteen-carousel" data-test="canteen-carousel">
     <div class="canteen-carousel__subhead">
-      <img
-        src="@/assets/images/decoration02/A/illustrations/A_chopsticks-lineart.png"
-        alt=""
-        class="canteen-carousel__decor-chopsticks"
-        aria-hidden="true"
-      />
+      <span class="canteen-carousel__hint handwrite"
+        >→ 划划看，发现心仪食堂</span
+      >
     </div>
 
     <div
@@ -361,16 +358,16 @@ onUnmounted(() => {
   &__subhead {
     display: flex;
     justify-content: flex-end;
+    padding: 0 var(--ft-space-2, 12px);
     margin-bottom: var(--ft-space-1, 8px);
   }
 
-  &__decor-chopsticks {
-    width: 32px;
-    height: auto;
-    opacity: 0.82;
-    transform: rotate(15deg);
-    pointer-events: none;
-    filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
+  &__hint {
+    color: var(--zine-stamp-red);
+    font-size: 22px;
+    font-family: var(--ft-font-family-note);
+    transform: rotate(2deg);
+    user-select: none;
   }
 
   &__track {
