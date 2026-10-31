@@ -26,11 +26,12 @@ describe('CanteenCarousel', () => {
     },
   ];
 
-  it('正确渲染滑动卡片', () => {
+  it('正确渲染滑动卡片并包含提示语', () => {
     const wrapper = mount(CanteenCarousel, {
       props: { canteens: mockCanteens },
     });
 
+    expect(wrapper.text()).toContain('划划看');
     expect(wrapper.text()).toContain('学一餐厅');
     expect(wrapper.text()).toContain('明湖餐厅');
     expect(wrapper.text()).toContain('4.8');
