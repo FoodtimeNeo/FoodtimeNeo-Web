@@ -84,7 +84,9 @@ async function submitReview() {
       ? '请选择 1–5 星评分'
       : !form.content.trim()
         ? '请填写文字点评'
-        : '';
+        : form.content.trim().length > 500
+          ? '文字点评不能超过 500 字'
+          : '';
   if (validationMessage.value) {
     await nextTick();
     formElement.value?.querySelector('[role="alert"]')?.focus();
@@ -185,7 +187,12 @@ async function submitReview() {
       </div>
       <label class="review-create__comment"
         ><span>文字点评</span
-        ><textarea v-model="form.content" rows="6" :disabled="submitting" />
+        ><textarea
+          v-model="form.content"
+          rows="6"
+          maxlength="500"
+          :disabled="submitting"
+        />
       </label>
       <div class="review-create__photo-upload">
         <span class="photo-upload-label">菜品配图（选填）</span>

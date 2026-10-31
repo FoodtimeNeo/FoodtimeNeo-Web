@@ -57,10 +57,11 @@ const back = computed(() => ({
 const form = reactive({ name: '', description: '', price: '' });
 const fieldId = useId();
 const nameInput = ref(null);
+const descriptionTextarea = ref(null);
 const priceInput = ref(null);
 const imageField = ref(null);
 const feedback = ref(null);
-const errors = reactive({ name: '', price: '', image: '' });
+const errors = reactive({ name: '', description: '', price: '', image: '' });
 const validationErrors = computed(() =>
   Object.entries(errors).filter(([, value]) => value),
 );
@@ -82,15 +83,19 @@ function setFile(value) {
   errors.image = '';
 }
 function focusField(field) {
-  ({ name: nameInput.value, price: priceInput.value, image: imageField.value })[
-    field
-  ]?.focus();
+  ({
+    name: nameInput.value,
+    description: descriptionTextarea.value,
+    price: priceInput.value,
+    image: imageField.value,
+  })[field]?.focus();
 }
 async function submit() {
   if (submitting.value || checkingImage.value || !target.value || done.value)
     return;
   message.value = '';
   errors.name = '';
+  errors.description = '';
   errors.price = '';
   errors.image = '';
   if (
@@ -101,6 +106,10 @@ async function submit() {
     errors.name =
       '请填写有效名称（' + (kind === 'dish' ? 120 : 100) + ' 字以内）';
   }
+  errors.description =
+    form.description && form.description.trim().length > 500
+      ? '简介不能超过 500 字'
+      : '';
   if (kind === 'dish') errors.price = validatePrice(form.price);
   if (!file.value) errors.image = '请先选择符合要求的图片';
   if (validationErrors.value.length) {
@@ -209,11 +218,25 @@ async function submit() {
           </p>
           <label
             >简介（选填）<textarea
+              ref="descriptionTextarea"
               v-model="form.description"
               :disabled="submitting"
               rows="4"
+              maxlength="500"
+              :aria-invalid="Boolean(errors.description)"
+              :aria-describedby="
+                errors.description ? fieldId + '-description-error' : undefined
+              "
+              @input="errors.description = ''"
             />
           </label>
+          <p
+            v-if="errors.description"
+            :id="fieldId + '-description-error'"
+            class="submission-page__field-error"
+          >
+            {{ errors.description }}
+          </p>
           <label v-if="kind === 'dish'"
             >参考价格（选填）<input
               ref="priceInput"
