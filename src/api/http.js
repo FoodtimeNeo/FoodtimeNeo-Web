@@ -78,6 +78,8 @@ export const http = axios.create({
   baseURL,
   timeout: 15000,
   withCredentials: true,
+  // 后端按 /auth/register 等路径识别官方客户端，未知客户端在 enforce 模式下会被拒绝。
+  headers: { 'X-Foodtime-Client': 'web' },
 });
 export async function getCsrf() {
   if (csrf) return csrf;
