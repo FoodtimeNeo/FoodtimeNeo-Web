@@ -10,7 +10,7 @@ import CommunityImageViewer from '@/components/community/CommunityImageViewer.vu
 import { fetchAuditItems, submitAudit } from '@/api/admin-audit.api.js';
 import { removeReviewReplyAsAdmin } from '@/api/review.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
-import { formatTime, statusLabels } from '@/utils/recordLabels.js';
+import { statusLabels } from '@/utils/recordLabels.js';
 import { formatPrice } from '@/utils/mediaUrl.js';
 import { validatePrice } from '@/utils/submissionValidation.js';
 import MediaImage from '@/components/base/MediaImage.vue';
@@ -19,6 +19,7 @@ import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import AiVerdict from '@/components/base/AiVerdict.vue';
+import PublisherDetails from '@/components/base/PublisherDetails.vue';
 const status = ref('pending');
 const channel = ref('catalog'),
   details = ref(null),
@@ -172,8 +173,7 @@ async function submit() {
         <h3>{{ labels[row.type] }} · {{ row.name || row.id }}</h3>
         <p>{{ statusLabels[row.status] }}</p>
         <p>ID：{{ row.id }}</p>
-        <p>投稿者：{{ row.userDisplayName || row.userId }}</p>
-        <p>提交时间：{{ formatTime(row.createdAt) }}</p>
+        <PublisherDetails :row="row" />
         <p v-if="row.rating">评分：{{ row.rating }} / 5</p>
         <p v-if="row.content" class="text">{{ row.content }}</p>
         <p v-if="row.type === 'dish'">{{ formatPrice(row.price) }}</p>
@@ -222,6 +222,12 @@ async function submit() {
                 class="community-review-context"
                 aria-label="完整社区审核内容"
               >
+                <PublisherDetails
+                  :row="{
+                    ...(details.comment || details.post),
+                    userEmail: details.userEmail,
+                  }"
+                />
                 <h4>{{ details.post.title }}</h4>
                 <p class="text">{{ details.post.content }}</p>
                 <CommunityImageViewer

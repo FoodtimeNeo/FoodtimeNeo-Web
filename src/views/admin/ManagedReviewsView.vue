@@ -12,6 +12,7 @@ import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import AiVerdict from '@/components/base/AiVerdict.vue';
+import PublisherDetails from '@/components/base/PublisherDetails.vue';
 const route = useRoute();
 const draft = ref(typeof route.query.q === 'string' ? route.query.q : '');
 const query = ref(draft.value.trim());
@@ -94,7 +95,7 @@ async function remove() {
       :row="row"
       kind="review"
     >
-      <p>作者：{{ row.userDisplayName || row.userId }}</p>
+      <PublisherDetails :row="row" :show-time="false" />
       <AiVerdict
         :risk-level="row.aiRiskLevel"
         :confidence="row.aiConfidence"
