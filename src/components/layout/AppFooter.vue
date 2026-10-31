@@ -2,7 +2,7 @@
   <footer class="app-footer torn-edge">
     <div class="app-footer__inner">
       <div class="app-footer__brand-block">
-        <p class="app-footer__title">食堂日记 / BJTU Canteen Zine</p>
+        <p class="app-footer__title">北交干饭吧/BJTU FoodtimeNeo</p>
         <img
           src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
           alt=""
@@ -14,7 +14,7 @@
         <RouterLink :to="{ name: 'landing' }" class="app-footer__portal-link">
           进入官网 →
         </RouterLink>
-        <p class="app-footer__meta">2026 · 北交干饭吧 · 学生自制版本</p>
+        <p class="app-footer__meta">2026 · 北交干饭吧 · FoodtimeNeo</p>
       </div>
     </div>
     <span
