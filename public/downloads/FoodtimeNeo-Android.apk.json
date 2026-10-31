@@ -1,0 +1,15 @@
+{
+  "versionName": "1.1.1",
+  "versionCode": 6,
+  "bytes": 20870445,
+  "sha256": "57e3844e3410c2e6afbf082aefa43b5dd0d89fabeacb22a4dbd651f6be8291f9",
+  "signerCertificateSha256": "94e7db3a30937a0cd8bc8596f80666122e3bd3f3323e55bfef14f72e9c454b92",
+  "sourceRepository": "FoodtimeNeo/FoodtimeNeo-Android",
+  "sourceRef": "refs/heads/main",
+  "sourceCommit": "6efe3c8fefd9e092058de7bba5ceab9a0898bb69",
+  "releaseTag": "v1.1.1",
+  "releaseUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/tag/v1.1.1",
+  "artifactUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.1.1/app-release.apk",
+  "releaseAssetId": 694576606,
+  "buildRunUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/actions/runs/41176380141"
+}

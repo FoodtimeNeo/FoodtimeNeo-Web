@@ -34,7 +34,7 @@ describe('LandingView (Zine Collage Style matching reference)', () => {
     const heroBtn = wrapper.find('[data-testid="hero-download-btn"]');
     expect(heroBtn.exists()).toBe(true);
     expect(heroBtn.attributes('href')).toBe(
-      '/downloads/FoodtimeNeo-Android.apk?v=1.0.1-5',
+      '/downloads/FoodtimeNeo-Android.apk?v=1.1.1-6',
     );
     expect(heroBtn.attributes('download')).toBe('FoodtimeNeo-Android.apk');
     expect(heroBtn.text()).toContain('下载安卓安装包');
@@ -43,7 +43,7 @@ describe('LandingView (Zine Collage Style matching reference)', () => {
     const navBtn = wrapper.find('[data-testid="nav-download-btn"]');
     expect(navBtn.exists()).toBe(true);
     expect(navBtn.attributes('href')).toBe(
-      '/downloads/FoodtimeNeo-Android.apk?v=1.0.1-5',
+      '/downloads/FoodtimeNeo-Android.apk?v=1.1.1-6',
     );
   });
 
