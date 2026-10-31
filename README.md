@@ -18,7 +18,7 @@
   <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-8.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8"></a>
   <a href="https://pinia.vuejs.org/"><img src="https://img.shields.io/badge/Pinia-2.3-FFE56C?style=for-the-badge&logo=pinia&logoColor=black" alt="Pinia"></a>
   <a href="https://element-plus.org/"><img src="https://img.shields.io/badge/Element_Plus-2.9-409EFF?style=for-the-badge&logo=elementplus&logoColor=white" alt="Element Plus"></a>
-  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js->=24-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js->=24.15-339933?style=for-the-badge&logo=nodedotjs&logoColor=white" alt="Node.js"></a>
 </p>
 
 <p align="center">
@@ -174,10 +174,10 @@ flowchart TD
 
 ### 1. 环境准备
 
-确保本机安装了 Node.js 24 或更高版本：
+确保本机安装了 Node.js 24.15 或更高版本：
 
 ```sh
-node -v   # >= v24.0.0
+node -v   # >= v24.15.0
 npm -v    # >= 10.0.0
 ```
 
