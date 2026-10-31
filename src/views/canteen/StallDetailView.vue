@@ -50,7 +50,12 @@ const sortedDishes = computed(() =>
       <header class="stall-detail__hero torn-edge">
         <span class="sticker sticker--r-1">档口菜单</span>
         <h1 class="section-title">{{ data.stall.name }}</h1>
-        <p class="handwrite">今天想吃什么，就从这张菜单里慢慢挑。</p>
+        <img
+          src="@/assets/images/decoration02/C/illustrations/C_doodle-food-bowl.png"
+          alt=""
+          class="stall-detail__hero-doodle"
+          aria-hidden="true"
+        />
         <span class="stall-detail__dish-count stamp"
           >{{ data.dishes.length }} 道菜品</span
         >
@@ -133,10 +138,16 @@ const sortedDishes = computed(() =>
       var(--zine-decor-food-sketch-2) right 28px center / 150px auto no-repeat,
       var(--ft-color-surface);
 
-    p {
-      max-width: 620px;
-      color: var(--ft-color-primary);
-      font-size: 24px;
+    .stall-detail__hero-doodle {
+      position: absolute;
+      top: 20px;
+      right: 28px;
+      width: 68px;
+      height: auto;
+      opacity: 0.85;
+      transform: rotate(5deg);
+      pointer-events: none;
+      filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
     }
   }
 

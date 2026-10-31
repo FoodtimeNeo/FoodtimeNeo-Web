@@ -34,7 +34,6 @@ const activeName = computed(() => resolveActiveNavigation(route));
     <div class="app-header__inner">
       <RouterLink class="app-header__brand" :to="{ name: 'home' }">
         <strong>北交干饭吧</strong>
-        <span>一页一餐的校园手账</span>
       </RouterLink>
 
       <nav class="app-header__nav" aria-label="主导航">

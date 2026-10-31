@@ -171,7 +171,7 @@ it('审核冲突保留原内容，写入期间阻止重复提交', async () => {
 it('审核队列显示投稿者昵称，不展示内部目标 ID', async () => {
   const wrapper = mount(AdminAuditView);
   await flushPromises();
-  expect(wrapper.text()).toContain('投稿者：干饭达人');
+  expect(wrapper.text()).toContain('发布者名称：干饭达人');
   expect(wrapper.text()).not.toContain('目标 ID：');
 });
 it('点评与图片投稿显示 AI 分诊结论，菜品投稿不显示', async () => {

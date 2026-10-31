@@ -4,6 +4,7 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils';
 const noticeApi = vi.hoisted(() => ({
   fetchOwnNotices: vi.fn(),
   markNoticeRead: vi.fn(),
+  confirmNotice: vi.fn(),
 }));
 vi.mock('@/api/notice.api.js', () => noticeApi);
 

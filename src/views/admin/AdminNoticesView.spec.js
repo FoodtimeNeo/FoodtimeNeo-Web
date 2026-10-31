@@ -1,107 +1,96 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
-
 const api = vi.hoisted(() => ({
-  createAdminNotice: vi.fn(),
-  deleteAdminNotice: vi.fn(),
+  searchAdminNotices: vi.fn(),
+  fetchNoticeSettings: vi.fn(),
+  setNoticeSettings: vi.fn(),
+  saveNoticeMarkdown: vi.fn(),
   fetchAdminNotice: vi.fn(),
-  fetchAdminNotices: vi.fn(),
-  updateAdminNotice: vi.fn(),
 }));
 vi.mock('@/api/notice.api.js', () => api);
-
 import AdminNoticesView from './AdminNoticesView.vue';
-
 const row = {
   id: 'n1',
-  title: '旧标题',
-  body: '旧正文',
-  publishedAt: '2026-10-20T08:00:00Z',
+  title: '新公告',
+  content: '# 新公告\n\n**正文**',
+  publishedAt: '2026-10-30T00:00:00Z',
 };
-
-function mountPage() {
-  return mount(AdminNoticesView);
-}
-
-function buttonByText(wrapper, text) {
-  return wrapper.findAll('button').find((button) => button.text() === text);
-}
-
+const button = (w, text) => w.findAll('button').find((b) => b.text() === text);
 beforeEach(() => {
   vi.resetAllMocks();
-  api.fetchAdminNotices.mockResolvedValue({
-    items: [],
-    total: 0,
-    page: 1,
-    size: 20,
-  });
-  api.createAdminNotice.mockResolvedValue(row);
-  api.updateAdminNotice.mockResolvedValue(row);
-  api.deleteAdminNotice.mockResolvedValue(undefined);
+  api.fetchNoticeSettings.mockResolvedValue({ noticeId: null });
+  api.searchAdminNotices.mockResolvedValue({ items: [row], total: 30 });
+  api.saveNoticeMarkdown.mockResolvedValue(row);
+});
+it('创建仅提交 Markdown，保存后仍需明确确认设置', async () => {
+  const w = mount(AdminNoticesView, { global: { stubs: { Teleport: true } } });
+  await flushPromises();
+  await button(w, '创建公告').trigger('click');
+  await w.get('form:not(.search)').trigger('submit');
+  expect(w.text()).toContain('内容不能为空');
+  await w.get('textarea').setValue('普通文字');
+  await w.get('form:not(.search)').trigger('submit');
+  expect(w.text()).toContain('添加非空标题');
+  await w.get('textarea').setValue(row.content);
+  await w.get('form:not(.search)').trigger('submit');
+  await flushPromises();
+  expect(api.saveNoticeMarkdown).toHaveBeenCalledWith(row.content, null);
+  expect(api.setNoticeSettings).not.toHaveBeenCalled();
+  await button(w, '确认设置').trigger('click');
+  await flushPromises();
+  expect(api.setNoticeSettings).toHaveBeenCalledWith('n1');
+});
+it('翻页搜索保留选择，设置失败可重试', async () => {
+  const w = mount(AdminNoticesView, { global: { stubs: { Teleport: true } } });
+  await flushPromises();
+  await w.findAll('input[type=radio]')[1].setValue();
+  await button(w, '下一页').trigger('click');
+  await flushPromises();
+  expect(api.searchAdminNotices).toHaveBeenLastCalledWith(2, '');
+  await w.get('input[type=search]').setValue('关键词');
+  await w.get('.search').trigger('submit');
+  await flushPromises();
+  expect(api.searchAdminNotices).toHaveBeenLastCalledWith(1, '关键词');
+  expect(w.get('footer').text()).toContain('新公告');
+  api.setNoticeSettings.mockRejectedValueOnce(new Error('网络断开'));
+  await button(w, '确认设置').trigger('click');
+  await flushPromises();
+  expect(w.text()).toContain('网络断开');
+  expect(button(w, '确认设置').attributes('disabled')).toBeUndefined();
+  await button(w, '确认设置').trigger('click');
+  await flushPromises();
+  expect(api.setNoticeSettings).toHaveBeenCalledTimes(2);
+});
+it('停用公告发送明确 null，编辑保留完整 Markdown', async () => {
+  api.fetchNoticeSettings.mockResolvedValue({ noticeId: 'n1' });
   api.fetchAdminNotice.mockResolvedValue(row);
+  const w = mount(AdminNoticesView, { global: { stubs: { Teleport: true } } });
+  await flushPromises();
+  await button(w, '编辑').trigger('click');
+  expect(w.get('textarea').element.value).toBe(row.content);
+  await button(w, '设置公告').trigger('click');
+  await w.findAll('input[type=radio]')[0].setValue();
+  await button(w, '确认设置').trigger('click');
+  await flushPromises();
+  expect(api.setNoticeSettings).toHaveBeenCalledWith(null);
 });
-
-it('空标题提交被拦截且不调接口', async () => {
-  const wrapper = mountPage();
+it('较早的搜索响应不会覆盖较新的结果', async () => {
+  const w = mount(AdminNoticesView, { global: { stubs: { Teleport: true } } });
   await flushPromises();
-  await wrapper.get('form').trigger('submit');
+  let old;
+  api.searchAdminNotices
+    .mockReturnValueOnce(
+      new Promise((resolve) => {
+        old = resolve;
+      }),
+    )
+    .mockResolvedValueOnce({ items: [], total: 0 });
+  await w.get('.search').trigger('submit');
+  await w.get('input[type=search]').setValue('不存在');
+  await w.get('.search').trigger('submit');
   await flushPromises();
-  expect(wrapper.text()).toContain('标题不能为空');
-  expect(api.createAdminNotice).not.toHaveBeenCalled();
-});
-
-it('填写后发布公告并刷新列表', async () => {
-  const wrapper = mountPage();
+  old({ items: [row], total: 1 });
   await flushPromises();
-  await wrapper.get('input').setValue('新公告');
-  await wrapper.get('textarea').setValue('新正文');
-  await wrapper.get('form').trigger('submit');
-  await flushPromises();
-  expect(api.createAdminNotice).toHaveBeenCalledWith({
-    title: '新公告',
-    body: '新正文',
-  });
-  expect(wrapper.text()).toContain('公告已发布');
-  expect(api.fetchAdminNotices).toHaveBeenCalledTimes(2);
-});
-
-it('编辑回填后保存修改', async () => {
-  api.fetchAdminNotices.mockResolvedValue({
-    items: [row],
-    total: 1,
-    page: 1,
-    size: 20,
-  });
-  const wrapper = mountPage();
-  await flushPromises();
-  await buttonByText(wrapper, '编辑').trigger('click');
-  await flushPromises();
-  expect(api.fetchAdminNotice).toHaveBeenCalledWith('n1');
-  expect(wrapper.get('input').element.value).toBe('旧标题');
-  await wrapper.get('input').setValue('新标题');
-  await wrapper.get('form').trigger('submit');
-  await flushPromises();
-  expect(api.updateAdminNotice).toHaveBeenCalledWith('n1', {
-    title: '新标题',
-    body: '旧正文',
-  });
-  expect(wrapper.text()).toContain('公告已更新');
-});
-
-it('二次确认后删除公告', async () => {
-  api.fetchAdminNotices.mockResolvedValue({
-    items: [row],
-    total: 1,
-    page: 1,
-    size: 20,
-  });
-  const wrapper = mountPage();
-  await flushPromises();
-  await buttonByText(wrapper, '删除').trigger('click');
-  expect(wrapper.text()).toContain('确认删除这条公告');
-  expect(api.deleteAdminNotice).not.toHaveBeenCalled();
-  await buttonByText(wrapper, '确认删除').trigger('click');
-  await flushPromises();
-  expect(api.deleteAdminNotice).toHaveBeenCalledWith('n1');
-  expect(wrapper.text()).toContain('公告已删除');
+  expect(w.text()).toContain('没有匹配的公告');
+  expect(w.findAll('input[type=radio]')).toHaveLength(1);
 });

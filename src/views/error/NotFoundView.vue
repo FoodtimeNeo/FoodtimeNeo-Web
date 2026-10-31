@@ -2,7 +2,12 @@
   <main class="not-found-page">
     <span class="stamp">404 · 空白页</span>
     <h1>这一页还没开张</h1>
-    <p class="handwrite">这张纸还没有写下新的食堂故事。</p>
+    <img
+      src="@/assets/images/decoration02/A/illustrations/A_rice-bowl-lineart.png"
+      alt=""
+      class="not-found-page__doodle"
+      aria-hidden="true"
+    />
     <div class="not-found-page__actions">
       <RouterLink class="button-ink is-primary" :to="{ name: 'home' }"
         >回到首页</RouterLink
@@ -28,10 +33,13 @@
     font-family: var(--ft-font-family-title);
   }
 
-  p {
-    margin: 0 0 var(--ft-space-3);
-    color: var(--ft-color-primary);
-    font-size: var(--ft-font-size-lg);
+  &__doodle {
+    display: block;
+    width: 72px;
+    height: auto;
+    margin: var(--ft-space-2) 0 var(--ft-space-3);
+    opacity: 0.85;
+    filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
   }
 
   &__actions {

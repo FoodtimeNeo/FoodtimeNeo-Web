@@ -1,0 +1,2548 @@
+[
+  {
+    "file": "A/branding/A_brand-logo.png",
+    "sheet": "A",
+    "group": "branding",
+    "name": "brand-logo",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      389,
+      106
+    ],
+    "source_rect": [
+      40,
+      25,
+      429,
+      131
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/branding/A_headline-download.png",
+    "sheet": "A",
+    "group": "branding",
+    "name": "headline-download",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      647,
+      122
+    ],
+    "source_rect": [
+      35,
+      126,
+      682,
+      248
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/branding/A_hero-description.png",
+    "sheet": "A",
+    "group": "branding",
+    "name": "hero-description",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      564,
+      54
+    ],
+    "source_rect": [
+      42,
+      251,
+      606,
+      305
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/buttons/A_android-download-red.png",
+    "sheet": "A",
+    "group": "buttons",
+    "name": "android-download-red",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      368,
+      77
+    ],
+    "source_rect": [
+      45,
+      313,
+      413,
+      390
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/buttons/A_install-guide-outline.png",
+    "sheet": "A",
+    "group": "buttons",
+    "name": "install-guide-outline",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      223,
+      76
+    ],
+    "source_rect": [
+      430,
+      314,
+      653,
+      390
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/mockups/A_phone-app-mockup.png",
+    "sheet": "A",
+    "group": "mockups",
+    "name": "phone-app-mockup",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      335,
+      499
+    ],
+    "source_rect": [
+      671,
+      22,
+      1021,
+      521
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/campus/A_canteen-landscape.png",
+    "sheet": "A",
+    "group": "campus",
+    "name": "canteen-landscape",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      534,
+      429
+    ],
+    "source_rect": [
+      1001,
+      31,
+      1535,
+      460
+    ],
+    "note": "场景裁片，含原合成背景"
+  },
+  {
+    "file": "A/stickers/A_handwriting-always-campus.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "handwriting-always-campus",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      205,
+      110
+    ],
+    "source_rect": [
+      1310,
+      16,
+      1519,
+      126
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/stickers/A_paper-note-honest-eating.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "paper-note-honest-eating",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      291,
+      123
+    ],
+    "source_rect": [
+      365,
+      407,
+      656,
+      530
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/stickers/A_paper-tape-blank.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "paper-tape-blank",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      292,
+      115
+    ],
+    "source_rect": [
+      25,
+      397,
+      341,
+      513
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/stickers/A_brand-strap-campus-food.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "brand-strap-campus-food",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      415,
+      69
+    ],
+    "source_rect": [
+      32,
+      665,
+      447,
+      734
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/stickers/A_paper-stamp-better-campus.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "paper-stamp-better-campus",
+    "mode": "circle",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      156,
+      165
+    ],
+    "source_rect": [
+      980,
+      604,
+      1136,
+      769
+    ],
+    "note": "红色印章，部分原背景可能保留"
+  },
+  {
+    "file": "A/stickers/A_polaroid-noodle.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "polaroid-noodle",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      199,
+      243
+    ],
+    "source_rect": [
+      782,
+      501,
+      981,
+      744
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/stickers/A_polaroid-clocktower.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "polaroid-clocktower",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      147,
+      174
+    ],
+    "source_rect": [
+      1070,
+      464,
+      1217,
+      638
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/stickers/A_polaroid-sakura.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "polaroid-sakura",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      131,
+      163
+    ],
+    "source_rect": [
+      1207,
+      476,
+      1338,
+      639
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/stickers/A_polaroid-green-train.png",
+    "sheet": "A",
+    "group": "stickers",
+    "name": "polaroid-green-train",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      131,
+      173
+    ],
+    "source_rect": [
+      1331,
+      474,
+      1462,
+      647
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/food/A_rice-bowl.png",
+    "sheet": "A",
+    "group": "food",
+    "name": "rice-bowl",
+    "mode": "ellipse",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      275,
+      248
+    ],
+    "source_rect": [
+      535,
+      492,
+      810,
+      740
+    ],
+    "note": "人工椭圆抠图，碗沿可能带背景"
+  },
+  {
+    "file": "A/illustrations/A_student-group.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "student-group",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      310,
+      194
+    ],
+    "source_rect": [
+      1152,
+      830,
+      1462,
+      1024
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_trees-green.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "trees-green",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      247,
+      155
+    ],
+    "source_rect": [
+      724,
+      855,
+      971,
+      1010
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_vintage-lamp.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "vintage-lamp",
+    "mode": "inkdark",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      45,
+      140
+    ],
+    "source_rect": [
+      1045,
+      852,
+      1099,
+      998
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_food-tray-lineart.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "food-tray-lineart",
+    "mode": "inkbrown",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      156,
+      94
+    ],
+    "source_rect": [
+      1148,
+      634,
+      1305,
+      744
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_rice-bowl-lineart.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "rice-bowl-lineart",
+    "mode": "inkbrown",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      132,
+      116
+    ],
+    "source_rect": [
+      16,
+      866,
+      148,
+      985
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_milk-tea-lineart.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "milk-tea-lineart",
+    "mode": "inkbrown",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      76,
+      104
+    ],
+    "source_rect": [
+      155,
+      868,
+      231,
+      972
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_takeaway-box-lineart.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "takeaway-box-lineart",
+    "mode": "inkbrown",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      112,
+      123
+    ],
+    "source_rect": [
+      223,
+      869,
+      335,
+      992
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_chopsticks-lineart.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "chopsticks-lineart",
+    "mode": "inkbrown",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      89,
+      121
+    ],
+    "source_rect": [
+      317,
+      873,
+      406,
+      994
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_paper-plane-lineart.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "paper-plane-lineart",
+    "mode": "inkbrown",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      101,
+      102
+    ],
+    "source_rect": [
+      508,
+      874,
+      609,
+      976
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_arrow-coral.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "arrow-coral",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      130,
+      90
+    ],
+    "source_rect": [
+      402,
+      508,
+      545,
+      618
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_small-red-sparkle.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "small-red-sparkle",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      71,
+      66
+    ],
+    "source_rect": [
+      449,
+      587,
+      520,
+      653
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_heart-lineart.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "heart-lineart",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      62,
+      58
+    ],
+    "source_rect": [
+      425,
+      888,
+      487,
+      946
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/illustrations/A_gold-leaf.png",
+    "sheet": "A",
+    "group": "illustrations",
+    "name": "gold-leaf",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      93,
+      112
+    ],
+    "source_rect": [
+      1443,
+      460,
+      1536,
+      572
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/icons/A_feature-01.png",
+    "sheet": "A",
+    "group": "icons",
+    "name": "feature-01",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      92,
+      96
+    ],
+    "source_rect": [
+      24,
+      535,
+      116,
+      631
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/icons/A_feature-02.png",
+    "sheet": "A",
+    "group": "icons",
+    "name": "feature-02",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      93,
+      93
+    ],
+    "source_rect": [
+      123,
+      535,
+      216,
+      628
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/icons/A_feature-03.png",
+    "sheet": "A",
+    "group": "icons",
+    "name": "feature-03",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      84,
+      95
+    ],
+    "source_rect": [
+      226,
+      535,
+      310,
+      630
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/icons/A_feature-04.png",
+    "sheet": "A",
+    "group": "icons",
+    "name": "feature-04",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      87,
+      95
+    ],
+    "source_rect": [
+      313,
+      535,
+      400,
+      630
+    ],
+    "note": ""
+  },
+  {
+    "file": "A/paper/A_paper-cream.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "paper-cream",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      250,
+      108
+    ],
+    "source_rect": [
+      30,
+      747,
+      280,
+      855
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "A/paper/A_paper-grid.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "paper-grid",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      254,
+      108
+    ],
+    "source_rect": [
+      284,
+      749,
+      538,
+      857
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "A/paper/A_paper-red-wash.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "paper-red-wash",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      205,
+      83
+    ],
+    "source_rect": [
+      532,
+      750,
+      737,
+      833
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "A/paper/A_paper-rough-white.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "paper-rough-white",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      197,
+      102
+    ],
+    "source_rect": [
+      738,
+      751,
+      935,
+      853
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "A/paper/A_paper-beige-square.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "paper-beige-square",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      166,
+      78
+    ],
+    "source_rect": [
+      938,
+      774,
+      1104,
+      852
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "A/paper/A_paper-clipped.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "paper-clipped",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      225,
+      93
+    ],
+    "source_rect": [
+      1113,
+      748,
+      1338,
+      841
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "A/paper/A_ticket-outlined.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "ticket-outlined",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      171,
+      81
+    ],
+    "source_rect": [
+      1347,
+      761,
+      1518,
+      842
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "A/paper/A_red-framed-card.png",
+    "sheet": "A",
+    "group": "paper",
+    "name": "red-framed-card",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      203,
+      92
+    ],
+    "source_rect": [
+      1320,
+      657,
+      1523,
+      749
+    ],
+    "note": "纸张原画面局部，非精确透明材质"
+  },
+  {
+    "file": "B/branding/B_brand-logo.png",
+    "sheet": "B",
+    "group": "branding",
+    "name": "brand-logo",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      400,
+      123
+    ],
+    "source_rect": [
+      44,
+      44,
+      444,
+      167
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/branding/B_handwritten-slogan.png",
+    "sheet": "B",
+    "group": "branding",
+    "name": "handwritten-slogan",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      364,
+      99
+    ],
+    "source_rect": [
+      57,
+      167,
+      421,
+      266
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/branding/B_top-tape-question.png",
+    "sheet": "B",
+    "group": "branding",
+    "name": "top-tape-question",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      253,
+      88
+    ],
+    "source_rect": [
+      453,
+      4,
+      706,
+      92
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/buttons/B_android-download-red.png",
+    "sheet": "B",
+    "group": "buttons",
+    "name": "android-download-red",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      414,
+      91
+    ],
+    "source_rect": [
+      31,
+      307,
+      445,
+      398
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/buttons/B_installation-guide.png",
+    "sheet": "B",
+    "group": "buttons",
+    "name": "installation-guide",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      229,
+      70
+    ],
+    "source_rect": [
+      31,
+      404,
+      260,
+      474
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/buttons/B_learn-more.png",
+    "sheet": "B",
+    "group": "buttons",
+    "name": "learn-more",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      193,
+      71
+    ],
+    "source_rect": [
+      262,
+      403,
+      455,
+      474
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/mockups/B_two-phone-display.png",
+    "sheet": "B",
+    "group": "mockups",
+    "name": "two-phone-display",
+    "mode": "multi-poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      500,
+      507
+    ],
+    "source_rect": [
+      451,
+      83,
+      952,
+      590
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/campus/B_university-building-main.png",
+    "sheet": "B",
+    "group": "campus",
+    "name": "university-building-main",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      553,
+      258
+    ],
+    "source_rect": [
+      982,
+      0,
+      1535,
+      258
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/campus/B_university-motto-stone.png",
+    "sheet": "B",
+    "group": "campus",
+    "name": "university-motto-stone",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      360,
+      186
+    ],
+    "source_rect": [
+      1175,
+      221,
+      1535,
+      407
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/campus/B_canteen-photo.png",
+    "sheet": "B",
+    "group": "campus",
+    "name": "canteen-photo",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      458,
+      317
+    ],
+    "source_rect": [
+      0,
+      707,
+      458,
+      1024
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/campus/B_sky-trees-photo.png",
+    "sheet": "B",
+    "group": "campus",
+    "name": "sky-trees-photo",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      198,
+      240
+    ],
+    "source_rect": [
+      456,
+      780,
+      654,
+      1020
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_university-seal.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "university-seal",
+    "mode": "circle",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      192,
+      204
+    ],
+    "source_rect": [
+      995,
+      183,
+      1187,
+      389
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_better-campus-food-stamp.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "better-campus-food-stamp",
+    "mode": "circle",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      173,
+      161
+    ],
+    "source_rect": [
+      1094,
+      567,
+      1277,
+      728
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_yellow-note-good-food.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "yellow-note-good-food",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      180,
+      187
+    ],
+    "source_rect": [
+      891,
+      548,
+      1077,
+      735
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_brand-strip.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "brand-strip",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      133,
+      60
+    ],
+    "source_rect": [
+      481,
+      597,
+      614,
+      657
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_red-tape-strip.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "red-tape-strip",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      168,
+      58
+    ],
+    "source_rect": [
+      635,
+      601,
+      803,
+      659
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_green-tape-strip.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "green-tape-strip",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      88,
+      76
+    ],
+    "source_rect": [
+      807,
+      592,
+      895,
+      668
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_paper-grid-small.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "paper-grid-small",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      213,
+      99
+    ],
+    "source_rect": [
+      463,
+      659,
+      681,
+      758
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_torn-beige-note.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "torn-beige-note",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      211,
+      69
+    ],
+    "source_rect": [
+      683,
+      669,
+      894,
+      738
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_blank-grid-note.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "blank-grid-note",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      187,
+      215
+    ],
+    "source_rect": [
+      718,
+      808,
+      905,
+      1023
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/stickers/B_paper-cream-strip.png",
+    "sheet": "B",
+    "group": "stickers",
+    "name": "paper-cream-strip",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      231,
+      44
+    ],
+    "source_rect": [
+      663,
+      733,
+      894,
+      777
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_feature-canteen.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "feature-canteen",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      86,
+      106
+    ],
+    "source_rect": [
+      39,
+      501,
+      125,
+      607
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_feature-dishes.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "feature-dishes",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      93,
+      105
+    ],
+    "source_rect": [
+      145,
+      501,
+      238,
+      606
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_feature-rankings.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "feature-rankings",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      95,
+      108
+    ],
+    "source_rect": [
+      254,
+      501,
+      349,
+      609
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_feature-community.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "feature-community",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      93,
+      109
+    ],
+    "source_rect": [
+      370,
+      501,
+      463,
+      610
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/components/B_search-field.png",
+    "sheet": "B",
+    "group": "components",
+    "name": "search-field",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      422,
+      64
+    ],
+    "source_rect": [
+      34,
+      626,
+      456,
+      690
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/food/B_rice-pork-bowl.png",
+    "sheet": "B",
+    "group": "food",
+    "name": "rice-pork-bowl",
+    "mode": "ellipse",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      157,
+      142
+    ],
+    "source_rect": [
+      928,
+      404,
+      1085,
+      546
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/food/B_fried-vegetables-bowl.png",
+    "sheet": "B",
+    "group": "food",
+    "name": "fried-vegetables-bowl",
+    "mode": "ellipse",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      164,
+      135
+    ],
+    "source_rect": [
+      1051,
+      422,
+      1215,
+      557
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/food/B_noodles-bowl.png",
+    "sheet": "B",
+    "group": "food",
+    "name": "noodles-bowl",
+    "mode": "ellipse",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      148,
+      125
+    ],
+    "source_rect": [
+      1181,
+      436,
+      1329,
+      561
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/food/B_mixed-rice-bowl.png",
+    "sheet": "B",
+    "group": "food",
+    "name": "mixed-rice-bowl",
+    "mode": "ellipse",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      97,
+      101
+    ],
+    "source_rect": [
+      1320,
+      443,
+      1417,
+      544
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/food/B_iced-milk-tea.png",
+    "sheet": "B",
+    "group": "food",
+    "name": "iced-milk-tea",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      83,
+      140
+    ],
+    "source_rect": [
+      1433,
+      400,
+      1531,
+      551
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/illustrations/B_smile-doodle.png",
+    "sheet": "B",
+    "group": "illustrations",
+    "name": "smile-doodle",
+    "mode": "inkdark",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      52,
+      48
+    ],
+    "source_rect": [
+      1301,
+      648,
+      1367,
+      718
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/illustrations/B_food-ticket-doodle.png",
+    "sheet": "B",
+    "group": "illustrations",
+    "name": "food-ticket-doodle",
+    "mode": "inkdark",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      86,
+      71
+    ],
+    "source_rect": [
+      1426,
+      649,
+      1515,
+      731
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-pin.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-pin",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      50,
+      67
+    ],
+    "source_rect": [
+      977,
+      730,
+      1027,
+      797
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-paperplane.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-paperplane",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      62,
+      57
+    ],
+    "source_rect": [
+      1041,
+      740,
+      1103,
+      797
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-heart.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-heart",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      45,
+      52
+    ],
+    "source_rect": [
+      1117,
+      735,
+      1162,
+      787
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-thumb.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-thumb",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      47,
+      50
+    ],
+    "source_rect": [
+      1175,
+      740,
+      1222,
+      790
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-bookmark.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-bookmark",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      50,
+      54
+    ],
+    "source_rect": [
+      1241,
+      735,
+      1291,
+      789
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-star.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-star",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      57,
+      59
+    ],
+    "source_rect": [
+      1295,
+      731,
+      1352,
+      790
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-message.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-message",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      58,
+      57
+    ],
+    "source_rect": [
+      1365,
+      734,
+      1423,
+      791
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/icons/B_micro-arrow.png",
+    "sheet": "B",
+    "group": "icons",
+    "name": "micro-arrow",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      64,
+      73
+    ],
+    "source_rect": [
+      1433,
+      727,
+      1497,
+      800
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/components/B_canteen-chip-canteen-one.png",
+    "sheet": "B",
+    "group": "components",
+    "name": "canteen-chip-canteen-one",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      107,
+      59
+    ],
+    "source_rect": [
+      957,
+      808,
+      1064,
+      867
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/components/B_canteen-chip-canteen-two.png",
+    "sheet": "B",
+    "group": "components",
+    "name": "canteen-chip-canteen-two",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      109,
+      60
+    ],
+    "source_rect": [
+      1069,
+      808,
+      1178,
+      868
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/components/B_canteen-chip-canteen-three.png",
+    "sheet": "B",
+    "group": "components",
+    "name": "canteen-chip-canteen-three",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      111,
+      62
+    ],
+    "source_rect": [
+      1182,
+      808,
+      1293,
+      870
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/components/B_canteen-chip-canteen-four.png",
+    "sheet": "B",
+    "group": "components",
+    "name": "canteen-chip-canteen-four",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      118,
+      63
+    ],
+    "source_rect": [
+      1290,
+      807,
+      1408,
+      870
+    ],
+    "note": ""
+  },
+  {
+    "file": "B/components/B_canteen-chip-canteen-five.png",
+    "sheet": "B",
+    "group": "components",
+    "name": "canteen-chip-canteen-five",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      112,
+      63
+    ],
+    "source_rect": [
+      1405,
+      808,
+      1517,
+      871
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/branding/C_brand-logo.png",
+    "sheet": "C",
+    "group": "branding",
+    "name": "brand-logo",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      410,
+      153
+    ],
+    "source_rect": [
+      54,
+      38,
+      464,
+      191
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/branding/C_hero-description.png",
+    "sheet": "C",
+    "group": "branding",
+    "name": "hero-description",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      401,
+      84
+    ],
+    "source_rect": [
+      59,
+      215,
+      460,
+      299
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/buttons/C_android-download-red.png",
+    "sheet": "C",
+    "group": "buttons",
+    "name": "android-download-red",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      414,
+      94
+    ],
+    "source_rect": [
+      61,
+      317,
+      475,
+      411
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/buttons/C_android-download-small.png",
+    "sheet": "C",
+    "group": "buttons",
+    "name": "android-download-small",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      322,
+      64
+    ],
+    "source_rect": [
+      978,
+      619,
+      1300,
+      683
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/buttons/C_android-download-outline.png",
+    "sheet": "C",
+    "group": "buttons",
+    "name": "android-download-outline",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      242,
+      53
+    ],
+    "source_rect": [
+      976,
+      692,
+      1218,
+      745
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/buttons/C_circle-next.png",
+    "sheet": "C",
+    "group": "buttons",
+    "name": "circle-next",
+    "mode": "circle",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      64,
+      63
+    ],
+    "source_rect": [
+      1229,
+      690,
+      1293,
+      753
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/components/C_feature-ribbon.png",
+    "sheet": "C",
+    "group": "components",
+    "name": "feature-ribbon",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      553,
+      97
+    ],
+    "source_rect": [
+      27,
+      455,
+      580,
+      552
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/components/C_search-field.png",
+    "sheet": "C",
+    "group": "components",
+    "name": "search-field",
+    "mode": "round",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      314,
+      61
+    ],
+    "source_rect": [
+      984,
+      552,
+      1298,
+      613
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/mockups/C_two-phone-display.png",
+    "sheet": "C",
+    "group": "mockups",
+    "name": "two-phone-display",
+    "mode": "multi-poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      487,
+      574
+    ],
+    "source_rect": [
+      536,
+      23,
+      1029,
+      597
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/campus/C_university-campus-students.png",
+    "sheet": "C",
+    "group": "campus",
+    "name": "university-campus-students",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      554,
+      277
+    ],
+    "source_rect": [
+      982,
+      236,
+      1536,
+      513
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/campus/C_bjtu-gate-illustration.png",
+    "sheet": "C",
+    "group": "campus",
+    "name": "bjtu-gate-illustration",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      534,
+      174
+    ],
+    "source_rect": [
+      24,
+      761,
+      558,
+      935
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/campus/C_bjtu-building-clock.png",
+    "sheet": "C",
+    "group": "campus",
+    "name": "bjtu-building-clock",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      283,
+      162
+    ],
+    "source_rect": [
+      606,
+      764,
+      889,
+      926
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/stickers/C_good-food-mood-stamp.png",
+    "sheet": "C",
+    "group": "stickers",
+    "name": "good-food-mood-stamp",
+    "mode": "circle",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      206,
+      194
+    ],
+    "source_rect": [
+      1040,
+      14,
+      1279,
+      208
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/stickers/C_note-delicious-campus.png",
+    "sheet": "C",
+    "group": "stickers",
+    "name": "note-delicious-campus",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      256,
+      184
+    ],
+    "source_rect": [
+      1250,
+      16,
+      1514,
+      205
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/stickers/C_bjtu-map-label.png",
+    "sheet": "C",
+    "group": "stickers",
+    "name": "bjtu-map-label",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      316,
+      111
+    ],
+    "source_rect": [
+      1092,
+      192,
+      1412,
+      303
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/stickers/C_handwritten-checklist.png",
+    "sheet": "C",
+    "group": "stickers",
+    "name": "handwritten-checklist",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      187,
+      197
+    ],
+    "source_rect": [
+      1310,
+      525,
+      1504,
+      722
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/stickers/C_long-white-note.png",
+    "sheet": "C",
+    "group": "stickers",
+    "name": "long-white-note",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      334,
+      64
+    ],
+    "source_rect": [
+      611,
+      601,
+      955,
+      665
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/food/C_rice-bowl.png",
+    "sheet": "C",
+    "group": "food",
+    "name": "rice-bowl",
+    "mode": "ellipse",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      240,
+      183
+    ],
+    "source_rect": [
+      13,
+      567,
+      253,
+      750
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/food/C_noodle-plate.png",
+    "sheet": "C",
+    "group": "food",
+    "name": "noodle-plate",
+    "mode": "ellipse",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      256,
+      164
+    ],
+    "source_rect": [
+      265,
+      581,
+      521,
+      745
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/food/C_boba-tea.png",
+    "sheet": "C",
+    "group": "food",
+    "name": "boba-tea",
+    "mode": "poly",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      81,
+      159
+    ],
+    "source_rect": [
+      515,
+      592,
+      614,
+      758
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_campus-woodland.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "campus-woodland",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      187,
+      153
+    ],
+    "source_rect": [
+      893,
+      768,
+      1080,
+      921
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_campus-lamppost.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "campus-lamppost",
+    "mode": "inkdark",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      54,
+      143
+    ],
+    "source_rect": [
+      1089,
+      770,
+      1153,
+      935
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_park-trees.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "park-trees",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      147,
+      165
+    ],
+    "source_rect": [
+      1176,
+      762,
+      1323,
+      927
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_students-with-backpacks.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "students-with-backpacks",
+    "mode": "fade",
+    "quality": "transparent-mask (approximate)",
+    "size": [
+      194,
+      149
+    ],
+    "source_rect": [
+      1330,
+      773,
+      1524,
+      922
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_red-heart-doodle.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "red-heart-doodle",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      40,
+      39
+    ],
+    "source_rect": [
+      255,
+      565,
+      307,
+      626
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_red-squiggle.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "red-squiggle",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      31,
+      42
+    ],
+    "source_rect": [
+      481,
+      698,
+      512,
+      755
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_paperclip-right-note.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "paperclip-right-note",
+    "mode": "inkdark",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      8,
+      9
+    ],
+    "source_rect": [
+      1446,
+      672,
+      1529,
+      748
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/paper/C_red-paper.png",
+    "sheet": "C",
+    "group": "paper",
+    "name": "red-paper",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      126,
+      57
+    ],
+    "source_rect": [
+      830,
+      673,
+      956,
+      730
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/paper/C_red-painted-paper.png",
+    "sheet": "C",
+    "group": "paper",
+    "name": "red-painted-paper",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      134,
+      44
+    ],
+    "source_rect": [
+      827,
+      732,
+      961,
+      776
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/paper/C_beige-paper.png",
+    "sheet": "C",
+    "group": "paper",
+    "name": "beige-paper",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      200,
+      74
+    ],
+    "source_rect": [
+      627,
+      686,
+      827,
+      760
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/paper/C_red-washi.png",
+    "sheet": "C",
+    "group": "paper",
+    "name": "red-washi",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      156,
+      81
+    ],
+    "source_rect": [
+      900,
+      929,
+      1056,
+      1010
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/paper/C_cream-washi.png",
+    "sheet": "C",
+    "group": "paper",
+    "name": "cream-washi",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      147,
+      67
+    ],
+    "source_rect": [
+      1052,
+      940,
+      1199,
+      1007
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/paper/C_green-washi.png",
+    "sheet": "C",
+    "group": "paper",
+    "name": "green-washi",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      149,
+      74
+    ],
+    "source_rect": [
+      1190,
+      933,
+      1339,
+      1007
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-food-bowl.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-food-bowl",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      114,
+      94
+    ],
+    "source_rect": [
+      22,
+      906,
+      136,
+      1005
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-spoon.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-spoon",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      58,
+      80
+    ],
+    "source_rect": [
+      162,
+      916,
+      220,
+      998
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-chopsticks.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-chopsticks",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      74,
+      76
+    ],
+    "source_rect": [
+      220,
+      907,
+      294,
+      1000
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-boba.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-boba",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      64,
+      69
+    ],
+    "source_rect": [
+      300,
+      912,
+      364,
+      995
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-star.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-star",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      46,
+      69
+    ],
+    "source_rect": [
+      371,
+      921,
+      417,
+      990
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-heart.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-heart",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      46,
+      56
+    ],
+    "source_rect": [
+      418,
+      933,
+      464,
+      989
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-oval.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-oval",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      132,
+      80
+    ],
+    "source_rect": [
+      489,
+      913,
+      621,
+      993
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-check.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-check",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      47,
+      49
+    ],
+    "source_rect": [
+      629,
+      924,
+      676,
+      989
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-sparkles.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-sparkles",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      72,
+      53
+    ],
+    "source_rect": [
+      684,
+      911,
+      756,
+      988
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_doodle-arrow.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "doodle-arrow",
+    "mode": "inkred",
+    "quality": "transparent-color-key (approximate)",
+    "size": [
+      73,
+      53
+    ],
+    "source_rect": [
+      758,
+      920,
+      831,
+      989
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_paperclip-bottom.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "paperclip-bottom",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      59,
+      84
+    ],
+    "source_rect": [
+      1361,
+      920,
+      1420,
+      1004
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_red-pin.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "red-pin",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      48,
+      59
+    ],
+    "source_rect": [
+      1431,
+      945,
+      1479,
+      1004
+    ],
+    "note": ""
+  },
+  {
+    "file": "C/illustrations/C_green-pin.png",
+    "sheet": "C",
+    "group": "illustrations",
+    "name": "green-pin",
+    "mode": "crop",
+    "quality": "flattened-crop (background included)",
+    "size": [
+      51,
+      64
+    ],
+    "source_rect": [
+      1473,
+      939,
+      1524,
+      1003
+    ],
+    "note": ""
+  }
+]

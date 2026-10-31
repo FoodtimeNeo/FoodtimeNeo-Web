@@ -4,6 +4,21 @@
  */
 export const routes = [
   {
+    path: '/landing',
+    name: 'landing',
+    component: () => import('@/views/landing/LandingView.vue'),
+    meta: {
+      title: '官网 · 下载安卓客户端',
+      layout: 'blank',
+      requiresAuth: false,
+    },
+  },
+  {
+    path: '/download',
+    name: 'download',
+    redirect: { name: 'landing' },
+  },
+  {
     path: '/profile/review-replies',
     name: 'myReviewReplies',
     component: () => import('@/views/profile/MyReviewRepliesView.vue'),
@@ -44,7 +59,7 @@ export const routes = [
       title: '公告管理',
       layout: 'admin',
       requiresAuth: true,
-      requiresAdmin: true,
+      requiresSuperadmin: true,
     },
   },
   {
@@ -262,6 +277,17 @@ export const routes = [
     redirect: { name: 'superadminUsers' },
     meta: {
       title: '用户管理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
+    path: '/superadmin/analytics',
+    name: 'superadminAnalytics',
+    component: () => import('@/views/superadmin/SuperadminAnalyticsView.vue'),
+    meta: {
+      title: '数据分析',
       layout: 'admin',
       requiresAuth: true,
       requiresSuperadmin: true,

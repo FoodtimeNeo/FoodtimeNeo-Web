@@ -6,6 +6,8 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
+import PublisherDetails from '@/components/base/PublisherDetails.vue';
+import MediaImage from '@/components/base/MediaImage.vue';
 const { items, page, total, size, loading, error, load } =
   usePagedData(fetchModerationLogs);
 const types = {
@@ -32,11 +34,23 @@ const types = {
       </h3>
       <p>日志 ID：{{ row.id }}</p>
       <p>投稿 ID：{{ row.submissionId }}</p>
+      <PublisherDetails :row="row" :published-at="row.submittedAt ?? null" />
+      <p v-if="row.name">发布标题／名称：{{ row.name }}</p>
+      <p v-if="row.content" class="published-content">
+        发布内容：{{ row.content }}
+      </p>
+      <MediaImage
+        v-if="row.imageUrl"
+        :src="row.imageUrl"
+        alt="发布内容配图"
+        class="published-image"
+      />
+      <p v-if="!row.content && !row.imageUrl">发布内容：无文字或图片记录</p>
       <p v-if="row.actor === 'ai'">
         🤖 AI 审核{{ row.aiModel ? `（${row.aiModel}）` : '' }}
       </p>
       <p v-else>审核人 ID：{{ row.moderatorId }}</p>
-      <p>{{ formatTime(row.createdAt) }}</p>
+      <p>审核时间：{{ formatTime(row.createdAt) }}</p>
       <p v-if="row.reason" class="reason">{{ row.reason }}</p>
     </article>
     <PaginationControls
@@ -95,6 +109,12 @@ article p:first-of-type {
   padding-top: 10px;
   border-top: 1px dashed var(--ft-color-secondary);
   color: var(--zine-stamp-red);
+}
+.published-content {
+  white-space: pre-wrap;
+}
+.published-image {
+  width: min(100%, 480px);
 }
 @media (max-width: 560px) {
   article,

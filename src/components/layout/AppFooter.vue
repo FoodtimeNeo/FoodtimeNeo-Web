@@ -1,13 +1,21 @@
 <template>
   <footer class="app-footer torn-edge">
     <div class="app-footer__inner">
-      <div>
-        <p class="app-footer__title">食堂日记 / BJTU Canteen Zine</p>
-        <p class="app-footer__desc handwrite">
-          “今天排队 20 分钟，值不值看这口。”
-        </p>
+      <div class="app-footer__brand-block">
+        <p class="app-footer__title">北交干饭吧/BJTU FoodtimeNeo</p>
+        <img
+          src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
+          alt=""
+          class="app-footer__tape-decor"
+          aria-hidden="true"
+        />
       </div>
-      <p class="app-footer__meta">2026 · 北交干饭吧 · 学生自制版本</p>
+      <div class="app-footer__actions">
+        <RouterLink :to="{ name: 'landing' }" class="app-footer__portal-link">
+          进入官网 →
+        </RouterLink>
+        <p class="app-footer__meta">2026 · 北交干饭吧 · FoodtimeNeo</p>
+      </div>
     </div>
     <span
       class="app-footer__decor app-footer__decor--stamp"
@@ -45,6 +53,21 @@
   padding: 16px var(--zine-page-padding);
 }
 
+.app-footer__brand-block {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-footer__tape-decor {
+  width: 58px;
+  height: auto;
+  opacity: 0.85;
+  transform: rotate(-3deg);
+  pointer-events: none;
+  filter: drop-shadow(1px 2px 2px rgba(58, 36, 24, 0.12));
+}
+
 .app-footer__title,
 .app-footer__meta {
   margin: 0;
@@ -65,6 +88,39 @@
 .app-footer__meta {
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
+}
+
+.app-footer__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+  }
+}
+
+.app-footer__portal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--ft-font-size-sm);
+  font-weight: 700;
+  color: var(--ft-color-primary);
+  text-decoration: none;
+  padding: 3px 10px;
+  border-radius: var(--ft-radius-sm);
+  border: 1px dashed var(--ft-color-primary);
+  background: rgb(201 52 30 / 6%);
+  transition: all var(--ft-transition-fast);
+
+  &:hover {
+    background: var(--ft-color-primary);
+    color: #fff;
+    border-style: solid;
+    transform: translateX(2px);
+  }
 }
 
 .app-footer__decor {
