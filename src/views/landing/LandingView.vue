@@ -346,7 +346,8 @@ $c-tape-yellow: #f5e8b4;
   background-size: cover;
   background-position: left top;
   background-repeat: no-repeat;
-  background-attachment: fixed;
+  // Keep the illustrated paper and its foreground content in the same scroll space.
+  background-attachment: scroll;
   background-color: #f7efe4;
   color: $c-ink-black;
   font-family: var(--ft-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
@@ -1197,6 +1198,11 @@ $c-tape-yellow: #f5e8b4;
 }
 
 @media (max-width: 768px) {
+  .zine-landing-viewport {
+    // The single-column copy sits over the central paper, away from the dark tree edge.
+    background-position: center top;
+  }
+
   .canvas-grid-stage {
     grid-template-columns: 1fr;
     gap: 36px;
