@@ -218,12 +218,12 @@ npm run dev
 
 - **PowerShell (Windows)**:
   ```powershell
-  $env:VITE_API_PROXY_TARGET='https://kfcvivo50.ddns.net'
+  $env:VITE_API_PROXY_TARGET='https://bjtufoodtime.top'
   npm.cmd run dev -- --port 5173
   ```
 - **Bash (macOS / Linux)**:
   ```bash
-  VITE_API_PROXY_TARGET="https://kfcvivo50.ddns.net" npm run dev -- --port 5173
+  VITE_API_PROXY_TARGET="https://bjtufoodtime.top" npm run dev -- --port 5173
   ```
 
 ---
