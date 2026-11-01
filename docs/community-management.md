@@ -10,4 +10,6 @@
 
 公告创建、编辑、设置当前公告及 Markdown 预览位于 `superadmin` 的“管理中心 → 公告管理”。公告正文使用关闭原始 HTML 的 Markdown 解析器，并经 DOMPurify 清洗。普通用户可以阅读公告，`admin` 不具备公告配置权限。
 
+登录用户可在“我的 → 编辑资料”修改昵称、上传新头像或移除头像。昵称须为 1–50 个字符，新头像复用图片上传校验与预览；不选择新图时保留当前头像。资料更新使用 `PUT /api/v1/users/me/profile`，成功后同步当前页面与登录状态。上传或保存失败保留输入，更新失败重试复用已上传图片；上传期间切换账号不会继续写入资料。
+
 回归入口：`useCommunityRemoval.spec.js`、`CommunityManagement.spec.js`、公告管理与 Markdown 的既有测试。完整质量检查为 `npm run check`。
