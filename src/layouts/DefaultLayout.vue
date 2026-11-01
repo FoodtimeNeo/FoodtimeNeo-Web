@@ -106,6 +106,8 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 
 .default-layout__main {
   min-width: 0;
+  /* 纸质页顶部有波浪遮罩，预留同等高度，避免“返回”等首元素被裁切。 */
+  padding-top: var(--paper-wave-height);
 }
 
 .desk-decor {
@@ -187,6 +189,11 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
     box-shadow: none;
     mask: none;
     -webkit-mask: none;
+  }
+
+  /* 移动端没有波浪遮罩，不需要额外顶部留白。 */
+  .default-layout__main {
+    padding-top: 0;
   }
 
   .default-layout {

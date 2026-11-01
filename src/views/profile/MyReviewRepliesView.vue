@@ -7,6 +7,7 @@ import PaginationControls from '@/components/base/PaginationControls.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
+import BackLink from '@/components/base/BackLink.vue';
 const { items, page, size, total, loading, error, load } =
   usePagedData(fetchMyReviewReplies);
 const selected = ref(null);
@@ -30,10 +31,23 @@ async function remove() {
 </script>
 <template>
   <section class="my-replies">
-    <h1 class="section-title">我的回复</h1>
+    <BackLink />
+    <div class="section-rule">
+      <span class="section-rule__index">10</span
+      ><span class="section-rule__line"></span>
+    </div>
+    <h1 class="section-title">我的<span class="zine-highlight">回复</span></h1>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
-    <EmptyState v-else-if="!items.length" title="暂无回复记录" />
+    <EmptyState
+      v-else-if="!items.length"
+      title="暂无回复记录"
+      description="这里汇总你在菜品点评下的楼内回复，社区动态的评论不在此列。"
+    >
+      <RouterLink class="button-ink" :to="{ name: 'canteenList' }"
+        >去逛逛食堂</RouterLink
+      >
+    </EmptyState>
     <SubmissionRecord
       v-for="row in items"
       :key="row.id"

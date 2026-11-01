@@ -1,4 +1,5 @@
 <script setup>
+import BackLink from '@/components/base/BackLink.vue';
 import { nextTick, onUnmounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { changePassword } from '@/api/auth.api.js';
@@ -45,7 +46,7 @@ async function submit() {
 </script>
 <template>
   <div class="password-page">
-    <RouterLink :to="{ name: 'profile' }">← 返回我的</RouterLink>
+    <BackLink />
     <div class="section-rule">
       <span class="section-rule__index">09</span
       ><span class="section-rule__line"></span>

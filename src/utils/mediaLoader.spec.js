@@ -29,17 +29,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('并发图片请求合并；每个新展示重新校验私有图片，释放最后引用后撤销URL', async () => {
+it('并发图片请求合并；再次展示复用已加载图片并在后台重新校验', async () => {
   const one = acquireMedia(url),
     two = acquireMedia(url);
   await Promise.all([one.promise, two.promise]);
   expect(fetch).toHaveBeenCalledTimes(1);
   one.release();
-  expect(URL.revokeObjectURL).not.toHaveBeenCalled();
   two.release();
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:media');
+  // 展示缓存持有引用，释放组件不会立即撤销，避免返回页面时白屏。
+  expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+
   const next = acquireMedia(url);
-  await next.promise;
+  // 同步即可拿到已缓存的图片
+  expect(await next.promise).toBe('blob:media');
+  // 后台仍按 no-cache 重新校验权限
   expect(fetch.mock.calls[1][1].cache).toBe('no-cache');
   next.release();
 });
@@ -84,6 +87,54 @@ it('旧Worker迁移确认前不会向可能被Cache-First拦截的媒体地址�
   expect(fetch).toHaveBeenCalledOnce();
   request.release();
 });
+it('单张超过 8MB 的原图不进入展示缓存', async () => {
+  const huge = {
+    ok: true,
+    status: 200,
+    headers: new Headers({
+      'Cache-Control': 'private, no-cache',
+      'Content-Type': 'image/png',
+    }),
+    blob: async () => ({ size: 9 * 1024 * 1024 }),
+  };
+  fetch.mockResolvedValue(huge);
+  const first = acquireMedia(url);
+  await first.promise;
+  first.release();
+  const second = acquireMedia(url);
+  await second.promise;
+  second.release();
+  // 未命中缓存，重新请求
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it('总字节超过预算时淘汰最早加载的图片', async () => {
+  const urls = Array.from(
+    { length: 5 },
+    (_, i) =>
+      `/api/v1/media/00000000-0000-4000-8000-00000000000${i + 1}?size=full`,
+  );
+  fetch.mockImplementation(async () => ({
+    ok: true,
+    status: 200,
+    headers: new Headers({
+      'Cache-Control': 'private, no-cache',
+      'Content-Type': 'image/png',
+    }),
+    blob: async () => ({ size: 8 * 1024 * 1024 }),
+  }));
+  for (const target of urls) {
+    const request = acquireMedia(target);
+    await request.promise;
+    request.release();
+  }
+  // 5 × 8MB = 40MB，超过 32MB 预算，最早的一张应已被淘汰
+  const first = acquireMedia(urls[0]);
+  await first.promise;
+  first.release();
+  expect(fetch).toHaveBeenCalledTimes(6);
+});
+
 it('no-store预览不成为后续展示的可复用条目，失败不回退旧图片', async () => {
   fetch
     .mockResolvedValueOnce(response('no-store'))

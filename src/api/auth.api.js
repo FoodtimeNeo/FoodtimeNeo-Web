@@ -20,6 +20,26 @@ export const register = ({ email, password, verificationCode }) =>
   });
 export const sendVerificationCode = (email) =>
   http.post('/auth/register/email-code', { email: email.trim().toLowerCase() });
+export const sendPasswordResetCode = (email) =>
+  http.post(
+    '/auth/password-reset/email-code',
+    { email: email.trim().toLowerCase() },
+    { skipUnauthorized: true },
+  );
+export const verifyPasswordResetCode = (email, verificationCode) =>
+  http.post(
+    '/auth/password-reset/verify',
+    { email: email.trim().toLowerCase(), verificationCode },
+    { skipUnauthorized: true },
+  );
+export async function resetPassword(resetToken, newPassword) {
+  await http.post(
+    '/auth/password-reset',
+    { resetToken, newPassword },
+    { skipUnauthorized: true },
+  );
+  invalidateSession();
+}
 export async function logout() {
   await http.post('/auth/logout', null, { skipUnauthorized: true });
   invalidateSession();

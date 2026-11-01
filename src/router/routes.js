@@ -30,6 +30,30 @@ export const routes = [
     },
   },
   {
+    path: '/profile/following',
+    name: 'myFollowing',
+    component: () => import('@/views/profile/FollowListView.vue'),
+    props: { kind: 'following' },
+    meta: {
+      title: '我的关注',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/followers',
+    name: 'myFollowers',
+    component: () => import('@/views/profile/FollowListView.vue'),
+    props: { kind: 'followers' },
+    meta: {
+      title: '关注我的',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/inbox',
     name: 'inboxView',
     component: () => import('@/views/InboxView.vue'),
@@ -248,6 +272,12 @@ export const routes = [
     name: 'register',
     component: () => import('@/views/auth/RegisterView.vue'),
     meta: { title: '注册', layout: 'blank' },
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgotPassword',
+    component: () => import('@/views/auth/ForgotPasswordView.vue'),
+    meta: { title: '找回密码', layout: 'blank' },
   },
   {
     path: '/admin/audit',

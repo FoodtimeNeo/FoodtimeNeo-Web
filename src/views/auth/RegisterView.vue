@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { sendVerificationCode } from '@/api/auth.api.js';
@@ -12,8 +12,31 @@ import {
 } from '@/utils/authValidators.js';
 const router = useRouter();
 const auth = useAuthStore();
-const form = reactive({ email: '', password: '', verificationCode: '' });
-const errors = reactive({ email: '', password: '', verificationCode: '' });
+const form = reactive({
+  email: '',
+  password: '',
+  confirmPassword: '',
+  verificationCode: '',
+});
+const errors = reactive({
+  email: '',
+  password: '',
+  confirmPassword: '',
+  verificationCode: '',
+});
+const confirmationError = () =>
+  !form.confirmPassword
+    ? '请再次输入密码'
+    : form.confirmPassword !== form.password
+      ? '两次输入的密码不一致'
+      : '';
+watch(
+  () => [form.password, form.confirmPassword],
+  () => {
+    if (form.confirmPassword || errors.confirmPassword)
+      errors.confirmPassword = confirmationError();
+  },
+);
 const submitting = ref(false);
 const sending = ref(false);
 const serverError = ref('');
@@ -52,6 +75,7 @@ async function handleSubmit() {
   if (submitting.value) return;
   errors.email = validateEmail(form.email);
   errors.password = validatePassword(form.password, { isNew: true });
+  errors.confirmPassword = confirmationError();
   errors.verificationCode = validateVerificationCode(form.verificationCode);
   serverError.value = '';
   if (Object.values(errors).some(Boolean)) {
@@ -61,8 +85,13 @@ async function handleSubmit() {
   }
   submitting.value = true;
   try {
-    await auth.register({ ...form });
+    await auth.register({
+      email: form.email,
+      password: form.password,
+      verificationCode: form.verificationCode,
+    });
     form.password = '';
+    form.confirmPassword = '';
     form.verificationCode = '';
     await router.replace({ name: 'login' });
   } catch (error) {
@@ -113,6 +142,13 @@ async function handleSubmit() {
       <p class="auth-view__hint">
         密码：8–128 位 ASCII 字符，须包含字母和数字。
       </p>
+      <AuthField
+        v-model="form.confirmPassword"
+        label="确认密码"
+        type="password"
+        autocomplete="new-password"
+        :error="errors.confirmPassword"
+      />
       <InkButton
         variant="primary"
         type="submit"

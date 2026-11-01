@@ -9,6 +9,11 @@ import {
   setPostFavorite,
   createPostComment,
 } from '@/api/community.api.js';
+import {
+  fetchFollowStatus,
+  followUser,
+  unfollowUser,
+} from '@/api/follow.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 
@@ -26,7 +31,12 @@ const props = defineProps({
 const emit = defineEmits(['deleted', 'close']);
 
 const auth = useAuthStore();
-const { canRemove, remove: removeContent, removing } = useCommunityRemoval();
+const {
+  canRemove,
+  remove: removeContent,
+  removing,
+  outcome,
+} = useCommunityRemoval();
 const post = ref(null);
 const loading = ref(false);
 const error = ref('');
@@ -34,6 +44,7 @@ const error = ref('');
 const actionError = ref('');
 const acting = ref(false);
 const isFollowing = ref(false);
+const followBusy = ref(false);
 
 const commentSectionRef = ref(null);
 const scrollAreaRef = ref(null);
@@ -53,6 +64,18 @@ async function load() {
     const result = await fetchCommunityPostDetail(props.postId);
     if (current === version) {
       post.value = result;
+      const authorId = result.author?.id;
+      isFollowing.value = false;
+      // 关注状态单独查询，作者是自己时按钮不展示，无需请求。
+      if (authorId && authorId !== auth.user?.id) {
+        fetchFollowStatus(authorId)
+          .then((state) => {
+            if (current === version) isFollowing.value = state.followed;
+          })
+          .catch(() => {
+            /* 关注状态失败不影响正文浏览 */
+          });
+      }
     }
   } catch (e) {
     if (current === version) {
@@ -107,9 +130,16 @@ async function remove() {
   const current = version;
   actionError.value = '';
   try {
-    if (!(await removeContent('posts', post.value)) || current !== version)
+    if (
+      !(await removeContent('posts', post.value, {
+        isCurrent: () => current === version,
+      })) ||
+      current !== version
+    )
       return;
-    ElMessage.success('食记已删除');
+    ElMessage.success(
+      outcome.value === 'missing' ? '内容已不可见，已更新页面' : '食记已删除',
+    );
     emit('deleted');
   } catch (e) {
     if (current !== version) return;
@@ -118,9 +148,21 @@ async function remove() {
   }
 }
 
-function toggleFollow() {
-  isFollowing.value = !isFollowing.value;
-  ElMessage.success(isFollowing.value ? '已关注作者' : '已取消关注');
+async function toggleFollow() {
+  const authorId = post.value?.author?.id;
+  if (!authorId || followBusy.value || authorId === auth.user?.id) return;
+  followBusy.value = true;
+  try {
+    const state = isFollowing.value
+      ? await unfollowUser(authorId)
+      : await followUser(authorId);
+    isFollowing.value = state.followed;
+    ElMessage.success(state.followed ? '已关注作者' : '已取消关注');
+  } catch (error) {
+    ElMessage.error(error.message || '关注操作失败，请稍后重试');
+  } finally {
+    followBusy.value = false;
+  }
 }
 
 function handleShare() {
@@ -172,17 +214,20 @@ async function handleSendQuickComment() {
       body.rootCommentId = replyTarget.value.root?.id;
       body.replyToCommentId = replyTarget.value.item?.id;
     }
-    await createPostComment(post.value.id, {
+    const created = await createPostComment(post.value.id, {
       ...body,
       clientRequestId: requestId,
     });
     quickDraft.value = '';
     replyTarget.value = null;
     requestId = crypto.randomUUID();
-    ElMessage.success('已提交审核，通过前仅自己可见');
-    if (commentSectionRef.value) {
-      await commentSectionRef.value.load(false, true, !body.rootCommentId);
-    }
+    ElMessage.success(
+      created.status === 'pending'
+        ? '已提交审核，通过前仅自己可见'
+        : '评论已发布',
+    );
+    // 立即插入评论列表，审核中的评论会继续轮询并在通过后自动刷新。
+    commentSectionRef.value?.acceptSubmitted(created, body);
     post.value.commentCount = (post.value.commentCount || 0) + 1;
   } catch (err) {
     actionError.value = err.message || '发送失败，请重试';
@@ -261,6 +306,7 @@ function formatPostTime(isoString) {
             type="button"
             class="mobile-follow-btn"
             :class="{ 'is-following': isFollowing }"
+            :disabled="followBusy"
             @click="toggleFollow"
           >
             {{ isFollowing ? '已关注' : '关注' }}
@@ -313,10 +359,11 @@ function formatPostTime(isoString) {
               删除食记
             </button>
             <button
-              v-else
+              v-else-if="post.userId !== auth.user?.id"
               type="button"
               class="redbook-follow-btn"
               :class="{ 'is-following': isFollowing }"
+              :disabled="followBusy"
               @click="toggleFollow"
             >
               {{ isFollowing ? '已关注' : '关注' }}

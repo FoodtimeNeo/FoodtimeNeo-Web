@@ -11,7 +11,8 @@ export function developmentProxyTarget(value = 'http://127.0.0.1:8080') {
       ![
         'http://154.9.252.201',
         'https://154.9.252.201',
-        'https://kfcvivo50.ddns.net',
+        'https://bjtufoodtime.top',
+        'https://www.bjtufoodtime.top',
       ].includes(url.origin)) ||
     url.username ||
     url.password ||

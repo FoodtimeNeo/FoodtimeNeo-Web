@@ -18,8 +18,11 @@ describe('开发代理目标', () => {
     expect(developmentProxyTarget('https://154.9.252.201')).toBe(
       'https://154.9.252.201',
     );
-    expect(developmentProxyTarget('https://kfcvivo50.ddns.net/')).toBe(
-      'https://kfcvivo50.ddns.net',
+    expect(developmentProxyTarget('https://bjtufoodtime.top/')).toBe(
+      'https://bjtufoodtime.top',
+    );
+    expect(developmentProxyTarget('https://www.bjtufoodtime.top/')).toBe(
+      'https://www.bjtufoodtime.top',
     );
   });
   it.each([
