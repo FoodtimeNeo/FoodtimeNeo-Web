@@ -21,6 +21,9 @@ describe('开发代理目标', () => {
     expect(developmentProxyTarget('https://bjtufoodtime.top/')).toBe(
       'https://bjtufoodtime.top',
     );
+    expect(developmentProxyTarget('https://www.bjtufoodtime.top/')).toBe(
+      'https://www.bjtufoodtime.top',
+    );
   });
   it.each([
     'https://example.com',
