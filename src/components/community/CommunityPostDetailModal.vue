@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { useAuthStore } from '@/store/useAuthStore.js';
+import { ElMessage } from 'element-plus';
+import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import {
   fetchCommunityPostDetail,
   fetchPostComments,
@@ -9,7 +9,6 @@ import {
   setPostLike,
   setPostFavorite,
   setCommentLike,
-  deleteCommunityPost,
 } from '@/api/community.api.js';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -41,7 +40,7 @@ const emit = defineEmits([
   'deleted',
 ]);
 
-const auth = useAuthStore();
+const { canRemove, remove: removeContent, removing } = useCommunityRemoval();
 const post = ref(null);
 const loading = ref(false);
 const error = ref(null);
@@ -108,6 +107,7 @@ async function loadComments(id) {
   commentLoading.value = true;
   try {
     const list = await fetchPostComments(id);
+    if (!props.modelValue || props.postId !== id) return;
     comments.value = list || [];
     comments.value.forEach((c) => {
       if (c.likedByMe) likedComments.value.add(c.id);
@@ -297,23 +297,31 @@ function replyUser(cmt) {
 }
 
 async function removePost() {
-  if (!post.value) return;
+  if (!post.value || removing.value) return;
+  const id = post.value.id;
   try {
-    await ElMessageBox.confirm(
-      '删除后无法恢复，确定删除这篇食记吗？',
-      '删除食记',
-      {
-        type: 'warning',
-      },
-    );
-  } catch {
-    return;
-  }
-  try {
-    await deleteCommunityPost(post.value.id);
+    if (!(await removeContent('posts', post.value))) return;
+    if (post.value?.id !== id || !props.modelValue) return;
     ElMessage.success('食记已删除');
     close();
     emit('deleted');
+  } catch (e) {
+    ElMessage.error(e.message || '删除失败');
+  }
+}
+
+async function removeComment(comment) {
+  if (!post.value || removing.value) return;
+  const id = post.value.id;
+  try {
+    if (!(await removeContent('comments', comment))) return;
+    if (post.value?.id !== id || !props.modelValue) return;
+    ElMessage.success('评论已删除');
+    if (replyTarget.value?.id === comment.id) replyTarget.value = null;
+    await loadComments(id);
+    if (post.value?.id !== id || !props.modelValue) return;
+    const updated = await fetchCommunityPostDetail(id);
+    if (post.value?.id === id && props.modelValue) post.value = updated;
   } catch (e) {
     ElMessage.error(e.message || '删除失败');
   }
@@ -378,9 +386,10 @@ async function removePost() {
               </div>
               <div class="mobile-header-actions">
                 <button
-                  v-if="post.userId === auth.user?.id"
+                  v-if="canRemove(post)"
                   type="button"
                   class="mobile-delete-btn"
+                  :disabled="removing"
                   @click="removePost"
                 >
                   删除
@@ -477,9 +486,10 @@ async function removePost() {
                     }}</span>
                   </div>
                   <button
-                    v-if="post.userId === auth.user?.id"
+                    v-if="canRemove(post)"
                     type="button"
                     class="redbook-delete-btn"
+                    :disabled="removing"
                     @click="removePost"
                   >
                     删除
@@ -597,6 +607,15 @@ async function removePost() {
                             {{ cmt.content }}
                           </p>
                           <div class="cmt-meta-row">
+                            <button
+                              v-if="canRemove(cmt)"
+                              type="button"
+                              class="cmt-reply-btn cmt-delete-btn"
+                              :disabled="removing"
+                              @click="removeComment(cmt)"
+                            >
+                              删除
+                            </button>
                             <time class="cmt-time">{{
                               formatTime(cmt.createdAt)
                             }}</time>

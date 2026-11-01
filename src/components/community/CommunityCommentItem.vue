@@ -6,10 +6,15 @@ import { useAuthStore } from '@/store/useAuthStore.js';
 const props = defineProps({
   item: { type: Object, required: true },
   allowReplies: { type: Boolean, default: true },
+  deleting: { type: Boolean, default: false },
 });
 const emit = defineEmits(['reply', 'delete', 'updated']);
 const auth = useAuthStore();
-const mine = computed(() => props.item.userId === auth.user?.id);
+const canDelete = computed(
+  () =>
+    Boolean(auth.user?.id) &&
+    (auth.isAdmin || props.item.userId === auth.user.id),
+);
 const acting = ref(false),
   error = ref('');
 async function like() {
@@ -83,9 +88,10 @@ async function like() {
           回复
         </button>
         <button
-          v-if="mine && !item.deleted"
+          v-if="canDelete && !item.deleted"
           type="button"
           class="delete-button"
+          :disabled="deleting"
           @click="emit('delete', item)"
         >
           删除

@@ -1,15 +1,16 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue';
-import { ElMessageBox, ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus';
+import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import {
   fetchRootComments,
   fetchCommentReplies,
   createPostComment,
-  deletePostComment,
 } from '@/api/community.api.js';
 import CommunityCommentItem from './CommunityCommentItem.vue';
 const props = defineProps({ postId: { type: String, required: true } });
 const emit = defineEmits(['changed', 'replyTargetChange']);
+const { remove: removeContent, removing } = useCommunityRemoval();
 const roots = ref([]),
   threads = ref({}),
   hasMore = ref(false),
@@ -145,21 +146,23 @@ async function send() {
   }
 }
 async function remove(item) {
+  if (loading.value || submitting.value || removing.value) return;
+  const version = epoch;
+  error.value = '';
   try {
-    await ElMessageBox.confirm(
-      '删除后无法恢复，已通过的楼内回复会保留。',
-      '删除评论',
-      { type: 'warning' },
-    );
-  } catch {
-    return;
-  }
-  try {
-    await deletePostComment(item.id);
+    if (!(await removeContent('comments', item)) || version !== epoch) return;
+    ElMessage.success('评论已删除');
+    if (
+      target.value?.item.id === item.id ||
+      target.value?.root.id === item.id
+    ) {
+      target.value = null;
+      emit('replyTargetChange', null);
+    }
     await load(false, true);
-    emit('changed');
+    if (version === epoch) emit('changed');
   } catch (e) {
-    error.value = e.message || '删除失败';
+    if (version === epoch) error.value = e.message || '删除失败';
   }
 }
 async function moreReplies(root) {
@@ -199,6 +202,7 @@ defineExpose({
     <div v-for="root in roots" :key="root.id" class="comment-thread">
       <CommunityCommentItem
         :item="root"
+        :deleting="removing || loading || submitting"
         @reply="selectReply($event, root)"
         @delete="remove"
         @updated="Object.assign(root, $event)"
@@ -208,6 +212,7 @@ defineExpose({
           v-for="reply in threads[root.id].items"
           :key="reply.id"
           :item="reply"
+          :deleting="removing || loading || submitting"
           :allow-replies="!root.deleted"
           @reply="selectReply($event, root)"
           @delete="remove"

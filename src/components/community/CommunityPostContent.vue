@@ -1,12 +1,12 @@
 <script setup>
 import { nextTick, ref, watch } from 'vue';
 import { useAuthStore } from '@/store/useAuthStore.js';
-import { ElMessageBox, ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus';
+import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import {
   fetchCommunityPostDetail,
   setPostLike,
   setPostFavorite,
-  deleteCommunityPost,
   createPostComment,
 } from '@/api/community.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
@@ -26,6 +26,7 @@ const props = defineProps({
 const emit = defineEmits(['deleted', 'close']);
 
 const auth = useAuthStore();
+const { canRemove, remove: removeContent, removing } = useCommunityRemoval();
 const post = ref(null);
 const loading = ref(false);
 const error = ref('');
@@ -76,7 +77,7 @@ watch(
 );
 
 async function interact(kind) {
-  if (acting.value || !post.value) return;
+  if (acting.value || removing.value || !post.value) return;
   acting.value = true;
   actionError.value = '';
   try {
@@ -102,26 +103,18 @@ async function interact(kind) {
 }
 
 async function remove() {
-  if (!post.value) return;
+  if (!post.value || acting.value || removing.value) return;
+  const current = version;
+  actionError.value = '';
   try {
-    await ElMessageBox.confirm(
-      '删除后无法恢复，帖子将从公开社区隐藏。',
-      '删除食记',
-      { type: 'warning' },
-    );
-  } catch {
-    return;
-  }
-  acting.value = true;
-  try {
-    await deleteCommunityPost(post.value.id);
+    if (!(await removeContent('posts', post.value)) || current !== version)
+      return;
     ElMessage.success('食记已删除');
     emit('deleted');
   } catch (e) {
+    if (current !== version) return;
     actionError.value = e.message || '删除失败';
     ElMessage.error(actionError.value);
-  } finally {
-    acting.value = false;
   }
 }
 
@@ -255,6 +248,15 @@ function formatPostTime(isoString) {
         </div>
         <div class="mobile-header-actions">
           <button
+            v-if="canRemove(post)"
+            type="button"
+            class="post-delete"
+            :disabled="acting || removing"
+            @click="remove"
+          >
+            删除食记
+          </button>
+          <button
             v-if="post.userId !== auth.user?.id"
             type="button"
             class="mobile-follow-btn"
@@ -302,9 +304,9 @@ function formatPostTime(isoString) {
           </div>
           <div class="author-actions">
             <button
-              v-if="post.userId === auth.user?.id"
+              v-if="canRemove(post)"
               type="button"
-              :disabled="acting"
+              :disabled="acting || removing"
               class="post-delete"
               @click="remove"
             >
