@@ -58,6 +58,10 @@ async function submit() {
     error.value = '请选择所属记录';
     return;
   }
+  if (form.description && form.description.trim().length > 500) {
+    error.value = '简介不能超过 500 字';
+    return;
+  }
   if (
     props.type === 'dishes' &&
     validatePrice(form.price, { required: true })
@@ -122,7 +126,12 @@ async function submit() {
         required
     /></label>
     <label
-      >简介<textarea v-model="form.description" :disabled="writing" rows="3" />
+      >简介<textarea
+        v-model="form.description"
+        :disabled="writing"
+        rows="3"
+        maxlength="500"
+      />
     </label>
     <label v-if="type === 'dishes'"
       >价格<input v-model="form.price" inputmode="decimal" :disabled="writing"

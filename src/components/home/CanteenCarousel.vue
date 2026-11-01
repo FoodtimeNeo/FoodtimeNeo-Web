@@ -28,7 +28,7 @@ const isWheeling = ref(false);
 
 let wheelVelocity = 0;
 let wheelFrameId = 0;
-let snapRestoreTimer = null;
+let wheelIdleTimer = null;
 
 const displayItems = computed(() =>
   props.canteens.length > 1
@@ -90,20 +90,20 @@ function stopWheelAnimation() {
     wheelFrameId = 0;
   }
   wheelVelocity = 0;
-  if (snapRestoreTimer) {
-    clearTimeout(snapRestoreTimer);
-    snapRestoreTimer = null;
+  if (wheelIdleTimer) {
+    clearTimeout(wheelIdleTimer);
+    wheelIdleTimer = null;
   }
   isWheeling.value = false;
 }
 
-function scheduleSnapRestore() {
-  if (snapRestoreTimer) {
-    clearTimeout(snapRestoreTimer);
+function scheduleWheelIdle() {
+  if (wheelIdleTimer) {
+    clearTimeout(wheelIdleTimer);
   }
-  snapRestoreTimer = setTimeout(() => {
+  wheelIdleTimer = setTimeout(() => {
     isWheeling.value = false;
-    snapRestoreTimer = null;
+    wheelIdleTimer = null;
   }, 100);
 }
 
@@ -143,7 +143,7 @@ function wheelTick() {
     wheelVelocity = 0;
     wheelFrameId = 0;
     applyScrollStep(track, finalDelta);
-    scheduleSnapRestore();
+    scheduleWheelIdle();
     return;
   }
 
@@ -221,11 +221,11 @@ function handleWheel(event) {
       delta *= track.clientWidth;
     }
 
-    // 激活平滑滚动状态，临时屏蔽 CSS scroll-snap 避免冲突拉扯
+    // 激活滚动状态，暂停自动跑马灯；松手后恢复
     isWheeling.value = true;
-    if (snapRestoreTimer) {
-      clearTimeout(snapRestoreTimer);
-      snapRestoreTimer = null;
+    if (wheelIdleTimer) {
+      clearTimeout(wheelIdleTimer);
+      wheelIdleTimer = null;
     }
 
     // 累加滚轮脉冲动量
@@ -379,7 +379,6 @@ onUnmounted(() => {
     overflow-x: auto;
     overflow-y: hidden;
     padding: 24px 28px 36px 8px;
-    scroll-snap-type: x proximity;
     scrollbar-width: none;
     cursor: grab;
     touch-action: pan-x;
@@ -392,11 +391,6 @@ onUnmounted(() => {
 
     &.is-dragging {
       cursor: grabbing;
-    }
-
-    &.is-wheeling {
-      scroll-snap-type: none !important;
-      scroll-behavior: auto !important;
     }
   }
 }
@@ -465,7 +459,6 @@ onUnmounted(() => {
   display: grid;
   grid-template-rows: minmax(0, 56%) minmax(0, 44%);
   padding: 9px;
-  scroll-snap-align: start;
   cursor: pointer;
   will-change: transform;
   transition:
@@ -715,7 +708,6 @@ onUnmounted(() => {
   .canteen-carousel__track {
     gap: 12px;
     padding: 8px 12px 16px;
-    scroll-snap-type: x mandatory;
     touch-action: pan-x pan-y;
   }
 
