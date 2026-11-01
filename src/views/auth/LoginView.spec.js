@@ -18,6 +18,7 @@ vi.mock('vue-router', () => ({
 vi.mock('element-plus', () => ({ ElMessage: { error: vi.fn() } }));
 
 import LoginView from './LoginView.vue';
+import { APK_DOWNLOAD_URL } from '@/constants/download.js';
 
 describe('LoginView', () => {
   beforeEach(() => {
@@ -58,9 +59,7 @@ describe('LoginView', () => {
 
     const downloadBtn = wrapper.find('[data-testid="login-download-apk-btn"]');
     expect(downloadBtn.exists()).toBe(true);
-    expect(downloadBtn.attributes('href')).toBe(
-      '/downloads/FoodtimeNeo-Android.apk?v=1.1.3-8',
-    );
+    expect(downloadBtn.attributes('href')).toBe(APK_DOWNLOAD_URL);
     expect(downloadBtn.attributes('download')).toBe('FoodtimeNeo-Android.apk');
     expect(downloadBtn.text()).toContain('下载安卓安装包');
   });

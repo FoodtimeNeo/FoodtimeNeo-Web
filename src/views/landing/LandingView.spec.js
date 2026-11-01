@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import LandingView from './LandingView.vue';
+import { APK_DOWNLOAD_URL } from '@/constants/download.js';
 
 const push = vi.fn();
 vi.mock('vue-router', () => ({
@@ -33,18 +34,14 @@ describe('LandingView (Zine Collage Style matching reference)', () => {
     const wrapper = mount(LandingView);
     const heroBtn = wrapper.find('[data-testid="hero-download-btn"]');
     expect(heroBtn.exists()).toBe(true);
-    expect(heroBtn.attributes('href')).toBe(
-      '/downloads/FoodtimeNeo-Android.apk?v=1.1.3-8',
-    );
+    expect(heroBtn.attributes('href')).toBe(APK_DOWNLOAD_URL);
     expect(heroBtn.attributes('download')).toBe('FoodtimeNeo-Android.apk');
     expect(heroBtn.text()).toContain('下载安卓安装包');
 
     // 顶栏下载链接
     const navBtn = wrapper.find('[data-testid="nav-download-btn"]');
     expect(navBtn.exists()).toBe(true);
-    expect(navBtn.attributes('href')).toBe(
-      '/downloads/FoodtimeNeo-Android.apk?v=1.1.3-8',
-    );
+    expect(navBtn.attributes('href')).toBe(APK_DOWNLOAD_URL);
   });
 
   it('渲染手机模型内部真实的 App 界面与食评内容', () => {
