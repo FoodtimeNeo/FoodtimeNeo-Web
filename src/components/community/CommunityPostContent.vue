@@ -9,6 +9,11 @@ import {
   setPostFavorite,
   createPostComment,
 } from '@/api/community.api.js';
+import {
+  fetchFollowStatus,
+  followUser,
+  unfollowUser,
+} from '@/api/follow.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 
@@ -39,6 +44,7 @@ const error = ref('');
 const actionError = ref('');
 const acting = ref(false);
 const isFollowing = ref(false);
+const followBusy = ref(false);
 
 const commentSectionRef = ref(null);
 const scrollAreaRef = ref(null);
@@ -58,6 +64,18 @@ async function load() {
     const result = await fetchCommunityPostDetail(props.postId);
     if (current === version) {
       post.value = result;
+      const authorId = result.author?.id;
+      isFollowing.value = false;
+      // 关注状态单独查询，作者是自己时按钮不展示，无需请求。
+      if (authorId && authorId !== auth.user?.id) {
+        fetchFollowStatus(authorId)
+          .then((state) => {
+            if (current === version) isFollowing.value = state.followed;
+          })
+          .catch(() => {
+            /* 关注状态失败不影响正文浏览 */
+          });
+      }
     }
   } catch (e) {
     if (current === version) {
@@ -130,9 +148,21 @@ async function remove() {
   }
 }
 
-function toggleFollow() {
-  isFollowing.value = !isFollowing.value;
-  ElMessage.success(isFollowing.value ? '已关注作者' : '已取消关注');
+async function toggleFollow() {
+  const authorId = post.value?.author?.id;
+  if (!authorId || followBusy.value || authorId === auth.user?.id) return;
+  followBusy.value = true;
+  try {
+    const state = isFollowing.value
+      ? await unfollowUser(authorId)
+      : await followUser(authorId);
+    isFollowing.value = state.followed;
+    ElMessage.success(state.followed ? '已关注作者' : '已取消关注');
+  } catch (error) {
+    ElMessage.error(error.message || '关注操作失败，请稍后重试');
+  } finally {
+    followBusy.value = false;
+  }
 }
 
 function handleShare() {
@@ -273,6 +303,7 @@ function formatPostTime(isoString) {
             type="button"
             class="mobile-follow-btn"
             :class="{ 'is-following': isFollowing }"
+            :disabled="followBusy"
             @click="toggleFollow"
           >
             {{ isFollowing ? '已关注' : '关注' }}
@@ -325,10 +356,11 @@ function formatPostTime(isoString) {
               删除食记
             </button>
             <button
-              v-else
+              v-else-if="post.userId !== auth.user?.id"
               type="button"
               class="redbook-follow-btn"
               :class="{ 'is-following': isFollowing }"
+              :disabled="followBusy"
               @click="toggleFollow"
             >
               {{ isFollowing ? '已关注' : '关注' }}

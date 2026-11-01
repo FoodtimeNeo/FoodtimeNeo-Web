@@ -2,6 +2,12 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
+import {
+  fetchFollowStatus,
+  followUser,
+  unfollowUser,
+} from '@/api/follow.api.js';
 import {
   fetchCommunityPostDetail,
   setPostLike,
@@ -50,7 +56,9 @@ const error = ref(null);
 const commentSection = ref(null);
 let epoch = 0;
 
+const auth = useAuthStore();
 const isFollowing = ref(false);
+const followBusy = ref(false);
 const isLiked = ref(false);
 const isFavorited = ref(false);
 const replyTarget = ref(null);
@@ -92,6 +100,19 @@ async function loadPostData(id) {
     post.value = result;
     isLiked.value = !!result.likedByMe;
     isFavorited.value = !!result.favoritedByMe;
+    isFollowing.value = false;
+    const authorId = result.author?.id;
+    if (authorId && authorId !== auth.user?.id) {
+      fetchFollowStatus(authorId)
+        .then((state) => {
+          if (version === epoch && props.postId === id) {
+            isFollowing.value = state.followed;
+          }
+        })
+        .catch(() => {
+          /* 关注状态失败不影响正文浏览 */
+        });
+    }
   } catch (failure) {
     if (version === epoch) error.value = failure;
   } finally {
@@ -209,9 +230,21 @@ async function toggleFavorite() {
   }
 }
 
-function toggleFollow() {
-  isFollowing.value = !isFollowing.value;
-  ElMessage.success(isFollowing.value ? '已关注作者' : '已取消关注');
+async function toggleFollow() {
+  const authorId = post.value?.author?.id;
+  if (!authorId || followBusy.value || authorId === auth.user?.id) return;
+  followBusy.value = true;
+  try {
+    const state = isFollowing.value
+      ? await unfollowUser(authorId)
+      : await followUser(authorId);
+    isFollowing.value = state.followed;
+    ElMessage.success(state.followed ? '已关注作者' : '已取消关注');
+  } catch (error) {
+    ElMessage.error(error.message || '关注操作失败，请稍后重试');
+  } finally {
+    followBusy.value = false;
+  }
 }
 
 function handleShare() {
@@ -339,10 +372,11 @@ async function removePost() {
                   删除
                 </button>
                 <button
-                  v-else
+                  v-else-if="post.userId !== auth.user?.id"
                   type="button"
                   class="mobile-follow-btn"
                   :class="{ 'is-following': isFollowing }"
+                  :disabled="followBusy"
                   @click="toggleFollow"
                 >
                   {{ isFollowing ? '已关注' : '关注' }}
@@ -439,10 +473,11 @@ async function removePost() {
                     删除
                   </button>
                   <button
-                    v-else
+                    v-else-if="post.userId !== auth.user?.id"
                     type="button"
                     class="redbook-follow-btn"
                     :class="{ 'is-following': isFollowing }"
+                    :disabled="followBusy"
                     @click="toggleFollow"
                   >
                     {{ isFollowing ? '已关注' : '关注' }}

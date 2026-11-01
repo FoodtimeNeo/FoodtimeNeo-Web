@@ -69,7 +69,9 @@ const activeName = computed(() => resolveActiveNavigation(route));
             >{{ inbox.unreadCount > 99 ? '99+' : inbox.unreadCount }}</span
           >
         </RouterLink>
-        {{ auth.isAuthenticated ? auth.displayName : '访客模式' }}
+        <span class="app-header__user">{{
+          auth.isAuthenticated ? auth.displayName : '访客模式'
+        }}</span>
       </span>
     </div>
   </header>
@@ -154,14 +156,26 @@ const activeName = computed(() => resolveActiveNavigation(route));
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 10px;
-  border: 1px solid transparent;
+  padding: 0 12px;
+  border: 1px solid var(--ft-color-text);
+  border-radius: 999px;
+  background: var(--ft-color-surface, #fff);
   font-weight: 700;
+}
+
+.app-header__inbox:hover,
+.app-header__inbox:focus-visible {
+  border-color: var(--zine-stamp-red);
+  color: var(--zine-stamp-red);
 }
 
 .app-header__inbox.is-active {
   border-color: var(--zine-stamp-red);
   color: var(--zine-stamp-red);
+}
+
+.app-header__user {
+  margin-left: 10px;
 }
 
 .app-header__dot {
@@ -254,8 +268,14 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
   .app-header__brand span,
   .app-header__nav,
-  .app-header__account {
+  .app-header__user {
     display: none;
+  }
+
+  /* 移动端保留信箱入口，否则未读角标完全不可见。 */
+  .app-header__account {
+    display: inline-flex;
+    align-items: center;
   }
 }
 </style>
