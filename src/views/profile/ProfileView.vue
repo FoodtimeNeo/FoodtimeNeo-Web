@@ -78,6 +78,16 @@ async function logout() {
         <span class="zine-chip">{{ profile.email }}</span>
         <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
+      <div class="profile-page__follows" aria-label="关注统计">
+        <RouterLink :to="{ name: 'myFollowing' }">
+          <strong>{{ profile.followingCount ?? 0 }}</strong>
+          <span>关注</span>
+        </RouterLink>
+        <RouterLink :to="{ name: 'myFollowers' }">
+          <strong>{{ profile.followerCount ?? 0 }}</strong>
+          <span>粉丝</span>
+        </RouterLink>
+      </div>
       <p v-if="profileStatus" role="status">{{ profileStatus }}</p>
       <ProfileEditor
         v-if="editing"
@@ -136,6 +146,27 @@ async function logout() {
   margin: auto;
   overflow-wrap: anywhere;
 }
+.profile-page__follows {
+  display: flex;
+  gap: 12px;
+  margin: 12px 0 20px;
+}
+
+.profile-page__follows a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--ft-color-text);
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.profile-page__follows strong {
+  font-size: 20px;
+  color: var(--zine-stamp-red);
+}
+
 .profile-page__identity {
   display: flex;
   position: relative;

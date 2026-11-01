@@ -11,6 +11,8 @@ import {
 } from '@/api/message.api.js';
 import { formatTime } from '@/utils/recordLabels.js';
 import NoticeDialog from '@/components/NoticeDialog.vue';
+import NoticeMarkdown from '@/components/NoticeMarkdown.vue';
+import { noticeHeading } from '@/utils/noticeMarkdown.js';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -125,9 +127,11 @@ async function readAllMessages() {
           :key="row.id"
           class="inbox-page__item"
         >
-          <h2>系统公告</h2>
+          <h2>{{ noticeHeading(row.content) || '系统公告' }}</h2>
           <p class="inbox-page__meta">{{ formatTime(row.publishedAt) }}</p>
-          <p class="inbox-page__preview">{{ row.content }}</p>
+          <div class="inbox-page__markdown">
+            <NoticeMarkdown :content="row.content || ''" />
+          </div>
           <button type="button" @click="openNotice(row)">查看详情</button>
         </article>
       </template>
@@ -255,6 +259,13 @@ async function readAllMessages() {
   -webkit-line-clamp: 3;
   overflow: hidden;
   overflow-wrap: anywhere;
+}
+
+/* 列表内直接渲染公告 Markdown，超出部分淡出，完整正文在详情弹窗中查看。 */
+.inbox-page__markdown {
+  max-height: 8rem;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 72%, transparent);
 }
 .inbox-page__item button {
   min-height: 44px;
