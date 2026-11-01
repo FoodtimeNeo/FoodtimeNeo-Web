@@ -11,6 +11,7 @@ import {
 } from '@/api/message.api.js';
 import { formatTime } from '@/utils/recordLabels.js';
 import NoticeDialog from '@/components/NoticeDialog.vue';
+import BackLink from '@/components/base/BackLink.vue';
 import NoticeMarkdown from '@/components/NoticeMarkdown.vue';
 import { noticeHeading } from '@/utils/noticeMarkdown.js';
 import PaginationControls from '@/components/base/PaginationControls.vue';
@@ -76,7 +77,7 @@ async function readAllMessages() {
 
 <template>
   <div class="inbox-page">
-    <RouterLink :to="{ name: 'profile' }">返回我的</RouterLink>
+    <BackLink />
     <div class="section-rule">
       <span class="section-rule__index">08</span
       ><span class="section-rule__line"></span>
