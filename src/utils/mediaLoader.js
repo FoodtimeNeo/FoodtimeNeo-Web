@@ -9,7 +9,11 @@ const publicResources = new Set();
 // 后台仍会按 no-cache 重新校验权限，校验失败即移除。
 const displayCache = new Map();
 const DISPLAY_TTL = 5 * 60 * 1000;
+// 条数 + 字节双重上限：缩略图很小，但灯箱/画廊的 full 图最大 10MB。
 const DISPLAY_MAX = 64;
+const DISPLAY_MAX_BYTES = 32 * 1024 * 1024;
+const DISPLAY_SINGLE_MAX = 8 * 1024 * 1024;
+let displayBytes = 0;
 let revalidating = new Set();
 let unauthorized = () => {};
 let blocked = false;
@@ -33,21 +37,29 @@ export function invalidateMedia() {
   }
   for (const entry of displayCache.values()) URL.revokeObjectURL(entry.url);
   displayCache.clear();
+  displayBytes = 0;
   revalidating = new Set();
   mediaRevision.value += 1;
 }
 
-function remember(source, url) {
+function remember(source, url, bytes) {
+  // 单张过大的原图不进入展示缓存，避免一次加载占满预算。
+  if (bytes > DISPLAY_SINGLE_MAX) return;
   const existing = displayCache.get(source);
-  // 旧地址可能仍被当前页面使用，延迟回收，避免图片瞬间消失。
-  if (existing && existing.url !== url)
-    setTimeout(() => URL.revokeObjectURL(existing.url), 30000);
-  displayCache.delete(source);
-  displayCache.set(source, { url, storedAt: Date.now() });
-  while (displayCache.size > DISPLAY_MAX) {
+  if (existing) {
+    displayBytes -= existing.bytes;
+    displayCache.delete(source);
+    // 旧地址可能仍被当前页面使用，延迟回收，避免图片瞬间消失。
+    if (existing.url !== url)
+      setTimeout(() => URL.revokeObjectURL(existing.url), 30000);
+  }
+  displayCache.set(source, { url, storedAt: Date.now(), bytes });
+  displayBytes += bytes;
+  while (displayCache.size > DISPLAY_MAX || displayBytes > DISPLAY_MAX_BYTES) {
     const [oldest, entry] = displayCache.entries().next().value;
     displayCache.delete(oldest);
-    URL.revokeObjectURL(entry.url);
+    displayBytes -= entry.bytes;
+    setTimeout(() => URL.revokeObjectURL(entry.url), 30000);
   }
 }
 
@@ -59,6 +71,7 @@ export function peekMedia(value) {
   if (!entry) return '';
   if (Date.now() - entry.storedAt > DISPLAY_TTL) {
     displayCache.delete(source);
+    displayBytes -= entry.bytes;
     setTimeout(() => URL.revokeObjectURL(entry.url), 30000);
     return '';
   }
@@ -88,13 +101,14 @@ function revalidate(source) {
         const entry = displayCache.get(source);
         if (entry) {
           displayCache.delete(source);
+          displayBytes -= entry.bytes;
           setTimeout(() => URL.revokeObjectURL(entry.url), 30000);
         }
         return;
       }
       const blob = await response.blob();
       if (generation !== mediaRevision.value) return;
-      remember(source, URL.createObjectURL(blob));
+      remember(source, URL.createObjectURL(blob), blob.size);
     })
     .catch(() => {
       /* 后台校验失败时保留已展示的内容，等下次真正加载时再处理 */
@@ -173,7 +187,7 @@ export function acquireMedia(value) {
           throw new Error('图片请求已失效');
         task.url = URL.createObjectURL(blob);
         // no-store 预览（待审/暂存）不能被后续展示复用。
-        if (!/no-store/i.test(policy)) remember(source, task.url);
+        if (!/no-store/i.test(policy)) remember(source, task.url, blob.size);
         return task.url;
       } finally {
         task.settled = true;
