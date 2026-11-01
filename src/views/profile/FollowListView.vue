@@ -9,6 +9,7 @@ import {
   unfollowUser,
 } from '@/api/follow.api.js';
 import MediaImage from '@/components/base/MediaImage.vue';
+import BackLink from '@/components/base/BackLink.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -59,7 +60,7 @@ async function toggle(row) {
 
 <template>
   <div class="follow-page">
-    <RouterLink :to="{ name: 'profile' }">← 返回我的</RouterLink>
+    <BackLink />
     <div class="section-rule">
       <span class="section-rule__index">09</span
       ><span class="section-rule__line"></span>

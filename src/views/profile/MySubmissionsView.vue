@@ -3,6 +3,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { fetchOwnSubmissions } from '@/api/profile.api.js';
 import SubmissionRecord from '@/components/base/SubmissionRecord.vue';
+import BackLink from '@/components/base/BackLink.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -24,7 +25,7 @@ function changeKind(event) {
 </script>
 <template>
   <div class="records-page">
-    <RouterLink :to="{ name: 'profile' }">← 返回我的</RouterLink>
+    <BackLink />
     <div class="section-rule">
       <span class="section-rule__index">08</span
       ><span class="section-rule__line"></span>
