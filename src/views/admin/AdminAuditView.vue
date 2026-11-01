@@ -88,7 +88,11 @@ async function submit() {
     return;
   }
   failure.value = '';
-  if (['reject', 'remove'].includes(row.action) && !reason.value.trim()) {
+  if (
+    (row.action === 'reject' ||
+      (row.action === 'remove' && !row.type.startsWith('community-'))) &&
+    !reason.value.trim()
+  ) {
     failure.value =
       row.action === 'remove' ? '删除须填写原因' : '驳回须填写审核原因';
     return;
@@ -105,11 +109,7 @@ async function submit() {
   try {
     if (row.type.startsWith('community-')) {
       if (row.action === 'remove')
-        await removeCommunityAsAdmin(
-          communityType(row),
-          row.id,
-          reason.value.trim(),
-        );
+        await removeCommunityAsAdmin(communityType(row), row.id);
       else
         await submitCommunityAudit(communityType(row), row.id, {
           action: row.action,
@@ -282,6 +282,12 @@ async function submit() {
                 :disabled="writing"
             /></label>
             <label
+              v-if="
+                !(
+                  row.type.startsWith('community-') &&
+                  selected.action === 'remove'
+                )
+              "
               >审核说明{{
                 selected.action !== 'approve' ? '（必填）' : '（选填）'
               }}<textarea

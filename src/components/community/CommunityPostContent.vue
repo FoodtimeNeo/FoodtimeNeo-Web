@@ -26,7 +26,12 @@ const props = defineProps({
 const emit = defineEmits(['deleted', 'close']);
 
 const auth = useAuthStore();
-const { canRemove, remove: removeContent, removing } = useCommunityRemoval();
+const {
+  canRemove,
+  remove: removeContent,
+  removing,
+  outcome,
+} = useCommunityRemoval();
 const post = ref(null);
 const loading = ref(false);
 const error = ref('');
@@ -107,9 +112,16 @@ async function remove() {
   const current = version;
   actionError.value = '';
   try {
-    if (!(await removeContent('posts', post.value)) || current !== version)
+    if (
+      !(await removeContent('posts', post.value, {
+        isCurrent: () => current === version,
+      })) ||
+      current !== version
+    )
       return;
-    ElMessage.success('食记已删除');
+    ElMessage.success(
+      outcome.value === 'missing' ? '内容已不可见，已更新页面' : '食记已删除',
+    );
     emit('deleted');
   } catch (e) {
     if (current !== version) return;

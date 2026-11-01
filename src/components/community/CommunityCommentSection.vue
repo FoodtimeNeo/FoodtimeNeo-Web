@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, onUnmounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import {
@@ -8,9 +8,12 @@ import {
   createPostComment,
 } from '@/api/community.api.js';
 import CommunityCommentItem from './CommunityCommentItem.vue';
-const props = defineProps({ postId: { type: String, required: true } });
+const props = defineProps({
+  postId: { type: String, required: true },
+  embedded: Boolean,
+});
 const emit = defineEmits(['changed', 'replyTargetChange']);
-const { remove: removeContent, removing } = useCommunityRemoval();
+const { remove: removeContent, removing, outcome } = useCommunityRemoval();
 const roots = ref([]),
   threads = ref({}),
   hasMore = ref(false),
@@ -24,6 +27,9 @@ const loading = ref(false),
 let epoch = 0,
   requestId = crypto.randomUUID(),
   payloadKey = '';
+onUnmounted(() => {
+  epoch++;
+});
 // 重新获取已展开的范围，继续使用服务端游标；不把长讨论收回第一页。
 async function loadedPage(fetchPage, count) {
   const items = [];
@@ -138,7 +144,10 @@ async function send() {
     payloadKey = '';
     ElMessage.success('已提交审核，通过前仅自己可见');
     await load(false, true, !body.rootCommentId);
-    if (version === epoch) emit('changed');
+    if (version === epoch) {
+      emit('changed');
+      return true;
+    }
   } catch (e) {
     if (version === epoch) error.value = e.message || '提交失败，请重试';
   } finally {
@@ -150,8 +159,16 @@ async function remove(item) {
   const version = epoch;
   error.value = '';
   try {
-    if (!(await removeContent('comments', item)) || version !== epoch) return;
-    ElMessage.success('评论已删除');
+    if (
+      !(await removeContent('comments', item, {
+        isCurrent: () => version === epoch,
+      })) ||
+      version !== epoch
+    )
+      return;
+    ElMessage.success(
+      outcome.value === 'missing' ? '内容已不可见，已更新页面' : '评论已删除',
+    );
     if (
       target.value?.item.id === item.id ||
       target.value?.root.id === item.id
@@ -166,15 +183,20 @@ async function remove(item) {
   }
 }
 async function moreReplies(root) {
+  const version = epoch;
   try {
     await replies(root, true);
   } catch (e) {
-    error.value = e.message || '回复加载失败';
+    if (version === epoch) error.value = e.message || '回复加载失败';
   }
 }
 
 defineExpose({
   load,
+  submitText: async (text) => {
+    draft.value = text;
+    return send();
+  },
   selectReply,
   setTarget: (val) => {
     target.value = val;
@@ -187,7 +209,11 @@ defineExpose({
 });
 </script>
 <template>
-  <section class="community-comments" aria-label="评论与回复">
+  <section
+    class="community-comments"
+    :class="{ 'is-embedded': embedded }"
+    aria-label="评论与回复"
+  >
     <header>
       <h2>同学们的回应</h2>
       <button type="button" :disabled="loading || submitting" @click="load()">
@@ -198,7 +224,7 @@ defineExpose({
       {{ error }} <button type="button" @click="load()">重试加载</button>
     </p>
     <p v-if="loading && !roots.length" role="status">评论加载中…</p>
-    <p v-else-if="!roots.length">还没有评论，聊聊你的美食体验吧。</p>
+    <p v-else-if="!error && !roots.length">还没有评论，聊聊你的美食体验吧。</p>
     <div v-for="root in roots" :key="root.id" class="comment-thread">
       <CommunityCommentItem
         :item="root"
@@ -237,7 +263,7 @@ defineExpose({
     >
       加载更多评论
     </button>
-    <form class="comment-composer" @submit.prevent="send">
+    <form v-if="!embedded" class="comment-composer" @submit.prevent="send">
       <div v-if="target" class="reply-selection">
         回复 {{ target.item.author?.name || '同学' }}
         <button type="button" :disabled="submitting" @click="target = null">
@@ -271,6 +297,19 @@ defineExpose({
   </section>
 </template>
 <style scoped lang="scss">
+.is-embedded {
+  border-top: 1px solid #f0eee8;
+  margin-top: 20px;
+}
+.is-embedded h2 {
+  font-size: 13px;
+  font-weight: 400;
+  color: #999;
+}
+.is-embedded :deep(.compact-replies) {
+  background: #fafafa;
+}
+
 .community-comments {
   padding-top: 16px;
 }

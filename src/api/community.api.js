@@ -119,7 +119,7 @@ export const fetchCommunityAuditDetail = (type, id) =>
   http.get(`/admin/community/${type}/${encodeURIComponent(id)}`);
 export const submitCommunityAudit = (type, id, body) =>
   http.post(`/admin/community/${type}/${encodeURIComponent(id)}`, body);
-export const removeCommunityAsAdmin = (type, id, reason) =>
+export const removeCommunityAsAdmin = (type, id, reason = undefined) =>
   http.delete(`/admin/community/${type}/${encodeURIComponent(id)}`, {
-    data: { reason },
+    data: reason ? { reason } : undefined,
   });
