@@ -250,6 +250,12 @@ export const routes = [
     meta: { title: '注册', layout: 'blank' },
   },
   {
+    path: '/forgot-password',
+    name: 'forgotPassword',
+    component: () => import('@/views/auth/ForgotPasswordView.vue'),
+    meta: { title: '找回密码', layout: 'blank' },
+  },
+  {
     path: '/admin/audit',
     name: 'adminAudit',
     component: () => import('@/views/admin/AdminAuditView.vue'),
