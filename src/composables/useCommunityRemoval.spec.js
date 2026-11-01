@@ -40,6 +40,14 @@ describe('社区内容删除权限与确认', () => {
       }
       expect(api.deleteCommunityPost).not.toHaveBeenCalled();
       expect(api.deletePostComment).not.toHaveBeenCalled();
+      expect(dialogs.prompt).toHaveBeenLastCalledWith(
+        expect.any(String),
+        expect.any(String),
+        expect.objectContaining({
+          confirmButtonText: '确认删除',
+          cancelButtonText: '取消',
+        }),
+      );
     },
   );
 

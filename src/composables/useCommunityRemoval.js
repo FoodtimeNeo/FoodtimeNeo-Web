@@ -38,6 +38,8 @@ export function useCommunityRemoval() {
             title,
             {
               type: 'warning',
+              confirmButtonText: '确认删除',
+              cancelButtonText: '取消',
               inputType: 'textarea',
               inputValidator: (value) =>
                 (Boolean(value?.trim()) && value.trim().length <= 500) ||
@@ -53,7 +55,11 @@ export function useCommunityRemoval() {
               ? '删除后无法恢复，帖子将从社区隐藏。'
               : '删除后无法恢复，已通过的楼内回复会保留。',
             title,
-            { type: 'warning' },
+            {
+              type: 'warning',
+              confirmButtonText: '确认删除',
+              cancelButtonText: '取消',
+            },
           );
         }
       } catch (error) {
