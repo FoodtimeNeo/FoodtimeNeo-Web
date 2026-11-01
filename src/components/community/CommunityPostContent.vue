@@ -214,17 +214,20 @@ async function handleSendQuickComment() {
       body.rootCommentId = replyTarget.value.root?.id;
       body.replyToCommentId = replyTarget.value.item?.id;
     }
-    await createPostComment(post.value.id, {
+    const created = await createPostComment(post.value.id, {
       ...body,
       clientRequestId: requestId,
     });
     quickDraft.value = '';
     replyTarget.value = null;
     requestId = crypto.randomUUID();
-    ElMessage.success('已提交审核，通过前仅自己可见');
-    if (commentSectionRef.value) {
-      await commentSectionRef.value.load(false, true, !body.rootCommentId);
-    }
+    ElMessage.success(
+      created.status === 'pending'
+        ? '已提交审核，通过前仅自己可见'
+        : '评论已发布',
+    );
+    // 立即插入评论列表，审核中的评论会继续轮询并在通过后自动刷新。
+    commentSectionRef.value?.acceptSubmitted(created, body);
     post.value.commentCount = (post.value.commentCount || 0) + 1;
   } catch (err) {
     actionError.value = err.message || '发送失败，请重试';

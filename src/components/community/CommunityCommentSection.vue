@@ -6,6 +6,7 @@ import {
   fetchRootComments,
   fetchCommentReplies,
   createPostComment,
+  fetchCommentStatus,
 } from '@/api/community.api.js';
 import CommunityCommentItem from './CommunityCommentItem.vue';
 const props = defineProps({
@@ -109,6 +110,57 @@ watch(
   },
   { immediate: true },
 );
+const POLL_INTERVAL = 2000;
+const POLL_TIMEOUT = 30000;
+const polling = new Set();
+
+/** 提交后先本地插入，保证不用关闭帖子就能看到"审核中"。 */
+function insertSubmitted(created, body) {
+  if (body.rootCommentId) {
+    const key = body.rootCommentId;
+    const prior = threads.value[key];
+    threads.value[key] = {
+      ...(prior || { hasMore: false, nextCursor: null, total: 0 }),
+      items: [...(prior?.items || []), created],
+    };
+  } else {
+    roots.value = [created, ...roots.value.filter((r) => r.id !== created.id)];
+  }
+}
+
+/** 轮询审核结果；变为 approved/rejected 后整页刷新一次，无需用户手动操作。 */
+async function watchStatus(id, rootId, version) {
+  if (polling.has(id)) return;
+  polling.add(id);
+  const deadline = Date.now() + POLL_TIMEOUT;
+  try {
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL));
+      if (version !== epoch) return;
+      let state;
+      try {
+        state = await fetchCommentStatus(id);
+      } catch {
+        return; // 评论已被删除或不可见，停止轮询
+      }
+      if (state.status !== 'pending') {
+        if (version === epoch) await load(false, true, !rootId);
+        return;
+      }
+    }
+  } finally {
+    polling.delete(id);
+  }
+}
+
+/** 供外部（帖子底部快速评论）在拿到返回后复用同一套插入与轮询。 */
+function acceptSubmitted(created, body) {
+  const version = epoch;
+  insertSubmitted(created, body);
+  if (created.status === 'pending')
+    watchStatus(created.id, body.rootCommentId, version);
+}
+
 async function selectReply(item, root) {
   target.value = { item, root };
   emit('replyTargetChange', { item, root });
@@ -133,7 +185,7 @@ async function send() {
   submitting.value = true;
   error.value = '';
   try {
-    await createPostComment(props.postId, {
+    const created = await createPostComment(props.postId, {
       ...body,
       clientRequestId: requestId,
     });
@@ -142,8 +194,15 @@ async function send() {
     target.value = null;
     requestId = crypto.randomUUID();
     payloadKey = '';
-    ElMessage.success('已提交审核，通过前仅自己可见');
-    await load(false, true, !body.rootCommentId);
+    ElMessage.success(
+      created.status === 'pending'
+        ? '已提交审核，通过前仅自己可见'
+        : '评论已发布',
+    );
+    // 立即插入本地列表；审核中的评论会继续轮询，通过后自动刷新。
+    insertSubmitted(created, body);
+    if (created.status === 'pending')
+      watchStatus(created.id, body.rootCommentId, version);
     if (version === epoch) {
       emit('changed');
       return true;
@@ -206,6 +265,7 @@ defineExpose({
   },
   roots,
   threads,
+  acceptSubmitted,
 });
 </script>
 <template>
