@@ -29,17 +29,20 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('并发图片请求合并；每个新展示重新校验私有图片，释放最后引用后撤销URL', async () => {
+it('并发图片请求合并；再次展示复用已加载图片并在后台重新校验', async () => {
   const one = acquireMedia(url),
     two = acquireMedia(url);
   await Promise.all([one.promise, two.promise]);
   expect(fetch).toHaveBeenCalledTimes(1);
   one.release();
-  expect(URL.revokeObjectURL).not.toHaveBeenCalled();
   two.release();
-  expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:media');
+  // 展示缓存持有引用，释放组件不会立即撤销，避免返回页面时白屏。
+  expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+
   const next = acquireMedia(url);
-  await next.promise;
+  // 同步即可拿到已缓存的图片
+  expect(await next.promise).toBe('blob:media');
+  // 后台仍按 no-cache 重新校验权限
   expect(fetch.mock.calls[1][1].cache).toBe('no-cache');
   next.release();
 });

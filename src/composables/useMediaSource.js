@@ -1,5 +1,5 @@
 import { onScopeDispose, ref, toValue, watch } from 'vue';
-import { acquireMedia, mediaRevision } from '@/utils/mediaLoader.js';
+import { acquireMedia, mediaRevision, peekMedia } from '@/utils/mediaLoader.js';
 
 export function useMediaSource(input, enabled = true) {
   const source = ref('');
@@ -13,7 +13,8 @@ export function useMediaSource(input, enabled = true) {
     async ([url, active]) => {
       const current = ++ticket;
       release();
-      source.value = '';
+      // 会话内已加载过的图片同步展示，避免切换页面时先白屏再出现。
+      source.value = peekMedia(url);
       failed.value = false;
       loading.value = Boolean(url && active);
       if (!url || !active || document.hidden) {
