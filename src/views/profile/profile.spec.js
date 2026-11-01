@@ -20,12 +20,42 @@ import ChangePasswordView from './ChangePasswordView.vue';
 import MyReviewsView from './MyReviewsView.vue';
 import ProfileView from './ProfileView.vue';
 import SubmissionRecord from '@/components/base/SubmissionRecord.vue';
+import ProfileEditor from './ProfileEditor.vue';
 beforeEach(() => {
   Object.values(api).forEach((fn) => fn.mockReset());
 });
 const view = (component) =>
   mount(component, { global: { stubs: { RouterLink: RouterLinkStub } } });
 describe('个人记录与改密', () => {
+  it('普通用户可以打开资料编辑，保存后同步名称、头像和登录状态', async () => {
+    api.fetchProfile.mockResolvedValue({
+      id: 'u1',
+      displayName: '原昵称',
+      role: 'user',
+      avatarUrl: null,
+    });
+    const wrapper = mount(ProfileView, {
+      global: { stubs: { RouterLink: RouterLinkStub, ProfileEditor: true } },
+    });
+    await flushPromises();
+    await wrapper
+      .findAll('button')
+      .find((b) => b.text() === '编辑资料')
+      .trigger('click');
+    const updated = {
+      id: 'u1',
+      displayName: '新昵称',
+      role: 'user',
+      avatarUrl: '/api/v1/media/11111111-1111-1111-1111-111111111111',
+    };
+    wrapper.findComponent(ProfileEditor).vm.$emit('saved', updated);
+    await flushPromises();
+    expect(api.setSession).toHaveBeenLastCalledWith({ user: updated });
+    expect(wrapper.get('h2').text()).toBe('新昵称');
+    expect(wrapper.findComponent(ProfileEditor).exists()).toBe(false);
+    expect(wrapper.text()).toContain('个人资料已更新');
+    wrapper.unmount();
+  });
   it('空头像用一个完整字符占位，并说明评论与投稿记录的区别', async () => {
     api.fetchProfile.mockResolvedValue({
       id: 'u1',

@@ -2,6 +2,7 @@
 import { computed, onUnmounted, ref, useId, watch } from 'vue';
 import { validateImageFile } from '@/utils/submissionValidation.js';
 const props = defineProps({
+  label: { type: String, default: '图片' },
   disabled: Boolean,
   required: { type: Boolean, default: true },
   publicationHint: { type: String, default: '审核通过后公开。' },
@@ -16,7 +17,10 @@ const checking = ref(false);
 const hasSelection = ref(false);
 const visibleError = computed(() => error.value || props.validationMessage);
 watch(checking, (value) => emit('checking', value), { flush: 'sync' });
-defineExpose({ focus: () => input.value?.focus() });
+defineExpose({
+  focus: () => input.value?.focus(),
+  isValid: () => !visibleError.value && !checking.value,
+});
 let version = 0;
 let active = true;
 function release() {
@@ -70,7 +74,9 @@ function clear() {
 </script>
 <template>
   <div class="image-field">
-    <label :for="id">图片{{ props.required ? '（必填）' : '（选填）' }}</label>
+    <label :for="id"
+      >{{ props.label }}{{ props.required ? '（必填）' : '（选填）' }}</label
+    >
     <input
       :id="id"
       ref="input"

@@ -9,6 +9,7 @@ import MediaImage from '@/components/base/MediaImage.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import InkButton from '@/components/base/InkButton.vue';
+import ProfileEditor from './ProfileEditor.vue';
 const auth = useAuthStore();
 const router = useRouter();
 const {
@@ -23,6 +24,14 @@ const {
 });
 const exiting = ref(false);
 const exitError = ref('');
+const editing = ref(false);
+const profileStatus = ref('');
+function saved(user) {
+  auth.setSession({ user });
+  profile.value = user;
+  editing.value = false;
+  profileStatus.value = '个人资料已更新';
+}
 async function logout() {
   if (exiting.value) return;
   exiting.value = true;
@@ -69,6 +78,22 @@ async function logout() {
         <span class="zine-chip">{{ profile.email }}</span>
         <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
+      <p v-if="profileStatus" role="status">{{ profileStatus }}</p>
+      <ProfileEditor
+        v-if="editing"
+        :user="profile"
+        @saved="saved"
+        @cancel="editing = false"
+      />
+      <InkButton
+        v-else
+        type="button"
+        @click="
+          editing = true;
+          profileStatus = '';
+        "
+        >编辑资料</InkButton
+      >
       <nav class="profile-page__links" aria-label="个人功能">
         <RouterLink class="paper-link" :to="{ name: 'inboxView' }"
           ><span class="stamp">信箱</span
