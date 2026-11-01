@@ -57,12 +57,20 @@ export async function fetchPostComments(id, options = {}) {
   return page.items.map(mapComment);
 }
 export async function createPostComment(id, payload, options = {}) {
-  return http.post(
-    `/community/posts/${encodeURIComponent(id)}/comments`,
-    payload,
-    options,
+  // 后端返回创建后的评论（含 status），客户端可立即展示"审核中"。
+  return mapComment(
+    await http.post(
+      `/community/posts/${encodeURIComponent(id)}/comments`,
+      payload,
+      options,
+    ),
   );
 }
+export const fetchCommentStatus = (commentId, options = {}) =>
+  http.get(
+    `/community/comments/${encodeURIComponent(commentId)}/status`,
+    options,
+  );
 export async function fetchMyCommunityPosts(params = {}) {
   const page = await http.get('/users/me/community-posts', { params });
   return { ...page, items: page.items.map(mapPost) };

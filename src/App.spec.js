@@ -25,6 +25,15 @@ function mountApp() {
 function popup(wrapper) {
   return wrapper.findComponent({ name: 'NoticeDialog' });
 }
+async function foreground() {
+  Object.defineProperty(document, 'visibilityState', {
+    configurable: true,
+    get: () => 'visible',
+  });
+  document.dispatchEvent(new Event('visibilitychange'));
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  await flushPromises();
+}
 beforeEach(() => {
   setActivePinia(createPinia());
   vi.resetAllMocks();
@@ -89,5 +98,50 @@ it('失败展示重试入口，不阻塞应用，也不创建轮询任务', asyn
   expect(popup(wrapper).props('modelValue')).toBe(true);
   expect(interval).not.toHaveBeenCalled();
   interval.mockRestore();
+  wrapper.unmount();
+});
+it('回到前台补查公告；同一公告不重复弹，切换公告后展示新公告', async () => {
+  login();
+  const wrapper = mountApp();
+  await flushPromises();
+  expect(popup(wrapper).props('modelValue')).toBe(true);
+
+  popup(wrapper).vm.$emit('update:modelValue', false);
+  await flushPromises();
+
+  await foreground();
+  expect(api.fetchCurrentNotice).toHaveBeenCalledTimes(2);
+  expect(popup(wrapper).props('modelValue')).toBe(false);
+
+  api.fetchCurrentNotice.mockResolvedValue({
+    ...notice,
+    id: 'n2',
+    content: '# 新公告',
+  });
+  await foreground();
+  expect(popup(wrapper).props('modelValue')).toBe(true);
+  expect(popup(wrapper).props('notice').id).toBe('n2');
+  wrapper.unmount();
+});
+it('bfcache 恢复视为重新打开，补查当前公告', async () => {
+  login();
+  const wrapper = mountApp();
+  await flushPromises();
+  popup(wrapper).vm.$emit('update:modelValue', false);
+  await flushPromises();
+
+  api.fetchCurrentNotice.mockResolvedValue({
+    ...notice,
+    id: 'n3',
+    content: '# 恢复后的公告',
+  });
+  const event = new Event('pageshow');
+  Object.defineProperty(event, 'persisted', { value: true });
+  window.dispatchEvent(event);
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  await flushPromises();
+
+  expect(popup(wrapper).props('modelValue')).toBe(true);
+  expect(popup(wrapper).props('notice').id).toBe('n3');
   wrapper.unmount();
 });
