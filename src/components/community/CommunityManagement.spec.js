@@ -56,7 +56,12 @@ beforeEach(() => {
   });
   api.fetchCommentReplies.mockResolvedValue({ items: [], hasMore: false });
   dialogs.prompt.mockResolvedValue({ value: '违反社区规范' });
-  dialogs.confirm.mockResolvedValue('confirm');
+  dialogs.confirm.mockImplementation(
+    (message, title, options) =>
+      new Promise((resolve) => {
+        options.beforeClose('confirm', {}, () => resolve('confirm'));
+      }),
+  );
 });
 
 describe('社区详情中的管理入口', () => {
@@ -83,7 +88,6 @@ describe('社区详情中的管理入口', () => {
         expect(api.removeCommunityAsAdmin).toHaveBeenCalledWith(
           'posts',
           'post',
-          '违反社区规范',
         );
         expect(wrapper.emitted('deleted')).toHaveLength(1);
         wrapper.unmount();
@@ -115,7 +119,6 @@ describe('社区详情中的管理入口', () => {
       expect(api.removeCommunityAsAdmin).toHaveBeenCalledWith(
         'comments',
         'comment',
-        '违反社区规范',
       );
       expect(api.fetchRootComments).toHaveBeenCalledTimes(2);
       expect(wrapper.emitted('changed')).toHaveLength(1);
@@ -130,14 +133,13 @@ describe('社区详情中的管理入口', () => {
       global: { stubs: { Teleport: true } },
     });
     await flushPromises();
-    await wrapper.get('.cmt-delete-btn').trigger('click');
+    await wrapper.get('.delete-button').trigger('click');
     await flushPromises();
     expect(api.removeCommunityAsAdmin).toHaveBeenCalledWith(
       'comments',
       'comment',
-      '违反社区规范',
     );
-    expect(api.fetchPostComments).toHaveBeenCalledTimes(2);
+    expect(api.fetchRootComments).toHaveBeenCalledTimes(2);
     wrapper.unmount();
   });
 });

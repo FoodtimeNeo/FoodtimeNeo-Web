@@ -4,12 +4,10 @@ import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import {
   fetchCommunityPostDetail,
-  fetchPostComments,
-  createPostComment,
   setPostLike,
   setPostFavorite,
-  setCommentLike,
 } from '@/api/community.api.js';
+import CommunityCommentSection from './CommunityCommentSection.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 
@@ -40,23 +38,27 @@ const emit = defineEmits([
   'deleted',
 ]);
 
-const { canRemove, remove: removeContent, removing } = useCommunityRemoval();
+const {
+  canRemove,
+  remove: removeContent,
+  removing,
+  outcome,
+} = useCommunityRemoval();
 const post = ref(null);
 const loading = ref(false);
 const error = ref(null);
-const comments = ref([]);
-const commentLoading = ref(false);
+const commentSection = ref(null);
+let epoch = 0;
 
 const isFollowing = ref(false);
 const isLiked = ref(false);
 const isFavorited = ref(false);
-const likedComments = ref(new Set());
 const replyTarget = ref(null);
 
 const currentImageIndex = ref(0);
 const quickCommentText = ref('');
 const isSubmittingComment = ref(false);
-const commentInputRef = ref(null);
+const detailModalRef = ref(null);
 
 const images = computed(() => post.value?.images || []);
 const currentImage = computed(
@@ -75,59 +77,56 @@ function formatPostTime(isoString) {
   return `${month}-${day} ${hours}:${minutes}`;
 }
 
-function formatTime(isoString) {
-  if (!isoString) return '';
-  const d = new Date(isoString);
-  if (Number.isNaN(d.getTime())) return isoString;
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 async function loadPostData(id) {
+  const version = ++epoch;
   if (!id) return;
   loading.value = true;
   error.value = null;
+  post.value = null;
   currentImageIndex.value = 0;
   replyTarget.value = null;
+  quickCommentText.value = '';
   try {
-    post.value = await fetchCommunityPostDetail(id);
-    if (post.value) {
-      isLiked.value = !!post.value.likedByMe;
-      isFavorited.value = !!post.value.favoritedByMe;
-    }
-    await loadComments(id);
-  } catch (err) {
-    error.value = err;
+    const result = await fetchCommunityPostDetail(id);
+    if (version !== epoch || !props.modelValue || props.postId !== id) return;
+    post.value = result;
+    isLiked.value = !!result.likedByMe;
+    isFavorited.value = !!result.favoritedByMe;
+  } catch (failure) {
+    if (version === epoch) error.value = failure;
   } finally {
-    loading.value = false;
+    if (version === epoch) loading.value = false;
   }
 }
-
-async function loadComments(id) {
-  commentLoading.value = true;
+async function refreshPost() {
+  const id = props.postId,
+    version = epoch;
   try {
-    const list = await fetchPostComments(id);
-    if (!props.modelValue || props.postId !== id) return;
-    comments.value = list || [];
-    comments.value.forEach((c) => {
-      if (c.likedByMe) likedComments.value.add(c.id);
-    });
-  } catch (err) {
-    console.warn('加载评论失败', err);
-  } finally {
-    commentLoading.value = false;
+    const result = await fetchCommunityPostDetail(id);
+    if (version === epoch && props.modelValue && props.postId === id) {
+      post.value = result;
+      emit('postUpdated', result);
+    }
+  } catch (failure) {
+    if (version === epoch)
+      ElMessage.error(failure.message || '读取最新食记失败');
   }
+}
+function selectReply(value) {
+  replyTarget.value = value;
+  focusCommentInput();
 }
 
 watch(
   () => [props.modelValue, props.postId],
   ([isOpen, newId]) => {
+    isSubmittingComment.value = false;
     if (isOpen && newId) {
       loadPostData(newId);
     } else if (!isOpen) {
+      ++epoch;
       post.value = null;
       error.value = null;
-      comments.value = [];
       quickCommentText.value = '';
       replyTarget.value = null;
     }
@@ -136,6 +135,7 @@ watch(
 );
 
 function close() {
+  if (removing.value) return;
   emit('update:modelValue', false);
   emit('close');
 }
@@ -147,7 +147,7 @@ function handleOverlayClick(e) {
 }
 
 function handleKeydown(e) {
-  if (props.modelValue && e.key === 'Escape') {
+  if (props.modelValue && !removing.value && e.key === 'Escape') {
     close();
   }
 }
@@ -159,6 +159,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  ++epoch;
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', handleKeydown);
   }
@@ -224,104 +225,46 @@ function handleShare() {
 
 function focusCommentInput() {
   nextTick(() => {
-    if (commentInputRef.value) {
-      commentInputRef.value.focus();
-    }
+    Array.from(
+      detailModalRef.value?.querySelectorAll('.redbook-input-pill input') || [],
+    )
+      .find((input) => input.getClientRects().length)
+      ?.focus();
   });
 }
 
 async function handleSendComment() {
-  const text = quickCommentText.value.trim();
-  if (!text) {
-    ElMessage.warning('请输入评论内容');
-    return;
-  }
-  if (!post.value?.id || isSubmittingComment.value) return;
-
+  const text = quickCommentText.value.trim(),
+    version = epoch;
+  if (!text || !post.value || isSubmittingComment.value) return;
   isSubmittingComment.value = true;
   try {
-    const payload = {
-      content: text,
-      clientRequestId: crypto.randomUUID(),
-    };
-    if (replyTarget.value) {
-      payload.rootCommentId =
-        replyTarget.value.rootCommentId || replyTarget.value.id;
-      payload.replyToCommentId = replyTarget.value.id;
+    if (await commentSection.value?.submitText(text)) {
+      if (version !== epoch) return;
+      quickCommentText.value = '';
+      replyTarget.value = null;
     }
-    await createPostComment(post.value.id, payload);
-    quickCommentText.value = '';
-    replyTarget.value = null;
-    ElMessage.success('已提交审核，通过前仅自己可见');
-    await loadComments(post.value.id);
-    if (post.value) {
-      post.value.commentCount = (post.value.commentCount || 0) + 1;
-    }
-  } catch (err) {
-    ElMessage.error(err.message || '发表评论失败');
   } finally {
-    isSubmittingComment.value = false;
+    if (version === epoch) isSubmittingComment.value = false;
   }
-}
-
-async function toggleLikeComment(cmt) {
-  const next = !likedComments.value.has(cmt.id);
-  if (next) {
-    likedComments.value.add(cmt.id);
-    cmt.likeCount = (cmt.likeCount || 0) + 1;
-  } else {
-    likedComments.value.delete(cmt.id);
-    cmt.likeCount = Math.max(0, (cmt.likeCount || 0) - 1);
-  }
-  try {
-    const res = await setCommentLike(cmt.id, next);
-    cmt.likeCount = res.likeCount;
-    cmt.likedByMe = res.liked;
-    ElMessage.success(next ? '赞同了该评论' : '已取消赞同');
-  } catch {
-    if (next) {
-      likedComments.value.delete(cmt.id);
-      cmt.likeCount = Math.max(0, (cmt.likeCount || 0) - 1);
-    } else {
-      likedComments.value.add(cmt.id);
-      cmt.likeCount = (cmt.likeCount || 0) + 1;
-    }
-  }
-}
-
-function replyUser(cmt) {
-  replyTarget.value = cmt;
-  const name = cmt.author?.name || '同学';
-  quickCommentText.value = `@${name} `;
-  focusCommentInput();
 }
 
 async function removePost() {
   if (!post.value || removing.value) return;
   const id = post.value.id;
   try {
-    if (!(await removeContent('posts', post.value))) return;
+    if (
+      !(await removeContent('posts', post.value, {
+        isCurrent: () => props.modelValue && props.postId === id,
+      }))
+    )
+      return;
     if (post.value?.id !== id || !props.modelValue) return;
-    ElMessage.success('食记已删除');
+    ElMessage.success(
+      outcome.value === 'missing' ? '内容已不可见，已更新页面' : '食记已删除',
+    );
     close();
     emit('deleted');
-  } catch (e) {
-    ElMessage.error(e.message || '删除失败');
-  }
-}
-
-async function removeComment(comment) {
-  if (!post.value || removing.value) return;
-  const id = post.value.id;
-  try {
-    if (!(await removeContent('comments', comment))) return;
-    if (post.value?.id !== id || !props.modelValue) return;
-    ElMessage.success('评论已删除');
-    if (replyTarget.value?.id === comment.id) replyTarget.value = null;
-    await loadComments(id);
-    if (post.value?.id !== id || !props.modelValue) return;
-    const updated = await fetchCommunityPostDetail(id);
-    if (post.value?.id === id && props.modelValue) post.value = updated;
   } catch (e) {
     ElMessage.error(e.message || '删除失败');
   }
@@ -333,6 +276,7 @@ async function removeComment(comment) {
     <Transition name="redbook-fade">
       <div
         v-if="modelValue"
+        ref="detailModalRef"
         class="redbook-modal"
         role="dialog"
         aria-modal="true"
@@ -554,106 +498,33 @@ async function removeComment(comment) {
                   </div>
 
                   <!-- 评论列表部分（纯净小红书风格） -->
-                  <div class="redbook-comments-section">
-                    <div class="redbook-comments-header">
-                      <span>共 {{ comments.length }} 条评论</span>
-                    </div>
-
-                    <div v-if="commentLoading" class="redbook-comments-loading">
-                      评论加载中...
-                    </div>
-                    <div
-                      v-else-if="comments.length === 0"
-                      class="redbook-comments-empty"
-                    >
-                      还没有人评论，来发第一条吧~
-                    </div>
-                    <div v-else class="redbook-comments-list">
-                      <article
-                        v-for="cmt in comments"
-                        :key="cmt.id"
-                        class="redbook-comment-item"
-                      >
-                        <div class="cmt-avatar-wrap">
-                          <img
-                            v-if="cmt.author?.avatar"
-                            :src="cmt.author.avatar"
-                            :alt="cmt.author.name"
-                            class="cmt-avatar"
-                          />
-                          <span v-else class="cmt-fallback">{{
-                            (cmt.author?.name || '评')[0]
-                          }}</span>
-                        </div>
-                        <div class="cmt-content-wrap">
-                          <div class="cmt-author-row">
-                            <span class="cmt-author-name">{{
-                              cmt.author?.name || '热心同学'
-                            }}</span>
-                            <span
-                              v-if="cmt.author?.id === post.author?.id"
-                              class="cmt-author-tag"
-                            >
-                              作者
-                            </span>
-                          </div>
-                          <p class="cmt-body-text">
-                            <span
-                              v-if="cmt.replyToDisplayName"
-                              class="cmt-reply-target"
-                            >
-                              回复 @{{ cmt.replyToDisplayName }}：
-                            </span>
-                            {{ cmt.content }}
-                          </p>
-                          <div class="cmt-meta-row">
-                            <button
-                              v-if="canRemove(cmt)"
-                              type="button"
-                              class="cmt-reply-btn cmt-delete-btn"
-                              :disabled="removing"
-                              @click="removeComment(cmt)"
-                            >
-                              删除
-                            </button>
-                            <time class="cmt-time">{{
-                              formatTime(cmt.createdAt)
-                            }}</time>
-                            <button
-                              type="button"
-                              class="cmt-reply-btn"
-                              @click="replyUser(cmt)"
-                            >
-                              回复
-                            </button>
-                            <button
-                              type="button"
-                              class="cmt-like-btn"
-                              :class="{
-                                'is-liked': likedComments.has(cmt.id),
-                              }"
-                              @click="toggleLikeComment(cmt)"
-                            >
-                              <span>{{
-                                likedComments.has(cmt.id) ? '❤️' : '🤍'
-                              }}</span>
-                              <span v-if="cmt.likeCount">{{
-                                cmt.likeCount
-                              }}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    </div>
-                  </div>
+                  <CommunityCommentSection
+                    :key="post.id"
+                    ref="commentSection"
+                    :post-id="post.id"
+                    embedded
+                    @changed="refreshPost"
+                    @reply-target-change="selectReply"
+                  />
                 </div>
 
+                <div v-if="replyTarget" class="detail-reply-target">
+                  回复 {{ replyTarget.item.author?.name || '同学'
+                  }}<button
+                    type="button"
+                    @click="
+                      replyTarget = null;
+                      commentSection?.setTarget(null);
+                    "
+                  >
+                    取消回复
+                  </button>
+                </div>
                 <!-- PC 端吸底操作栏（右栏底部） -->
                 <footer class="redbook-bottom-bar pc-only-bottom">
                   <div class="redbook-input-pill">
                     <span class="pill-pen-icon" aria-hidden="true">✎</span>
                     <input
-                      ref="commentInputRef"
                       v-model="quickCommentText"
                       type="text"
                       placeholder="说点什么..."
@@ -705,11 +576,13 @@ async function removeComment(comment) {
                     <button
                       type="button"
                       class="action-icon-btn"
-                      :aria-label="`评论 ${comments.length}`"
+                      :aria-label="`评论 ${post.commentCount || 0}`"
                       @click="focusCommentInput"
                     >
                       <span class="icon-emoji">💬</span>
-                      <span class="icon-count">{{ comments.length }}</span>
+                      <span class="icon-count">{{
+                        post.commentCount || 0
+                      }}</span>
                     </button>
                     <button
                       type="button"
@@ -772,11 +645,11 @@ async function removeComment(comment) {
                 <button
                   type="button"
                   class="action-icon-btn"
-                  :aria-label="`评论 ${comments.length}`"
+                  :aria-label="`评论 ${post.commentCount || 0}`"
                   @click="focusCommentInput"
                 >
                   <span class="icon-emoji">💬</span>
-                  <span class="icon-count">{{ comments.length }}</span>
+                  <span class="icon-count">{{ post.commentCount || 0 }}</span>
                 </button>
                 <button
                   type="button"
@@ -796,6 +669,19 @@ async function removeComment(comment) {
 </template>
 
 <style scoped lang="scss">
+.detail-reply-target {
+  padding: 8px 20px;
+  font-size: 12px;
+  color: var(--ft-color-text-muted);
+}
+.detail-reply-target button {
+  margin-left: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--ft-color-primary);
+  min-height: 32px;
+}
+
 .redbook-modal {
   position: fixed;
   inset: 0;

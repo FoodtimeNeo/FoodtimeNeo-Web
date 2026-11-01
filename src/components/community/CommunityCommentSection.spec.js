@@ -38,6 +38,17 @@ describe('紧凑楼中楼', () => {
       hasMore: false,
     });
   });
+  it('读取失败显示重试，不将错误伪装成空讨论', async () => {
+    api.fetchRootComments.mockRejectedValueOnce(new Error('网络暂不可用'));
+    const wrapper = mount(CommunityCommentSection, {
+      props: { postId: 'post' },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('网络暂不可用');
+    expect(wrapper.text()).toContain('重试加载');
+    expect(wrapper.text()).not.toContain('还没有评论');
+    wrapper.unmount();
+  });
   it('只缩进一层，楼内互相回复发送实际对象 ID', async () => {
     api.createPostComment.mockResolvedValue({ id: 'new' });
     const wrapper = mount(CommunityCommentSection, {

@@ -9,11 +9,44 @@ const createPostComment = vi.fn();
 
 vi.mock('@/api/community.api.js', () => ({
   fetchCommunityPostDetail: (...args) => fetchCommunityPostDetail(...args),
-  fetchPostComments: (...args) => fetchPostComments(...args),
+  fetchRootComments: async (...args) => ({
+    items: await fetchPostComments(...args),
+    hasMore: false,
+  }),
+  fetchCommentReplies: async () => ({ items: [], hasMore: false }),
   createPostComment: (...args) => createPostComment(...args),
 }));
 
 describe('CommunityPostDetailModal', () => {
+  it('快速切帖时旧详情响应不能覆盖当前帖子', async () => {
+    setActivePinia(createPinia());
+    let resolveOld;
+    const old = new Promise((resolve) => {
+      resolveOld = resolve;
+    });
+    fetchCommunityPostDetail.mockImplementation((id) =>
+      id === 'old'
+        ? old
+        : Promise.resolve({
+            id: 'new',
+            title: '当前食记',
+            content: '新正文',
+            author: { name: '作者' },
+            images: [],
+          }),
+    );
+    const wrapper = mount(CommunityPostDetailModal, {
+      props: { modelValue: true, postId: 'old' },
+      global: { stubs: { Teleport: true, CommunityCommentSection: true } },
+    });
+    await wrapper.setProps({ postId: 'new' });
+    await flushPromises();
+    resolveOld({ id: 'old', title: '过时食记', images: [] });
+    await flushPromises();
+    expect(wrapper.text()).toContain('当前食记');
+    expect(wrapper.text()).not.toContain('过时食记');
+    wrapper.unmount();
+  });
   beforeEach(() => {
     setActivePinia(createPinia());
     fetchCommunityPostDetail.mockReset();
@@ -41,6 +74,7 @@ describe('CommunityPostDetailModal', () => {
       {
         id: 'c1',
         content: '看起来真不错！',
+        status: 'approved',
         author: { id: 'u-102', name: '小王' },
         createdAt: '2026-10-19T10:30:00.000Z',
         likeCount: 2,
