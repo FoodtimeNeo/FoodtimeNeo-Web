@@ -87,6 +87,54 @@ it('旧Worker迁移确认前不会向可能被Cache-First拦截的媒体地址�
   expect(fetch).toHaveBeenCalledOnce();
   request.release();
 });
+it('单张超过 8MB 的原图不进入展示缓存', async () => {
+  const huge = {
+    ok: true,
+    status: 200,
+    headers: new Headers({
+      'Cache-Control': 'private, no-cache',
+      'Content-Type': 'image/png',
+    }),
+    blob: async () => ({ size: 9 * 1024 * 1024 }),
+  };
+  fetch.mockResolvedValue(huge);
+  const first = acquireMedia(url);
+  await first.promise;
+  first.release();
+  const second = acquireMedia(url);
+  await second.promise;
+  second.release();
+  // 未命中缓存，重新请求
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+it('总字节超过预算时淘汰最早加载的图片', async () => {
+  const urls = Array.from(
+    { length: 5 },
+    (_, i) =>
+      `/api/v1/media/00000000-0000-4000-8000-00000000000${i + 1}?size=full`,
+  );
+  fetch.mockImplementation(async () => ({
+    ok: true,
+    status: 200,
+    headers: new Headers({
+      'Cache-Control': 'private, no-cache',
+      'Content-Type': 'image/png',
+    }),
+    blob: async () => ({ size: 8 * 1024 * 1024 }),
+  }));
+  for (const target of urls) {
+    const request = acquireMedia(target);
+    await request.promise;
+    request.release();
+  }
+  // 5 × 8MB = 40MB，超过 32MB 预算，最早的一张应已被淘汰
+  const first = acquireMedia(urls[0]);
+  await first.promise;
+  first.release();
+  expect(fetch).toHaveBeenCalledTimes(6);
+});
+
 it('no-store预览不成为后续展示的可复用条目，失败不回退旧图片', async () => {
   fetch
     .mockResolvedValueOnce(response('no-store'))
