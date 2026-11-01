@@ -82,6 +82,7 @@ async function handleSubmit() {
       <InkButton variant="primary" type="submit" :disabled="submitting">{{
         submitting ? '登录中…' : '登录'
       }}</InkButton>
+      <RouterLink :to="{ name: 'forgotPassword' }">忘记密码？</RouterLink>
     </form>
     <p>
       还没有账号？<RouterLink :to="{ name: 'register' }">去注册</RouterLink>
