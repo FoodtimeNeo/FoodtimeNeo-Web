@@ -1,4 +1,6 @@
 import { http, ApiError } from './http.js';
+export const updateOwnProfile = ({ displayName, avatarUrl }) =>
+  http.put('/users/me/profile', { displayName, avatarUrl });
 export const fetchOwnReviews = (page = 1, options = {}) =>
   http.get('/users/me/reviews', { ...options, params: { page, size: 20 } });
 export const deleteOwnReview = (id) =>
