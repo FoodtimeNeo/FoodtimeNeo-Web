@@ -196,7 +196,7 @@ it('审核队列显示投稿者昵称，不展示内部目标 ID', async () => {
   expect(wrapper.text()).toContain('发布者名称：干饭达人');
   expect(wrapper.text()).not.toContain('目标 ID：');
 });
-it('点评与图片投稿显示 AI 分诊结论，菜品投稿不显示', async () => {
+it('点评、图片和新菜品展示 AI 建议，未出结论时保留待诊断提示', async () => {
   api.fetchAuditItems.mockResolvedValue({
     items: [
       {
@@ -238,7 +238,7 @@ it('点评与图片投稿显示 AI 分诊结论，菜品投稿不显示', async 
   expect(text).toContain('HIGH');
   expect(text).toContain('90%');
   expect(text).toContain('广告');
-  expect(text.match(/AI 分诊/g) || []).toHaveLength(2);
+  expect(text.match(/AI 分诊/g) || []).toHaveLength(3);
 });
 
 it('状态与类型使用按钮，切换时回到第一页并把类型交给后端筛选', async () => {

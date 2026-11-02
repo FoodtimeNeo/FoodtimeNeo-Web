@@ -22,6 +22,7 @@ const publisher = computed(() =>
 const hasAi = computed(
   () =>
     [
+      'dish',
       'review',
       'photo',
       'dish-review-reply',
