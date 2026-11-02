@@ -4,10 +4,10 @@
 
 令牌的唯一来源：
 
-- [src/assets/styles/tokens.scss](../src/assets/styles/tokens.scss)：全部 CSS 变量（颜色、字号、间距、圆角、阴影、装饰素材）
-- [src/assets/styles/global.scss](../src/assets/styles/global.scss)：全局基础样式和通用类（`.section-title`、`.button-ink`、`.stamp`、`.sticker` 等）
-- [src/App.vue](../src/App.vue)：按路由选择外壳并创建页面
-- [src/layouts/DefaultLayout.vue](../src/layouts/DefaultLayout.vue)：普通页面外壳、纸张背景、桌面装饰及主内容容器
+- [src/assets/styles/tokens.scss](../../src/assets/styles/tokens.scss)：全部 CSS 变量（颜色、字号、间距、圆角、阴影、装饰素材）
+- [src/assets/styles/global.scss](../../src/assets/styles/global.scss)：全局基础样式和通用类（`.section-title`、`.button-ink`、`.stamp`、`.sticker` 等）
+- [src/App.vue](../../src/App.vue)：按路由选择外壳并创建页面
+- [src/layouts/DefaultLayout.vue](../../src/layouts/DefaultLayout.vue)：普通页面外壳、纸张背景、桌面装饰及主内容容器
 
 本文档与令牌文件冲突时，以令牌文件为准，并同步更新本文档。
 

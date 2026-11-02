@@ -1,8 +1,8 @@
 # Web 真实后端接入
 
-2026-11-02 功能分支补充：审核页接入后端可选 `type` 筛选，在服务端过滤后分页。按钮筛选、完整内容弹窗与异步错误处理见[内容审核交互](moderation-workflow.md)。
+2026-11-02 功能分支补充：审核页接入后端可选 `type` 筛选，在服务端过滤后分页。按钮筛选、完整内容弹窗与异步错误处理见[内容审核交互](../modules/moderation-workflow.md)。
 
-2026-11-01：社区详情页及信息流弹窗接入管理员删除帖子、评论和回复；所有登录用户可在“我的 → 编辑资料”修改昵称、上传或移除头像。权限、路径和失败处理见[社区内容管理](community-management.md)。资料保存调用 `PUT /users/me/profile`，新头像先通过 `/uploads/images` 上传，不能提交他人的图片引用。公告创建与设置仍限 `superadmin`，正文使用安全 Markdown 渲染。本轮浏览器检查使用本地隔离接口样例；后端真实 HTTP、Cookie、CSRF 和数据库回归由独立 CI 环境验证，未在生产库写入测试数据。
+2026-11-01：社区详情页及信息流弹窗接入管理员删除帖子、评论和回复；所有登录用户可在“我的 → 编辑资料”修改昵称、上传或移除头像。权限、路径和失败处理见[社区内容管理](../modules/community-management.md)。资料保存调用 `PUT /users/me/profile`，新头像先通过 `/uploads/images` 上传，不能提交他人的图片引用。公告创建与设置仍限 `superadmin`，正文使用安全 Markdown 渲染。本轮浏览器检查使用本地隔离接口样例；后端真实 HTTP、Cookie、CSRF 和数据库回归由独立 CI 环境验证，未在生产库写入测试数据。
 
 本文描述当前Web接入约定，带日期的段落保留当时验收范围。接口以现有 Backend 的 `docs/api` 和 `docs/database-design.md` 为依据，不补造后端字段或接口。按用户确认隐藏邀请码、吐槽、推荐/避雷、今日推荐及排行榜等未支持入口；不新增点赞、收藏或分类。正式邮箱投递仍暂不验证。
 
@@ -10,7 +10,7 @@
 
 - 本地开发使用 `/api/v1` 同站请求，Vite 将 `/api` 代理至 `http://127.0.0.1:8080`。生产需将同站 `/api/v1` 代理至 Backend，并使用 HTTPS；不能把开发服务器当作生产部署。
 - Web 浏览器地址使用 `http://localhost:5173`，或空闲的 `http://localhost:3000`。开发代理仅接受不含凭据的本机来源和用户指定的 `154.9.252.201` 默认HTTP/HTTPS端口，保留浏览器原始 Origin，由后端继续验证。指定服务器预览只改变代理目标，浏览器同站 Cookie/CSRF 行为不变。
-- 2026-10-15的隔离验收复用此前联调库：Web为 `localhost:3000`，进程环境的 `VITE_API_PROXY_TARGET` 指向 `http://127.0.0.1:18080`。这段记录不表示当前仍有对应进程运行，重新联调按[本地开发说明](local-development.md)启动并验证实际目标。
+- 2026-10-15的隔离验收复用此前联调库：Web为 `localhost:3000`，进程环境的 `VITE_API_PROXY_TARGET` 指向 `http://127.0.0.1:18080`。这段记录不表示当前仍有对应进程运行，重新联调按[本地开发说明](../ops/local-development.md)启动并验证实际目标。
 - Cookie 由浏览器和服务端管理，前端不读取 HttpOnly Cookie、不保存 Token/角色/密码。重新打开页面通过 `/auth/me` 获取当前身份，管理路由重新校验服务端角色。
 - 写请求先获取 `/auth/csrf`，令牌只在内存中保留。登录更换会话后重新获取；CSRF 失效不自动重放写请求。
 - 登录使用 `account/password`；注册仅使用 `email/password/verificationCode`。客户端角色、昵称、邀请码不参与注册授权。

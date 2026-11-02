@@ -1,5 +1,5 @@
 /**
- * 路由表。层级关系见 docs/architecture.md「路由树」。
+ * 路由表。层级关系见 docs/architecture/architecture.md「路由树」。
  * 约定：path 使用 kebab-case，name 使用 camelCase，页面组件一律懒加载。
  */
 export const routes = [
