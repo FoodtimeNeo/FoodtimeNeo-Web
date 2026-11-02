@@ -113,9 +113,12 @@ async function handleSubmit() {
         {{ serverError }}
       </p>
       <p v-if="notice" role="status">{{ notice }}</p>
+      <p class="auth-view__hint">
+        使用学校邮箱注册可直接发帖评论；其他邮箱注册后为只读访客，可在「我的」绑定学校邮箱解锁。
+      </p>
       <AuthField
         v-model="form.email"
-        label="学号邮箱"
+        label="邮箱"
         type="email"
         autocomplete="email"
         :error="errors.email"
