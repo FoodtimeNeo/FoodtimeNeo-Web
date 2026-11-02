@@ -13,10 +13,11 @@ const props = defineProps({
   full: Boolean,
 });
 const publisher = computed(() =>
-  props.details
+  props.details?.comment || props.details?.post
     ? {
+        ...props.row,
         ...(props.details.comment || props.details.post),
-        userEmail: props.details.userEmail,
+        userEmail: props.details.userEmail || props.row.userEmail,
       }
     : props.row,
 );
@@ -38,8 +39,8 @@ const hasAi = computed(
 </script>
 
 <template>
-  <div class="audit-content">
-    <PublisherDetails :row="publisher" />
+  <div class="audit-content" :class="{ 'audit-content--compact': !full }">
+    <PublisherDetails :row="publisher" compact />
     <p class="audit-content__id">投稿 ID：{{ row.id }}</p>
     <p v-if="row.rating">评分：{{ row.rating }} / 5</p>
     <p v-if="row.type === 'dish'">投稿价格：{{ formatPrice(row.price) }}</p>
@@ -91,6 +92,7 @@ const hasAi = computed(
         :src="row.imageUrl"
         alt="投稿配图"
         fit="contain"
+        compact
         class="audit-content__thumbnail"
       />
     </template>
@@ -121,6 +123,7 @@ const hasAi = computed(
       :labels="row.aiLabels"
       :reason="row.aiReason"
       :checked-at="row.aiCheckedAt"
+      :compact="!full"
     />
     <p
       v-if="['dish', 'photo'].includes(row.type)"
@@ -128,7 +131,11 @@ const hasAi = computed(
     >
       菜品与菜品图片的通过须由管理员确认。
     </p>
-    <p v-if="row.reason" class="audit-content__text">
+    <p
+      v-if="row.reason"
+      class="audit-content__text"
+      :class="{ 'audit-content__preview': !full }"
+    >
       审核说明：{{ row.reason }}
     </p>
   </div>
@@ -141,13 +148,8 @@ const hasAi = computed(
 .audit-content > p {
   margin: 10px 0;
 }
-.audit-content :deep(.publisher-details) {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px 20px;
-}
-.audit-content :deep(.publisher-details p) {
-  margin: 2px 0;
+.audit-content--compact > p {
+  margin: 4px 0;
 }
 .audit-content__id,
 .audit-content__policy {
@@ -160,16 +162,16 @@ const hasAi = computed(
 }
 .audit-content__preview {
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .audit-content__thumbnail {
   display: block;
-  width: min(100%, 220px);
-  height: 140px;
+  width: min(100%, 80px);
+  height: 64px;
   object-fit: contain;
-  margin: 12px 0;
+  margin: 6px 0;
   background: var(--zine-paper-card-alt);
 }
 .audit-content__context {

@@ -60,3 +60,46 @@ it('日志展示发布者、原内容及独立的发布时间和审核时间', a
   expect(wrapper.text()).toContain('审核时间：');
   expect(wrapper.text()).toContain('发布时间：—');
 });
+
+it('完整日志可展开与关闭，保留两种时间、标识、原始内容及审核原因', async () => {
+  const wrapper = mount(ModerationLogsView, {
+    global: {
+      stubs: {
+        ElDialog: {
+          props: ['modelValue'],
+          template:
+            '<div v-if="modelValue" role="dialog"><slot /><slot name="footer" /></div>',
+        },
+      },
+    },
+  });
+  await flushPromises();
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text() === '查看完整日志')
+    .trigger('click');
+  const dialog = wrapper.get('[role="dialog"]');
+  for (const text of [
+    '日志 ID：l1',
+    '投稿 ID：s1',
+    '发布者邮箱：20260001@bjtu.edu.cn',
+    '发布者 ID：publisher1',
+    '发布时间：',
+    '审核时间：',
+    '审核人 ID：admin1',
+    '<b>原始内容</b>\n第二行',
+  ]) {
+    expect(dialog.text()).toContain(text);
+  }
+  expect(dialog.find('b').exists()).toBe(false);
+  await dialog.get('button').trigger('click');
+  expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
+  await wrapper
+    .findAll('button')
+    .filter((b) => b.text() === '查看完整日志')[1]
+    .trigger('click');
+  expect(wrapper.get('[role="dialog"]').text()).toContain(
+    '审核说明：命中测试标记',
+  );
+  expect(wrapper.get('[role="dialog"]').text()).toContain('AI 审核（fake）');
+});

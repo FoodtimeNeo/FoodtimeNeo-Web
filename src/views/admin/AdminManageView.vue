@@ -11,7 +11,7 @@ import { formatPrice } from '@/utils/mediaUrl.js';
 import { statusLabels } from '@/utils/recordLabels.js';
 import CatalogEditor from './CatalogEditorFormView.vue';
 import ParentPicker from '@/components/admin/ParentPicker.vue';
-import MediaImage from '@/components/base/MediaImage.vue';
+import CompactMediaPreview from '@/components/admin/CompactMediaPreview.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
@@ -90,32 +90,36 @@ async function remove() {
 <template>
   <section class="manage">
     <h2 class="section-title">目录管理</h2>
-    <label
-      >目录类型<select v-model="type" :disabled="writing || !!editor">
-        <option value="dining-halls">食堂</option>
-        <option value="stalls">档口</option>
-        <option value="dishes">菜品</option>
-      </select></label
-    >
-    <ParentPicker
-      v-if="type !== 'dining-halls'"
-      :key="type"
-      v-model="parent"
-      :loader="loadParents"
-      label="按所属记录筛选"
-      optional
-      :disabled="writing || !!editor"
-    />
-    <button
-      :disabled="writing || !!editor"
-      @click="
-        editor = { item: null };
-        failure = '';
-        notice = '';
-      "
-    >
-      新增
-    </button>
+    <div class="manage__filters">
+      <label
+        >目录类型<select v-model="type" :disabled="writing || !!editor">
+          <option value="dining-halls">食堂</option>
+          <option value="stalls">档口</option>
+          <option value="dishes">菜品</option>
+        </select></label
+      >
+      <ParentPicker
+        v-if="type !== 'dining-halls'"
+        :key="type"
+        v-model="parent"
+        class="manage__parent-picker"
+        :loader="loadParents"
+        label="按所属记录筛选"
+        optional
+        compact
+        :disabled="writing || !!editor"
+      />
+      <button
+        :disabled="writing || !!editor"
+        @click="
+          editor = { item: null };
+          failure = '';
+          notice = '';
+        "
+      >
+        新增
+      </button>
+    </div>
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="failure" role="alert">{{ failure }}</p>
     <CatalogEditor
@@ -135,14 +139,19 @@ async function remove() {
       <h3>{{ row.name }} · {{ statusLabels[row.status] }}</h3>
       <p>ID：{{ row.id }}</p>
       <p v-if="row.parentId">所属 ID：{{ row.parentId }}</p>
-      <p v-if="row.description" class="description">{{ row.description }}</p>
+      <details v-if="row.description" class="description">
+        <summary>
+          <span>{{ row.description }}</span
+          ><span class="description__hint">展开／收起</span>
+        </summary>
+        <p>{{ row.description }}</p>
+      </details>
       <p v-if="type === 'dishes'">{{ formatPrice(row.price) }}</p>
       <p v-else>排序：{{ row.sortOrder }}</p>
-      <MediaImage
+      <CompactMediaPreview
         v-if="row.coverImageUrl"
         :src="row.coverImageUrl"
         alt="目录封面"
-        class="cover"
       />
       <CatalogEditor
         v-if="editor?.item?.id === row.id"
@@ -189,11 +198,20 @@ async function remove() {
   margin: auto;
   overflow-wrap: anywhere;
 }
-.manage > label {
+.manage__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px 12px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ft-color-border);
+  background: var(--zine-paper-card-alt);
+}
+.manage__filters > label {
   display: inline-grid;
   gap: 6px;
-  min-width: min(100%, 260px);
-  margin: 12px 12px 8px 0;
+  min-width: min(100%, 180px);
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
 }
@@ -205,10 +223,10 @@ textarea {
   padding: 10px;
   border: 1px solid var(--ft-color-secondary);
   border-radius: 0;
-  background: #fffaf0;
+  background: var(--zine-paper-card);
 }
 button {
-  margin: 12px 12px 0 0;
+  margin: 6px 8px 0 0;
   box-shadow: 2px 2px 0 var(--ft-color-secondary);
   color: var(--ft-color-secondary);
   font-weight: 700;
@@ -220,11 +238,11 @@ button:hover:not(:disabled) {
   transform: translate(-1px, -1px);
 }
 article {
-  margin: 20px 0;
-  padding: 20px;
+  margin: 10px 0;
+  padding: 12px 14px;
   border: 1px solid var(--ft-color-secondary);
   background: var(--zine-paper-card);
-  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
+  box-shadow: 2px 2px 0 var(--zine-paper-shadow);
   clip-path: none;
 }
 article:nth-of-type(even) {
@@ -234,26 +252,72 @@ article:nth-of-type(odd) {
   transform: none;
 }
 h3 {
-  margin-top: 0;
+  margin: 0 0 6px;
   color: var(--ft-color-secondary);
   font-family: var(--ft-font-family-title);
-  font-size: clamp(24px, 3vw, 34px);
-  line-height: 1.08;
+  font-size: 18px;
+  line-height: 1.4;
 }
 article > p {
-  margin: 8px 0;
+  margin: 2px 0;
   color: var(--ft-color-text-muted);
+  font-size: var(--ft-font-size-sm);
 }
 .description {
   white-space: pre-wrap;
+  margin: 6px 0;
 }
-.cover {
-  width: min(100%, 480px);
-  height: 270px;
-  margin: 16px 0;
-  border: 6px solid #fffaf0;
-  box-shadow: 3px 4px 0 rgb(58 36 24 / 18%);
-  transform: rotate(-1deg);
+.description summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+.description summary::-webkit-details-marker {
+  display: none;
+}
+.description summary > span:first-child {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.description__hint {
+  font-size: var(--ft-font-size-sm);
+  color: var(--ft-color-primary);
+}
+.description[open] summary > span:first-child {
+  visibility: hidden;
+  height: 0;
+}
+.description > p {
+  margin: 4px 0;
+}
+.description summary:focus-visible {
+  outline: 2px solid var(--ft-color-primary);
+  outline-offset: 3px;
+}
+.manage__filters > button {
+  margin: 0 0 0 auto;
+}
+.manage__parent-picker {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+.manage__parent-picker :deep(select) {
+  width: 100%;
+  min-width: 0;
+}
+.manage__parent-picker :deep(label) {
+  display: block;
+  font-size: var(--ft-font-size-sm);
+}
+button:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--ft-color-primary);
+  outline-offset: 3px;
 }
 .manage :deep(.catalog-editor) {
   margin: 18px 0;
@@ -281,10 +345,22 @@ article > p {
     box-shadow: var(--app-mobile-shadow);
     transform: none;
   }
-  .cover {
-    height: auto;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
+  .manage__filters > label {
+    width: 100%;
+  }
+  .manage__parent-picker {
+    flex-basis: 100%;
+  }
+  .description summary {
+    min-height: 44px;
+  }
+}
+@media (min-width: 769px) and (pointer: fine) {
+  .manage__filters select,
+  .manage > article > div > button,
+  .manage__filters > button {
+    min-height: 36px;
+    padding: 5px 10px;
   }
 }
 </style>
