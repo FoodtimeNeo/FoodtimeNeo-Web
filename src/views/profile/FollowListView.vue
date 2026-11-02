@@ -102,12 +102,14 @@ async function toggle(row) {
     <template v-else>
       <ul class="follow-page__list">
         <li v-for="row in items" :key="row.id" class="follow-page__item">
-          <MediaImage
-            compact
-            :src="row.avatarUrl || ''"
-            :alt="row.displayName"
-            :empty="Array.from(row.displayName?.trim() || '饭')[0]"
-          />
+          <span class="follow-page__avatar">
+            <MediaImage
+              compact
+              :src="row.avatarUrl || ''"
+              :alt="row.displayName"
+              :empty="Array.from(row.displayName?.trim() || '饭')[0]"
+            />
+          </span>
           <span class="follow-page__name">{{ row.displayName }}</span>
           <button
             class="button-ink"
@@ -120,7 +122,9 @@ async function toggle(row) {
                 ? '处理中…'
                 : row.followedByMe
                   ? '已关注'
-                  : '关注'
+                  : isFollowers
+                    ? '回关'
+                    : '关注'
             }}
           </button>
         </li>
@@ -170,12 +174,38 @@ async function toggle(row) {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   border: 1px solid var(--ft-color-border);
   background: var(--ft-color-surface);
 }
+
+/* 头像固定 48px，避免 MediaImage 的 width:100% 在 flex 行里撑满整行。 */
+.follow-page__avatar {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid var(--ft-color-border);
+}
+
+.follow-page__avatar :deep(.media-image) {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
 .follow-page__name {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: 700;
+}
+
+.follow-page__item .button-ink {
+  flex: 0 0 auto;
+  min-width: 76px;
 }
 </style>

@@ -1,8 +1,14 @@
 export function validateEmail(value) {
   const email = value.trim().toLowerCase();
   if (!email) return '请输入邮箱';
-  if (email.length > 254 || !/^[0-9]+@bjtu\.edu\.cn$/.test(email))
-    return '请使用数字学号 @bjtu.edu.cn 邮箱';
+  // 与后端一致：任意可用邮箱；校园邮箱注册可直接发布内容。
+  if (
+    email.length > 254 ||
+    !/^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9-]{1,63}(\.[A-Za-z0-9-]{1,63})+$/.test(
+      email,
+    )
+  )
+    return '请输入有效邮箱';
   return '';
 }
 export function validateLoginId(value) {

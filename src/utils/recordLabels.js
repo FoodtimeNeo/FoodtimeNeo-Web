@@ -7,6 +7,7 @@ export const statusLabels = {
   disabled: '禁用',
 };
 export const roleLabels = {
+  visitor: '访客',
   user: '用户',
   admin: '管理员',
   superadmin: '平台管理员',
