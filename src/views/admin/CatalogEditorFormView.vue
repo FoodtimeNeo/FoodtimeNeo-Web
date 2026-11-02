@@ -103,7 +103,7 @@ async function submit() {
 }
 </script>
 <template>
-  <form class="editor" @submit.prevent="submit">
+  <form class="editor catalog-editor" @submit.prevent="submit">
     <h3>
       {{ item ? '编辑' : '新增'
       }}{{ { 'dining-halls': '食堂', stalls: '档口', dishes: '菜品' }[type] }}
@@ -138,9 +138,10 @@ async function submit() {
     /></label>
     <template v-else>
       <label
-        >排序值<input
+        >排序值（数值越小越靠前）<input
           v-model="form.sortOrder"
           inputmode="numeric"
+          placeholder="默认 0，支持负数"
           :disabled="writing"
       /></label>
       <MediaImage

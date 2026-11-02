@@ -343,7 +343,8 @@ $c-tape-yellow: #f5e8b4;
 .zine-landing-viewport {
   position: relative;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   display: flex;
   flex-direction: column;
   background-image: var(--bg-board-url);
@@ -1227,72 +1228,251 @@ $c-tape-yellow: #f5e8b4;
 
 @media (max-width: 768px) {
   .zine-landing-viewport {
-    // The single-column copy sits over the central paper, away from the dark tree edge.
+    background-size: auto 100%;
     background-position: center top;
   }
 
-  .canvas-grid-stage {
-    grid-template-columns: 1fr;
-    gap: 36px;
-    padding-top: 12px;
-  }
-
-  .zine-device-wrapper {
-    transform: none;
-    margin: 0 auto;
-    justify-content: center;
-  }
-
   .zine-navbar__inner {
-    padding: 10px 16px;
+    padding: 10px 14px;
+    gap: 8px;
   }
 
   .brand-zone {
+    gap: 6px;
+
+    .cutlery-icon {
+      width: 20px;
+      height: 20px;
+
+      .svg-cutlery {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .brand-title {
+      font-size: 17px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      padding: 1px 5px;
+    }
+
     .brand-slogan,
     .brand-divider {
       display: none;
     }
   }
 
-  .zine-main-card {
-    margin-left: 0;
-    margin-top: 16px;
-    padding: 24px 0 16px;
+  .nav-actions {
+    gap: 8px;
 
+    .nav-web-link {
+      padding: 5px 10px;
+      font-size: 12.5px;
+      border-radius: 14px;
+    }
+
+    .nav-download-link {
+      padding: 5px 6px;
+      font-size: 14px;
+    }
+  }
+
+  .zine-canvas {
+    padding: 12px 16px 24px;
+  }
+
+  .canvas-grid-stage {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    min-height: auto;
+    padding-top: 0;
+  }
+
+  // 1. 主文字卡片转为手账米白独立卡片（隔绝复杂背景杂纹）
+  .zine-main-card {
+    order: 1;
+    margin-left: 0;
+    margin-top: 8px;
+    padding: 20px 18px 22px;
+    background: rgba(255, 250, 240, 0.94);
+    border: 1px solid rgba(58, 36, 24, 0.16);
+    border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(58, 36, 24, 0.08);
+
+    .card-tape-label {
+      padding: 4px 14px;
+      font-size: 13px;
+      margin-bottom: 14px;
+    }
+
+    // 核心标题流式排版，两行优雅容纳，不生硬断行
     .card-hero-title {
+      margin: 0 0 14px;
+      gap: 4px;
+
+      .title-line-1 {
+        gap: 8px;
+        align-items: baseline;
+      }
+
       .title-ink-black {
-        font-size: 42px;
+        font-size: clamp(22px, 6.5vw, 28px);
       }
 
       .brush-brand {
-        font-size: 52px;
+        font-size: clamp(30px, 8.5vw, 38px);
+        filter: drop-shadow(0 2px 6px rgba(201, 52, 30, 0.28));
       }
     }
 
     .card-hero-desc {
-      font-size: 18px;
+      font-size: 14.5px;
+      line-height: 1.65;
+      margin: 0 0 20px;
+      color: #4b3628;
     }
 
+    // 按钮紧凑化与大拇指舒适触达
     .action-btn-group {
       flex-direction: column;
-      align-items: stretch;
+      gap: 12px;
+      width: 100%;
 
-      .zine-primary-download-btn,
-      .zine-dark-web-btn {
+      .zine-primary-download-btn {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 17px;
+        border-radius: 12px;
         justify-content: center;
+
+        .android-svg-icon svg {
+          width: 22px;
+          height: 22px;
+        }
+      }
+
+      .zine-dark-web-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 15px;
+        border-radius: 12px;
+        justify-content: center;
+      }
+    }
+
+    .install-guide-link {
+      font-size: 14.5px;
+      margin-top: 6px;
+      align-self: center;
+    }
+  }
+
+  // 2. 重新激活手账便签贴纸与印章，恢复手账层次感
+  .zine-right-collage {
+    order: 2;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    min-height: auto;
+    transform: none;
+    margin: 6px 0;
+    padding: 0 8px;
+
+    .yellow-sticky-note {
+      margin: 0;
+      .apk-sticker-img {
+        width: clamp(125px, 36vw, 160px);
+      }
+    }
+
+    .circular-red-stamp {
+      position: relative;
+      top: 0;
+      right: 0;
+      .stamp-real-img {
+        width: clamp(66px, 19vw, 84px);
       }
     }
   }
 
+  // 3. 手机模型去倾斜晃动，缩紧尺寸，化身清爽插图
+  .zine-device-wrapper {
+    order: 3;
+    transform: none;
+    margin: 8px auto 0;
+    justify-content: center;
+
+    .phone-mockup-container {
+      animation: none !important;
+      transform: none !important;
+
+      .phone-mockup-img {
+        width: min(210px, 58vw);
+        filter: drop-shadow(0 12px 24px rgba(35, 20, 10, 0.22));
+      }
+    }
+  }
+
+  // 4. 底部横幅与回形针
   .bottom-torn-banner {
+    margin-top: 14px;
+    padding: 8px 12px 16px;
+
+    .paper-clip-decor {
+      left: 16px;
+      top: -8px;
+      width: 20px;
+    }
+
     .banner-content-inner {
       flex-direction: column;
+      gap: 6px;
+      padding: 10px 14px;
       text-align: center;
     }
 
-    .banner-sticky-subnote {
-      display: none;
+    .banner-handwrite-text {
+      font-size: 14px;
+      line-height: 1.5;
     }
+
+    .banner-sticky-subnote {
+      display: block;
+      .subnote-text {
+        font-size: 12px;
+      }
+    }
+  }
+
+  // 5. 弹窗与 Toast 移动端微调
+  .guide-modal-overlay {
+    padding: 16px;
+  }
+
+  .guide-modal-paper {
+    padding: 28px 18px 20px;
+
+    .guide-modal-title {
+      font-size: 20px;
+    }
+
+    .guide-steps-list {
+      font-size: 13.5px;
+      gap: 10px;
+    }
+  }
+
+  .download-toast {
+    bottom: 20px;
+    right: 16px;
+    left: 16px;
+    max-width: calc(100% - 32px);
+    margin: 0 auto;
   }
 }
 </style>

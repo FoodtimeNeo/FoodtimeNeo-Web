@@ -63,6 +63,13 @@ describe('服务端会话', () => {
     await store.logout();
     expect(store.isAuthenticated).toBe(false);
   });
+  it('访客角色可以建立只读会话', async () => {
+    const store = useAuthStore();
+    api.fetchCurrentUser.mockResolvedValue({ ...user, role: 'visitor' });
+    await store.refresh();
+    expect(store.isAuthenticated).toBe(true);
+    expect(store.role).toBe('visitor');
+  });
   it('注册不自动登录；未知服务端角色不能授予权限', async () => {
     const store = useAuthStore();
     await store.register({});

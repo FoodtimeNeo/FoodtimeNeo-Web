@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import http from 'node:http';
 import https from 'node:https';
 import { fileURLToPath, URL } from 'node:url';
@@ -5,6 +6,39 @@ import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { developmentProxyTarget } from './scripts/dev/proxy-target.js';
 import { productionCsp } from './scripts/security/policy.js';
+
+function currentBuildId() {
+  try {
+    const commit = execSync('git rev-parse --short HEAD', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+    const dirty = execSync('git status --porcelain', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+    return dirty ? `${commit}-dirty` : commit;
+  } catch {
+    return Date.now().toString(36);
+  }
+}
+
+/** Emits version.json so clients can detect a newer deployment and hard-reload. */
+function versionAsset(id) {
+  return {
+    name: 'foodtime-version-asset',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ id }),
+      });
+    },
+  };
+}
 
 function createProxyAgent(target) {
   const isHttps = target.startsWith('https:');
@@ -24,8 +58,10 @@ export default defineConfig(({ mode }) => {
     proxyTarget = 'https://154.9.252.201';
   }
 
+  const buildId = currentBuildId();
   return {
-    plugins: [vue(), productionCsp()],
+    define: { 'import.meta.env.VITE_BUILD_ID': JSON.stringify(buildId) },
+    plugins: [vue(), productionCsp(), versionAsset(buildId)],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
