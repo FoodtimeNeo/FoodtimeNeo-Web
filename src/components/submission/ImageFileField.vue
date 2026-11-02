@@ -89,7 +89,9 @@ function clear() {
       @change="choose"
     />
     <p :id="id + '-help'">
-      JPEG / PNG，最多 10MB、2000 万像素。{{ props.publicationHint }}
+      JPEG / PNG，最多 50MB；超过 10MB 会自动压缩，像素过高会降采样。{{
+        props.publicationHint
+      }}
     </p>
     <p v-if="checking" role="status">正在检查图片…</p>
     <p v-if="visibleError" :id="id + '-error'" role="alert">

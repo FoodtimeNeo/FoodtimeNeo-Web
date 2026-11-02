@@ -102,8 +102,8 @@ function addFiles(files) {
       ElMessage.warning(`文件 ${file.name} 不是支持的图片格式`);
       continue;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      ElMessage.warning(`图片 ${file.name} 超过 10MB 限制`);
+    if (file.size > 50 * 1024 * 1024) {
+      ElMessage.warning(`图片 ${file.name} 超过 50MB 限制`);
       continue;
     }
 
@@ -360,7 +360,9 @@ async function handleSubmit() {
             <div v-if="formImages.length === 0" class="upload-guide">
               <span class="upload-icon">📸</span>
               <span class="upload-main-text">点击或拖拽上传实拍照片</span>
-              <span class="upload-sub-text">支持 JPG、PNG，单张 ≤ 10MB</span>
+              <span class="upload-sub-text"
+                >支持 JPG、PNG，单张 ≤ 50MB，超 10MB 自动压缩</span
+              >
             </div>
             <div v-else class="upload-add-more">
               <span class="add-icon">＋</span>

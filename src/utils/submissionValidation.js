@@ -2,7 +2,7 @@ export function validateImageFile(file) {
   if (!file || file.size === 0) return '请选择图片';
   if (!['image/jpeg', 'image/png'].includes(file.type))
     return '只支持 JPEG 或 PNG 图片';
-  if (file.size > 10 * 1024 * 1024) return '图片不能超过 10MB';
+  if (file.size > 50 * 1024 * 1024) return '图片不能超过 50MB';
   return '';
 }
 export function validatePrice(value, { required = false } = {}) {
