@@ -1,5 +1,13 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
+const clearCacheMock = vi.fn();
+vi.mock('@/composables/useAsyncData.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    clearAsyncDataCache: (...args) => clearCacheMock(...args),
+  };
+});
 const api = vi.hoisted(() => ({
   fetchManagedItems: vi.fn(),
   fetchManagedItem: vi.fn(),
@@ -40,6 +48,39 @@ it('删除有关联的目录时保留记录并显示服务端冲突', async () =
   expect(wrapper.text()).toContain('食堂');
   expect(api.deleteManagedItem).toHaveBeenCalledOnce();
 });
+
+it('编辑器展开在对应目录卡片内，而不是列表顶部', async () => {
+  api.fetchManagedItems.mockResolvedValue({
+    items: [
+      { id: 'h1', name: '靠后食堂', status: 'active', sortOrder: 9 },
+      { id: 'h2', name: '目标食堂', status: 'active', sortOrder: 1 },
+    ],
+    page: 1,
+    size: 20,
+    total: 2,
+  });
+  api.fetchManagedItem.mockResolvedValue({
+    id: 'h2',
+    name: '目标食堂',
+    description: '',
+    status: 'active',
+    sortOrder: 1,
+  });
+  const wrapper = mount(AdminManageView);
+  await flushPromises();
+
+  await wrapper.findAll('article')[1].get('button').trigger('click');
+  await flushPromises();
+
+  expect(wrapper.find('.manage > .catalog-editor').exists()).toBe(false);
+  expect(
+    wrapper.findAll('article')[1].findComponent(CatalogEditor).exists(),
+  ).toBe(true);
+  expect(
+    wrapper.findAll('article')[0].findComponent(CatalogEditor).exists(),
+  ).toBe(false);
+});
+
 it('编辑菜品固定原归属，零价允许保存，失败保留输入', async () => {
   const wrapper = mount(CatalogEditor, {
     props: {
@@ -67,4 +108,23 @@ it('编辑菜品固定原归属，零价允许保存，失败保留输入', asyn
   expect(wrapper.text()).toContain('保存冲突');
   expect(wrapper.get('input[maxlength]').element.value).toBe('新面');
   expect(wrapper.emitted('saved')).toBeUndefined();
+});
+
+it('保存或删除目录记录时清除前台真实食堂列表缓存', async () => {
+  const wrapper = mount(AdminManageView);
+  await flushPromises();
+
+  // 触发删除成功
+  api.deleteManagedItem.mockResolvedValueOnce({});
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text() === '删除')
+    .trigger('click');
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text() === '确认删除')
+    .trigger('click');
+  await flushPromises();
+
+  expect(clearCacheMock).toHaveBeenCalledWith('canteens_list');
 });

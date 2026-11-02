@@ -1,11 +1,12 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 import {
   fetchManagedItems,
   fetchManagedItem,
   deleteManagedItem,
 } from '@/api/admin-manage.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
+import { clearAsyncDataCache } from '@/composables/useAsyncData.js';
 import { formatPrice } from '@/utils/mediaUrl.js';
 import { statusLabels } from '@/utils/recordLabels.js';
 import CatalogEditor from './CatalogEditorFormView.vue';
@@ -30,6 +31,7 @@ const { items, page, total, size, loading, error, load } = usePagedData(
 const editor = ref(null);
 const selected = ref(null);
 const writing = ref(false);
+const loadingId = ref('');
 const failure = ref('');
 const notice = ref('');
 watch(type, () => {
@@ -46,18 +48,24 @@ watch(parent, () => {
 async function edit(row) {
   if (writing.value) return;
   writing.value = true;
+  loadingId.value = row.id;
   failure.value = '';
   selected.value = null;
   try {
     editor.value = { item: await fetchManagedItem(type.value, row.id) };
+    await nextTick();
+    const el = document.querySelector('.catalog-editor');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   } catch (error) {
     failure.value = error.message;
   } finally {
     writing.value = false;
+    loadingId.value = '';
   }
 }
 async function saved() {
   editor.value = null;
+  clearAsyncDataCache('canteens_list');
   notice.value = '保存成功';
   await load();
 }
@@ -68,6 +76,7 @@ async function remove() {
   try {
     await deleteManagedItem(type.value, selected.value.id);
     selected.value = null;
+    clearAsyncDataCache('canteens_list');
     notice.value = '已删除';
     if (items.value.length === 1 && page.value > 1) page.value--;
     else await load();
@@ -110,7 +119,7 @@ async function remove() {
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="failure" role="alert">{{ failure }}</p>
     <CatalogEditor
-      v-if="editor"
+      v-if="editor && !editor.item"
       :key="type + (editor.item?.id || 'new')"
       :type="type"
       :item="editor.item"
@@ -135,13 +144,22 @@ async function remove() {
         alt="目录封面"
         class="cover"
       />
+      <CatalogEditor
+        v-if="editor?.item?.id === row.id"
+        :key="type + row.id"
+        :type="type"
+        :item="editor.item"
+        @cancel="editor = null"
+        @saved="saved"
+      />
       <div v-if="selected?.id === row.id">
         <p>确认删除这条目录记录？有关联时后端会阻止删除，可选择编辑并停用。</p>
         <button :disabled="writing" @click="selected = null">取消删除</button
         ><button :disabled="writing" @click="remove">确认删除</button>
       </div>
-      <div v-else>
-        <button :disabled="writing || !!editor" @click="edit(row)">编辑</button
+      <div v-else-if="editor?.item?.id !== row.id">
+        <button :disabled="writing || !!editor" @click="edit(row)">
+          {{ loadingId === row.id ? '读取中…' : '编辑' }}</button
         ><button
           :disabled="writing || !!editor"
           @click="
