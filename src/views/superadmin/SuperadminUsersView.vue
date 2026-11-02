@@ -16,6 +16,10 @@ const { items, page, total, size, loading, error, load } = usePagedData(
   (page, options) => fetchUsers(page, query.value, options),
 );
 const selected = ref(null);
+// 访客是注册后的只读角色，管理端只能升级为 user/admin/superadmin。
+const editableRoles = Object.fromEntries(
+  Object.entries(roleLabels).filter(([key]) => key !== 'visitor'),
+);
 const role = ref('user');
 const status = ref('active');
 const failure = ref('');
@@ -96,7 +100,11 @@ async function submit() {
       <form v-if="selected?.id === row.id" @submit.prevent="submit">
         <label
           >角色<select v-model="role" :disabled="writing">
-            <option v-for="(text, key) in roleLabels" :key="key" :value="key">
+            <option
+              v-for="(text, key) in editableRoles"
+              :key="key"
+              :value="key"
+            >
               {{ text }}
             </option>
           </select></label

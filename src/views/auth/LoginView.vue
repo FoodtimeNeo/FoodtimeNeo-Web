@@ -67,8 +67,8 @@ async function handleSubmit() {
       </p>
       <AuthField
         v-model="form.loginId"
-        label="邮箱"
-        type="email"
+        label="邮箱或学号"
+        type="text"
         autocomplete="username"
         :error="errors.loginId"
       />

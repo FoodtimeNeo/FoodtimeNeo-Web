@@ -13,6 +13,7 @@ import {
   setMediaGate,
 } from '@/utils/mediaLoader.js';
 import { ensureMediaWorkerMigration } from '@/utils/mediaWorker.js';
+import { ensureLatestVersion } from '@/utils/versionRefresh.js';
 const app = createApp(App);
 setMediaGate(ensureMediaWorkerMigration);
 app.use(createPinia());
@@ -23,13 +24,15 @@ window.addEventListener('pagehide', invalidateMedia);
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) {
     invalidateMedia();
+    ensureLatestVersion();
     useAuthStore().refresh();
   }
 });
 document.addEventListener('visibilitychange', () => {
   invalidateMedia();
-  if (!document.hidden && useAuthStore().isAuthenticated)
-    useAuthStore().refresh();
+  if (document.hidden) return;
+  ensureLatestVersion();
+  if (useAuthStore().isAuthenticated) useAuthStore().refresh();
 });
 installApi({
   router,
@@ -42,4 +45,5 @@ router.onError((error) =>
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', invalidateMedia);
 }
+ensureLatestVersion();
 app.mount('#app');
