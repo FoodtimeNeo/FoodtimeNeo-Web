@@ -1,5 +1,5 @@
 /**
- * Git 分支与提交命名规则。CI 与本地脚本共用，规则说明见 docs/git-workflow.md。
+ * Git 分支与提交命名规则。CI 与本地脚本共用，规则说明见 docs/ops/git-workflow.md。
  */
 export const INTEGRATION_BRANCH = 'develop';
 export const RELEASE_BRANCH = 'main';

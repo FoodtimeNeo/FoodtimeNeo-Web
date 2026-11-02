@@ -45,7 +45,7 @@ if (BASE_SHA && HEAD_SHA) {
 
 if (errors.length) {
   errors.forEach((error) => console.error(`✗ ${error}`));
-  console.error('规范见 docs/git-workflow.md');
+  console.error('规范见 docs/ops/git-workflow.md');
   process.exit(1);
 }
 console.warn(`✓ ${HEAD_REF} → ${BASE_REF} 符合分支与提交规范`);

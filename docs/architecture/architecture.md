@@ -10,15 +10,11 @@ FoodtimeNeo-Web/
 │   ├── workflows/ci.yml        # CI：PR 与合并到 main / develop 时触发
 │   └── pull_request_template.md
 ├── docs/
-│   ├── architecture.md         # 本文档
-│   ├── git-workflow.md         # 分支与提交规范
-│   ├── development-rules.md    # 编码约定细则
-│   ├── backend-integration.md  # 现有后端接口映射与安全边界
-│   ├── verification.md         # 本轮检查与真实联调记录
-│   ├── README.md               # 文档索引与适用范围
-│   ├── local-development.md    # 环境、代理与三端联调
-│   ├── ci-cd.md                # CI与交付范围
-│   └── design-style-web.md     # 视觉规范
+│   ├── ops/                    # 运维与工程标准（环境代理、CI/CD、安全头、Git规范等）
+│   ├── architecture/           # 系统架构、视觉设计与后端契约规范
+│   ├── modules/                # 业务功能模块细则（审核流、社区管理、数据看板等）
+│   ├── releases/               # 发布说明与历史工程验收记录
+│   └── README.md               # 文档索引与适用范围速查
 ├── scripts/git/                # 分支脚本与 CI 校验（Node，无第三方依赖）
 ├── scripts/dev/                # 开发代理目标检查（本机或明确指定的服务器来源）
 ├── src/

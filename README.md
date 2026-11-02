@@ -1,6 +1,6 @@
 # 🍱 FoodtimeNeo-Web
 
-当前版本 **1.3.0**；发布范围与下载制品来源见 [1.3.0 发布说明](docs/release-1.3.0.md)，管理与资料功能见 [社区内容管理](docs/community-management.md)。
+当前版本 **1.3.0**；发布范围与下载制品来源见 [1.3.0 发布说明](docs/releases/release-1.3.0.md)，管理与资料功能见 [社区内容管理](docs/modules/community-management.md)。
 
 <div align="center">
 
@@ -287,15 +287,15 @@ FoodtimeNeo-Web/
 
 完整的工程化决策、视觉基线与验收报告已系统化收录于 `docs/` 目录：
 
-| 文档模块          | 对应路径                                                   | 核心要点说明                                |
-| :---------------- | :--------------------------------------------------------- | :------------------------------------------ |
-| **系统分层架构**  | [docs/architecture.md](docs/architecture.md)               | 目录职责、依赖单向流向、跨层调用约定        |
-| **Git 协作规范**  | [docs/git-workflow.md](docs/git-workflow.md)               | 分支命名、Rebase 策略、PR 审查与合并流向    |
-| **视觉设计规范**  | [docs/design-style-web.md](docs/design-style-web.md)       | 食堂手账视觉语言、Design Tokens、响应式断点 |
-| **后端接口契约**  | [docs/backend-integration.md](docs/backend-integration.md) | 接口映射、Cookie/CSRF 认证、数据安全边界    |
-| **本地联调指南**  | [docs/local-development.md](docs/local-development.md)     | 本地与远程代理机制、账号调试与故障排查      |
-| **CI 与交付标准** | [docs/ci-cd.md](docs/ci-cd.md)                             | GitHub Actions 门禁规则、自动化触发机制     |
-| **工程验收记录**  | [docs/verification.md](docs/verification.md)               | 真实环境端到端验证记录、测试覆盖率历史证据  |
+| 文档模块          | 对应路径                                                                             | 核心要点说明                                |
+| :---------------- | :----------------------------------------------------------------------------------- | :------------------------------------------ |
+| **系统分层架构**  | [docs/architecture/architecture.md](docs/architecture/architecture.md)               | 目录职责、依赖单向流向、跨层调用约定        |
+| **Git 协作规范**  | [docs/ops/git-workflow.md](docs/ops/git-workflow.md)                                 | 分支命名、Rebase 策略、PR 审查与合并流向    |
+| **视觉设计规范**  | [docs/architecture/design-style-web.md](docs/architecture/design-style-web.md)       | 食堂手账视觉语言、Design Tokens、响应式断点 |
+| **后端接口契约**  | [docs/architecture/backend-integration.md](docs/architecture/backend-integration.md) | 接口映射、Cookie/CSRF 认证、数据安全边界    |
+| **本地联调指南**  | [docs/ops/local-development.md](docs/ops/local-development.md)                       | 本地与远程代理机制、账号调试与故障排查      |
+| **CI 与交付标准** | [docs/ops/ci-cd.md](docs/ops/ci-cd.md)                                               | GitHub Actions 门禁规则、自动化触发机制     |
+| **工程验收记录**  | [docs/releases/verification.md](docs/releases/verification.md)                       | 真实环境端到端验证记录、测试覆盖率历史证据  |
 
 ---
 

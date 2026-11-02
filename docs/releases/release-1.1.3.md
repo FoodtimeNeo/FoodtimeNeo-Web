@@ -9,7 +9,7 @@ Web 项目版本为 `1.1.3`，默认使用 `develop → main` 发布 PR；负责
 - 核查公告创建、编辑、当前公告设置和 Markdown 展示；公告管理仍仅限 `superadmin`。
 - 保留 v1.1.2 的客户端标识头、输入长度限制和食堂轮播修复。
 
-权限及接口说明见 [社区内容管理](community-management.md)。
+权限及接口说明见 [社区内容管理](../modules/community-management.md)。
 
 ## Android 下载制品
 
