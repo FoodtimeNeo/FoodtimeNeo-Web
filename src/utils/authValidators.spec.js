@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  normalizeLoginId,
   validateEmail,
   validateLoginId,
   validatePassword,
@@ -21,6 +22,9 @@ describe('认证输入与安全跳转', () => {
     expect(validateEmail('a b@example.com')).not.toBe('');
     expect(validateLoginId('user01')).not.toBe('');
     expect(validateLoginId('existing@example.com')).toBe('');
+    expect(validateLoginId('20260001')).toBe('');
+    expect(normalizeLoginId(' 20260001 ')).toBe('20260001@bjtu.edu.cn');
+    expect(normalizeLoginId('someone@gmail.com')).toBe('someone@gmail.com');
   });
   it('登录不追加新密码复杂度，但限制ASCII与长度', () => {
     expect(validatePassword('12345678')).toBe('');

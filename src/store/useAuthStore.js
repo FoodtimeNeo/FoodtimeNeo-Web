@@ -10,7 +10,10 @@ import {
 } from '@/api/auth.api.js';
 const pendingRefresh = new WeakMap();
 function normalizeUser(user) {
-  if (!user?.id || !['user', 'admin', 'superadmin'].includes(user.role))
+  if (
+    !user?.id ||
+    !['visitor', 'user', 'admin', 'superadmin'].includes(user.role)
+  )
     throw new ApiError('用户响应不符合接口约定', { code: 'PROTOCOL' });
   return {
     id: user.id,
