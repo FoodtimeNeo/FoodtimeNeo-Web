@@ -2,6 +2,8 @@
 
 登录公告、Markdown 渲染、确认与免弹规则见 [登录公告展示](login-notices.md)。
 
+真实统计接入、在线与日活口径及失败处理见 [平台数据看板](admin-dashboard.md)。
+
 当前发布版本为 **v1.1.3**；本次版本范围和正式APK来源见[发布说明](release-1.1.3.md)，管理与资料功能见[社区内容管理](community-management.md)，历史版本见[更新日志](../CHANGELOG.md)。
 
 | 需要了解的内容                       | 文档                                                       |

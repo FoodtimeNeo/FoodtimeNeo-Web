@@ -1,5 +1,7 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useAuthStore } from '@/store/useAuthStore.js';
+import { ApiError } from '@/api/http.js';
 import { fetchAdminDashboard } from '@/api/analytics.api.js';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -10,34 +12,72 @@ const error = ref(null);
 const activeMetric = ref('users'); // 'users' | 'interactions' | 'posts' | 'online'
 const hoveredIndex = ref(null);
 
+const auth = useAuthStore();
 let requestVersion = 0;
+let controller;
+function actorKey() {
+  return auth.user?.role === 'superadmin' ? auth.user.id + ':superadmin' : '';
+}
+function reset() {
+  requestVersion++;
+  controller?.abort();
+  controller = null;
+  data.value = null;
+  error.value = null;
+  loading.value = false;
+}
 
 const METRIC_TABS = [
   { key: 'users', label: '新增用户', color: 'red' },
   { key: 'interactions', label: '评论互动', color: 'blue' },
   { key: 'posts', label: '社区食记', color: 'green' },
-  { key: 'online', label: '在线峰值', color: 'gold' },
+  { key: 'online', label: '日活用户', color: 'gold' },
 ];
 
 async function load() {
+  const actor = actorKey();
+  if (!actor) {
+    reset();
+    error.value = new ApiError('需要平台管理员权限', { status: 403 });
+    return;
+  }
+  controller?.abort();
+  controller = new AbortController();
   const version = ++requestVersion;
   loading.value = true;
   error.value = null;
   try {
-    const result = await fetchAdminDashboard({ days: 7 });
-    if (version === requestVersion) {
-      data.value = result;
-    }
+    const result = await fetchAdminDashboard(
+      { days: 7 },
+      { signal: controller.signal },
+    );
+    if (version === requestVersion && actor === actorKey()) data.value = result;
   } catch (reason) {
-    if (version === requestVersion) {
+    if (version === requestVersion && actor === actorKey()) {
+      if (reason.status === 401 || reason.status === 403) data.value = null;
       error.value = reason;
     }
   } finally {
-    if (version === requestVersion) {
-      loading.value = false;
-    }
+    if (version === requestVersion) loading.value = false;
   }
 }
+function foreground() {
+  if (!document.hidden && !loading.value && actorKey()) load();
+}
+watch(
+  actorKey,
+  () => {
+    reset();
+    if (actorKey()) load();
+    else error.value = new ApiError('需要平台管理员权限', { status: 403 });
+  },
+  { immediate: true, flush: 'sync' },
+);
+onMounted(() => document.addEventListener('visibilitychange', foreground));
+onBeforeUnmount(() => {
+  reset();
+  document.removeEventListener('visibilitychange', foreground);
+});
 
 function formatNumber(value) {
   return new Intl.NumberFormat('zh-CN').format(value || 0);
@@ -62,13 +102,14 @@ function formatUpdatedAt(value) {
   if (!value) return '尚未更新';
   try {
     return new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai',
       month: 'numeric',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(value));
   } catch {
-    return '刚刚';
+    return '时间异常';
   }
 }
 
@@ -78,28 +119,28 @@ const metricCards = computed(() => {
   const d = data.value;
   return [
     {
-      label: '注册用户',
+      label: '有效用户',
       value: d.registeredUsers,
       tone: 'red',
-      desc: '累计登记用户总数',
+      desc: '当前有效账号，不含停用账号',
       tag: '用户基石',
     },
     {
-      label: '评论数',
+      label: '正式点评',
       value: d.reviews,
       tone: 'blue',
       desc: '菜品真实口碑点评',
       tag: '干饭心声',
     },
     {
-      label: '回复数',
+      label: '正式回复',
       value: d.replies,
       tone: 'green',
       desc: '食客互动交流楼层',
       tag: '热闹讨论',
     },
     {
-      label: '社区食记',
+      label: '已发布食记',
       value: d.posts,
       tone: 'red',
       desc: '图文动态与探店分享',
@@ -137,18 +178,7 @@ const metricCards = computed(() => {
 });
 
 // 今日活跃（取 trend 最后一项）
-const todayPoint = computed(() => {
-  const trend = data.value?.trend || [];
-  return (
-    trend[trend.length - 1] || {
-      newUsers: 0,
-      newReviews: 0,
-      newReplies: 0,
-      newPosts: 0,
-      onlinePeak: 0,
-    }
-  );
-});
+const todayPoint = computed(() => data.value?.trend.at(-1));
 
 // 今日活跃明细列表
 const activityRows = computed(() => {
@@ -271,9 +301,12 @@ const smoothLinePath = computed(() => {
     const p3 = pts[i + 2 < pts.length ? i + 2 : pts.length - 1];
 
     const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    // Keep interpolation inside the actual segment range: counts cannot dip below zero.
+    const clampY = (value) =>
+      Math.max(Math.min(p1.y, p2.y), Math.min(Math.max(p1.y, p2.y), value));
+    const cp1y = clampY(p1.y + (p2.y - p0.y) / 6);
     const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    const cp2y = clampY(p2.y - (p3.y - p1.y) / 6);
 
     path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
   }
@@ -296,8 +329,6 @@ const activeHoveredPoint = computed(() => {
   if (hoveredIndex.value === null) return null;
   return chartPoints.value[hoveredIndex.value] || null;
 });
-
-onMounted(load);
 </script>
 
 <template>
@@ -307,16 +338,13 @@ onMounted(load);
       <div class="analytics__title-group">
         <div class="badge-row">
           <span class="stamp">SUPERADMIN DASHBOARD</span>
-          <span v-if="data?.isMock" class="stamp-preview">
-            [MOCK 预览数据 · 待后端接入]
-          </span>
         </div>
         <h2 id="analytics-title">数据看板</h2>
       </div>
 
       <div class="analytics__meta">
         <p class="updated">
-          数据生成时间：{{ formatUpdatedAt(data?.generatedAt) }}
+          数据生成时间：{{ formatUpdatedAt(data?.generatedAt) }}（北京时间）
         </p>
         <button
           type="button"
@@ -343,6 +371,10 @@ onMounted(load);
     />
 
     <template v-else-if="data">
+      <div v-if="error" class="snapshot-warning" role="alert">
+        刷新失败，显示上次数据：{{ error.message }}
+        <button type="button" :disabled="loading" @click="load">重试</button>
+      </div>
       <!-- 顶部当前在线 Hero 卡片 -->
       <section class="overview-hero" aria-label="实时在线概览">
         <div class="overview-hero__content">
@@ -351,7 +383,7 @@ onMounted(load);
             {{ formatNumber(data.onlineUsers) }}
           </strong>
           <p class="overview-hero__sub">
-            约占注册用户
+            约占有效用户
             <span class="highlight-ratio">
               {{ formatPercent(data.onlineUsers, data.registeredUsers) }}
             </span>
@@ -644,10 +676,15 @@ onMounted(load);
         </div>
       </section>
 
-      <!-- 今日活跃对比明细表格（对齐手机端） -->
+      <p class="analytics-definition">
+        点评互动为投稿与回复之和；日活为当日行为去重人数。新增记录含待审等状态，累计点评与食记仅统计正式发布内容。
+      </p>
+      <!-- 快照末日新增与当前累计，日期以服务端业务日为准。 -->
       <section class="section-block" aria-labelledby="activity-title">
         <div class="section-header">
-          <h3 id="activity-title" class="block-title">今日活跃</h3>
+          <h3 id="activity-title" class="block-title">
+            当日新增（{{ formatDateLabel(todayPoint.day) }}）
+          </h3>
           <span class="block-eyebrow">今日增量 vs 历史累计</span>
         </div>
 
@@ -686,6 +723,19 @@ onMounted(load);
 </template>
 
 <style scoped>
+.snapshot-warning {
+  padding: 12px;
+  border: 1px solid var(--zine-stamp-red);
+  margin-bottom: 16px;
+}
+.snapshot-warning button {
+  min-height: 44px;
+  margin-left: 12px;
+}
+.analytics-definition {
+  line-height: 1.6;
+}
+
 .analytics {
   max-width: var(--page-max-width);
   margin: 0 auto;
