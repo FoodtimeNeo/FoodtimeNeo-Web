@@ -1,15 +1,16 @@
 <script setup>
+import { ref } from 'vue';
+import { ElDialog } from 'element-plus';
+import ModerationLogContent from '@/components/admin/ModerationLogContent.vue';
 import { fetchModerationLogs } from '@/api/admin-audit.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
-import { formatTime } from '@/utils/recordLabels.js';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
-import PublisherDetails from '@/components/base/PublisherDetails.vue';
-import MediaImage from '@/components/base/MediaImage.vue';
 const { items, page, total, size, loading, error, load } =
   usePagedData(fetchModerationLogs);
+const selected = ref(null);
 const types = {
   'hall-review': '餐厅点评',
   'stall-review': '档口点评',
@@ -43,35 +44,53 @@ const types = {
               : '驳回'
         }}
       </h3>
-      <p>日志 ID：{{ row.id }}</p>
-      <p>投稿 ID：{{ row.submissionId }}</p>
-      <PublisherDetails :row="row" :published-at="row.submittedAt ?? null" />
-      <p v-if="row.name">发布标题／名称：{{ row.name }}</p>
-      <p v-if="row.content" class="published-content">
-        发布内容：{{ row.content }}
-      </p>
-      <MediaImage
-        v-if="row.imageUrl"
-        :src="row.imageUrl"
-        alt="发布内容配图"
-        class="published-image"
-      />
-      <p v-if="!row.content && !row.imageUrl">发布内容：无文字或图片记录</p>
-      <p v-if="row.actor === 'ai'">
-        🤖 AI 审核{{ row.aiModel ? `（${row.aiModel}）` : '' }}
-      </p>
-      <p v-else>审核人 ID：{{ row.moderatorId }}</p>
-      <p>审核时间：{{ formatTime(row.createdAt) }}</p>
-      <p v-if="row.reason" class="reason">{{ row.reason }}</p>
+      <ModerationLogContent :row="row" />
+      <div class="logs__actions">
+        <button type="button" @click="selected = row">查看完整日志</button>
+      </div>
     </article>
     <PaginationControls
       :page="page"
       :total="total"
       :size="size"
       :disabled="loading"
-      @change="page = $event"
+      @change="
+        selected = null;
+        page = $event;
+      "
     />
   </section>
+  <ElDialog
+    :model-value="Boolean(selected)"
+    title="完整审核日志"
+    class="log-dialog"
+    width="min(880px, calc(100vw - 24px))"
+    top="16px"
+    append-to-body
+    destroy-on-close
+    @update:model-value="
+      (value) => {
+        if (!value) selected = null;
+      }
+    "
+  >
+    <template v-if="selected">
+      <h3>
+        {{ types[selected.type] }} ·
+        {{
+          selected.action === 'approve'
+            ? '通过'
+            : selected.action === 'remove'
+              ? '下架'
+              : '驳回'
+        }}
+      </h3>
+      <ModerationLogContent :row="selected" full />
+    </template>
+    <template #footer
+      ><button type="button" @click="selected = null">关闭</button></template
+    >
+  </ElDialog>
 </template>
 <style scoped>
 .logs {
@@ -80,60 +99,70 @@ const types = {
   overflow-wrap: anywhere;
 }
 .logs > .section-title {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 article {
-  position: relative;
   border: 1px solid var(--ft-color-secondary);
-  padding: 20px;
-  margin: 20px 0;
+  padding: 12px 14px;
+  margin: 10px 0;
   background: var(--zine-paper-card);
-  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
-  clip-path: none;
-}
-article:nth-of-type(even) {
-  transform: none;
-}
-article:nth-of-type(odd) {
-  transform: none;
+  box-shadow: 2px 2px 0 var(--zine-paper-shadow);
 }
 h3 {
-  margin-top: 0;
+  margin: 0 0 6px;
   color: var(--ft-color-secondary);
-  font-family: var(--ft-font-family-title);
-  font-size: clamp(24px, 3vw, 34px);
-  line-height: 1.08;
+  font: 700 18px/1.4 var(--ft-font-family-title);
+  overflow-wrap: anywhere;
 }
-article p {
-  color: var(--ft-color-text-muted);
+.logs__actions {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ft-color-border);
 }
-article p:first-of-type {
-  display: inline-block;
-  padding: 4px 10px;
-  border: 2px solid var(--zine-stamp-red);
-  color: var(--zine-stamp-red);
-  font-family: var(--zine-handwriting-font);
-  transform: rotate(-3deg);
+button {
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text);
+  border: 1px solid var(--ft-color-secondary);
+  font: inherit;
+  cursor: pointer;
 }
-.reason {
-  white-space: pre-wrap;
+button:hover {
+  background: var(--zine-paper-card-alt);
+}
+button:focus-visible {
+  outline: 2px solid var(--ft-color-primary);
+  outline-offset: 3px;
+}
+:global(.log-dialog) {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  margin-bottom: 16px;
+  --el-dialog-bg-color: var(--zine-paper-card);
+  border: 1px solid var(--ft-color-secondary);
+}
+:global(.log-dialog .el-dialog__header) {
+  flex-shrink: 0;
+  padding-right: 32px;
+}
+:global(.log-dialog .el-dialog__body) {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  color: var(--ft-color-text);
+}
+:global(.log-dialog .el-dialog__footer) {
+  flex-shrink: 0;
+  border-top: 1px solid var(--ft-color-border);
   padding-top: 10px;
-  border-top: 1px dashed var(--ft-color-secondary);
-  color: var(--zine-stamp-red);
 }
-.published-content {
-  white-space: pre-wrap;
-}
-.published-image {
-  width: min(100%, 480px);
-}
-@media (max-width: 560px) {
-  article,
-  article:nth-of-type(even),
-  article:nth-of-type(odd) {
-    padding: 16px;
-    box-shadow: var(--app-mobile-shadow);
-    transform: none;
+@media (min-width: 769px) and (pointer: fine) {
+  .logs__actions button {
+    min-height: 36px;
+    padding: 5px 12px;
+    font-size: var(--ft-font-size-sm);
   }
 }
 </style>

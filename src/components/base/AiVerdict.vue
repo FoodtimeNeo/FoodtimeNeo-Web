@@ -8,6 +8,7 @@ const props = defineProps({
   labels: { type: Array, default: null },
   reason: { type: String, default: null },
   checkedAt: { type: String, default: null },
+  compact: Boolean,
 });
 const tone = computed(() =>
   props.riskLevel === 'HIGH'
@@ -27,14 +28,22 @@ const percent = computed(() =>
   <p v-if="!riskLevel" class="ai-verdict ai-verdict--empty">
     AI 分诊：暂无结论
   </p>
-  <div v-else class="ai-verdict" :data-tone="tone">
+  <div
+    v-else
+    class="ai-verdict"
+    :class="{ 'ai-verdict--compact': compact }"
+    :data-tone="tone"
+  >
     <p>
       AI 分诊：<strong>{{ riskLevel }}</strong
       ><span v-if="percent"> · 置信度 {{ percent }}</span>
+      <span v-if="compact && labels?.length"> · {{ labels.join('、') }}</span>
     </p>
-    <p v-if="labels && labels.length">标签：{{ labels.join('、') }}</p>
+    <p v-if="!compact && labels && labels.length">
+      标签：{{ labels.join('、') }}
+    </p>
     <p v-if="reason">说明：{{ reason }}</p>
-    <p v-if="checkedAt">诊断时间：{{ formatTime(checkedAt) }}</p>
+    <p v-if="!compact && checkedAt">诊断时间：{{ formatTime(checkedAt) }}</p>
   </div>
 </template>
 
@@ -61,5 +70,23 @@ const percent = computed(() =>
 }
 .ai-verdict > p {
   margin: 4px 0;
+}
+.ai-verdict--compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  padding: 4px 8px;
+  font-size: var(--ft-font-size-sm);
+}
+.ai-verdict--compact > p {
+  margin: 0;
+}
+.ai-verdict--compact > p + p {
+  flex: 1 1 240px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
