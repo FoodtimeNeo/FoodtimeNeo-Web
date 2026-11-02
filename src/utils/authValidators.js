@@ -1,3 +1,31 @@
+// 与后端注册白名单一致；允许子域（如 vip.qq.com）。
+export const allowedEmailDomains = [
+  'qq.com',
+  'foxmail.com',
+  '163.com',
+  '126.com',
+  'yeah.net',
+  'sina.com',
+  'sina.cn',
+  'sohu.com',
+  '139.com',
+  '189.cn',
+  'wo.cn',
+  'aliyun.com',
+  '21cn.com',
+  'gmail.com',
+  'outlook.com',
+  'hotmail.com',
+  'live.com',
+  'msn.com',
+  'icloud.com',
+  'me.com',
+  'mac.com',
+  'yahoo.com',
+  'proton.me',
+  'protonmail.com',
+  'bjtu.edu.cn',
+];
 export function validateEmail(value) {
   const email = value.trim().toLowerCase();
   if (!email) return '请输入邮箱';
@@ -9,6 +37,13 @@ export function validateEmail(value) {
     )
   )
     return '请输入有效邮箱';
+  const domain = email.slice(email.lastIndexOf('@') + 1);
+  if (
+    !allowedEmailDomains.some(
+      (allowed) => domain === allowed || domain.endsWith(`.${allowed}`),
+    )
+  )
+    return '请使用主流邮箱注册，如 QQ、163、126、Gmail、Outlook 或学校邮箱';
   return '';
 }
 export function validateLoginId(value) {
