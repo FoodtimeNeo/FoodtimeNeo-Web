@@ -3,11 +3,15 @@ import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 
 const fetchCommunityPosts = vi.fn();
+const fetchMyCommunityPosts = vi.fn();
+const fetchMyCommunityFavorites = vi.fn();
 const createCommunityPost = vi.fn();
 const mockPush = vi.fn();
 
 vi.mock('@/api/community.api.js', () => ({
   fetchCommunityPosts: (...args) => fetchCommunityPosts(...args),
+  fetchMyCommunityPosts: (...args) => fetchMyCommunityPosts(...args),
+  fetchMyCommunityFavorites: (...args) => fetchMyCommunityFavorites(...args),
   createCommunityPost: (...args) => createCommunityPost(...args),
 }));
 
@@ -39,6 +43,8 @@ describe('CommunityFeedView', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     fetchCommunityPosts.mockReset();
+    fetchMyCommunityPosts.mockReset();
+    fetchMyCommunityFavorites.mockReset();
     createCommunityPost.mockReset();
     mockPush.mockReset();
   });
@@ -179,5 +185,18 @@ describe('CommunityFeedView', () => {
     expect(wrapper.find('.el-dialog-stub').exists()).toBe(false);
     await topBtn.trigger('click');
     expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
+  });
+
+  it('发帖成功后再次打开使用空白预填数据', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [], total: 0 });
+    fetchMyCommunityPosts.mockResolvedValue({ items: [], total: 0 });
+    const wrapper = mountView();
+    await flushPromises();
+
+    const modal = wrapper.findComponent({ name: 'PostCreateModal' });
+    modal.vm.$emit('created', { id: 'pending-post' });
+    await wrapper.find('.community-header-post-btn').trigger('click');
+
+    expect(modal.props('initialData')).toEqual({});
   });
 });
