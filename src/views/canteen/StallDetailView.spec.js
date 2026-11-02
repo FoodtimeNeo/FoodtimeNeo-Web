@@ -45,7 +45,9 @@ describe('真实档口层级', () => {
     ];
     api.fetchStallDishes.mockResolvedValue(dishes);
     const wrapper = mount(StallDetailView, {
-      global: { stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        stubs: { RouterLink: RouterLinkStub, VenueRatingSummary: true },
+      },
     });
     await flushPromises();
     expect(
@@ -71,7 +73,9 @@ describe('真实档口层级', () => {
       { id: 'd1', stallId: 's1', name: '例汤', price: 0 },
     ]);
     const wrapper = mount(StallDetailView, {
-      global: { stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        stubs: { RouterLink: RouterLinkStub, VenueRatingSummary: true },
+      },
     });
     await flushPromises();
     expect(api.fetchStallDishes.mock.calls[0][0]).toBe('s1');
@@ -85,7 +89,9 @@ describe('真实档口层级', () => {
   it('URL中的档口不属于该食堂时不请求其菜品', async () => {
     api.fetchStalls.mockResolvedValue([{ id: 's2', name: '其他档口' }]);
     const wrapper = mount(StallDetailView, {
-      global: { stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        stubs: { RouterLink: RouterLinkStub, VenueRatingSummary: true },
+      },
     });
     await flushPromises();
     expect(wrapper.text()).toContain('档口不存在');
@@ -94,7 +100,9 @@ describe('真实档口层级', () => {
   it('空菜品与加载失败分别显示', async () => {
     api.fetchStalls.mockResolvedValue([{ id: 's1', name: '面档' }]);
     const wrapper = mount(StallDetailView, {
-      global: { stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        stubs: { RouterLink: RouterLinkStub, VenueRatingSummary: true },
+      },
     });
     await flushPromises();
     expect(wrapper.text()).toContain('这个档口还没有菜品');
@@ -105,7 +113,11 @@ describe('真实档口层级', () => {
       { id: 'd1', name: '排骨小锅', price: 0 },
       { id: 'd2', name: '炒鸡饭', price: 14.9 },
     ]);
-    const options = { global: { stubs: { RouterLink: RouterLinkStub } } };
+    const options = {
+      global: {
+        stubs: { RouterLink: RouterLinkStub, VenueRatingSummary: true },
+      },
+    };
     const first = mount(StallDetailView, options);
     await flushPromises();
     await first.get('input').setValue('排骨');

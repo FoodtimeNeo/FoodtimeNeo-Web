@@ -1,5 +1,15 @@
 import { http, ApiError } from './http.js';
-const types = ['review', 'dish', 'stall', 'photo', 'dish-review-reply'];
+const types = [
+  'review',
+  'dish',
+  'stall',
+  'photo',
+  'dish-review-reply',
+  'hall-review',
+  'stall-review',
+  'hall-review-reply',
+  'stall-review-reply',
+];
 export function fetchAuditItems(
   status = 'pending',
   page = 1,

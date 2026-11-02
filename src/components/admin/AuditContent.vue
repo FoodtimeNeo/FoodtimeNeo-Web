@@ -5,6 +5,7 @@ import MediaImage from '@/components/base/MediaImage.vue';
 import AiVerdict from '@/components/base/AiVerdict.vue';
 import CommunityImageViewer from '@/components/community/CommunityImageViewer.vue';
 import { formatPrice } from '@/utils/mediaUrl.js';
+import { formatTime } from '@/utils/recordLabels.js';
 
 const props = defineProps({
   row: { type: Object, required: true },
@@ -22,6 +23,10 @@ const publisher = computed(() =>
 const hasAi = computed(
   () =>
     [
+      'hall-review',
+      'stall-review',
+      'hall-review-reply',
+      'stall-review-reply',
       'dish',
       'review',
       'photo',
@@ -38,7 +43,7 @@ const hasAi = computed(
     <p class="audit-content__id">投稿 ID：{{ row.id }}</p>
     <p v-if="row.rating">评分：{{ row.rating }} / 5</p>
     <p v-if="row.type === 'dish'">投稿价格：{{ formatPrice(row.price) }}</p>
-    <template v-if="full && details">
+    <template v-if="full && details?.post">
       <section class="audit-content__context" aria-label="完整社区审核内容">
         <h3>{{ details.post.title }}</h3>
         <p class="audit-content__text">{{ details.post.content }}</p>
@@ -89,6 +94,26 @@ const hasAi = computed(
         class="audit-content__thumbnail"
       />
     </template>
+    <section
+      v-if="full && details?.venue"
+      class="audit-content__context"
+      aria-label="原评价与本次提交对照"
+    >
+      <h3>当前公开评价</h3>
+      <template v-if="details.publicVersion"
+        ><p>评分：{{ details.publicVersion.rating }} / 5</p>
+        <p class="audit-content__text">{{ details.publicVersion.content }}</p>
+        <p>
+          首次公开：{{ formatTime(details.publicVersion.createdAt) }}
+        </p></template
+      >
+      <p v-else>暂无公开评价</p>
+      <h3>本次提交</h3>
+      <p v-if="details.submission?.rating">
+        评分：{{ details.submission.rating }} / 5
+      </p>
+      <p class="audit-content__text">{{ details.submission?.content }}</p>
+    </section>
     <AiVerdict
       v-if="hasAi"
       :risk-level="row.aiRiskLevel"

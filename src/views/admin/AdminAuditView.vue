@@ -7,6 +7,10 @@ import {
   submitCommunityAudit,
   removeCommunityAsAdmin,
 } from '@/api/community.api.js';
+import {
+  fetchVenueAuditDetail,
+  removeVenueAsAdmin,
+} from '@/api/venue-review.api.js';
 import { fetchAuditItems, submitAudit } from '@/api/admin-audit.api.js';
 import { removeReviewReplyAsAdmin } from '@/api/review.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
@@ -21,6 +25,10 @@ import PaginationControls from '@/components/base/PaginationControls.vue';
 const status = ref('pending'),
   channel = ref('catalog');
 const ranges = [
+  ['hall-review', '餐厅点评'],
+  ['stall-review', '档口点评'],
+  ['hall-review-reply', '餐厅点评回复'],
+  ['stall-review-reply', '档口点评回复'],
   ['catalog', '食堂投稿（全部）'],
   ['dish', '新菜品'],
   ['photo', '菜品图片'],
@@ -31,6 +39,10 @@ const ranges = [
   ['comments', '社区评论与回复'],
 ];
 const labels = {
+  'hall-review': '餐厅点评',
+  'stall-review': '档口点评',
+  'hall-review-reply': '餐厅点评回复',
+  'stall-review-reply': '档口点评回复',
   review: '点评',
   dish: '菜品',
   stall: '档口',
@@ -41,6 +53,13 @@ const labels = {
 };
 const communityType = (row) =>
   row.type === 'community-post' ? 'posts' : 'comments';
+const isVenue = (row) =>
+  [
+    'hall-review',
+    'stall-review',
+    'hall-review-reply',
+    'stall-review-reply',
+  ].includes(row?.type);
 const isCommunity = (row) => row?.type.startsWith('community-');
 const { items, page, total, size, loading, error, load, cancel } = usePagedData(
   (number, options) =>
@@ -73,9 +92,15 @@ const form = ref(null),
   resultsHeading = ref(null);
 const canRemove = (row) =>
   row?.status === 'approved' &&
-  ['dish-review-reply', 'community-post', 'community-comment'].includes(
-    row.type,
-  );
+  [
+    'hall-review',
+    'stall-review',
+    'hall-review-reply',
+    'stall-review-reply',
+    'dish-review-reply',
+    'community-post',
+    'community-comment',
+  ].includes(row.type);
 const deciding = computed(
   () => selected.value && selected.value.action !== 'inspect',
 );
@@ -148,14 +173,18 @@ watch([loading, error, total], () => {
 });
 async function loadDetails(row) {
   resetDetails();
-  if (!isCommunity(row)) return;
+  if (!isCommunity(row) && !isVenue(row)) return;
   const ticket = detailVersion;
   detailController = new AbortController();
   detailLoading.value = true;
   try {
-    const result = await fetchCommunityAuditDetail(communityType(row), row.id, {
-      signal: detailController.signal,
-    });
+    const result = isVenue(row)
+      ? await fetchVenueAuditDetail(row.type, row.id, {
+          signal: detailController.signal,
+        })
+      : await fetchCommunityAuditDetail(communityType(row), row.id, {
+          signal: detailController.signal,
+        });
     if (
       active &&
       ticket === detailVersion &&
@@ -210,7 +239,10 @@ async function invalid(message, field = '') {
 async function submit() {
   if (writing.value || !selected.value || !deciding.value) return;
   const row = selected.value;
-  if (isCommunity(row) && (detailLoading.value || !details.value))
+  if (
+    (isCommunity(row) || isVenue(row)) &&
+    (detailLoading.value || !details.value)
+  )
     return invalid('请先加载完整内容再审核');
   failure.value = '';
   errorField.value = '';
@@ -233,7 +265,15 @@ async function submit() {
           action: row.action,
           reason: reason.value.trim() || null,
         });
-    } else if (row.action === 'remove')
+    } else if (isVenue(row) && row.action === 'remove')
+      await removeVenueAsAdmin(
+        row.type.endsWith('-reply')
+          ? row.id
+          : details.value?.submission?.reviewId,
+        reason.value.trim(),
+        row.type.endsWith('-reply'),
+      );
+    else if (row.action === 'remove')
       await removeReviewReplyAsAdmin(row.id, reason.value.trim());
     else
       await submitAudit(row.type, row.id, {
@@ -356,7 +396,13 @@ onBeforeUnmount(() => {
             :disabled="writing"
             @click="choose(row, 'remove')"
           >
-            {{ isCommunity(row) ? '下架违规社区内容' : '删除违规回复' }}
+            {{
+              isCommunity(row)
+                ? '下架违规社区内容'
+                : isVenue(row)
+                  ? '下架违规内容'
+                  : '删除违规回复'
+            }}
           </button>
         </div>
       </article>

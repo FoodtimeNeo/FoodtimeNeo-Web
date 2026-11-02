@@ -1,4 +1,5 @@
 <script setup>
+import VenueRatingSummary from '@/components/venue/VenueRatingSummary.vue';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
@@ -59,6 +60,7 @@ const sortedDishes = computed(() =>
         <span class="stall-detail__dish-count stamp"
           >{{ data.dishes.length }} 道菜品</span
         >
+        <VenueRatingSummary type="stall" :target-id="stallId" />
         <RouterLink
           class="button-ink"
           :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"

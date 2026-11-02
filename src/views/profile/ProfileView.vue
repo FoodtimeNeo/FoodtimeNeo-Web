@@ -115,6 +115,11 @@ async function logout() {
         >编辑资料</InkButton
       >
       <nav class="profile-page__links" aria-label="个人功能">
+        <RouterLink class="paper-link" :to="{ name: 'myVenueReviews' }"
+          ><span class="stamp">点评</span
+          ><span>餐厅与档口点评<small>我的评价、回复与审核状态</small></span
+          ><strong>→</strong></RouterLink
+        >
         <RouterLink class="paper-link" :to="{ name: 'inboxView' }"
           ><span class="stamp">信箱</span
           ><span>消息信箱<small>公告与系统消息</small></span
