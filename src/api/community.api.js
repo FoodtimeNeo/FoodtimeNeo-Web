@@ -123,8 +123,8 @@ export async function fetchCommunityAudit(
     params: { status, page, size: 20 },
   });
 }
-export const fetchCommunityAuditDetail = (type, id) =>
-  http.get(`/admin/community/${type}/${encodeURIComponent(id)}`);
+export const fetchCommunityAuditDetail = (type, id, options = {}) =>
+  http.get(`/admin/community/${type}/${encodeURIComponent(id)}`, options);
 export const submitCommunityAudit = (type, id, body) =>
   http.post(`/admin/community/${type}/${encodeURIComponent(id)}`, body);
 export const removeCommunityAsAdmin = (type, id, reason = undefined) =>

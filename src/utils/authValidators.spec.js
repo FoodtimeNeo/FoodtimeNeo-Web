@@ -7,10 +7,18 @@ import {
   safeRedirect,
 } from './authValidators.js';
 describe('认证输入与安全跳转', () => {
-  it('注册学号邮箱规范化，拒绝域名伪装', () => {
+  it('注册只接受主流邮箱，拒绝畸形地址与域名伪装', () => {
     expect(validateEmail(' 20260001@BJTU.EDU.CN ')).toBe('');
+    expect(validateEmail('someone@gmail.com')).toBe('');
+    expect(validateEmail('someone@qq.com')).toBe('');
+    expect(validateEmail('someone@vip.163.com')).toBe('');
+    expect(validateEmail('someone@outlook.com')).toBe('');
     expect(validateEmail('student@example.com')).not.toBe('');
-    expect(validateEmail('2026@bjtu.edu.cn.evil.com')).not.toBe('');
+    expect(validateEmail('student@qq.com.evil.com')).not.toBe('');
+    expect(validateEmail('student@evilqq.com')).not.toBe('');
+    expect(validateEmail('123@example')).not.toBe('');
+    expect(validateEmail('123@.com')).not.toBe('');
+    expect(validateEmail('a b@example.com')).not.toBe('');
     expect(validateLoginId('user01')).not.toBe('');
     expect(validateLoginId('existing@example.com')).toBe('');
   });

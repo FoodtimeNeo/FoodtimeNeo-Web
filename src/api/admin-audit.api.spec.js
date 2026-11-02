@@ -39,3 +39,14 @@ it('统一四类审核路径不提交审核人或状态', async () => {
     params: { page: 3, size: 20 },
   });
 });
+it('类型筛选传给后端而非只过滤已加载的一页', async () => {
+  const signal = new AbortController().signal;
+  await fetchAuditItems('pending', 3, { signal }, 'dish');
+  expect(api.get).toHaveBeenLastCalledWith('/admin/moderation', {
+    signal,
+    params: { status: 'pending', page: 3, size: 20, type: 'dish' },
+  });
+  expect(() => fetchAuditItems('pending', 1, {}, 'unknown')).toThrow(
+    '审核类型无效',
+  );
+});

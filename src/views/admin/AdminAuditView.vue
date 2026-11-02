@@ -1,31 +1,35 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { ElDialog } from 'element-plus';
 import {
   fetchCommunityAudit,
   fetchCommunityAuditDetail,
   submitCommunityAudit,
   removeCommunityAsAdmin,
 } from '@/api/community.api.js';
-import CommunityImageViewer from '@/components/community/CommunityImageViewer.vue';
 import { fetchAuditItems, submitAudit } from '@/api/admin-audit.api.js';
 import { removeReviewReplyAsAdmin } from '@/api/review.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { statusLabels } from '@/utils/recordLabels.js';
-import { formatPrice } from '@/utils/mediaUrl.js';
 import { validatePrice } from '@/utils/submissionValidation.js';
-import MediaImage from '@/components/base/MediaImage.vue';
+import AuditContent from '@/components/admin/AuditContent.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
-import AiVerdict from '@/components/base/AiVerdict.vue';
-import PublisherDetails from '@/components/base/PublisherDetails.vue';
-const status = ref('pending');
-const channel = ref('catalog'),
-  details = ref(null),
-  detailLoading = ref(false);
-const communityType = (row) =>
-  row.type === 'community-post' ? 'posts' : 'comments';
+
+const status = ref('pending'),
+  channel = ref('catalog');
+const ranges = [
+  ['catalog', '食堂投稿（全部）'],
+  ['dish', '新菜品'],
+  ['photo', '菜品图片'],
+  ['review', '点评'],
+  ['dish-review-reply', '点评回复'],
+  ['stall', '档口'],
+  ['posts', '社区食记'],
+  ['comments', '社区评论与回复'],
+];
 const labels = {
   review: '点评',
   dish: '菜品',
@@ -35,79 +39,193 @@ const labels = {
   'community-post': '社区食记',
   'community-comment': '社区评论／回复',
 };
-const { items, page, total, size, loading, error, load } = usePagedData(
-  (page, options) =>
-    channel.value === 'catalog'
-      ? fetchAuditItems(status.value, page, options)
-      : fetchCommunityAudit(channel.value, status.value, page, options),
+const communityType = (row) =>
+  row.type === 'community-post' ? 'posts' : 'comments';
+const isCommunity = (row) => row?.type.startsWith('community-');
+const { items, page, total, size, loading, error, load, cancel } = usePagedData(
+  (number, options) =>
+    ['posts', 'comments'].includes(channel.value)
+      ? fetchCommunityAudit(channel.value, status.value, number, options)
+      : fetchAuditItems(
+          status.value,
+          number,
+          options,
+          channel.value === 'catalog' ? undefined : channel.value,
+        ),
 );
-const selected = ref(null);
-const reason = ref('');
-const price = ref('');
-const writing = ref(false);
-const failure = ref('');
-const notice = ref('');
-watch([status, channel], () => {
+const selected = ref(null),
+  details = ref(null),
+  detailLoading = ref(false),
+  detailFailure = ref('');
+const reason = ref(''),
+  price = ref(''),
+  writing = ref(false),
+  failure = ref(''),
+  errorField = ref(''),
+  notice = ref('');
+const drafts = new Map();
+let detailVersion = 0,
+  detailController,
+  active = true,
+  scrollAfterLoad = false;
+const form = ref(null),
+  failureSummary = ref(null),
+  resultsHeading = ref(null);
+const canRemove = (row) =>
+  row?.status === 'approved' &&
+  ['dish-review-reply', 'community-post', 'community-comment'].includes(
+    row.type,
+  );
+const deciding = computed(
+  () => selected.value && selected.value.action !== 'inspect',
+);
+const dialogTitle = computed(() =>
+  selected.value
+    ? `${labels[selected.value.type] || '投稿'} · ${selected.value.name || '审核详情'}`
+    : '审核详情',
+);
+const needsReason = computed(
+  () =>
+    selected.value?.action === 'reject' ||
+    (selected.value?.action === 'remove' && !isCommunity(selected.value)),
+);
+const key = (row) => `${row.type}:${row.id}`;
+
+function resetDetails() {
+  detailVersion++;
+  detailController?.abort();
   details.value = null;
+  detailFailure.value = '';
+  detailLoading.value = false;
+}
+function closeSelection() {
+  if (writing.value) return;
+  if (selected.value)
+    drafts.set(key(selected.value), {
+      reason: reason.value,
+      price: price.value,
+    });
   selected.value = null;
+  resetDetails();
+  failure.value = '';
+  errorField.value = '';
+}
+function filter(kind, value) {
+  const target = kind === 'status' ? status : channel;
+  if (writing.value || target.value === value) return;
+  cancel();
+  closeSelection();
   notice.value = '';
+  scrollAfterLoad = true;
+  target.value = value;
   if (page.value !== 1) page.value = 1;
   else load();
-});
-async function choose(row, action) {
-  details.value = null;
-  selected.value = { ...row, action };
-  reason.value = '';
-  price.value = row.price === null ? '' : String(row.price ?? '');
-  failure.value = '';
+}
+function changePage(value) {
+  if (writing.value || loading.value || page.value === value) return;
+  cancel();
+  closeSelection();
   notice.value = '';
-  if (row.type.startsWith('community-')) {
-    detailLoading.value = true;
-    try {
-      const result = await fetchCommunityAuditDetail(
-        communityType(row),
-        row.id,
-      );
-      if (selected.value?.id === row.id && selected.value?.type === row.type)
-        details.value = result;
-    } catch (e) {
-      failure.value = e.message || '完整审核内容加载失败';
-    } finally {
-      detailLoading.value = false;
-    }
+  scrollAfterLoad = true;
+  page.value = value;
+}
+watch([loading, error, total], () => {
+  if (
+    !loading.value &&
+    !error.value &&
+    page.value > Math.max(1, Math.ceil(total.value / size.value))
+  ) {
+    page.value = Math.max(1, Math.ceil(total.value / size.value));
+    return;
+  }
+  if (!loading.value && !error.value && scrollAfterLoad) {
+    scrollAfterLoad = false;
+    nextTick(() => {
+      if (active && !loading.value)
+        resultsHeading.value?.scrollIntoView?.({ block: 'start' });
+    });
+  }
+});
+async function loadDetails(row) {
+  resetDetails();
+  if (!isCommunity(row)) return;
+  const ticket = detailVersion;
+  detailController = new AbortController();
+  detailLoading.value = true;
+  try {
+    const result = await fetchCommunityAuditDetail(communityType(row), row.id, {
+      signal: detailController.signal,
+    });
+    if (
+      active &&
+      ticket === detailVersion &&
+      selected.value &&
+      key(selected.value) === key(row)
+    )
+      details.value = result;
+  } catch (e) {
+    if (
+      active &&
+      ticket === detailVersion &&
+      e.code !== 'CANCELLED' &&
+      e.name !== 'AbortError'
+    )
+      detailFailure.value = e.message || '完整审核内容加载失败';
+  } finally {
+    if (active && ticket === detailVersion) detailLoading.value = false;
   }
 }
-async function submit() {
-  if (writing.value || !selected.value) return;
-  const row = selected.value;
-  if (
-    row.type.startsWith('community-') &&
-    (detailLoading.value || !details.value)
-  ) {
-    failure.value = '请先加载完整内容再审核';
-    return;
-  }
+function choose(row, action = 'inspect') {
+  if (writing.value) return;
+  closeSelection();
+  selected.value = { ...row, action };
+  const saved = drafts.get(key(row));
+  reason.value = saved?.reason ?? '';
+  price.value = saved?.price ?? String(row.price ?? '');
   failure.value = '';
-  if (
-    (row.action === 'reject' ||
-      (row.action === 'remove' && !row.type.startsWith('community-'))) &&
-    !reason.value.trim()
-  ) {
-    failure.value =
-      row.action === 'remove' ? '删除须填写原因' : '驳回须填写审核原因';
-    return;
+  errorField.value = '';
+  notice.value = '';
+  loadDetails(row);
+}
+function action(value) {
+  if (!writing.value && selected.value) {
+    selected.value.action = value;
+    failure.value = '';
+    errorField.value = '';
   }
-  if (
-    row.type === 'dish' &&
-    row.action === 'approve' &&
-    validatePrice(price.value, { required: true })
-  ) {
-    failure.value = validatePrice(price.value, { required: true });
-    return;
+}
+function refresh() {
+  if (!writing.value) {
+    closeSelection();
+    load();
+  }
+}
+async function invalid(message, field = '') {
+  failure.value = message;
+  errorField.value = field;
+  await nextTick();
+  if (field) form.value?.querySelector(`#audit-${field}`)?.focus();
+  else failureSummary.value?.focus();
+}
+async function submit() {
+  if (writing.value || !selected.value || !deciding.value) return;
+  const row = selected.value;
+  if (isCommunity(row) && (detailLoading.value || !details.value))
+    return invalid('请先加载完整内容再审核');
+  failure.value = '';
+  errorField.value = '';
+  if (needsReason.value && !reason.value.trim())
+    return invalid(
+      row.action === 'remove' ? '删除须填写原因' : '驳回须填写审核原因',
+      'reason',
+    );
+  if (row.type === 'dish' && row.action === 'approve') {
+    const message = validatePrice(price.value.trim(), { required: true });
+    if (message) return invalid(message, 'price');
   }
   writing.value = true;
   try {
-    if (row.type.startsWith('community-')) {
+    if (isCommunity(row)) {
       if (row.action === 'remove')
         await removeCommunityAsAdmin(communityType(row), row.id);
       else
@@ -122,10 +240,13 @@ async function submit() {
         action: row.action,
         reason: reason.value.trim() || null,
         ...(row.type === 'dish' && row.action === 'approve'
-          ? { price: Number(price.value) }
+          ? { price: Number(price.value.trim()) }
           : {}),
       });
+    if (!active) return;
+    drafts.delete(key(row));
     selected.value = null;
+    resetDetails();
     notice.value =
       row.action === 'remove'
         ? '内容已下架'
@@ -134,208 +255,108 @@ async function submit() {
           : '已驳回';
     if (items.value.length === 1 && page.value > 1) page.value--;
     else await load();
-  } catch (error) {
-    failure.value = error.message || '审核失败，请确认结果后再试';
+  } catch (e) {
+    if (active) await invalid(e.message || '审核失败，请确认结果后再试');
   } finally {
     writing.value = false;
   }
 }
+onBeforeUnmount(() => {
+  active = false;
+  resetDetails();
+});
 </script>
+
 <template>
   <section class="audit">
-    <h2 class="section-title">内容审核</h2>
-    <label
-      >审核状态<select v-model="status" :disabled="writing">
-        <option
-          v-for="key in ['pending', 'approved', 'rejected']"
-          :key="key"
-          :value="key"
-        >
-          {{ statusLabels[key] }}
-        </option>
-      </select></label
-    >
-    <label
-      >审核范围<select v-model="channel" :disabled="writing">
-        <option value="catalog">菜品与点评</option>
-        <option value="posts">社区食记</option>
-        <option value="comments">社区评论与回复</option>
-      </select></label
-    >
-    <p v-if="notice" role="status">{{ notice }}</p>
-    <LoadingState v-if="loading" /><ErrorState
-      v-else-if="error"
-      :description="error.message"
-      @retry="load"
-    /><EmptyState v-else-if="!items.length" title="暂无审核记录" />
-    <template v-else>
-      <article v-for="row in items" :key="row.type + row.id">
-        <h3>{{ labels[row.type] }} · {{ row.name || row.id }}</h3>
-        <p>{{ statusLabels[row.status] }}</p>
-        <p>ID：{{ row.id }}</p>
-        <PublisherDetails :row="row" />
-        <p v-if="row.rating">评分：{{ row.rating }} / 5</p>
-        <p v-if="row.content" class="text">{{ row.content }}</p>
-        <p v-if="row.type === 'dish'">{{ formatPrice(row.price) }}</p>
-        <MediaImage
-          v-if="row.imageUrl"
-          :src="row.imageUrl"
-          alt="待审核图片"
-          class="photo"
-        />
-        <AiVerdict
-          v-if="
-            [
-              'review',
-              'photo',
-              'dish-review-reply',
-              'community-post',
-              'community-comment',
-            ].includes(row.type)
-          "
-          :risk-level="row.aiRiskLevel"
-          :confidence="row.aiConfidence"
-          :labels="row.aiLabels"
-          :reason="row.aiReason"
-          :checked-at="row.aiCheckedAt"
-        />
-        <p v-if="row.reason" class="text">审核说明：{{ row.reason }}</p>
-        <div
-          v-if="
-            row.status === 'pending' ||
-            ([
-              'dish-review-reply',
-              'community-post',
-              'community-comment',
-            ].includes(row.type) &&
-              row.status === 'approved')
-          "
-        >
-          <form
-            v-if="selected?.id === row.id && selected?.type === row.type"
-            @submit.prevent="submit"
+    <header class="audit__heading">
+      <div>
+        <h2 class="section-title">内容审核</h2>
+        <p>按类型查看投稿，打开完整内容后确认审核。</p>
+      </div>
+      <button type="button" :disabled="loading || writing" @click="refresh">
+        {{ loading ? '加载中…' : '刷新列表' }}
+      </button>
+    </header>
+    <div class="audit__filters">
+      <fieldset>
+        <legend>审核状态</legend>
+        <div class="audit__choices">
+          <button
+            v-for="value in ['pending', 'approved', 'rejected']"
+            :key="value"
+            type="button"
+            :aria-pressed="status === value"
+            :disabled="writing"
+            @click="filter('status', value)"
           >
-            <template v-if="row.type.startsWith('community-')">
-              <p v-if="detailLoading" role="status">完整内容加载中…</p>
-              <section
-                v-if="details"
-                class="community-review-context"
-                aria-label="完整社区审核内容"
-              >
-                <PublisherDetails
-                  :row="{
-                    ...(details.comment || details.post),
-                    userEmail: details.userEmail,
-                  }"
-                />
-                <h4>{{ details.post.title }}</h4>
-                <p class="text">{{ details.post.content }}</p>
-                <CommunityImageViewer
-                  :images="details.post.images"
-                  :alt="details.post.title"
-                />
-                <template v-if="details.comment">
-                  <blockquote v-if="details.rootComment">
-                    一级评论：{{
-                      details.rootComment.deleted
-                        ? '已删除'
-                        : details.rootComment.content
-                    }}
-                  </blockquote>
-                  <blockquote v-if="details.replyToComment">
-                    实际回复对象：{{ details.replyToComment.userDisplayName }} ·
-                    {{
-                      details.replyToComment.deleted
-                        ? '已删除'
-                        : details.replyToComment.content
-                    }}
-                  </blockquote>
-                  <h4>
-                    本次待审核{{
-                      details.comment.rootCommentId ? '回复' : '评论'
-                    }}
-                  </h4>
-                  <p class="text">{{ details.comment.content }}</p>
-                </template>
-              </section>
-              <button
-                v-else-if="!detailLoading"
-                type="button"
-                @click="choose(row, selected.action)"
-              >
-                重试加载完整内容
-              </button>
-            </template>
-            <strong
-              >{{
-                selected.action === 'remove'
-                  ? '删除'
-                  : selected.action === 'approve'
-                    ? '通过'
-                    : '驳回'
-              }}这条{{ labels[row.type] }}投稿</strong
+            {{ statusLabels[value] }}
+          </button>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>内容类型</legend>
+        <div class="audit__choices">
+          <button
+            v-for="[value, label] in ranges"
+            :key="value"
+            type="button"
+            :aria-pressed="channel === value"
+            :disabled="writing"
+            @click="filter('channel', value)"
+          >
+            {{ label }}
+          </button>
+        </div>
+      </fieldset>
+    </div>
+    <p v-if="notice" class="audit__notice" role="status">
+      {{ notice }}{{ error ? '，但列表更新失败，请刷新列表核对。' : '' }}
+    </p>
+    <p ref="resultsHeading" class="audit__summary" aria-live="polite">
+      {{ statusLabels[status] }} ·
+      {{ ranges.find(([value]) => value === channel)?.[1]
+      }}<template v-if="!loading && !error"> · 共 {{ total }} 条</template>
+    </p>
+    <LoadingState v-if="loading" />
+    <ErrorState v-else-if="error" :description="error.message" @retry="load" />
+    <EmptyState v-else-if="!items.length" title="当前筛选下暂无审核记录" />
+    <template v-else>
+      <article v-for="row in items" :key="key(row)" class="audit-card">
+        <header>
+          <h3>
+            {{ labels[row.type] || '投稿' }} · {{ row.name || '未命名投稿' }}
+          </h3>
+          <span class="audit-card__status">{{ statusLabels[row.status] }}</span>
+        </header>
+        <AuditContent :row="row" />
+        <div class="audit__actions">
+          <button type="button" :disabled="writing" @click="choose(row)">
+            查看完整内容
+          </button>
+          <template v-if="row.status === 'pending'">
+            <button
+              type="button"
+              :disabled="writing"
+              @click="choose(row, 'approve')"
             >
-            <label v-if="row.type === 'dish' && selected.action === 'approve'"
-              >正式价格<input
-                v-model="price"
-                inputmode="decimal"
-                :disabled="writing"
-            /></label>
-            <label
-              v-if="
-                !(
-                  row.type.startsWith('community-') &&
-                  selected.action === 'remove'
-                )
-              "
-              >审核说明{{
-                selected.action !== 'approve' ? '（必填）' : '（选填）'
-              }}<textarea
-                v-model="reason"
-                :disabled="writing"
-                rows="3"
-                maxlength="500"
-              />
-            </label>
-            <p v-if="failure" role="alert">{{ failure }}</p>
-            <div>
-              <button
-                type="button"
-                :disabled="writing"
-                @click="selected = null"
-              >
-                取消</button
-              ><button
-                type="submit"
-                :disabled="
-                  writing ||
-                  detailLoading ||
-                  (row.type.startsWith('community-') && !details)
-                "
-              >
-                {{
-                  writing
-                    ? '处理中…'
-                    : selected.action === 'remove'
-                      ? '确认删除'
-                      : '确认审核'
-                }}
-              </button>
-            </div>
-          </form>
-          <div v-else-if="row.status === 'pending'">
-            <button :disabled="writing" @click="choose(row, 'approve')">
-              通过</button
-            ><button :disabled="writing" @click="choose(row, 'reject')">
+              通过
+            </button>
+            <button
+              type="button"
+              :disabled="writing"
+              @click="choose(row, 'reject')"
+            >
               驳回
             </button>
-          </div>
-          <button v-else :disabled="writing" @click="choose(row, 'remove')">
-            {{
-              row.type.startsWith('community-')
-                ? '下架违规社区内容'
-                : '删除违规回复'
-            }}
+          </template>
+          <button
+            v-else-if="canRemove(row)"
+            type="button"
+            :disabled="writing"
+            @click="choose(row, 'remove')"
+          >
+            {{ isCommunity(row) ? '下架违规社区内容' : '删除违规回复' }}
           </button>
         </div>
       </article>
@@ -345,134 +366,347 @@ async function submit() {
       :total="total"
       :size="size"
       :disabled="loading || writing"
-      @change="
-        selected = null;
-        page = $event;
-      "
+      @change="changePage"
     />
   </section>
+  <ElDialog
+    :model-value="Boolean(selected)"
+    class="audit-dialog"
+    :title="dialogTitle"
+    width="min(880px, calc(100vw - 24px))"
+    top="16px"
+    append-to-body
+    destroy-on-close
+    :close-on-click-modal="false"
+    :close-on-press-escape="!writing"
+    :show-close="!writing"
+    @update:model-value="
+      (value) => {
+        if (!value) closeSelection();
+      }
+    "
+  >
+    <div v-if="selected" class="audit-dialog__body">
+      <AuditContent :row="selected" :details="details" full />
+      <p v-if="detailLoading" role="status">完整内容加载中…</p>
+      <div
+        v-else-if="detailFailure"
+        class="audit-dialog__detail-error"
+        role="alert"
+      >
+        <p>{{ detailFailure }}</p>
+        <button type="button" @click="loadDetails(selected)">
+          重试加载完整内容
+        </button>
+      </div>
+      <form
+        v-if="deciding"
+        id="audit-decision"
+        ref="form"
+        @submit.prevent="submit"
+      >
+        <h3>
+          {{
+            selected.action === 'approve'
+              ? '确认通过'
+              : selected.action === 'reject'
+                ? '确认驳回'
+                : '确认下架'
+          }}这条{{ labels[selected.type] }}投稿
+        </h3>
+        <label
+          v-if="selected.type === 'dish' && selected.action === 'approve'"
+          for="audit-price"
+          >正式价格（元，必填）<input
+            id="audit-price"
+            v-model="price"
+            inputmode="decimal"
+            :disabled="writing"
+            :aria-invalid="errorField === 'price'"
+            :aria-describedby="
+              errorField === 'price' ? 'audit-failure' : undefined
+            "
+        /></label>
+        <label
+          v-if="!(isCommunity(selected) && selected.action === 'remove')"
+          for="audit-reason"
+          >审核说明{{ needsReason ? '（必填）' : '（选填）'
+          }}<textarea
+            id="audit-reason"
+            v-model="reason"
+            :disabled="writing"
+            :aria-invalid="errorField === 'reason'"
+            :aria-describedby="
+              errorField === 'reason' ? 'audit-failure' : undefined
+            "
+            rows="3"
+            maxlength="500"
+          />
+        </label>
+        <p v-if="selected.action === 'remove'">
+          确认后内容将停止公开展示，请核对后操作。
+        </p>
+      </form>
+      <div
+        v-if="failure"
+        id="audit-failure"
+        ref="failureSummary"
+        class="audit-dialog__failure"
+        role="alert"
+        tabindex="-1"
+      >
+        <p>{{ failure }}</p>
+        <button type="button" :disabled="writing" @click="refresh">
+          关闭并刷新审核列表
+        </button>
+      </div>
+    </div>
+    <template #footer>
+      <div v-if="selected" class="audit-dialog__footer">
+        <span>{{ writing ? '正在提交，请稍候…' : '核对内容后再确认' }}</span>
+        <div class="audit__actions">
+          <button type="button" :disabled="writing" @click="closeSelection">
+            {{ deciding ? '取消' : '关闭' }}
+          </button>
+          <template v-if="!deciding && selected.status === 'pending'">
+            <button
+              type="button"
+              :disabled="detailLoading || (isCommunity(selected) && !details)"
+              @click="action('approve')"
+            >
+              通过此投稿
+            </button>
+            <button
+              type="button"
+              :disabled="detailLoading || (isCommunity(selected) && !details)"
+              @click="action('reject')"
+            >
+              驳回此投稿
+            </button>
+          </template>
+          <button
+            v-else-if="deciding"
+            type="submit"
+            form="audit-decision"
+            class="audit-confirm"
+            :disabled="
+              writing || detailLoading || (isCommunity(selected) && !details)
+            "
+          >
+            {{
+              writing
+                ? '处理中…'
+                : selected.action === 'remove'
+                  ? '确认删除'
+                  : '确认审核'
+            }}
+          </button>
+        </div>
+      </div>
+    </template>
+  </ElDialog>
 </template>
+
 <style scoped>
 .audit {
-  max-width: 1000px;
+  max-width: 1100px;
   margin: auto;
   overflow-wrap: anywhere;
 }
-.audit > .section-title {
-  margin-bottom: 14px;
+.audit__heading,
+.audit-card > header,
+.audit-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
 }
-.audit > label {
-  display: inline-grid;
-  gap: 6px;
-  min-width: min(100%, 260px);
-  margin-bottom: 12px;
+.audit__heading p,
+.audit__summary {
   color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-sm);
+  margin: 8px 0 16px;
 }
-.audit > label::before {
-  content: '审核筛选';
-  color: var(--zine-stamp-red);
-  font-family: var(--zine-handwriting-font);
-  font-size: 18px;
+.audit__summary {
+  scroll-margin-top: 120px;
 }
-article {
+.audit__filters {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  margin: 16px 0;
+  border: 1px solid var(--ft-color-border);
+  background: var(--zine-paper-card-alt);
+}
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+legend {
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.audit__choices,
+.audit__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.audit button,
+.audit-dialog__body button,
+.audit-dialog__footer button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text);
+  cursor: pointer;
+  font: inherit;
+}
+.audit button:hover:not(:disabled),
+.audit-dialog__footer button:hover:not(:disabled) {
+  background: var(--ft-color-surface-ink);
+}
+.audit button[aria-pressed='true'] {
+  color: var(--zine-paper-card);
+  background: var(--ft-color-secondary);
+  box-shadow: 2px 2px 0 var(--ft-color-primary);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ft-color-primary);
+  outline-offset: 3px;
+}
+.audit__notice {
+  padding: 12px;
+  border-left: 3px solid var(--ft-color-accent);
+  background: var(--zine-paper-card-alt);
+}
+.audit-card {
   padding: 20px;
   margin: 20px 0;
   background: var(--zine-paper-card);
   border: 1px solid var(--ft-color-secondary);
-  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
-  clip-path: none;
+  box-shadow: 4px 5px 0 var(--zine-paper-shadow);
 }
-article:nth-of-type(even) {
-  transform: none;
+.audit-card > header {
+  margin-bottom: 16px;
 }
-article:nth-of-type(odd) {
-  transform: none;
+.audit-card h3 {
+  font: 700 22px/1.4 var(--ft-font-family-title);
+  margin: 0;
+  overflow-wrap: anywhere;
 }
-article > p {
-  margin: 8px 0;
+.audit-card__status {
   color: var(--ft-color-text-muted);
+  padding: 4px 8px;
+  border: 1px dashed var(--ft-color-border);
 }
-h3 {
-  font-family: var(--ft-font-family-title);
-  font-size: clamp(24px, 3vw, 34px);
-  line-height: 1.08;
-  color: var(--ft-color-secondary);
+.audit-card .audit__actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ft-color-border);
 }
-.text {
-  white-space: pre-wrap;
+.audit-dialog__body {
+  overflow-wrap: anywhere;
 }
-.photo {
-  width: min(100%, 480px);
-  height: 270px;
-  margin: 16px 0;
-  border: 6px solid #fffaf0;
-  box-shadow: 3px 4px 0 rgb(58 36 24 / 18%);
-  transform: rotate(-1deg);
+.audit-dialog__body form {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--zine-paper-card-alt);
+  border: 1px dashed var(--ft-color-secondary);
 }
-form,
-label {
+.audit-dialog__body h3 {
+  margin: 0;
+}
+.audit-dialog__body label {
   display: grid;
   gap: 8px;
 }
-form {
-  gap: 16px;
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px dashed var(--ft-color-secondary);
-  background: var(--zine-paper-card-alt);
-}
-form strong {
-  color: var(--zine-stamp-red);
-  font-family: var(--zine-handwriting-font);
-  font-size: 20px;
-}
-button,
-select,
-input,
-textarea {
-  padding: 10px;
+.audit-dialog__body input,
+.audit-dialog__body textarea {
+  min-width: 0;
+  width: 100%;
   min-height: 44px;
+  padding: 10px;
+  font: inherit;
   border: 1px solid var(--ft-color-secondary);
-  background: #fffaf0;
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text);
+  box-sizing: border-box;
 }
-button {
-  margin: 8px 12px 0 0;
-  border-color: var(--ft-color-secondary);
-  box-shadow: 2px 2px 0 var(--ft-color-secondary);
-  color: var(--ft-color-secondary);
-  font-weight: 700;
-  cursor: pointer;
+.audit-dialog__body [aria-invalid='true'] {
+  border-color: var(--ft-color-danger);
 }
-button:hover:not(:disabled) {
-  background: var(--ft-color-secondary);
-  color: #fffaf0;
-  transform: translate(-1px, -1px);
-}
-[role='status'] {
-  display: inline-block;
-  padding: 6px 12px;
-  border: 2px solid var(--zine-stamp-blue);
-  color: var(--zine-stamp-blue);
-  font-family: var(--zine-handwriting-font);
-  transform: rotate(-2deg);
-}
-[role='alert'] {
+.audit-dialog__failure,
+.audit-dialog__detail-error {
   color: var(--ft-color-danger);
-  font-weight: 700;
+}
+.audit-dialog__footer {
+  text-align: left;
+}
+.audit-dialog__footer > span {
+  color: var(--ft-color-text-muted);
+}
+.audit-dialog__footer .audit-confirm {
+  background: var(--ft-color-primary);
+  color: var(--zine-paper-card);
+  border-color: var(--ft-color-primary);
+}
+.audit-dialog__footer .audit-confirm:hover:not(:disabled) {
+  background: var(--ft-color-primary-strong);
+}
+:global(.audit-dialog) {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  margin-bottom: 16px;
+  --el-dialog-bg-color: var(--zine-paper-card);
+  border: 1px solid var(--ft-color-secondary);
+}
+:global(.audit-dialog .el-dialog__header) {
+  padding: 20px 48px 16px 20px;
+  margin: 0;
+  flex-shrink: 0;
+}
+:global(.audit-dialog .el-dialog__title) {
+  color: var(--ft-color-text);
+  font-family: var(--ft-font-family-title);
+  overflow-wrap: anywhere;
+}
+:global(.audit-dialog .el-dialog__body) {
+  padding: 0 20px 20px;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-gutter: stable;
+}
+:global(.audit-dialog .el-dialog__footer) {
+  padding: 16px 20px;
+  border-top: 1px solid var(--ft-color-border);
+  background: var(--zine-paper-card);
+  flex-shrink: 0;
 }
 @media (max-width: 560px) {
-  article,
-  article:nth-of-type(even),
-  article:nth-of-type(odd) {
-    padding: 16px;
-    box-shadow: var(--app-mobile-shadow);
-    transform: none;
+  .audit__filters,
+  .audit-card {
+    padding: 14px;
   }
-  .photo {
-    height: auto;
-    aspect-ratio: 16 / 10;
-    object-fit: cover;
+  .audit-dialog__footer {
+    gap: 8px;
+  }
+  .audit-dialog__footer > span {
+    display: none;
   }
 }
 </style>

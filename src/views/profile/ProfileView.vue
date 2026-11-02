@@ -10,6 +10,7 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import InkButton from '@/components/base/InkButton.vue';
 import ProfileEditor from './ProfileEditor.vue';
+import SchoolEmailBinder from '@/components/profile/SchoolEmailBinder.vue';
 const auth = useAuthStore();
 const router = useRouter();
 const {
@@ -31,6 +32,11 @@ function saved(user) {
   profile.value = user;
   editing.value = false;
   profileStatus.value = '个人资料已更新';
+}
+async function onSchoolEmailBound(updated) {
+  auth.setSession({ user: updated });
+  profile.value = updated;
+  profileStatus.value = '学校邮箱绑定成功，已解锁发布权限';
 }
 async function logout() {
   if (exiting.value) return;
@@ -78,6 +84,10 @@ async function logout() {
         <span class="zine-chip">{{ profile.email }}</span>
         <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
+      <SchoolEmailBinder
+        v-if="!profile.schoolEmailVerified"
+        @bound="onSchoolEmailBound"
+      />
       <div class="profile-page__follows" aria-label="关注统计">
         <RouterLink :to="{ name: 'myFollowing' }">
           <strong>{{ profile.followingCount ?? 0 }}</strong>
