@@ -38,9 +38,8 @@ function handleResize() {
 const columnCount = computed(() => (screenWidth.value <= 768 ? 2 : 3));
 
 function openCreateModal(prefill = null) {
-  if (prefill) {
-    prefillData.value = prefill;
-  }
+  // 预填数据只属于一次发帖入口；普通发帖必须从空表单开始。
+  prefillData.value = prefill || {};
   isCreateModalOpen.value = true;
 }
 
@@ -120,6 +119,8 @@ function changeMode(next) {
   loadFeed();
 }
 function handlePostCreated() {
+  // 提交成功后，旧的点评预填内容不能再次注入新弹窗。
+  prefillData.value = {};
   changeMode('mine');
 }
 
@@ -231,7 +232,7 @@ onUnmounted(() => {
       class="community-fab-btn"
       aria-label="发布新帖子"
       title="发布新美食帖"
-      @click="isCreateModalOpen = true"
+      @click="openCreateModal()"
     >
       <span class="community-fab-btn__icon">+</span>
     </button>
