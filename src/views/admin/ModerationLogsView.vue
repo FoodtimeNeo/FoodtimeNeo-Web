@@ -11,6 +11,10 @@ import MediaImage from '@/components/base/MediaImage.vue';
 const { items, page, total, size, loading, error, load } =
   usePagedData(fetchModerationLogs);
 const types = {
+  'hall-review': '餐厅点评',
+  'stall-review': '档口点评',
+  'hall-review-reply': '餐厅点评回复',
+  'stall-review-reply': '档口点评回复',
   review: '点评',
   dish: '菜品',
   stall: '档口',
@@ -30,7 +34,14 @@ const types = {
     /><EmptyState v-else-if="!items.length" title="暂无审核日志" />
     <article v-for="row in !loading && !error ? items : []" :key="row.id">
       <h3>
-        {{ types[row.type] }} · {{ row.action === 'approve' ? '通过' : '驳回' }}
+        {{ types[row.type] }} ·
+        {{
+          row.action === 'approve'
+            ? '通过'
+            : row.action === 'remove'
+              ? '下架'
+              : '驳回'
+        }}
       </h3>
       <p>日志 ID：{{ row.id }}</p>
       <p>投稿 ID：{{ row.submissionId }}</p>

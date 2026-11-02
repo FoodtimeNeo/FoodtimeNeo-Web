@@ -36,12 +36,27 @@ defineProps({
     <div class="stall-entry__content">
       <span class="stamp">档口</span>
       <h3 class="stall-entry__name">{{ stall.name }}</h3>
+      <p class="stall-entry__score">
+        {{
+          stall.averageScore == null
+            ? '暂无评分'
+            : Number(stall.averageScore).toFixed(1) +
+              ' 分 · ' +
+              stall.reviewCount +
+              ' 人评价'
+        }}
+      </p>
       <span class="stall-entry__link handwrite">看看菜单 →</span>
     </div>
   </RouterLink>
 </template>
 
 <style scoped lang="scss">
+.stall-entry__score {
+  color: var(--ft-color-primary);
+  font-size: 14px;
+  margin: 8px 0;
+}
 .stall-entry {
   position: relative;
   display: block;

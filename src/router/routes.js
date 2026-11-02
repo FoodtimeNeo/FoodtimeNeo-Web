@@ -4,6 +4,39 @@
  */
 export const routes = [
   {
+    path: '/venue/:type/:targetId/reviews',
+    name: 'venueReviews',
+    component: () => import('@/views/venue/VenueReviewsView.vue'),
+    meta: {
+      title: '餐厅与档口点评',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
+  },
+  {
+    path: '/venue/:type/:targetId/reviews/new',
+    name: 'venueReviewCreate',
+    component: () => import('@/views/venue/VenueReviewsView.vue'),
+    meta: {
+      title: '写点评',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
+  },
+  {
+    path: '/profile/venue-reviews',
+    name: 'myVenueReviews',
+    component: () => import('@/views/profile/MyVenueReviewsView.vue'),
+    meta: {
+      title: '我的餐厅与档口点评',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/landing',
     name: 'landing',
     component: () => import('@/views/landing/LandingView.vue'),

@@ -19,7 +19,7 @@ import CanteenDetailView from './CanteenDetailView.vue';
 
 function mountView() {
   return mount(CanteenDetailView, {
-    global: { stubs: { RouterLink: RouterLinkStub } },
+    global: { stubs: { RouterLink: RouterLinkStub, VenueRatingSummary: true } },
   });
 }
 
