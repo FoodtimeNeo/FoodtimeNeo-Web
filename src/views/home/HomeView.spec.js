@@ -46,7 +46,7 @@ describe('HomeView', () => {
     mockPush.mockReset();
   });
 
-  it('展示 01 食堂手账 与 02 社区动态两大章节，且社区采用紧凑瀑布流渲染', async () => {
+  it('展示 01 今日推荐、02 食堂手账与 03 社区动态，且社区采用紧凑瀑布流渲染', async () => {
     fetchCanteens.mockResolvedValue([
       { id: 'c1', name: '学一餐厅', description: '老牌食堂' },
     ]);
@@ -71,7 +71,11 @@ describe('HomeView', () => {
     const wrapper = mountHome();
     await flushPromises();
 
-    // 01 食堂部分
+    // 01 今日推荐部分
+    expect(wrapper.text()).toContain('今日推荐');
+    expect(wrapper.text()).toContain('红烧牛肉面');
+
+    // 02 食堂部分
     expect(wrapper.text()).toContain('选择今天的食堂');
     expect(wrapper.text()).toContain('学一餐厅');
 
