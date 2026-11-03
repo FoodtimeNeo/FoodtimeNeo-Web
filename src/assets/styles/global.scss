@@ -55,7 +55,7 @@ body {
 
 body::before,
 body::after {
-  position: fixed;
+  position: absolute;
   z-index: 0;
   inset: 0;
   content: '';
@@ -65,7 +65,6 @@ body::after {
 body::before {
   background: var(--zine-texture-grain) repeat;
   background-size: 200px 200px;
-  mix-blend-mode: multiply;
   opacity: 0.28;
 }
 
@@ -84,7 +83,6 @@ body::after {
       transparent 1px,
       transparent 10px
     );
-  mix-blend-mode: multiply;
   opacity: 0.58;
 }
 
