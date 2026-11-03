@@ -18,6 +18,7 @@ const auth = useAuthStore();
 let requestVersion = 0;
 let controller;
 let resizeObserver;
+let resizeFrame;
 
 function actorKey() {
   const user = auth.user;
@@ -85,14 +86,21 @@ watch([activeDays, activeMetric], () => {
 });
 watch(chartElement, (element) => {
   resizeObserver?.disconnect();
+  cancelAnimationFrame(resizeFrame);
   if (!element) return;
   const measure = () => {
     const width = element.getBoundingClientRect().width;
-    if (width > 0) chartWidth.value = width;
+    if (width > 0 && Math.abs(chartWidth.value - width) > 0.5)
+      chartWidth.value = width;
   };
   measure();
   if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(measure);
+    // Defer SVG layout changes until the next frame so they cannot trigger
+    // another resize during the current observer notification cycle.
+    resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(measure);
+    });
     resizeObserver.observe(element);
   }
 });
@@ -100,6 +108,7 @@ onMounted(() => document.addEventListener('visibilitychange', foreground));
 onBeforeUnmount(() => {
   reset();
   resizeObserver?.disconnect();
+  cancelAnimationFrame(resizeFrame);
   document.removeEventListener('visibilitychange', foreground);
 });
 
