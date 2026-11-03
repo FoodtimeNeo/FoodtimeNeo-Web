@@ -123,12 +123,11 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 }
 
 .desk-decor {
-  position: fixed;
+  position: absolute;
   z-index: 0;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  mix-blend-mode: multiply;
   pointer-events: none;
 }
 

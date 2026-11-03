@@ -37,7 +37,15 @@ const isWheeling = ref(false);
 let wheelVelocity = 0;
 let wheelFrameId = 0;
 let wheelIdleTimer = null;
+let cachedLoopDistance = 0;
+let isLoopDistanceValid = false;
+let measuredLoopCount = -1;
+let geometryObserver = null;
+let childObserver = null;
 
+function invalidateLoopDistance() {
+  isLoopDistanceValid = false;
+}
 const sourceItems = computed(() => props.items ?? props.canteens);
 const displayItems = computed(() =>
   sourceItems.value.length > 1
@@ -197,20 +205,28 @@ function getLoopDistance() {
   const target = trackRef.value;
   if (!target) return 0;
   const loopCount = sourceItems.value.length;
+  if (isLoopDistanceValid && measuredLoopCount === loopCount) {
+    return cachedLoopDistance;
+  }
+  measuredLoopCount = loopCount;
+  isLoopDistanceValid = true;
   if (loopCount > 1 && target.children.length >= loopCount * 2) {
     const firstItem = target.children[0];
     const secondLoopFirstItem = target.children[loopCount];
     if (firstItem && secondLoopFirstItem) {
       const distance = secondLoopFirstItem.offsetLeft - firstItem.offsetLeft;
       if (Number.isFinite(distance) && distance > 1) {
-        return distance;
+        cachedLoopDistance = distance;
+        return cachedLoopDistance;
       }
     }
   }
   const fallbackDistance = target.scrollWidth - target.clientWidth;
-  return Number.isFinite(fallbackDistance) && fallbackDistance > 1
-    ? fallbackDistance
-    : 0;
+  cachedLoopDistance =
+    Number.isFinite(fallbackDistance) && fallbackDistance > 1
+      ? fallbackDistance
+      : 0;
+  return cachedLoopDistance;
 }
 
 function handleWheel(event) {
@@ -277,6 +293,19 @@ onMounted(() => {
   if (root) {
     root.addEventListener('wheel', handleWheel, { passive: false });
   }
+  const track = trackRef.value;
+  if (track) {
+    if (typeof ResizeObserver !== 'undefined') {
+      geometryObserver = new ResizeObserver(invalidateLoopDistance);
+      geometryObserver.observe(track);
+    }
+    if (typeof MutationObserver !== 'undefined') {
+      childObserver = new MutationObserver(invalidateLoopDistance);
+      childObserver.observe(track, { childList: true });
+    }
+    window.addEventListener('resize', invalidateLoopDistance);
+    getLoopDistance();
+  }
 });
 
 onUnmounted(() => {
@@ -285,6 +314,13 @@ onUnmounted(() => {
   if (root) {
     root.removeEventListener('wheel', handleWheel);
   }
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', invalidateLoopDistance);
+  }
+  geometryObserver?.disconnect();
+  childObserver?.disconnect();
+  geometryObserver = null;
+  childObserver = null;
 });
 </script>
 
@@ -411,7 +447,6 @@ onUnmounted(() => {
     cursor: grab;
     touch-action: pan-x;
     user-select: none;
-    will-change: scroll-position;
 
     &::-webkit-scrollbar {
       display: none;
@@ -578,7 +613,6 @@ onUnmounted(() => {
     pointer-events: none;
     z-index: 1;
     opacity: 0.6;
-    mix-blend-mode: multiply;
   }
 
   &__tape {
@@ -591,7 +625,6 @@ onUnmounted(() => {
     background: rgba(255, 255, 255, 0.76);
     border: 1px solid rgba(58, 36, 24, 0.16);
     box-shadow: 0 1px 3px rgba(58, 36, 24, 0.08);
-    backdrop-filter: blur(1.5px);
     z-index: 2;
     pointer-events: none;
     overflow: hidden;
@@ -683,6 +716,7 @@ onUnmounted(() => {
 
   .zine-rating-stamp {
     display: inline-flex;
+    mix-blend-mode: normal;
     align-items: center;
     justify-content: center;
     width: 32px;
