@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { allowMediaSession, invalidateMedia } from '@/utils/mediaLoader.js';
 import { clearSession } from '@/utils/authSession.js';
+import { clearVenueDrafts } from '@/utils/venueDrafts.js';
 import { ApiError, invalidateSession } from '@/api/http.js';
 import {
   login as loginApi,
@@ -10,7 +11,10 @@ import {
 } from '@/api/auth.api.js';
 const pendingRefresh = new WeakMap();
 function normalizeUser(user) {
-  if (!user?.id || !['user', 'admin', 'superadmin'].includes(user.role))
+  if (
+    !user?.id ||
+    !['visitor', 'user', 'admin', 'superadmin'].includes(user.role)
+  )
     throw new ApiError('用户响应不符合接口约定', { code: 'PROTOCOL' });
   return {
     id: user.id,
@@ -40,6 +44,7 @@ export const useAuthStore = defineStore('auth', {
       this.revision += 1;
     },
     clear() {
+      clearVenueDrafts();
       invalidateMedia();
       this.user = null;
       this.initialized = true;

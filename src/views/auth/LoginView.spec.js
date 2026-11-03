@@ -32,7 +32,7 @@ describe('LoginView', () => {
     const wrapper = mount(LoginView);
     await wrapper.find('form').trigger('submit.prevent');
     expect(login).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain('请输入邮箱');
+    expect(wrapper.text()).toContain('请输入邮箱或学号');
   });
 
   it('登录成功后跳转到 redirect 目标', async () => {

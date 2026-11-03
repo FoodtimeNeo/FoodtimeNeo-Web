@@ -46,7 +46,6 @@ let childObserver = null;
 function invalidateLoopDistance() {
   isLoopDistanceValid = false;
 }
-
 const sourceItems = computed(() => props.items ?? props.canteens);
 const displayItems = computed(() =>
   sourceItems.value.length > 1

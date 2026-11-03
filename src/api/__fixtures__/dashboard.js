@@ -1,4 +1,5 @@
 const sample = {
+  totalUsers: 1286,
   registeredUsers: 1248,
   onlineUsers: 86,
   reviews: 3862,
@@ -68,6 +69,23 @@ const sample = {
   ],
 };
 
-export function dashboardFixture() {
-  return JSON.parse(JSON.stringify(sample));
+export function dashboardFixture(days = 7) {
+  const data = JSON.parse(JSON.stringify(sample));
+  if (days === 30) {
+    const earlier = Array.from({ length: 23 }, (_, index) => ({
+      day: `2026-10-${String(index + 1).padStart(2, '0')}`,
+      newUsers: 2,
+      newReviews: 3,
+      newReplies: 4,
+      newPosts: 1,
+      onlinePeak: 12,
+    }));
+    data.trend.unshift(...earlier);
+  }
+  let total = data.totalUsers;
+  for (let index = data.trend.length - 1; index >= 0; index--) {
+    data.trend[index].totalUsers = total;
+    total -= data.trend[index].newUsers;
+  }
+  return data;
 }

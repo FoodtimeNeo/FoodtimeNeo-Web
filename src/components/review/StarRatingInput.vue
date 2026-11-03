@@ -8,14 +8,26 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 const options = ref(null);
+const previewRating = ref(null);
 const rating = computed(() =>
   Number.isInteger(props.modelValue) && props.modelValue >= 1
     ? Math.min(props.modelValue, 5)
     : 0,
 );
+const displayedRating = computed(() =>
+  props.disabled ? rating.value : (previewRating.value ?? rating.value),
+);
+
+function preview(star, event) {
+  if (!props.disabled && event.pointerType !== 'touch')
+    previewRating.value = star;
+}
 
 function select(nextRating) {
-  if (!props.disabled) emit('update:modelValue', nextRating);
+  if (!props.disabled) {
+    previewRating.value = null;
+    emit('update:modelValue', nextRating);
+  }
 }
 
 async function onKeydown(event) {
@@ -49,25 +61,46 @@ async function onKeydown(event) {
       role="radiogroup"
       aria-label="星级评分，满分 5 分"
       @keydown="onKeydown"
+      @pointerleave="previewRating = null"
     >
       <button
         v-for="star in 5"
         :key="star"
         class="star-rating__star"
-        :class="{ 'is-active': star <= rating }"
+        :class="{ 'is-active': star <= displayedRating }"
         type="button"
         role="radio"
         :aria-checked="star === rating"
         :aria-label="`${star} 星`"
         :tabindex="star === (rating || 1) ? 0 : -1"
         :disabled="disabled"
+        @pointerenter="preview(star, $event)"
         @click="select(star)"
       >
-        <span aria-hidden="true">★</span>
+        <svg
+          class="star-rating__icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="m12 2.5 2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.52l-5.88 3.09 1.12-6.55L2.48 9.42l6.58-.96Z"
+            :fill="star <= displayedRating ? 'currentColor' : 'none'"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+          />
+        </svg>
       </button>
     </div>
     <output class="star-rating__value" aria-live="polite">
-      {{ rating ? `${rating} / 5` : '尚未评分' }}
+      {{
+        previewRating !== null && !disabled
+          ? `预览 ${displayedRating} / 5，点击确认`
+          : rating
+            ? `${rating} / 5`
+            : '尚未评分'
+      }}
     </output>
   </fieldset>
 </template>
@@ -107,8 +140,6 @@ async function onKeydown(event) {
       color var(--ft-transition-fast),
       transform var(--ft-transition-fast);
 
-    &:hover,
-    &:focus-visible,
     &.is-active {
       color: var(--zine-foil-gold);
     }
@@ -126,6 +157,14 @@ async function onKeydown(event) {
       cursor: wait;
       opacity: 0.6;
     }
+  }
+
+  &__icon {
+    display: block;
+    width: 34px;
+    height: 34px;
+    margin: auto;
+    pointer-events: none;
   }
 
   &__value {

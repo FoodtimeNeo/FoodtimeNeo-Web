@@ -1,4 +1,5 @@
 <script setup>
+import VenueRatingSummary from '@/components/venue/VenueRatingSummary.vue';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
@@ -74,6 +75,7 @@ const { query, matches: filteredStalls } = useCatalogSearch(
           >
             <span class="stamp">{{ stalls.length }} 个档口</span>
           </div>
+          <VenueRatingSummary type="hall" :target-id="canteenId" />
           <RouterLink
             class="button-ink"
             :to="{ name: 'stallSubmission', params: { canteenId } }"

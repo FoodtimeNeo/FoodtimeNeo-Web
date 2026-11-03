@@ -1,8 +1,9 @@
 import { http, getCsrf, invalidateSession } from './http.js';
+import { normalizeLoginId } from '@/utils/authValidators.js';
 export async function login({ loginId, password }) {
   const data = await http.post(
     '/auth/login',
-    { account: loginId.trim().toLowerCase(), password },
+    { account: normalizeLoginId(loginId).toLowerCase(), password },
     { skipUnauthorized: true },
   );
   invalidateSession();

@@ -3,6 +3,56 @@ import { flushPromises, mount } from '@vue/test-utils';
 import StarRatingInput from './StarRatingInput.vue';
 
 describe('StarRatingInput', () => {
+  it('点击高分连续点亮前面的星，降低评分同步熄灭多余的星', async () => {
+    const wrapper = mount(StarRatingInput, {
+      props: {
+        modelValue: 0,
+        'onUpdate:modelValue': (value) =>
+          wrapper.setProps({ modelValue: value }),
+      },
+    });
+    await wrapper.get('[aria-label="5 星"]').trigger('click');
+    await flushPromises();
+    expect(wrapper.findAll('path[fill="currentColor"]')).toHaveLength(5);
+    expect(wrapper.get('output').text()).toBe('5 / 5');
+    await wrapper.get('[aria-label="3 星"]').trigger('click');
+    await flushPromises();
+    expect(wrapper.findAll('path[fill="currentColor"]')).toHaveLength(3);
+    expect(wrapper.findAll('path[fill="none"]')).toHaveLength(2);
+    expect(wrapper.findAll('[aria-checked="true"]')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  it('悬停预览连续点亮但不提交分数，移出后恢复已选分数', async () => {
+    const wrapper = mount(StarRatingInput, { props: { modelValue: 2 } });
+    await wrapper
+      .get('[aria-label="4 星"]')
+      .trigger('pointerenter', { pointerType: 'mouse' });
+    expect(wrapper.findAll('path[fill="currentColor"]')).toHaveLength(4);
+    expect(wrapper.get('output').text()).toContain('预览 4 / 5');
+    expect(wrapper.get('[aria-label="2 星"]').attributes('aria-checked')).toBe(
+      'true',
+    );
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined();
+    await wrapper.get('[role="radiogroup"]').trigger('pointerleave');
+    expect(wrapper.findAll('path[fill="currentColor"]')).toHaveLength(2);
+    expect(wrapper.get('output').text()).toBe('2 / 5');
+    wrapper.unmount();
+  });
+
+  it('触屏不保留悬停预览，禁用时不产生高亮预览', async () => {
+    const wrapper = mount(StarRatingInput, { props: { modelValue: 1 } });
+    await wrapper
+      .get('[aria-label="5 星"]')
+      .trigger('pointerenter', { pointerType: 'touch' });
+    expect(wrapper.findAll('path[fill="currentColor"]')).toHaveLength(1);
+    await wrapper.setProps({ disabled: true });
+    await wrapper
+      .get('[aria-label="4 星"]')
+      .trigger('pointerenter', { pointerType: 'mouse' });
+    expect(wrapper.findAll('path[fill="currentColor"]')).toHaveLength(1);
+    wrapper.unmount();
+  });
   it('点击星星时通过 v-model 事件输出 1–5 的整数评分', async () => {
     const wrapper = mount(StarRatingInput, { props: { modelValue: 0 } });
     await wrapper.get('[aria-label="4 星"]').trigger('click');

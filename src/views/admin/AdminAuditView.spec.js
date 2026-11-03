@@ -15,6 +15,11 @@ const communityApi = vi.hoisted(() => ({
   removeCommunityAsAdmin: vi.fn(),
 }));
 vi.mock('@/api/community.api.js', () => communityApi);
+const venueApi = vi.hoisted(() => ({
+  fetchVenueAuditDetail: vi.fn(),
+  removeVenueAsAdmin: vi.fn(),
+}));
+vi.mock('@/api/venue-review.api.js', () => venueApi);
 import AdminAuditView from './AdminAuditView.vue';
 const render = () =>
   mount(AdminAuditView, {
@@ -36,6 +41,7 @@ beforeEach(() => {
     ...Object.values(api),
     ...Object.values(replyApi),
     ...Object.values(communityApi),
+    ...Object.values(venueApi),
   ])
     mock.mockReset();
   api.submitAudit.mockResolvedValue({ status: 'approved' });
@@ -55,6 +61,30 @@ beforeEach(() => {
     size: 20,
     total: 1,
   });
+});
+it('餐厅详情加载失败时，完整预览内的审核操作保持禁用', async () => {
+  api.fetchAuditItems.mockResolvedValue({
+    items: [
+      {
+        id: 'v',
+        type: 'hall-review',
+        status: 'pending',
+        userDisplayName: '餐厅作者',
+      },
+    ],
+    page: 1,
+    size: 20,
+    total: 1,
+  });
+  venueApi.fetchVenueAuditDetail.mockRejectedValue(new Error('详情不可用'));
+  const w = render();
+  await flushPromises();
+  await button(w, '查看完整内容').trigger('click');
+  await flushPromises();
+  expect(w.text()).toContain('详情不可用');
+  expect(button(w, '通过此投稿').attributes('disabled')).toBeDefined();
+  expect(button(w, '驳回此投稿').attributes('disabled')).toBeDefined();
+  expect(api.submitAudit).not.toHaveBeenCalled();
 });
 it('社区审核先加载完整图文，再提交人工决定', async () => {
   communityApi.fetchCommunityAudit.mockResolvedValue({

@@ -1,0 +1,127 @@
+.venue-page {
+  width: min(calc(100% - 48px), 1080px);
+  margin: 32px auto;
+  overflow-wrap: anywhere;
+}
+.venue-page__back {
+  display: inline-block;
+  min-height: 44px;
+  color: var(--ft-color-primary);
+}
+.venue-page__summary,
+.venue-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+.venue-page__toolbar [aria-pressed='true'] {
+  color: var(--ft-color-primary);
+  border-color: var(--ft-color-primary);
+}
+.venue-page__muted,
+.venue-review time {
+  color: var(--ft-color-text-muted);
+  font-size: 14px;
+}
+.venue-page__notice {
+  padding: 16px;
+  border-left: 3px solid var(--ft-color-primary);
+  background: var(--zine-paper-card-alt);
+  margin: 16px 0;
+}
+.venue-page__form {
+  border: 2px solid var(--ft-color-text);
+  background: var(--zine-paper-card);
+  padding: 24px;
+  margin: 24px 0;
+}
+.venue-page__form > label {
+  display: block;
+  margin: 24px 0 8px;
+  font-weight: 700;
+}
+.venue-page textarea,
+.venue-replies textarea {
+  width: 100%;
+  font: inherit;
+  padding: 12px;
+  color: var(--ft-color-text);
+  background: var(--zine-paper-card);
+  border: 1px solid var(--ft-color-text);
+  resize: vertical;
+  min-height: 100px;
+}
+.venue-review {
+  padding: 16px;
+  border: 2px solid var(--ft-color-text);
+  background: var(--zine-paper-card);
+  box-shadow: 3px 3px var(--ft-color-text);
+  margin: 20px 3px 20px 0;
+}
+.venue-review--private {
+  border-style: dashed;
+}
+.venue-review > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.venue-review__content {
+  white-space: pre-wrap;
+  margin: 12px 0;
+}
+.venue-replies {
+  overflow-wrap: anywhere;
+}
+.venue-replies__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.venue-replies__toolbar > time {
+  margin-right: auto;
+}
+.venue-replies__body {
+  padding: 12px 16px;
+  border-left: 2px solid var(--ft-color-border);
+  background: var(--zine-paper-card-alt);
+  margin: 12px 0;
+}
+.venue-replies__row {
+  border-bottom: 1px solid var(--ft-color-border);
+  padding: 12px 0;
+}
+.venue-replies__row > p {
+  white-space: pre-wrap;
+  margin: 8px 0;
+}
+.venue-replies__private {
+  border-top: 1px dashed var(--ft-color-border);
+}
+.venue-replies label {
+  display: block;
+  margin: 12px 0 8px;
+}
+@media (max-width: 600px) {
+  .venue-page {
+    width: calc(100% - 28px);
+    margin: 20px auto;
+  }
+  .venue-page__form {
+    padding: 16px;
+  }
+  .venue-replies__toolbar > time {
+    flex-basis: 100%;
+  }
+  .venue-replies__body {
+    padding: 12px 8px;
+  }
+  .venue-page .section-title {
+    overflow-wrap: anywhere;
+  }
+}

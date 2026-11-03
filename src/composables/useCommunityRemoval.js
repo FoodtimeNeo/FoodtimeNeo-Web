@@ -100,6 +100,7 @@ export function useCommunityRemoval() {
         type === 'posts' ? '删除帖子' : '删除评论',
         {
           type: 'warning',
+          zIndex: 11020,
           confirmButtonText: '确认删除',
           cancelButtonText: '取消',
           closeOnClickModal: false,

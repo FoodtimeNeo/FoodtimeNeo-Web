@@ -7,6 +7,10 @@ import {
   submitCommunityAudit,
   removeCommunityAsAdmin,
 } from '@/api/community.api.js';
+import {
+  fetchVenueAuditDetail,
+  removeVenueAsAdmin,
+} from '@/api/venue-review.api.js';
 import { fetchAuditItems, submitAudit } from '@/api/admin-audit.api.js';
 import { removeReviewReplyAsAdmin } from '@/api/review.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
@@ -21,6 +25,10 @@ import PaginationControls from '@/components/base/PaginationControls.vue';
 const status = ref('pending'),
   channel = ref('catalog');
 const ranges = [
+  ['hall-review', '餐厅点评'],
+  ['stall-review', '档口点评'],
+  ['hall-review-reply', '餐厅点评回复'],
+  ['stall-review-reply', '档口点评回复'],
   ['catalog', '食堂投稿（全部）'],
   ['dish', '新菜品'],
   ['photo', '菜品图片'],
@@ -31,6 +39,10 @@ const ranges = [
   ['comments', '社区评论与回复'],
 ];
 const labels = {
+  'hall-review': '餐厅点评',
+  'stall-review': '档口点评',
+  'hall-review-reply': '餐厅点评回复',
+  'stall-review-reply': '档口点评回复',
   review: '点评',
   dish: '菜品',
   stall: '档口',
@@ -41,6 +53,13 @@ const labels = {
 };
 const communityType = (row) =>
   row.type === 'community-post' ? 'posts' : 'comments';
+const isVenue = (row) =>
+  [
+    'hall-review',
+    'stall-review',
+    'hall-review-reply',
+    'stall-review-reply',
+  ].includes(row?.type);
 const isCommunity = (row) => row?.type.startsWith('community-');
 const { items, page, total, size, loading, error, load, cancel } = usePagedData(
   (number, options) =>
@@ -73,9 +92,15 @@ const form = ref(null),
   resultsHeading = ref(null);
 const canRemove = (row) =>
   row?.status === 'approved' &&
-  ['dish-review-reply', 'community-post', 'community-comment'].includes(
-    row.type,
-  );
+  [
+    'hall-review',
+    'stall-review',
+    'hall-review-reply',
+    'stall-review-reply',
+    'dish-review-reply',
+    'community-post',
+    'community-comment',
+  ].includes(row.type);
 const deciding = computed(
   () => selected.value && selected.value.action !== 'inspect',
 );
@@ -148,14 +173,18 @@ watch([loading, error, total], () => {
 });
 async function loadDetails(row) {
   resetDetails();
-  if (!isCommunity(row)) return;
+  if (!isCommunity(row) && !isVenue(row)) return;
   const ticket = detailVersion;
   detailController = new AbortController();
   detailLoading.value = true;
   try {
-    const result = await fetchCommunityAuditDetail(communityType(row), row.id, {
-      signal: detailController.signal,
-    });
+    const result = isVenue(row)
+      ? await fetchVenueAuditDetail(row.type, row.id, {
+          signal: detailController.signal,
+        })
+      : await fetchCommunityAuditDetail(communityType(row), row.id, {
+          signal: detailController.signal,
+        });
     if (
       active &&
       ticket === detailVersion &&
@@ -210,7 +239,10 @@ async function invalid(message, field = '') {
 async function submit() {
   if (writing.value || !selected.value || !deciding.value) return;
   const row = selected.value;
-  if (isCommunity(row) && (detailLoading.value || !details.value))
+  if (
+    (isCommunity(row) || isVenue(row)) &&
+    (detailLoading.value || !details.value)
+  )
     return invalid('请先加载完整内容再审核');
   failure.value = '';
   errorField.value = '';
@@ -233,7 +265,15 @@ async function submit() {
           action: row.action,
           reason: reason.value.trim() || null,
         });
-    } else if (row.action === 'remove')
+    } else if (isVenue(row) && row.action === 'remove')
+      await removeVenueAsAdmin(
+        row.type.endsWith('-reply')
+          ? row.id
+          : details.value?.submission?.reviewId,
+        reason.value.trim(),
+        row.type.endsWith('-reply'),
+      );
+    else if (row.action === 'remove')
       await removeReviewReplyAsAdmin(row.id, reason.value.trim());
     else
       await submitAudit(row.type, row.id, {
@@ -356,7 +396,13 @@ onBeforeUnmount(() => {
             :disabled="writing"
             @click="choose(row, 'remove')"
           >
-            {{ isCommunity(row) ? '下架违规社区内容' : '删除违规回复' }}
+            {{
+              isCommunity(row)
+                ? '下架违规社区内容'
+                : isVenue(row)
+                  ? '下架违规内容'
+                  : '删除违规回复'
+            }}
           </button>
         </div>
       </article>
@@ -471,14 +517,20 @@ onBeforeUnmount(() => {
           <template v-if="!deciding && selected.status === 'pending'">
             <button
               type="button"
-              :disabled="detailLoading || (isCommunity(selected) && !details)"
+              :disabled="
+                detailLoading ||
+                ((isCommunity(selected) || isVenue(selected)) && !details)
+              "
               @click="action('approve')"
             >
               通过此投稿
             </button>
             <button
               type="button"
-              :disabled="detailLoading || (isCommunity(selected) && !details)"
+              :disabled="
+                detailLoading ||
+                ((isCommunity(selected) || isVenue(selected)) && !details)
+              "
               @click="action('reject')"
             >
               驳回此投稿
@@ -490,7 +542,9 @@ onBeforeUnmount(() => {
             form="audit-decision"
             class="audit-confirm"
             :disabled="
-              writing || detailLoading || (isCommunity(selected) && !details)
+              writing ||
+              detailLoading ||
+              ((isCommunity(selected) || isVenue(selected)) && !details)
             "
           >
             {{
@@ -525,35 +579,43 @@ onBeforeUnmount(() => {
 .audit__heading p,
 .audit__summary {
   color: var(--ft-color-text-muted);
-  margin: 8px 0 16px;
+  margin: 4px 0 8px;
+  font-size: var(--ft-font-size-sm);
 }
 .audit__summary {
   scroll-margin-top: 120px;
 }
 .audit__filters {
   display: grid;
-  gap: 16px;
-  padding: 20px;
-  margin: 16px 0;
+  gap: 8px;
+  padding: 12px;
+  margin: 10px 0;
   border: 1px solid var(--ft-color-border);
   background: var(--zine-paper-card-alt);
 }
 fieldset {
+  display: flow-root;
   margin: 0;
   padding: 0;
   border: 0;
   min-width: 0;
 }
 legend {
-  margin-bottom: 8px;
+  float: left;
+  width: 80px;
+  padding: 5px 0;
+  font-size: var(--ft-font-size-sm);
   font-weight: 700;
+}
+.audit__choices {
+  margin-left: 80px;
 }
 .audit__choices,
 .audit__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 .audit button,
 .audit-dialog__body button,
@@ -591,17 +653,17 @@ textarea:focus-visible {
   background: var(--zine-paper-card-alt);
 }
 .audit-card {
-  padding: 20px;
-  margin: 20px 0;
+  padding: 12px 14px;
+  margin: 10px 0;
   background: var(--zine-paper-card);
   border: 1px solid var(--ft-color-secondary);
-  box-shadow: 4px 5px 0 var(--zine-paper-shadow);
+  box-shadow: 2px 2px 0 var(--zine-paper-shadow);
 }
 .audit-card > header {
-  margin-bottom: 16px;
+  margin-bottom: 6px;
 }
 .audit-card h3 {
-  font: 700 22px/1.4 var(--ft-font-family-title);
+  font: 700 18px/1.4 var(--ft-font-family-title);
   margin: 0;
   overflow-wrap: anywhere;
 }
@@ -611,8 +673,8 @@ textarea:focus-visible {
   border: 1px dashed var(--ft-color-border);
 }
 .audit-card .audit__actions {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid var(--ft-color-border);
 }
 .audit-dialog__body {
@@ -698,6 +760,14 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 @media (max-width: 560px) {
+  legend {
+    float: none;
+    width: auto;
+    padding: 0 0 6px;
+  }
+  .audit__choices {
+    margin-left: 0;
+  }
   .audit__filters,
   .audit-card {
     padding: 14px;
@@ -707,6 +777,13 @@ textarea:focus-visible {
   }
   .audit-dialog__footer > span {
     display: none;
+  }
+}
+@media (min-width: 769px) and (pointer: fine) {
+  .audit button {
+    min-height: 36px;
+    padding: 5px 12px;
+    font-size: var(--ft-font-size-sm);
   }
 }
 </style>

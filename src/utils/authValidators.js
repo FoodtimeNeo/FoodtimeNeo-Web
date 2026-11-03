@@ -46,9 +46,16 @@ export function validateEmail(value) {
     return '请使用主流邮箱注册，如 QQ、163、126、Gmail、Outlook 或学校邮箱';
   return '';
 }
+/** 学生常直接输入学号：登录时补全为学校邮箱。 */
+export function normalizeLoginId(value) {
+  const account = value.trim();
+  return /^\d{1,20}$/.test(account) ? `${account}@bjtu.edu.cn` : account;
+}
 export function validateLoginId(value) {
   const email = value.trim();
-  if (!email) return '请输入邮箱';
+  if (!email) return '请输入邮箱或学号';
+  // 纯数字视为学号，提交时补全 @bjtu.edu.cn。
+  if (/^\d{1,20}$/.test(email)) return '';
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return '请输入完整邮箱';
   return '';

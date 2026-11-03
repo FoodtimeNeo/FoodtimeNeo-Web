@@ -10,6 +10,7 @@ const props = defineProps({
   disabled: Boolean,
   label: { type: String, default: '所属记录' },
   optional: Boolean,
+  compact: Boolean,
 });
 const emit = defineEmits(['update:modelValue']);
 const id = useId();
@@ -39,6 +40,7 @@ const { items, page, total, size, loading, error, load } = usePagedData(
     </select>
     <ErrorState v-if="error" :description="error.message" @retry="load" />
     <PaginationControls
+      v-if="!compact || total > size"
       :page="page"
       :total="total"
       :size="size"
