@@ -1,6 +1,7 @@
 import { http, ApiError } from './http.js';
 
 const COUNTERS = [
+  'totalUsers',
   'registeredUsers',
   'onlineUsers',
   'reviews',
@@ -11,6 +12,7 @@ const COUNTERS = [
   'dishes',
 ];
 const DAILY = [
+  'totalUsers',
   'newUsers',
   'newReviews',
   'newReplies',
@@ -46,20 +48,29 @@ function snapshot(value, days) {
   )
     throw invalid();
   let previous;
+  let previousTotal;
   const trend = value.trend.map((point) => {
     const day = dayValue(point?.day);
     if (
       !object(point) ||
       !Number.isFinite(day) ||
       (previous !== undefined && day !== previous + 86400000) ||
+      (previousTotal !== undefined &&
+        point.totalUsers !== previousTotal + point.newUsers) ||
       !DAILY.every((key) => count(point[key]))
     )
       throw invalid();
     previous = day;
+    previousTotal = point.totalUsers;
     return Object.freeze(
       Object.fromEntries(['day', ...DAILY].map((key) => [key, point[key]])),
     );
   });
+  if (
+    value.totalUsers < value.registeredUsers ||
+    trend.at(-1).totalUsers !== value.totalUsers
+  )
+    throw invalid();
   return Object.freeze({
     ...Object.fromEntries(COUNTERS.map((key) => [key, value[key]])),
     generatedAt: value.generatedAt,

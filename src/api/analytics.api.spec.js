@@ -42,6 +42,7 @@ it.each([401, 403, 404, 503, 0])('HTTP %s失败不再回退样例', async (statu
 it('真实零统计保持为零', async () => {
   const raw = dashboardFixture();
   for (const key of [
+    'totalUsers',
     'registeredUsers',
     'onlineUsers',
     'reviews',
@@ -52,6 +53,9 @@ it('真实零统计保持为零', async () => {
     'dishes',
   ])
     raw[key] = 0;
+  raw.trend.forEach((point) => {
+    for (const key of Object.keys(point)) if (key !== 'day') point[key] = 0;
+  });
   api.get.mockResolvedValue(raw);
   expect((await fetchAdminDashboard()).registeredUsers).toBe(0);
 });
@@ -87,4 +91,39 @@ it.each([0, 32, 1.5])('非法days=%s不发出请求', async (days) => {
     RangeError,
   );
   expect(api.get).not.toHaveBeenCalled();
+});
+
+it('读取30日累计总用户趋势，停用账号不混入有效用户口径', async () => {
+  const raw = dashboardFixture(30);
+  api.get.mockResolvedValue(raw);
+  const result = await fetchAdminDashboard({ days: 30 });
+  expect(result.trend).toHaveLength(30);
+  expect(result.totalUsers).toBe(1286);
+  expect(result.registeredUsers).toBe(1248);
+  expect(result.trend.at(-1).totalUsers).toBe(result.totalUsers);
+});
+
+it('拒绝缺失总用户量、与每日新增不符的历史累计和不同步的期末值', async () => {
+  const missing = dashboardFixture();
+  delete missing.totalUsers;
+  const missingDay = dashboardFixture();
+  delete missingDay.trend[0].totalUsers;
+  const decreasing = dashboardFixture();
+  decreasing.trend[1].totalUsers = decreasing.trend[0].totalUsers - 1;
+  const mismatch = dashboardFixture();
+  mismatch.totalUsers++;
+  const invalidActive = dashboardFixture();
+  invalidActive.registeredUsers = invalidActive.totalUsers + 1;
+  for (const raw of [
+    missing,
+    missingDay,
+    decreasing,
+    mismatch,
+    invalidActive,
+  ]) {
+    api.get.mockResolvedValueOnce(raw);
+    await expect(fetchAdminDashboard()).rejects.toMatchObject({
+      code: 'DASHBOARD_INVALID_RESPONSE',
+    });
+  }
 });

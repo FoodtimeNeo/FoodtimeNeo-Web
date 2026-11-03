@@ -1,0 +1,333 @@
+.analytics {
+  color: var(--ft-color-text);
+  overflow-wrap: anywhere;
+  padding-bottom: 24px;
+}
+.analytics h2,
+.analytics h3,
+.analytics p {
+  margin: 0;
+}
+.analytics h2,
+.analytics h3 {
+  color: var(--ft-color-text);
+  font-family: var(--ft-font-family-title);
+  font-weight: 900;
+}
+.analytics h2 {
+  font-size: 28px;
+}
+.analytics h3 {
+  font-size: 22px;
+}
+.muted,
+.updated,
+.chart-caption {
+  color: var(--ft-color-secondary-soft);
+  font-family: var(--ft-font-family);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.analytics__hero,
+.analytics__meta,
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.analytics__hero {
+  margin-bottom: 18px;
+}
+.stamp {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 2px 7px;
+  border: 1px solid var(--zine-stamp-red);
+  color: var(--zine-stamp-red);
+  font-size: 11px;
+  letter-spacing: 1px;
+  transform: rotate(-2deg);
+}
+.analytics button {
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 1px solid var(--ft-color-secondary);
+  border-radius: 0;
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text);
+  font-family: var(--ft-font-family);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background var(--ft-transition-fast),
+    color var(--ft-transition-fast);
+}
+.analytics button:hover {
+  background: var(--zine-paper-card-alt);
+}
+.analytics button:focus-visible {
+  outline: 2px solid var(--ft-color-primary);
+  outline-offset: 3px;
+}
+.analytics button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.snapshot-warning {
+  padding: 12px;
+  border: 1px solid var(--zine-stamp-red);
+  margin-bottom: 16px;
+  background: var(--zine-paper-card);
+}
+.snapshot-warning button {
+  margin-left: 12px;
+}
+.overview-hero {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+.overview-card,
+.metric-card,
+.panel,
+.activity-table-wrapper {
+  border: 1px solid var(--zine-paper-edge);
+  background: var(--zine-paper-card);
+  box-shadow: 3px 3px 0 var(--zine-paper-shadow);
+  min-width: 0;
+}
+.overview-card {
+  padding: 18px 22px;
+  background: var(--zine-paper-card-alt);
+}
+.overview-card .section-header {
+  font-size: 14px;
+}
+.overview-hero__value {
+  display: block;
+  margin: 5px 0;
+  color: var(--zine-stamp-red);
+  font-family: var(--ft-font-family-title);
+  font-size: 40px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+.overview-card--online .overview-hero__value {
+  color: var(--ft-color-accent);
+}
+.section-block {
+  margin-top: 24px;
+}
+.section-block > .section-header {
+  margin-bottom: 12px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.metric-card {
+  padding: 12px 14px;
+}
+.metric-card__label {
+  color: var(--ft-color-text);
+  font-size: 14px;
+}
+.metric-card__value {
+  display: block;
+  margin: 4px 0;
+  color: var(--ft-color-text);
+  font-family: var(--ft-font-family-title);
+  font-size: 26px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.range-switch,
+.trend-tabs {
+  display: flex;
+  gap: 4px;
+  border: 1px solid var(--ft-color-secondary);
+  padding: 3px;
+  background: var(--zine-paper-card-alt);
+}
+.range-switch button,
+.trend-tabs button {
+  border-color: transparent;
+  background: transparent;
+}
+.range-switch button[aria-pressed='true'] {
+  background: var(--ft-color-secondary);
+  color: var(--zine-paper-card);
+}
+.panel {
+  padding: 20px;
+}
+.trend-tabs {
+  margin: 16px 0 8px;
+  border-color: var(--ft-color-border);
+  flex-wrap: wrap;
+}
+.trend-tabs button {
+  flex: 1 1 100px;
+  padding: 6px 8px;
+}
+.trend-tabs button.is-active {
+  background: var(--zine-paper-card);
+  border-color: var(--ft-color-secondary);
+  color: var(--ft-color-text);
+  box-shadow: 2px 2px 0 var(--zine-paper-shadow);
+}
+.chart-box {
+  width: 100%;
+}
+.trend-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.grid-line {
+  stroke: var(--ft-color-border);
+  stroke-width: 1;
+  stroke-dasharray: 4 5;
+}
+.tick-label,
+.x-label,
+.axis-title {
+  fill: var(--ft-color-secondary-soft);
+  font: 12px var(--ft-font-family);
+}
+.point-label {
+  fill: var(--ft-color-text);
+  font: 12px var(--ft-font-family);
+}
+.curve-line {
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+.area-path {
+  opacity: 0.08;
+}
+.curve-line--red {
+  stroke: var(--zine-stamp-red);
+}
+.curve-line--blue {
+  stroke: var(--zine-stamp-blue);
+}
+.curve-line--green {
+  stroke: var(--ft-color-accent);
+}
+.curve-line--gold {
+  stroke: var(--zine-foil-gold);
+}
+.point-circle--red,
+.area-path--red {
+  fill: var(--zine-stamp-red);
+}
+.point-circle--blue,
+.area-path--blue {
+  fill: var(--zine-stamp-blue);
+}
+.point-circle--green,
+.area-path--green {
+  fill: var(--ft-color-accent);
+}
+.point-circle--gold,
+.area-path--gold {
+  fill: var(--zine-foil-gold);
+}
+.chart-node {
+  cursor: pointer;
+}
+.chart-node:focus-visible rect {
+  stroke: var(--ft-color-text);
+  stroke-width: 1;
+}
+.chart-caption {
+  min-height: 24px;
+}
+.analytics-definition {
+  margin-top: 12px !important;
+}
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.activity-table th,
+.activity-table td {
+  padding: 12px 14px;
+  border-bottom: 1px dashed var(--ft-color-border);
+  color: var(--ft-color-text);
+}
+.activity-table th {
+  background: var(--zine-paper-card-alt);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+}
+.activity-table thead th:not(:first-child),
+.activity-table td {
+  text-align: right;
+}
+.activity-table td {
+  font-family: var(--ft-font-family-title);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.activity-table tr:last-child th,
+.activity-table tr:last-child td {
+  border-bottom: none;
+}
+@media (max-width: 800px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 520px) {
+  .analytics h3 {
+    font-size: 20px;
+  }
+  .overview-hero {
+    grid-template-columns: 1fr;
+  }
+  .overview-card {
+    padding: 14px;
+  }
+  .metric-card {
+    padding: 10px;
+  }
+  .metric-card__value {
+    font-size: 24px;
+  }
+  .panel {
+    padding: 12px;
+  }
+  .period-label {
+    display: block;
+    white-space: nowrap;
+  }
+  .activity-table th,
+  .activity-table td {
+    padding: 10px 5px;
+  }
+  .activity-table td {
+    font-size: 16px;
+  }
+  .activity-table th {
+    font-size: 12px;
+  }
+  .trend-tabs button {
+    flex-basis: 80px;
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .analytics button {
+    transition: none;
+  }
+}
