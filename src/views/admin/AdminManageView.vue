@@ -161,6 +161,14 @@ async function remove() {
         @cancel="editor = null"
         @saved="saved"
       />
+      <CatalogEditor
+        v-if="editor?.item?.id === row.id"
+        :key="type + row.id"
+        :type="type"
+        :item="editor.item"
+        @cancel="editor = null"
+        @saved="saved"
+      />
       <div v-if="selected?.id === row.id">
         <p>确认删除这条目录记录？有关联时后端会阻止删除，可选择编辑并停用。</p>
         <button :disabled="writing" @click="selected = null">取消删除</button
