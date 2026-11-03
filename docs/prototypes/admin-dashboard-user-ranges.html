@@ -1,0 +1,798 @@
+<div id="foodtime-dashboard-review" aria-label="北交干饭吧管理数据看板原型">
+  <style>
+    #foodtime-dashboard-review {
+      color-scheme: light;
+      --ft-paper: light-dark(#fffaf0, #28241f);
+      --ft-page: light-dark(#dfcca1, #1d1b17);
+      --ft-soft: light-dark(#f6efd9, #332e25);
+      --ft-ink: light-dark(#3d291d, #f4e8d1);
+      --ft-muted: light-dark(#625044, #d5c5b0);
+      --ft-rule: light-dark(#ae9b82, #7f715e);
+      --ft-faint: light-dark(#ddd1bd, #52493b);
+      --ft-red: light-dark(#b93623, #f19076);
+      --ft-blue: light-dark(#3f7291, #90bbd5);
+      --ft-green: light-dark(#5b783b, #b2ca88);
+      --ft-gold: light-dark(#9c731d, #dfbe75);
+      --ft-shadow: light-dark(#3d291d25, #00000055);
+      font:
+        14px/1.6 'Microsoft YaHei',
+        'PingFang SC',
+        sans-serif;
+      background: var(--ft-page);
+      color: var(--ft-ink);
+      overflow-wrap: anywhere;
+    }
+    #foodtime-dashboard-review * {
+      box-sizing: border-box;
+    }
+    #foodtime-dashboard-review h1,
+    #foodtime-dashboard-review h2,
+    #foodtime-dashboard-review h3,
+    #foodtime-dashboard-review p {
+      margin: 0;
+    }
+    #foodtime-dashboard-review .ft-sitebar {
+      background: var(--ft-paper);
+      border-bottom: 1px solid var(--ft-rule);
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      flex-wrap: wrap;
+      padding: 16px 28px;
+      padding-right: 108px;
+    }
+    #foodtime-dashboard-review .ft-brand {
+      font:
+        bold 25px/1.3 SimSun,
+        serif;
+    }
+    #foodtime-dashboard-review .ft-globalnav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 13px;
+    }
+    #foodtime-dashboard-review .ft-globalnav strong {
+      color: var(--ft-red);
+    }
+    #foodtime-dashboard-review .ft-sheet {
+      background: var(--ft-paper);
+      margin: 24px;
+      padding: 24px;
+      box-shadow: 4px 5px 0 var(--ft-shadow);
+    }
+    #foodtime-dashboard-review .ft-breadcrumb {
+      font-size: 12px;
+      color: var(--ft-muted);
+      margin-bottom: 22px;
+    }
+    #foodtime-dashboard-review .ft-head,
+    #foodtime-dashboard-review .ft-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    #foodtime-dashboard-review .ft-stamp {
+      display: inline-block;
+      border: 1px solid var(--ft-red);
+      color: var(--ft-red);
+      padding: 2px 7px;
+      font-size: 11px;
+      letter-spacing: 1px;
+      transform: rotate(-2deg);
+      margin-bottom: 8px;
+    }
+    #foodtime-dashboard-review h1 {
+      font:
+        bold 27px/1.4 SimSun,
+        serif;
+    }
+    #foodtime-dashboard-review h2 {
+      font:
+        bold 23px/1.4 SimSun,
+        serif;
+    }
+    #foodtime-dashboard-review h3 {
+      font:
+        bold 20px/1.4 SimSun,
+        serif;
+    }
+    #foodtime-dashboard-review .ft-muted {
+      color: var(--ft-muted);
+      font-size: 12px;
+    }
+    #foodtime-dashboard-review .ft-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0;
+      border-bottom: 2px solid var(--ft-ink);
+      margin: 18px 0 22px;
+      font-size: 13px;
+    }
+    #foodtime-dashboard-review .ft-nav span {
+      padding: 8px 12px;
+    }
+    #foodtime-dashboard-review .ft-nav strong {
+      padding: 8px 12px;
+      color: var(--ft-paper);
+      background: var(--ft-ink);
+    }
+    #foodtime-dashboard-review .ft-demo {
+      border: 1px dashed var(--ft-rule);
+      padding: 3px 8px;
+      font-size: 12px;
+      color: var(--ft-muted);
+    }
+    #foodtime-dashboard-review .ft-totals {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    #foodtime-dashboard-review .ft-total {
+      border: 1px solid var(--ft-rule);
+      background: var(--ft-soft);
+      padding: 18px 22px;
+      box-shadow: 3px 3px 0 var(--ft-shadow);
+    }
+    #foodtime-dashboard-review .ft-label {
+      font-size: 13px;
+    }
+    #foodtime-dashboard-review .ft-value {
+      font:
+        bold 40px/1.3 Georgia,
+        serif;
+      display: block;
+      color: var(--ft-red);
+      font-variant-numeric: tabular-nums;
+      margin: 5px 0;
+    }
+    #foodtime-dashboard-review .ft-online .ft-value {
+      color: var(--ft-green);
+    }
+    #foodtime-dashboard-review .ft-section {
+      margin-top: 24px;
+    }
+    #foodtime-dashboard-review .ft-core {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    #foodtime-dashboard-review .ft-metric {
+      border: 1px solid var(--ft-rule);
+      padding: 12px 14px;
+      box-shadow: 2px 3px 0 var(--ft-shadow);
+    }
+    #foodtime-dashboard-review .ft-metric strong {
+      display: block;
+      font:
+        bold 25px/1.5 Georgia,
+        serif;
+      margin: 3px 0;
+    }
+    #foodtime-dashboard-review .ft-datebar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    #foodtime-dashboard-review .ft-range {
+      display: flex;
+      border: 1px solid var(--ft-ink);
+      padding: 3px;
+      gap: 3px;
+      background: var(--ft-soft);
+    }
+    #foodtime-dashboard-review button {
+      font: inherit;
+      color: var(--ft-ink);
+      background: transparent;
+      border: 1px solid transparent;
+      min-height: 36px;
+      padding: 6px 16px;
+    }
+    #foodtime-dashboard-review button[aria-pressed='true'] {
+      color: var(--ft-paper);
+      background: var(--ft-ink);
+      border-color: var(--ft-ink);
+    }
+    #foodtime-dashboard-review button:hover {
+      border-color: var(--ft-rule);
+    }
+    #foodtime-dashboard-review .ft-panel {
+      border: 1px solid var(--ft-rule);
+      padding: 20px;
+      box-shadow: 3px 4px 0 var(--ft-shadow);
+    }
+    #foodtime-dashboard-review .ft-eyebrow {
+      font-size: 11px;
+      color: var(--ft-red);
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    #foodtime-dashboard-review .ft-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      background: var(--ft-soft);
+      border: 1px solid var(--ft-faint);
+      padding: 3px;
+      margin: 18px 0 4px;
+    }
+    #foodtime-dashboard-review .ft-tabs button {
+      flex: 1 1 105px;
+      font-size: 13px;
+      padding: 5px 8px;
+    }
+    #foodtime-dashboard-review .ft-tabs button[aria-pressed='true'] {
+      color: var(--ft-ink);
+      background: var(--ft-paper);
+      border-color: var(--ft-rule);
+      box-shadow: 2px 2px 0 var(--ft-shadow);
+    }
+    #foodtime-dashboard-review .ft-chart {
+      width: 100%;
+      height: 250px;
+      display: block;
+    }
+    #foodtime-dashboard-review .ft-chart text {
+      fill: var(--ft-muted);
+      font:
+        12px 'Microsoft YaHei',
+        sans-serif;
+    }
+    #foodtime-dashboard-review .ft-chart .ft-gridline {
+      stroke: var(--ft-faint);
+      stroke-dasharray: 4 5;
+    }
+    #foodtime-dashboard-review .ft-chart-caption {
+      min-height: 24px;
+      font-size: 12px;
+      color: var(--ft-muted);
+    }
+    #foodtime-dashboard-review .ft-note {
+      font-size: 12px;
+      color: var(--ft-muted);
+      margin-top: 12px;
+    }
+    #foodtime-dashboard-review table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    #foodtime-dashboard-review th {
+      text-align: left;
+      font-weight: 500;
+      background: var(--ft-soft);
+      color: var(--ft-ink);
+    }
+    #foodtime-dashboard-review td,
+    #foodtime-dashboard-review th {
+      padding: 11px 14px;
+      border-bottom: 1px dashed var(--ft-faint);
+    }
+    #foodtime-dashboard-review td,
+    #foodtime-dashboard-review thead th:not(:first-child) {
+      text-align: right;
+    }
+    #foodtime-dashboard-review td {
+      font-family: Georgia, serif;
+      font-size: 20px;
+      color: var(--ft-ink);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    #foodtime-dashboard-review .ft-foot {
+      padding: 16px 28px;
+      font-size: 12px;
+      color: var(--ft-muted);
+      background: var(--ft-paper);
+      border-top: 1px solid var(--ft-rule);
+    }
+    @media (pointer: coarse) {
+      #foodtime-dashboard-review button {
+        min-height: 44px;
+      }
+    }
+    @media (max-width: 700px) {
+      #foodtime-dashboard-review .ft-sheet {
+        margin: 14px;
+        padding: 18px;
+      }
+      #foodtime-dashboard-review .ft-sitebar {
+        padding: 14px 18px;
+        padding-right: 100px;
+        gap: 10px;
+      }
+      #foodtime-dashboard-review .ft-core {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      #foodtime-dashboard-review .ft-panel {
+        padding: 14px;
+      }
+      #foodtime-dashboard-review .ft-nav span,
+      #foodtime-dashboard-review .ft-nav strong {
+        padding: 8px;
+      }
+    }
+    @media (max-width: 430px) {
+      #foodtime-dashboard-review .ft-sheet {
+        margin: 10px;
+        padding: 12px;
+      }
+      #foodtime-dashboard-review .ft-totals {
+        grid-template-columns: 1fr;
+      }
+      #foodtime-dashboard-review .ft-total {
+        padding: 14px;
+      }
+      #foodtime-dashboard-review .ft-metric {
+        padding: 10px;
+      }
+      #foodtime-dashboard-review .ft-globalnav {
+        gap: 12px;
+      }
+      #foodtime-dashboard-review td,
+      #foodtime-dashboard-review th {
+        padding: 10px 6px;
+      }
+      #foodtime-dashboard-review td {
+        font-size: 16px;
+      }
+      #foodtime-dashboard-review .ft-period-label {
+        display: block;
+        white-space: nowrap;
+      }
+      #foodtime-dashboard-review button {
+        min-height: 44px;
+      }
+    }
+    @media (pointer: coarse) {
+      #foodtime-dashboard-review button {
+        min-height: 44px;
+      }
+    }
+  </style>
+  <header class="ft-sitebar">
+    <div class="ft-brand">北交干饭吧</div>
+    <nav class="ft-globalnav" aria-label="主导航">
+      <span>00 首页</span><span>01 食堂</span><span>02 社区</span
+      ><strong>03 管理</strong><span>04 我的</span>
+    </nav>
+  </header>
+  <main class="ft-sheet">
+    <div class="ft-breadcrumb">首页 / 管理中心 / 数据分析</div>
+    <div class="ft-head">
+      <div>
+        <span class="ft-stamp">管理工作台</span>
+        <h1>管理中心</h1>
+      </div>
+      <span class="ft-muted">当前账号：平台管理员</span>
+    </div>
+    <nav class="ft-nav" aria-label="管理导航">
+      <span>内容审核</span><span>内容管理</span><span>评论管理</span
+      ><span>审核日志</span><span>公告管理</span><strong>数据分析</strong
+      ><span>用户管理</span>
+    </nav>
+    <div class="ft-head">
+      <div>
+        <span class="ft-stamp">SUPERADMIN DASHBOARD</span>
+        <h2>数据看板</h2>
+      </div>
+      <span class="ft-demo">审阅原型 · 全部数值为示例</span>
+    </div>
+    <p class="ft-muted">统计时间：2026/11/03 16:30（北京时间）</p>
+    <section class="ft-totals" aria-label="用户规模与实时在线">
+      <article class="ft-total">
+        <div class="ft-row">
+          <span class="ft-label">总用户量</span
+          ><span class="ft-muted">截至当前累计</span>
+        </div>
+        <strong class="ft-value" data-total>1,286</strong>
+        <p class="ft-muted">全部已注册账号，含停用账号</p>
+      </article>
+      <article class="ft-total ft-online">
+        <div class="ft-row">
+          <span class="ft-label">当前在线</span
+          ><span class="ft-muted">实时</span>
+        </div>
+        <strong class="ft-value">86</strong>
+        <p class="ft-muted">最近 5 分钟活跃用户 · 占有效用户 6.9%</p>
+      </article>
+    </section>
+    <section class="ft-section" aria-label="平台总览">
+      <div class="ft-row">
+        <h3>平台总览</h3>
+        <span class="ft-muted">当前累计 / 实时数据</span>
+      </div>
+      <div class="ft-core">
+        <article class="ft-metric">
+          <span class="ft-label">有效用户</span><strong>1,248</strong>
+          <p class="ft-muted">当前启用账号</p>
+        </article>
+        <article class="ft-metric">
+          <span class="ft-label">正式点评</span><strong>3,862</strong>
+          <p class="ft-muted">正式发布的菜品点评</p>
+        </article>
+        <article class="ft-metric">
+          <span class="ft-label">正式回复</span><strong>5,917</strong>
+          <p class="ft-muted">菜品点评回复</p>
+        </article>
+        <article class="ft-metric">
+          <span class="ft-label">已发布食记</span><strong>742</strong>
+          <p class="ft-muted">审核通过且未删除</p>
+        </article>
+        <article class="ft-metric">
+          <span class="ft-label">食堂</span><strong>12</strong>
+          <p class="ft-muted">当前有效食堂</p>
+        </article>
+        <article class="ft-metric">
+          <span class="ft-label">档口</span><strong>111</strong>
+          <p class="ft-muted">当前有效档口</p>
+        </article>
+        <article class="ft-metric">
+          <span class="ft-label">菜品</span><strong>2,207</strong>
+          <p class="ft-muted">当前有效菜品</p>
+        </article>
+        <article class="ft-metric">
+          <span class="ft-label">在线用户</span><strong>86</strong>
+          <p class="ft-muted">最近 5 分钟活跃用户</p>
+        </article>
+      </div>
+    </section>
+    <section class="ft-section" aria-labelledby="ft-period-title">
+      <div class="ft-datebar">
+        <div>
+          <h3 id="ft-period-title">运营数据</h3>
+          <p class="ft-muted" data-daterange aria-live="polite">
+            2026/10/28 — 2026/11/03 · 北京时间，含今日
+          </p>
+        </div>
+        <div class="ft-range" role="group" aria-label="统计周期">
+          <button
+            type="button"
+            class="cursor-interaction"
+            data-days="7"
+            aria-pressed="true"
+          >
+            近 7 日</button
+          ><button
+            type="button"
+            class="cursor-interaction"
+            data-days="30"
+            aria-pressed="false"
+          >
+            近 30 日
+          </button>
+        </div>
+      </div>
+      <div class="ft-panel">
+        <div class="ft-row">
+          <div>
+            <div class="ft-eyebrow">01 / 运行走势</div>
+            <h3 data-charttitle>近 7 日趋势</h3>
+          </div>
+          <span class="ft-muted" data-granularity>每日一个数据点 · 7 天</span>
+        </div>
+        <div class="ft-tabs" role="group" aria-label="走势指标">
+          <button
+            type="button"
+            class="cursor-interaction"
+            data-metric="total"
+            aria-pressed="true"
+          >
+            用户总量
+          </button>
+          <button
+            type="button"
+            class="cursor-interaction"
+            data-metric="users"
+            aria-pressed="false"
+          >
+            新增用户
+          </button>
+          <button
+            type="button"
+            class="cursor-interaction"
+            data-metric="interactions"
+            aria-pressed="false"
+          >
+            评论互动
+          </button>
+          <button
+            type="button"
+            class="cursor-interaction"
+            data-metric="posts"
+            aria-pressed="false"
+          >
+            社区食记
+          </button>
+          <button
+            type="button"
+            class="cursor-interaction"
+            data-metric="active"
+            aria-pressed="false"
+          >
+            日活用户
+          </button>
+        </div>
+        <svg
+          class="ft-chart"
+          role="img"
+          aria-label="近7日用户累计总量趋势示例"
+        ></svg>
+        <div class="ft-chart-caption" data-point aria-live="polite">
+          11/03 · 用户总量 1,286 人
+        </div>
+      </div>
+      <p class="ft-note">
+        今日数据截至本次统计时间；总用户量与日活单位为人，评论互动为点评投稿与回复之和。
+      </p>
+    </section>
+    <section class="ft-section" aria-labelledby="ft-summary-title">
+      <div class="ft-row">
+        <h3 id="ft-summary-title">新增汇总</h3>
+        <span class="ft-muted">按北京时间统计，包含今日</span>
+      </div>
+      <table aria-label="今日、近7日与近30日新增数据汇总">
+        <thead>
+          <tr>
+            <th scope="col">内容类别</th>
+            <th scope="col"><span class="ft-period-label">今日</span>新增</th>
+            <th scope="col">
+              <span class="ft-period-label">近 7 日</span>新增
+            </th>
+            <th scope="col">
+              <span class="ft-period-label">近 30 日</span>新增
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">注册用户</th>
+            <td data-sum="users" data-period="1"></td>
+            <td data-sum="users" data-period="7"></td>
+            <td data-sum="users" data-period="30"></td>
+          </tr>
+          <tr>
+            <th scope="row">菜品点评</th>
+            <td data-sum="reviews" data-period="1"></td>
+            <td data-sum="reviews" data-period="7"></td>
+            <td data-sum="reviews" data-period="30"></td>
+          </tr>
+          <tr>
+            <th scope="row">互动回复</th>
+            <td data-sum="replies" data-period="1"></td>
+            <td data-sum="replies" data-period="7"></td>
+            <td data-sum="replies" data-period="30"></td>
+          </tr>
+          <tr>
+            <th scope="row">社区食记</th>
+            <td data-sum="posts" data-period="1"></td>
+            <td data-sum="posts" data-period="7"></td>
+            <td data-sum="posts" data-period="30"></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <footer class="ft-foot">北交干饭吧 / BJTU FoodtimeNeo</footer>
+  <script>
+    (() => {
+      const root = document.getElementById('foodtime-dashboard-review');
+      const $ = (selector) => root.querySelector(selector);
+      const fmt = (value) => value.toLocaleString('zh-CN');
+      const newUsers = [
+        7, 9, 6, 11, 8, 10, 6, 12, 9, 7, 11, 10, 13, 8, 12, 9, 14, 11, 10, 13,
+        12, 15, 11, 10, 13, 16, 12, 18, 14, 17,
+      ];
+      let cumulative = 1286 - newUsers.reduce((a, b) => a + b, 0);
+      const all = newUsers.map((users, i) => {
+        cumulative += users;
+        const date = new Date(Date.UTC(2026, 9, 5 + i));
+        const reviews = 24 + ((i * 7) % 29);
+        const replies = 35 + ((i * 11) % 43);
+        return {
+          day: date.toISOString().slice(0, 10),
+          total: cumulative,
+          users,
+          reviews,
+          replies,
+          interactions: reviews + replies,
+          posts: 5 + ((i * 3) % 12),
+          active: 110 + ((i * 13) % 91),
+        };
+      });
+      const metrics = {
+        total: {
+          label: '用户总量',
+          unit: '人',
+          color: 'var(--ft-red)',
+        },
+        users: {
+          label: '新增用户',
+          unit: '人',
+          color: 'var(--ft-red)',
+          note: '每日新注册账号数',
+        },
+        interactions: {
+          label: '评论互动',
+          unit: '条',
+          color: 'var(--ft-blue)',
+          note: '每日新增菜品点评投稿与回复之和',
+        },
+        posts: {
+          label: '社区食记',
+          unit: '篇',
+          color: 'var(--ft-green)',
+          note: '每日新增食记，含待审记录',
+        },
+        active: {
+          label: '日活用户',
+          unit: '人',
+          color: 'var(--ft-gold)',
+          note: '当日产生注册、投稿、回复、点赞等行为的去重用户数',
+        },
+      };
+      const saved = globalThis.openai?.widgetState?.modelContent;
+      const state = {
+        days: saved?.days === 30 ? 30 : 7,
+        metric: metrics[saved?.metric] ? saved.metric : 'total',
+      };
+      const svg = $('.ft-chart');
+      let selected = [],
+        points = [],
+        selectedIndex = 0;
+      function showPoint(i) {
+        selectedIndex = i;
+        const point = selected[i],
+          metric = metrics[state.metric];
+        svg.querySelectorAll('circle').forEach((circle, index) => {
+          circle.setAttribute(
+            'r',
+            index === i ? '5' : state.days === 7 ? '4' : '2.5',
+          );
+        });
+        $('[data-point]').textContent =
+          `${point.day.replaceAll('-', '/')} · ${metric.label} ${fmt(point[state.metric])} ${metric.unit}`;
+      }
+      function draw() {
+        const width = Math.max(160, svg.getBoundingClientRect().width);
+        if (width < 1) return;
+        const height = 250,
+          left = 57,
+          right = 14,
+          top = 35,
+          bottom = 42;
+        const metric = metrics[state.metric];
+        const values = selected.map((p) => p[state.metric]);
+        const rawMin = Math.min(...values),
+          rawMax = Math.max(...values);
+        const span = Math.max(1, rawMax - rawMin),
+          step = Math.max(1, Math.ceil((span * 1.4) / 4 / 5) * 5);
+        const min =
+          state.metric === 'total'
+            ? Math.max(0, Math.floor((rawMin - span * 0.15) / step) * step)
+            : 0;
+        const max = Math.max(
+          min + step * 4,
+          Math.ceil((rawMax + span * 0.15) / step) * step,
+        );
+        const x = (i) =>
+          left + (i * (width - left - right)) / (selected.length - 1);
+        const y = (v) =>
+          top + ((max - v) * (height - top - bottom)) / (max - min);
+        points = values.map((v, i) => [x(i), y(v)]);
+        const line = points
+          .map(
+            (p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(2)},${p[1].toFixed(2)}`,
+          )
+          .join(' ');
+        const ticks = Array.from(
+          { length: 5 },
+          (_, i) => min + ((max - min) * i) / 4,
+        );
+        const tickCount = width < 500 ? 3 : state.days === 7 ? 7 : 6;
+        const dates = Array.from({ length: tickCount }, (_, i) =>
+          Math.round((i * (selected.length - 1)) / (tickCount - 1)),
+        );
+        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        svg.setAttribute(
+          'aria-label',
+          `近${state.days}日${metric.label}趋势示例，共${selected.length}个日数据点`,
+        );
+        svg.innerHTML = `<title>近${state.days}日${metric.label}趋势（示例数据）</title>
+          <desc>${selected[0].day}至${selected.at(-1).day}，点击图表查看日期数据。</desc>
+          <text x="${left}" y="18">${metric.label}（${metric.unit}）</text>
+          ${ticks.map((v) => `<line class="ft-gridline" x1="${left}" y1="${y(v)}" x2="${width - right}" y2="${y(v)}"/><text x="${left - 8}" y="${y(v) + 4}" text-anchor="end">${fmt(Math.round(v))}</text>`).join('')}
+          <path d="${line} L${x(values.length - 1)},${y(min)} L${x(0)},${y(min)} Z" fill="${metric.color}" opacity="0.09"/>
+          <path d="${line}" fill="none" stroke="${metric.color}" stroke-width="2.5" stroke-linejoin="round"/>
+          ${points.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="${i === selectedIndex ? 5 : state.days === 7 ? 4 : 2.5}" fill="${metric.color}" data-tooltip="${selected[i].day} · ${fmt(values[i])}${metric.unit}"/>`).join('')}
+          ${dates.map((i) => `<text x="${x(i)}" y="${height - 20}" text-anchor="${i === 0 ? 'start' : i === values.length - 1 ? 'end' : 'middle'}">${Number(selected[i].day.slice(5, 7))}/${Number(selected[i].day.slice(8))}</text>`).join('')}
+          <text x="${width - right}" y="${height - 1}" text-anchor="end">日期（月/日）</text>`;
+      }
+      function render() {
+        selected = all.slice(-state.days);
+        root
+          .querySelectorAll('[data-days]')
+          .forEach((b) =>
+            b.setAttribute(
+              'aria-pressed',
+              Number(b.dataset.days) === state.days,
+            ),
+          );
+        root
+          .querySelectorAll('[data-metric]')
+          .forEach((b) =>
+            b.setAttribute('aria-pressed', b.dataset.metric === state.metric),
+          );
+        $('[data-daterange]').textContent =
+          `${selected[0].day.replaceAll('-', '/')} — 2026/11/03 · 北京时间，含今日`;
+        $('[data-charttitle]').textContent = `近 ${state.days} 日趋势`;
+        $('[data-granularity]').textContent =
+          `每日一个数据点 · ${state.days} 天`;
+        root.querySelectorAll('[data-sum]').forEach((cell) => {
+          const period = Number(cell.dataset.period);
+          cell.textContent =
+            '+' +
+            fmt(
+              all
+                .slice(-period)
+                .reduce((sum, point) => sum + point[cell.dataset.sum], 0),
+            );
+        });
+        showPoint(selected.length - 1);
+        draw();
+      }
+      function persist() {
+        globalThis.openai
+          ?.setWidgetState?.({
+            modelContent: { days: state.days, metric: state.metric },
+            privateContent: null,
+          })
+          ?.catch(() => {});
+      }
+      root.querySelectorAll('[data-days]').forEach((button) =>
+        button.addEventListener('click', () => {
+          state.days = Number(button.dataset.days);
+          render();
+          persist();
+        }),
+      );
+      root.querySelectorAll('[data-metric]').forEach((button) =>
+        button.addEventListener('click', () => {
+          state.metric = button.dataset.metric;
+          render();
+          persist();
+        }),
+      );
+      svg.addEventListener('pointerdown', (event) => {
+        const local = event.clientX - svg.getBoundingClientRect().left;
+        const index = points.reduce(
+          (best, p, i) =>
+            Math.abs(p[0] - local) < Math.abs(points[best][0] - local)
+              ? i
+              : best,
+          0,
+        );
+        showPoint(index);
+      });
+      globalThis.addEventListener('openai:set_globals', (event) => {
+        const incoming = event.detail?.globals?.widgetState?.modelContent;
+        if (!incoming) return;
+        state.days = incoming.days === 30 ? 30 : 7;
+        if (metrics[incoming.metric]) state.metric = incoming.metric;
+        render();
+      });
+      render();
+      new ResizeObserver(draw).observe(svg);
+    })();
+  </script>
+</div>

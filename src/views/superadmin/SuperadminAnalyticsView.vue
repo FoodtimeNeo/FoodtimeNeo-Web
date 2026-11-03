@@ -9,14 +9,22 @@ import ErrorState from '@/components/base/ErrorState.vue';
 const data = ref(null);
 const loading = ref(false);
 const error = ref(null);
-const activeMetric = ref('users'); // 'users' | 'interactions' | 'posts' | 'online'
+const activeDays = ref(7);
+const activeMetric = ref('total');
 const hoveredIndex = ref(null);
-
+const chartElement = ref(null);
+const chartWidth = ref(720);
 const auth = useAuthStore();
 let requestVersion = 0;
 let controller;
+let resizeObserver;
+
 function actorKey() {
-  return auth.user?.role === 'superadmin' ? auth.user.id + ':superadmin' : '';
+  const user = auth.user;
+  return user?.role === 'superadmin' &&
+    (!user.status || user.status === 'active')
+    ? `${user.id}:superadmin:${user.status || 'active'}`
+    : '';
 }
 function reset() {
   requestVersion++;
@@ -25,15 +33,8 @@ function reset() {
   data.value = null;
   error.value = null;
   loading.value = false;
+  hoveredIndex.value = null;
 }
-
-const METRIC_TABS = [
-  { key: 'users', label: '新增用户', color: 'red' },
-  { key: 'interactions', label: '评论互动', color: 'blue' },
-  { key: 'posts', label: '社区食记', color: 'green' },
-  { key: 'online', label: '日活用户', color: 'gold' },
-];
-
 async function load() {
   const actor = actorKey();
   if (!actor) {
@@ -47,11 +48,15 @@ async function load() {
   loading.value = true;
   error.value = null;
   try {
+    // One snapshot supplies both chart ranges and all three summary periods.
     const result = await fetchAdminDashboard(
-      { days: 7 },
+      { days: 30 },
       { signal: controller.signal },
     );
-    if (version === requestVersion && actor === actorKey()) data.value = result;
+    if (version === requestVersion && actor === actorKey()) {
+      data.value = result;
+      hoveredIndex.value = null;
+    }
   } catch (reason) {
     if (version === requestVersion && actor === actorKey()) {
       if (reason.status === 401 || reason.status === 403) data.value = null;
@@ -68,280 +73,200 @@ watch(
   actorKey,
   () => {
     reset();
+    activeDays.value = 7;
+    activeMetric.value = 'total';
     if (actorKey()) load();
     else error.value = new ApiError('需要平台管理员权限', { status: 403 });
   },
   { immediate: true, flush: 'sync' },
 );
+watch([activeDays, activeMetric], () => {
+  hoveredIndex.value = null;
+});
+watch(chartElement, (element) => {
+  resizeObserver?.disconnect();
+  if (!element) return;
+  const measure = () => {
+    const width = element.getBoundingClientRect().width;
+    if (width > 0) chartWidth.value = width;
+  };
+  measure();
+  if (typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(element);
+  }
+});
 onMounted(() => document.addEventListener('visibilitychange', foreground));
 onBeforeUnmount(() => {
   reset();
+  resizeObserver?.disconnect();
   document.removeEventListener('visibilitychange', foreground);
 });
 
-function formatNumber(value) {
-  return new Intl.NumberFormat('zh-CN').format(value || 0);
-}
-
+const METRIC_TABS = [
+  { key: 'total', label: '用户总量', color: 'red', unit: '人' },
+  { key: 'users', label: '新增用户', color: 'red', unit: '人' },
+  { key: 'interactions', label: '评论互动', color: 'blue', unit: '条' },
+  { key: 'posts', label: '社区食记', color: 'green', unit: '篇' },
+  { key: 'online', label: '日活用户', color: 'gold', unit: '人' },
+];
+const metric = computed(() =>
+  METRIC_TABS.find((item) => item.key === activeMetric.value),
+);
+const trend = computed(() => data.value?.trend.slice(-activeDays.value) || []);
+const todayPoint = computed(() => data.value?.trend.at(-1));
+const dateRange = computed(() =>
+  trend.value.length
+    ? `${trend.value[0].day.replaceAll('-', '/')} — ${trend.value.at(-1).day.replaceAll('-', '/')} · 北京时间，含今日`
+    : '',
+);
+const formatNumber = (value) => new Intl.NumberFormat('zh-CN').format(value);
 function formatPercent(value, total) {
-  if (!total || total <= 0) return '0%';
-  return `${Math.round(((value || 0) / total) * 100)}%`;
+  return total > 0 ? `${Math.round((value / total) * 100)}%` : '0%';
 }
-
-function formatDateLabel(dayStr) {
-  if (!dayStr) return '';
-  const parts = dayStr.split('-');
-  if (parts.length === 3) {
-    return `${Number(parts[1])}/${Number(parts[2])}`;
-  }
-  const date = new Date(dayStr);
-  return `${date.getMonth() + 1}/${date.getDate()}`;
+function formatDateLabel(day) {
+  const parts = day.split('-');
+  return `${Number(parts[1])}/${Number(parts[2])}`;
 }
-
 function formatUpdatedAt(value) {
   if (!value) return '尚未更新';
-  try {
-    return new Intl.DateTimeFormat('zh-CN', {
-      timeZone: 'Asia/Shanghai',
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(value));
-  } catch {
-    return '时间异常';
-  }
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
 }
-
-// 指标卡片列表（对齐手机端 8 个核心指标）
 const metricCards = computed(() => {
   if (!data.value) return [];
   const d = data.value;
   return [
-    {
-      label: '有效用户',
-      value: d.registeredUsers,
-      tone: 'red',
-      desc: '当前有效账号，不含停用账号',
-      tag: '用户基石',
-    },
-    {
-      label: '正式点评',
-      value: d.reviews,
-      tone: 'blue',
-      desc: '菜品真实口碑点评',
-      tag: '干饭心声',
-    },
-    {
-      label: '正式回复',
-      value: d.replies,
-      tone: 'green',
-      desc: '食客互动交流楼层',
-      tag: '热闹讨论',
-    },
-    {
-      label: '已发布食记',
-      value: d.posts,
-      tone: 'red',
-      desc: '图文动态与探店分享',
-      tag: '校园风物',
-    },
-    {
-      label: '食堂',
-      value: d.halls,
-      tone: 'green',
-      desc: '已收录校园食堂',
-      tag: '就餐场馆',
-    },
-    {
-      label: '档口',
-      value: d.stalls,
-      tone: 'blue',
-      desc: '营业特色窗口小摊',
-      tag: '风味摊位',
-    },
-    {
-      label: '菜品',
-      value: d.dishes,
-      tone: 'red',
-      desc: '收录风味美味佳肴',
-      tag: '菜单名录',
-    },
-    {
-      label: '在线用户',
-      value: d.onlineUsers,
-      tone: 'green',
-      desc: '最近 5 分钟活跃用户',
-      tag: '实时在校',
-    },
+    { label: '有效用户', value: d.registeredUsers, desc: '当前启用账号' },
+    { label: '正式点评', value: d.reviews, desc: '正式发布的菜品点评' },
+    { label: '正式回复', value: d.replies, desc: '菜品点评回复' },
+    { label: '已发布食记', value: d.posts, desc: '审核通过且未删除' },
+    { label: '食堂', value: d.halls, desc: '当前有效食堂' },
+    { label: '档口', value: d.stalls, desc: '当前有效档口' },
+    { label: '菜品', value: d.dishes, desc: '当前有效菜品' },
+    { label: '在线用户', value: d.onlineUsers, desc: '最近 5 分钟活跃用户' },
   ];
 });
-
-// 今日活跃（取 trend 最后一项）
-const todayPoint = computed(() => data.value?.trend.at(-1));
-
-// 今日活跃明细列表
+const PERIODS = [
+  { days: 1, label: '今日' },
+  { days: 7, label: '近 7 日' },
+  { days: 30, label: '近 30 日' },
+];
 const activityRows = computed(() => {
   if (!data.value) return [];
-  const d = data.value;
-  const p = todayPoint.value;
   return [
-    {
-      name: '注册用户',
-      today: p.newUsers,
-      total: d.registeredUsers,
-      desc: '今日新入驻干饭同学',
-    },
-    {
-      name: '菜品评论',
-      today: p.newReviews,
-      total: d.reviews,
-      desc: '新增菜品点评与心得',
-    },
-    {
-      name: '互动回复',
-      today: p.newReplies,
-      total: d.replies,
-      desc: '评论区探讨与追问',
-    },
-    {
-      name: '社区食记',
-      today: p.newPosts,
-      total: d.posts,
-      desc: '图文动态与探店长文',
-    },
-  ];
+    { name: '注册用户', key: 'newUsers' },
+    { name: '菜品点评', key: 'newReviews' },
+    { name: '互动回复', key: 'newReplies' },
+    { name: '社区食记', key: 'newPosts' },
+  ].map((row) => ({
+    ...row,
+    values: PERIODS.map((period) =>
+      data.value.trend
+        .slice(-period.days)
+        .reduce((sum, point) => sum + point[row.key], 0),
+    ),
+  }));
 });
-
-// 曲线图尺寸与坐标计算
-const CHART_VIEWBOX_WIDTH = 720;
-const CHART_VIEWBOX_HEIGHT = 250;
-const PADDING = { top: 32, right: 30, bottom: 42, left: 48 };
-const plotWidth = CHART_VIEWBOX_WIDTH - PADDING.left - PADDING.right;
-const plotHeight = CHART_VIEWBOX_HEIGHT - PADDING.top - PADDING.bottom;
-
-function getPointValue(pt, metricKey) {
-  if (!pt) return 0;
-  switch (metricKey) {
+function getPointValue(point) {
+  switch (activeMetric.value) {
+    case 'total':
+      return point.totalUsers;
     case 'users':
-      return pt.newUsers || 0;
+      return point.newUsers;
     case 'interactions':
-      return (pt.newReviews || 0) + (pt.newReplies || 0);
+      return point.newReviews + point.newReplies;
     case 'posts':
-      return pt.newPosts || 0;
+      return point.newPosts;
     case 'online':
-      return pt.onlinePeak || 0;
-    default:
-      return pt.newUsers || 0;
+      return point.onlinePeak;
   }
 }
 
-// 刻度最大值（自适应整十/整四倍数，保证美观的网格线）
-const chartYMax = computed(() => {
-  const points = data.value?.trend || [];
-  if (!points.length) return 10;
-  const maxObserved = Math.max(
-    1,
-    ...points.map((p) => getPointValue(p, activeMetric.value)),
+const HEIGHT = 260;
+const PADDING = { top: 34, right: 16, bottom: 44, left: 64 };
+const plotWidth = computed(() =>
+  Math.max(1, chartWidth.value - PADDING.left - PADDING.right),
+);
+const plotHeight = HEIGHT - PADDING.top - PADDING.bottom;
+const chartScale = computed(() => {
+  const values = trend.value.map(getPointValue);
+  const high = Math.max(0, ...values);
+  const low =
+    activeMetric.value === 'total' && values.length ? Math.min(...values) : 0;
+  const step = Math.max(1, Math.ceil(((high - low) * 1.2) / 4));
+  const min =
+    activeMetric.value === 'total'
+      ? Math.max(0, Math.floor((low - step) / step) * step)
+      : 0;
+  const tickStep = Math.max(1, Math.ceil(((high - min) * 1.1) / 4));
+  return { min, step: tickStep, max: min + tickStep * 4 };
+});
+const yTicks = computed(() =>
+  Array.from({ length: 5 }, (_, index) => ({
+    value: chartScale.value.max - chartScale.value.step * index,
+    y: PADDING.top + (plotHeight * index) / 4,
+  })),
+);
+const xTickIndices = computed(() => {
+  const count = chartWidth.value < 500 ? 3 : activeDays.value === 7 ? 7 : 6;
+  return Array.from({ length: count }, (_, index) =>
+    Math.round((index * (trend.value.length - 1)) / (count - 1)),
   );
-  // 计算合适标尺
-  let raw = Math.ceil(maxObserved * 1.18);
-  if (raw < 4) raw = 4;
-  const step = Math.ceil(raw / 4);
-  return step * 4;
 });
-
-// Y 轴刻度列表
-const yTicks = computed(() => {
-  const max = chartYMax.value;
-  return [
-    { value: max, y: PADDING.top },
-    { value: Math.round(max * 0.75), y: PADDING.top + plotHeight * 0.25 },
-    { value: Math.round(max * 0.5), y: PADDING.top + plotHeight * 0.5 },
-    { value: Math.round(max * 0.25), y: PADDING.top + plotHeight * 0.75 },
-    { value: 0, y: PADDING.top + plotHeight },
-  ];
-});
-
-// 计算每个点的 (x, y) 坐标
-const chartPoints = computed(() => {
-  const list = data.value?.trend || [];
-  if (!list.length) return [];
-  const max = chartYMax.value;
-  return list.map((item, index) => {
-    const x =
-      list.length === 1
-        ? PADDING.left + plotWidth / 2
-        : PADDING.left + (index / (list.length - 1)) * plotWidth;
-    const val = getPointValue(item, activeMetric.value);
-    const y = PADDING.top + plotHeight - (val / max) * plotHeight;
+const chartPoints = computed(() =>
+  trend.value.map((point, index) => {
+    const val = getPointValue(point);
     return {
-      x,
-      y,
+      day: point.day,
       val,
-      day: item.day,
-      dateLabel: formatDateLabel(item.day),
-      raw: item,
+      x: PADDING.left + (index / (trend.value.length - 1)) * plotWidth.value,
+      y:
+        PADDING.top +
+        ((chartScale.value.max - val) /
+          (chartScale.value.max - chartScale.value.min)) *
+          plotHeight,
     };
-  });
-});
-
-// 平滑贝塞尔曲线路径生成
+  }),
+);
 const smoothLinePath = computed(() => {
   const pts = chartPoints.value;
   if (!pts.length) return '';
-  if (pts.length === 1) {
-    return `M ${pts[0].x} ${pts[0].y}`;
-  }
   let path = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i === 0 ? 0 : i - 1];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2 < pts.length ? i + 2 : pts.length - 1];
-
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    // Keep interpolation inside the actual segment range: counts cannot dip below zero.
+  for (let index = 0; index < pts.length - 1; index++) {
+    const p0 = pts[Math.max(0, index - 1)],
+      p1 = pts[index],
+      p2 = pts[index + 1],
+      p3 = pts[Math.min(pts.length - 1, index + 2)];
     const clampY = (value) =>
       Math.max(Math.min(p1.y, p2.y), Math.min(Math.max(p1.y, p2.y), value));
-    const cp1y = clampY(p1.y + (p2.y - p0.y) / 6);
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = clampY(p2.y - (p3.y - p1.y) / 6);
-
-    path += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    path += ` C ${p1.x + (p2.x - p0.x) / 6} ${clampY(p1.y + (p2.y - p0.y) / 6)}, ${p2.x - (p3.x - p1.x) / 6} ${clampY(p2.y - (p3.y - p1.y) / 6)}, ${p2.x} ${p2.y}`;
   }
   return path;
 });
-
-// 面积闭合填充路径
 const smoothAreaPath = computed(() => {
-  const line = smoothLinePath.value;
   const pts = chartPoints.value;
-  if (!line || !pts.length) return '';
-  const first = pts[0];
-  const last = pts[pts.length - 1];
-  const bottomY = PADDING.top + plotHeight;
-  return `${line} L ${last.x.toFixed(2)} ${bottomY} L ${first.x.toFixed(2)} ${bottomY} Z`;
+  if (!pts.length) return '';
+  return `${smoothLinePath.value} L ${pts.at(-1).x} ${PADDING.top + plotHeight} L ${pts[0].x} ${PADDING.top + plotHeight} Z`;
 });
-
-// 当前高亮点的详细提示信息
-const activeHoveredPoint = computed(() => {
-  if (hoveredIndex.value === null) return null;
-  return chartPoints.value[hoveredIndex.value] || null;
-});
+const selectedPoint = computed(
+  () => chartPoints.value[hoveredIndex.value] || chartPoints.value.at(-1),
+);
 </script>
 
 <template>
   <main class="analytics" aria-labelledby="analytics-title">
-    <!-- 页头手账风 Hero -->
     <header class="analytics__hero">
-      <div class="analytics__title-group">
-        <div class="badge-row">
-          <span class="stamp">SUPERADMIN DASHBOARD</span>
-        </div>
+      <div>
+        <span class="stamp">SUPERADMIN DASHBOARD</span>
         <h2 id="analytics-title">数据看板</h2>
       </div>
-
       <div class="analytics__meta">
         <p class="updated">
           数据生成时间：{{ formatUpdatedAt(data?.generatedAt) }}（北京时间）
@@ -350,18 +275,12 @@ const activeHoveredPoint = computed(() => {
           type="button"
           class="refresh-btn"
           :disabled="loading"
-          aria-label="刷新数据"
           @click="load"
         >
-          <span class="refresh-icon" :class="{ 'is-spinning': loading }"
-            >↻</span
-          >
           {{ loading ? '刷新中…' : '刷新数据' }}
         </button>
       </div>
     </header>
-
-    <!-- 加载与错误状态 -->
     <LoadingState v-if="loading && !data" message="正在翻阅干饭数据账本…" />
     <ErrorState
       v-else-if="error && !data"
@@ -369,349 +288,236 @@ const activeHoveredPoint = computed(() => {
       :description="error.message"
       @retry="load"
     />
-
     <template v-else-if="data">
       <div v-if="error" class="snapshot-warning" role="alert">
         刷新失败，显示上次数据：{{ error.message }}
         <button type="button" :disabled="loading" @click="load">重试</button>
       </div>
-      <!-- 顶部当前在线 Hero 卡片 -->
-      <section class="overview-hero" aria-label="实时在线概览">
-        <div class="overview-hero__content">
-          <span class="overview-hero__label">当前在线</span>
-          <strong class="overview-hero__value">
-            {{ formatNumber(data.onlineUsers) }}
-          </strong>
-          <p class="overview-hero__sub">
-            约占有效用户
-            <span class="highlight-ratio">
-              {{ formatPercent(data.onlineUsers, data.registeredUsers) }}
-            </span>
-            <span class="note">（最近 5 分钟活跃用户）</span>
+      <section class="overview-hero" aria-label="用户规模与实时在线">
+        <article class="overview-card">
+          <div class="section-header">
+            <span>总用户量</span><span class="muted">截至当前累计</span>
+          </div>
+          <strong class="overview-hero__value" data-total-users>{{
+            formatNumber(data.totalUsers)
+          }}</strong>
+          <p class="muted">全部已注册账号，含停用账号</p>
+        </article>
+        <article class="overview-card overview-card--online">
+          <div class="section-header">
+            <span>当前在线</span><span class="muted">实时</span>
+          </div>
+          <strong class="overview-hero__value">{{
+            formatNumber(data.onlineUsers)
+          }}</strong>
+          <p class="muted">
+            最近 5 分钟活跃用户 · 占有效用户
+            {{ formatPercent(data.onlineUsers, data.registeredUsers) }}
           </p>
-        </div>
-
-        <div class="overview-hero__doodle" aria-hidden="true">
-          <svg viewBox="0 0 100 80" class="doodle-svg">
-            <path
-              d="M 10 50 Q 50 15 90 50 Z"
-              fill="none"
-              stroke="var(--zine-stamp-red)"
-              stroke-width="3"
-            />
-            <circle cx="50" cy="20" r="4" fill="var(--zine-stamp-red)" />
-            <path
-              d="M 20 54 Q 50 68 80 54"
-              fill="none"
-              stroke="var(--ft-color-secondary)"
-              stroke-width="2"
-              stroke-dasharray="3 3"
-            />
-            <path
-              d="M 28 44 C 36 36 44 36 50 42 C 56 36 64 36 72 44"
-              fill="none"
-              stroke="var(--ft-color-accent)"
-              stroke-width="2.5"
-            />
-          </svg>
-        </div>
+        </article>
       </section>
-
-      <!-- 核心指标 8 卡片网格（对齐手机端） -->
       <section class="section-block" aria-labelledby="metric-grid-title">
         <div class="section-header">
-          <h3 id="metric-grid-title" class="block-title">平台总览</h3>
-          <span class="block-eyebrow">8 大核心运营指标</span>
+          <h3 id="metric-grid-title">平台总览</h3>
+          <span class="muted">当前累计 / 实时数据</span>
         </div>
-
         <div class="metric-grid">
           <article
             v-for="item in metricCards"
             :key="item.label"
             class="metric-card"
-            :class="`metric-card--${item.tone}`"
           >
-            <div class="metric-card__header">
-              <span class="metric-card__label">{{ item.label }}</span>
-              <span class="metric-card__tag">{{ item.tag }}</span>
-            </div>
-            <strong class="metric-card__value">
-              {{ formatNumber(item.value) }}
-            </strong>
-            <small class="metric-card__desc">{{ item.desc }}</small>
+            <span class="metric-card__label">{{ item.label }}</span>
+            <strong class="metric-card__value">{{
+              formatNumber(item.value)
+            }}</strong>
+            <small class="muted">{{ item.desc }}</small>
           </article>
         </div>
       </section>
-
-      <!-- 近 7 日趋势曲线图（核心展示：用户数、评论互动、食记数） -->
       <section class="section-block" aria-labelledby="trend-title">
-        <div class="panel">
-          <div class="panel__header">
-            <div>
-              <span class="panel__eyebrow">01 / 运行走势</span>
-              <h3 id="trend-title" class="panel__title">近 7 日趋势</h3>
-            </div>
-            <div class="panel__note-tag">最近 7 自然日连续数据</div>
+        <div class="section-header period-header">
+          <div>
+            <h3>运营数据</h3>
+            <p class="muted" aria-live="polite">{{ dateRange }}</p>
           </div>
-
-          <!-- 指标切换 Tab -->
-          <div class="trend-tabs" role="tablist" aria-label="走势指标选择">
+          <div class="range-switch" role="group" aria-label="统计周期">
+            <button
+              v-for="days in [7, 30]"
+              :key="days"
+              type="button"
+              :aria-pressed="activeDays === days"
+              @click="activeDays = days"
+            >
+              近 {{ days }} 日
+            </button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-header">
+            <div>
+              <span class="muted">01 / 运行走势</span>
+              <h3 id="trend-title">近 {{ activeDays }} 日趋势</h3>
+            </div>
+            <span class="muted">每日一个数据点 · {{ activeDays }} 天</span>
+          </div>
+          <div class="trend-tabs" role="group" aria-label="走势指标选择">
             <button
               v-for="tab in METRIC_TABS"
               :key="tab.key"
               type="button"
-              role="tab"
-              :aria-selected="activeMetric === tab.key"
               class="trend-tab"
-              :class="[
-                `trend-tab--${tab.color}`,
-                { 'is-active': activeMetric === tab.key },
-              ]"
+              :class="{ 'is-active': activeMetric === tab.key }"
+              :aria-pressed="activeMetric === tab.key"
               @click="activeMetric = tab.key"
             >
               {{ tab.label }}
             </button>
           </div>
-
-          <!-- 曲线图容器 -->
-          <div class="chart-box">
+          <div ref="chartElement" class="chart-box">
             <svg
               class="trend-svg"
-              :viewBox="`0 0 ${CHART_VIEWBOX_WIDTH} ${CHART_VIEWBOX_HEIGHT}`"
-              preserveAspectRatio="xMidYMid meet"
-              role="img"
-              aria-label="近七日运营数据平滑曲线图"
+              :viewBox="`0 0 ${chartWidth} ${HEIGHT}`"
+              role="group"
+              :aria-label="`近${activeDays}日${metric.label}趋势`"
             >
-              <defs>
-                <linearGradient id="chart-grad-red" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#c9341e" stop-opacity="0.32" />
-                  <stop
-                    offset="100%"
-                    stop-color="#c9341e"
-                    stop-opacity="0.02"
-                  />
-                </linearGradient>
-                <linearGradient
-                  id="chart-grad-blue"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
+              <title>近 {{ activeDays }} 日{{ metric.label }}趋势</title>
+              <desc>按北京时间统计，可聚焦或点击每日数据点查看具体数值。</desc>
+              <text :x="PADDING.left" y="17" class="axis-title">
+                {{ metric.label }}（{{ metric.unit }}）
+              </text>
+              <g v-for="tick in yTicks" :key="tick.value">
+                <line
+                  :x1="PADDING.left"
+                  :y1="tick.y"
+                  :x2="chartWidth - PADDING.right"
+                  :y2="tick.y"
+                  class="grid-line"
+                />
+                <text
+                  :x="PADDING.left - 8"
+                  :y="tick.y + 4"
+                  class="tick-label"
+                  text-anchor="end"
                 >
-                  <stop offset="0%" stop-color="#3f7291" stop-opacity="0.32" />
-                  <stop
-                    offset="100%"
-                    stop-color="#3f7291"
-                    stop-opacity="0.02"
-                  />
-                </linearGradient>
-                <linearGradient
-                  id="chart-grad-green"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="0%" stop-color="#5b7a3a" stop-opacity="0.32" />
-                  <stop
-                    offset="100%"
-                    stop-color="#5b7a3a"
-                    stop-opacity="0.02"
-                  />
-                </linearGradient>
-                <linearGradient
-                  id="chart-grad-gold"
-                  x1="0"
-                  y1="0"
-                  x2="0"
-                  y2="1"
-                >
-                  <stop offset="0%" stop-color="#b88924" stop-opacity="0.32" />
-                  <stop
-                    offset="100%"
-                    stop-color="#b88924"
-                    stop-opacity="0.02"
-                  />
-                </linearGradient>
-              </defs>
-
-              <!-- Y 轴网格线与数值标尺 -->
-              <g class="chart-grid">
-                <g v-for="tick in yTicks" :key="tick.value">
-                  <line
-                    :x1="PADDING.left"
-                    :y1="tick.y"
-                    :x2="CHART_VIEWBOX_WIDTH - PADDING.right"
-                    :y2="tick.y"
-                    class="grid-line"
-                  />
-                  <text
-                    :x="PADDING.left - 8"
-                    :y="tick.y + 4"
-                    class="tick-label"
-                    text-anchor="end"
-                  >
-                    {{ formatNumber(tick.value) }}
-                  </text>
-                </g>
+                  {{ formatNumber(tick.value) }}
+                </text>
               </g>
-
-              <!-- 坐标轴骨架线 -->
-              <line
-                :x1="PADDING.left"
-                :y1="PADDING.top"
-                :x2="PADDING.left"
-                :y2="PADDING.top + plotHeight"
-                class="axis-line"
-              />
-              <line
-                :x1="PADDING.left"
-                :y1="PADDING.top + plotHeight"
-                :x2="CHART_VIEWBOX_WIDTH - PADDING.right"
-                :y2="PADDING.top + plotHeight"
-                class="axis-line"
-              />
-
-              <!-- 面积渐变填充 -->
               <path
-                v-if="smoothAreaPath"
                 :d="smoothAreaPath"
-                :fill="`url(#chart-grad-${METRIC_TABS.find((t) => t.key === activeMetric)?.color || 'red'})`"
                 class="area-path"
+                :class="`area-path--${metric.color}`"
               />
-
-              <!-- 平滑曲线线条 -->
               <path
-                v-if="smoothLinePath"
                 :d="smoothLinePath"
                 class="curve-line"
-                :class="`curve-line--${METRIC_TABS.find((t) => t.key === activeMetric)?.color || 'red'}`"
+                :class="`curve-line--${metric.color}`"
               />
-
-              <!-- 数据点圆圈与常驻数值（仿手机端标在点上方） -->
               <g
                 v-for="(pt, index) in chartPoints"
                 :key="pt.day"
                 class="chart-node"
-                :class="{ 'is-hovered': hoveredIndex === index }"
                 tabindex="0"
                 role="button"
-                :aria-label="`${pt.day}：${pt.val}`"
+                :aria-label="`${pt.day} ${metric.label}：${formatNumber(pt.val)} ${metric.unit}`"
                 @mouseenter="hoveredIndex = index"
                 @focus="hoveredIndex = index"
-                @mouseleave="hoveredIndex = null"
-                @blur="hoveredIndex = null"
+                @click="hoveredIndex = index"
+                @keydown.enter.prevent="hoveredIndex = index"
+                @keydown.space.prevent="hoveredIndex = index"
               >
-                <!-- 垂直辅助线 -->
-                <line
-                  v-if="hoveredIndex === index"
-                  :x1="pt.x"
-                  :y1="PADDING.top"
-                  :x2="pt.x"
-                  :y2="PADDING.top + plotHeight"
-                  class="cursor-line"
+                <rect
+                  :x="pt.x - Math.min(22, plotWidth / (activeDays - 1) / 2)"
+                  :y="PADDING.top"
+                  :width="Math.min(44, plotWidth / (activeDays - 1))"
+                  :height="plotHeight"
+                  fill="transparent"
                 />
-
-                <!-- 点上方常驻数值标注（与手机端一致） -->
                 <text
+                  v-if="
+                    (activeDays === 7 && chartWidth >= 500) ||
+                    hoveredIndex === index
+                  "
                   :x="pt.x"
-                  :y="pt.y <= PADDING.top + 16 ? pt.y + 18 : pt.y - 10"
+                  :y="pt.y < PADDING.top + 16 ? pt.y + 18 : pt.y - 10"
                   class="point-label"
-                  text-anchor="middle"
+                  :text-anchor="
+                    index === 0
+                      ? 'start'
+                      : index === chartPoints.length - 1
+                        ? 'end'
+                        : 'middle'
+                  "
                 >
                   {{ formatNumber(pt.val) }}
                 </text>
-
-                <!-- 外圈呼吸光晕 -->
                 <circle
                   :cx="pt.x"
                   :cy="pt.y"
-                  r="7"
-                  class="point-ring"
-                  :class="`point-ring--${METRIC_TABS.find((t) => t.key === activeMetric)?.color || 'red'}`"
-                />
-                <!-- 核心实心圆点 -->
-                <circle
-                  :cx="pt.x"
-                  :cy="pt.y"
-                  r="4"
+                  :r="hoveredIndex === index ? 5 : activeDays === 7 ? 4 : 2.5"
                   class="point-circle"
-                  :class="`point-circle--${METRIC_TABS.find((t) => t.key === activeMetric)?.color || 'red'}`"
+                  :class="`point-circle--${metric.color}`"
                 />
-
-                <!-- X 轴日期刻度 -->
-                <text
-                  :x="pt.x"
-                  :y="PADDING.top + plotHeight + 20"
-                  class="x-label"
-                  text-anchor="middle"
-                >
-                  {{ pt.dateLabel }}
-                </text>
               </g>
+              <text
+                v-for="index in xTickIndices"
+                :key="index"
+                :x="chartPoints[index]?.x"
+                :y="HEIGHT - 24"
+                class="x-label"
+                :text-anchor="
+                  index === 0
+                    ? 'start'
+                    : index === chartPoints.length - 1
+                      ? 'end'
+                      : 'middle'
+                "
+              >
+                {{ formatDateLabel(chartPoints[index].day) }}
+              </text>
+              <text
+                :x="chartWidth - PADDING.right"
+                :y="HEIGHT - 3"
+                class="axis-title"
+                text-anchor="end"
+              >
+                日期（月/日）
+              </text>
             </svg>
-
-            <!-- 悬浮详情卡片 Tooltip -->
-            <div
-              v-if="activeHoveredPoint"
-              class="chart-tooltip"
-              :style="{
-                left: `${(activeHoveredPoint.x / CHART_VIEWBOX_WIDTH) * 100}%`,
-              }"
-            >
-              <div class="tooltip-title">{{ activeHoveredPoint.day }}</div>
-              <div class="tooltip-item">
-                <span class="tooltip-key">当日数值：</span>
-                <strong class="tooltip-val">
-                  {{ formatNumber(activeHoveredPoint.val) }}
-                </strong>
-              </div>
-              <div class="tooltip-detail">
-                <span>新用户: {{ activeHoveredPoint.raw.newUsers }}</span>
-                <span>评论: {{ activeHoveredPoint.raw.newReviews }}</span>
-                <span>食记: {{ activeHoveredPoint.raw.newPosts }}</span>
-              </div>
-            </div>
           </div>
+          <p class="chart-caption" aria-live="polite">
+            {{ selectedPoint.day.replaceAll('-', '/') }} · {{ metric.label }}
+            {{ formatNumber(selectedPoint.val) }} {{ metric.unit }}
+          </p>
         </div>
+        <p class="analytics-definition muted">
+          今日数据截至本次统计时间；点评互动为投稿与回复之和，日活为当日行为去重人数。新增记录含待审等状态，累计点评与食记仅统计正式发布内容。
+        </p>
       </section>
-
-      <p class="analytics-definition">
-        点评互动为投稿与回复之和；日活为当日行为去重人数。新增记录含待审等状态，累计点评与食记仅统计正式发布内容。
-      </p>
-      <!-- 快照末日新增与当前累计，日期以服务端业务日为准。 -->
       <section class="section-block" aria-labelledby="activity-title">
         <div class="section-header">
-          <h3 id="activity-title" class="block-title">
-            当日新增（{{ formatDateLabel(todayPoint.day) }}）
-          </h3>
-          <span class="block-eyebrow">今日增量 vs 历史累计</span>
+          <h3 id="activity-title">新增汇总</h3>
+          <span class="muted">截至 {{ todayPoint.day }}，按北京时间统计</span>
         </div>
-
         <div class="activity-table-wrapper">
-          <table class="activity-table">
+          <table
+            class="activity-table"
+            aria-label="今日、近7日与近30日新增数据汇总"
+          >
             <thead>
               <tr>
-                <th scope="col" class="cell-name">内容类别</th>
-                <th scope="col" class="cell-today">今日新增</th>
-                <th scope="col" class="cell-total">平台累计</th>
-                <th scope="col" class="cell-desc">说明</th>
+                <th scope="col">内容类别</th>
+                <th v-for="period in PERIODS" :key="period.days" scope="col">
+                  <span class="period-label">{{ period.label }}</span
+                  >新增
+                </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in activityRows" :key="row.name">
-                <td class="cell-name">
-                  <span class="row-bullet" />
-                  <strong>{{ row.name }}</strong>
-                </td>
-                <td class="cell-today">
-                  <span class="today-tag">+{{ formatNumber(row.today) }}</span>
-                </td>
-                <td class="cell-total">
-                  {{ formatNumber(row.total) }}
-                </td>
-                <td class="cell-desc">
-                  {{ row.desc }}
+              <tr v-for="row in activityRows" :key="row.key">
+                <th scope="row">{{ row.name }}</th>
+                <td v-for="(value, index) in row.values" :key="index">
+                  +{{ formatNumber(value) }}
                 </td>
               </tr>
             </tbody>
@@ -722,711 +528,4 @@ const activeHoveredPoint = computed(() => {
   </main>
 </template>
 
-<style scoped>
-.snapshot-warning {
-  padding: 12px;
-  border: 1px solid var(--zine-stamp-red);
-  margin-bottom: 16px;
-}
-.snapshot-warning button {
-  min-height: 44px;
-  margin-left: 12px;
-}
-.analytics-definition {
-  line-height: 1.6;
-}
-
-.analytics {
-  max-width: var(--page-max-width);
-  margin: 0 auto;
-  padding: 0 0 48px;
-  overflow-wrap: anywhere;
-}
-
-/* 页头 Hero */
-.analytics__hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.badge-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.stamp {
-  display: inline-block;
-  padding: 2px 8px;
-  border: 2px solid var(--zine-stamp-red);
-  color: var(--zine-stamp-red);
-  font-family: var(--ft-font-family-note);
-  font-size: var(--ft-font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  transform: rotate(-1.5deg);
-}
-
-.stamp-preview {
-  display: inline-block;
-  padding: 2px 8px;
-  border: 1px dashed var(--zine-stamp-blue);
-  background: var(--zine-stamp-blue-soft);
-  color: var(--zine-stamp-blue);
-  font-size: var(--ft-font-size-xs);
-  font-weight: 700;
-}
-
-.analytics__title-group h2 {
-  margin: 10px 0 0;
-  color: var(--ft-color-secondary);
-  font-family: var(--ft-font-family-title);
-  font-size: var(--ft-font-size-xl);
-  line-height: 1.15;
-}
-
-.subtitle {
-  margin: 8px 0 0;
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-sm);
-}
-
-.analytics__meta {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.updated {
-  margin: 0;
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-xs);
-}
-
-.refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 38px;
-  padding: 6px 16px;
-  border: 1px solid var(--ft-color-secondary);
-  border-radius: 0;
-  background: var(--zine-paper-card);
-  box-shadow: 2px 2px 0 var(--ft-color-secondary);
-  color: var(--ft-color-secondary);
-  font-size: var(--ft-font-size-sm);
-  font-weight: 700;
-  cursor: pointer;
-  transition:
-    transform var(--ft-transition-fast),
-    box-shadow var(--ft-transition-fast);
-}
-
-.refresh-btn:hover:not(:disabled) {
-  background: var(--ft-color-secondary);
-  color: var(--zine-paper-card);
-  transform: translate(-1px, -1px);
-}
-
-.refresh-btn:focus-visible {
-  outline: 2px dashed var(--ft-color-primary);
-  outline-offset: 3px;
-}
-
-.refresh-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.refresh-icon {
-  display: inline-block;
-  font-size: 15px;
-  transition: transform 0.5s ease;
-}
-
-.refresh-icon.is-spinning {
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 当前在线 Hero 卡片 */
-.overview-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px 32px;
-  margin-bottom: 32px;
-  border: 1px solid var(--ft-color-secondary);
-  border-radius: 0;
-  background: var(--zine-paper-card-alt);
-  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
-}
-
-.overview-hero__label {
-  display: block;
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-sm);
-  font-weight: 700;
-}
-
-.overview-hero__value {
-  display: block;
-  margin: 6px 0;
-  color: var(--ft-color-primary);
-  font-family: var(--ft-font-family-title);
-  font-size: 46px;
-  line-height: 1.05;
-}
-
-.overview-hero__sub {
-  margin: 0;
-  color: var(--ft-color-accent);
-  font-size: var(--ft-font-size-sm);
-  font-weight: 700;
-}
-
-.highlight-ratio {
-  margin-left: 4px;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-.overview-hero__sub .note {
-  margin-left: 6px;
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-xs);
-  font-weight: normal;
-}
-
-.overview-hero__doodle {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.doodle-svg {
-  width: 90px;
-  height: 64px;
-}
-
-.doodle-caption {
-  color: var(--ft-color-text-muted);
-  font-family: var(--ft-font-family-note);
-  font-size: 13px;
-  letter-spacing: 0.05em;
-}
-
-/* 区块与卡片 */
-.section-block {
-  margin-bottom: 36px;
-}
-
-.section-header {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.block-title {
-  margin: 0;
-  color: var(--ft-color-secondary);
-  font-family: var(--ft-font-family-title);
-  font-size: 24px;
-  line-height: 1.2;
-}
-
-.block-eyebrow {
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-xs);
-}
-
-/* 8 大指标卡片网格 */
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-}
-
-.metric-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 136px;
-  padding: 18px;
-  border: 1px solid var(--ft-color-secondary);
-  border-radius: 0;
-  background: var(--zine-paper-card);
-  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
-  transition:
-    transform var(--ft-transition-fast),
-    box-shadow var(--ft-transition-fast);
-}
-
-.metric-card:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 7px 0 rgb(58 36 24 / 22%);
-}
-
-.metric-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.metric-card__label {
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-sm);
-  font-weight: 700;
-}
-
-.metric-card__tag {
-  padding: 1px 6px;
-  border: 1px dashed var(--ft-color-border);
-  color: var(--ft-color-text-muted);
-  font-size: 11px;
-}
-
-.metric-card__value {
-  margin: 10px 0 6px;
-  font-family: var(--ft-font-family-title);
-  font-size: 28px;
-  line-height: 1.1;
-}
-
-.metric-card--red .metric-card__value {
-  color: var(--zine-stamp-red);
-}
-
-.metric-card--blue .metric-card__value {
-  color: var(--zine-stamp-blue);
-}
-
-.metric-card--green .metric-card__value {
-  color: var(--ft-color-accent);
-}
-
-.metric-card__desc {
-  color: var(--ft-color-text-muted);
-  font-size: 12px;
-}
-
-/* 趋势图面板 */
-.panel {
-  padding: 24px;
-  border: 1px solid var(--ft-color-secondary);
-  border-radius: 0;
-  background: var(--zine-paper-card);
-  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
-}
-
-.panel__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.panel__eyebrow {
-  color: var(--zine-stamp-red);
-  font-family: var(--ft-font-family-note);
-  font-size: var(--ft-font-size-sm);
-  font-weight: 700;
-}
-
-.panel__title {
-  margin: 4px 0 0;
-  color: var(--ft-color-secondary);
-  font-family: var(--ft-font-family-title);
-  font-size: 24px;
-}
-
-.panel__note-tag {
-  padding: 3px 8px;
-  border: 1px dashed var(--ft-color-secondary);
-  background: var(--zine-paper-card-alt);
-  color: var(--ft-color-text-muted);
-  font-size: 12px;
-}
-
-/* 走势指标切换 Tab */
-.trend-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  padding: 4px;
-  border: 1px solid var(--ft-color-border);
-  background: var(--zine-paper-card-alt);
-}
-
-.trend-tab {
-  flex: 1;
-  min-height: 38px;
-  padding: 6px 12px;
-  border: 1px solid transparent;
-  border-radius: 0;
-  background: transparent;
-  color: var(--ft-color-secondary);
-  font-size: var(--ft-font-size-sm);
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--ft-transition-fast);
-}
-
-.trend-tab:hover {
-  background: rgb(58 36 24 / 6%);
-}
-
-.trend-tab:focus-visible {
-  outline: 2px dashed var(--ft-color-primary);
-  outline-offset: 2px;
-}
-
-.trend-tab.is-active {
-  background: var(--zine-paper-card);
-  border-color: var(--ft-color-secondary);
-  box-shadow: 2px 2px 0 var(--ft-color-secondary);
-}
-
-.trend-tab--red.is-active {
-  color: var(--zine-stamp-red);
-}
-
-.trend-tab--blue.is-active {
-  color: var(--zine-stamp-blue);
-}
-
-.trend-tab--green.is-active {
-  color: var(--ft-color-accent);
-}
-
-.trend-tab--gold.is-active {
-  color: #b88924;
-}
-
-/* 曲线图容器与 SVG */
-.chart-box {
-  position: relative;
-  width: 100%;
-}
-
-.trend-svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  min-height: 220px;
-}
-
-.grid-line {
-  stroke: var(--ft-color-border);
-  stroke-width: 1;
-  stroke-dasharray: 4 4;
-}
-
-.axis-line {
-  stroke: var(--ft-color-secondary);
-  stroke-width: 1.5;
-}
-
-.tick-label {
-  fill: var(--ft-color-text-muted);
-  font-size: 11px;
-  font-family: var(--ft-font-family);
-}
-
-.curve-line {
-  fill: none;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: stroke 0.3s ease;
-}
-
-.curve-line--red {
-  stroke: var(--zine-stamp-red);
-}
-
-.curve-line--blue {
-  stroke: var(--zine-stamp-blue);
-}
-
-.curve-line--green {
-  stroke: var(--ft-color-accent);
-}
-
-.curve-line--gold {
-  stroke: #b88924;
-}
-
-.chart-node {
-  cursor: pointer;
-  outline: none;
-}
-
-.point-label {
-  fill: var(--ft-color-secondary);
-  font-family: var(--ft-font-family-title);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.point-ring {
-  fill: transparent;
-  stroke-width: 2;
-  transition:
-    r 0.2s ease,
-    opacity 0.2s ease;
-  opacity: 0.5;
-}
-
-.chart-node:hover .point-ring,
-.chart-node:focus .point-ring {
-  r: 10;
-  opacity: 1;
-}
-
-.point-circle {
-  transition: r 0.2s ease;
-}
-
-.chart-node:hover .point-circle,
-.chart-node:focus .point-circle {
-  r: 5;
-}
-
-.point-circle--red,
-.point-ring--red {
-  fill: var(--zine-stamp-red);
-  stroke: var(--zine-stamp-red);
-}
-
-.point-circle--blue,
-.point-ring--blue {
-  fill: var(--zine-stamp-blue);
-  stroke: var(--zine-stamp-blue);
-}
-
-.point-circle--green,
-.point-ring--green {
-  fill: var(--ft-color-accent);
-  stroke: var(--ft-color-accent);
-}
-
-.point-circle--gold,
-.point-ring--gold {
-  fill: #b88924;
-  stroke: #b88924;
-}
-
-.cursor-line {
-  stroke: var(--ft-color-secondary);
-  stroke-width: 1;
-  stroke-dasharray: 3 3;
-  opacity: 0.75;
-}
-
-.x-label {
-  fill: var(--ft-color-text-muted);
-  font-size: 11px;
-}
-
-/* Tooltip */
-.chart-tooltip {
-  position: absolute;
-  top: 10px;
-  transform: translateX(-50%);
-  min-width: 140px;
-  padding: 8px 12px;
-  border: 1px solid var(--ft-color-secondary);
-  background: var(--zine-paper-card);
-  box-shadow: 3px 3px 0 var(--ft-color-secondary);
-  pointer-events: none;
-  z-index: 10;
-}
-
-.tooltip-title {
-  color: var(--ft-color-text-muted);
-  font-size: 11px;
-  font-weight: 700;
-  border-bottom: 1px dashed var(--ft-color-border);
-  padding-bottom: 4px;
-  margin-bottom: 4px;
-}
-
-.tooltip-item {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.tooltip-key {
-  color: var(--ft-color-secondary);
-  font-size: 12px;
-}
-
-.tooltip-val {
-  color: var(--zine-stamp-red);
-  font-weight: 800;
-  font-size: 13px;
-}
-
-.tooltip-detail {
-  display: flex;
-  gap: 8px;
-  color: var(--ft-color-text-muted);
-  font-size: 10px;
-}
-
-/* 今日活跃表格 */
-.activity-table-wrapper {
-  overflow-x: auto;
-  border: 1px solid var(--ft-color-secondary);
-  background: var(--zine-paper-card);
-  box-shadow: 4px 5px 0 rgb(58 36 24 / 14%);
-}
-
-.activity-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-}
-
-.activity-table th,
-.activity-table td {
-  padding: 14px 18px;
-  border-bottom: 1px dashed var(--ft-color-border);
-}
-
-.activity-table th {
-  background: var(--zine-paper-card-alt);
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-xs);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
-
-.activity-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.activity-table tbody tr:hover {
-  background: rgb(58 36 24 / 2%);
-}
-
-.cell-name {
-  width: 22%;
-  color: var(--ft-color-secondary);
-  font-size: var(--ft-font-size-sm);
-}
-
-.row-bullet {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 8px;
-  background: var(--zine-stamp-red);
-  vertical-align: middle;
-}
-
-.cell-today {
-  width: 20%;
-}
-
-.today-tag {
-  display: inline-block;
-  padding: 2px 10px;
-  border: 1px solid var(--zine-stamp-red);
-  background: var(--zine-stamp-red-soft);
-  color: var(--zine-stamp-red);
-  font-family: var(--ft-font-family-title);
-  font-size: var(--ft-font-size-sm);
-  font-weight: 700;
-}
-
-.cell-total {
-  width: 22%;
-  color: var(--ft-color-secondary);
-  font-family: var(--ft-font-family-title);
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.cell-desc {
-  color: var(--ft-color-text-muted);
-  font-size: var(--ft-font-size-xs);
-}
-
-/* 响应式适配 */
-@media (max-width: 980px) {
-  .metric-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .analytics {
-    padding: 0 0 32px;
-  }
-
-  .analytics__hero {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .overview-hero {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 20px;
-  }
-
-  .overview-hero__doodle {
-    display: none;
-  }
-
-  .trend-tabs {
-    flex-wrap: wrap;
-  }
-
-  .trend-tab {
-    flex: 1 1 45%;
-  }
-
-  .metric-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .cell-desc {
-    display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .refresh-btn,
-  .metric-card,
-  .trend-tab,
-  .point-ring,
-  .point-circle,
-  .curve-line {
-    transition: none !important;
-  }
-  .refresh-icon.is-spinning {
-    animation: none !important;
-  }
-}
-</style>
+<style scoped src="./SuperadminAnalyticsView.css"></style>
