@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
 import { fetchCommunityPosts } from '@/api/community.api.js';
@@ -10,7 +10,27 @@ import PostCreateModal from '@/components/community/PostCreateModal.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
-import { todayRecommendations } from '@/data/todayRecommendations.js';
+import { fetchDailyRecommendations } from '@/api/recommendation.api.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
+
+const auth = useAuthStore();
+const {
+  data: recommendations,
+  loading: recommendationsLoading,
+  error: recommendationsError,
+  load: loadRecommendations,
+  cancel: cancelRecommendations,
+} = useAsyncData(fetchDailyRecommendations, { initial: [], immediate: false });
+watch(
+  () => (auth.user ? `${auth.user.id}:${auth.user.role}` : ''),
+  (actor) => {
+    cancelRecommendations();
+    recommendations.value = [];
+    recommendationsError.value = null;
+    if (actor) loadRecommendations();
+  },
+  { immediate: true },
+);
 
 const {
   data: canteens,
@@ -210,7 +230,19 @@ onUnmounted(() => {
           aria-hidden="true"
         />
       </div>
-      <CanteenCarousel :items="todayRecommendations" variant="dish" />
+      <LoadingState v-if="recommendationsLoading" />
+      <ErrorState
+        v-else-if="recommendationsError"
+        title="今日推荐暂时无法加载"
+        :description="recommendationsError.message"
+        @retry="loadRecommendations"
+      />
+      <EmptyState
+        v-else-if="!recommendations.length"
+        title="今日暂无推荐"
+        description="有可推荐的菜品后会在这里展示，先逛逛食堂吧。"
+      />
+      <CanteenCarousel v-else :items="recommendations" variant="dish" />
     </section>
 
     <!-- 02 食堂档案 -->
