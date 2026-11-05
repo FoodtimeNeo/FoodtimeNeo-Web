@@ -1,8 +1,16 @@
-import { getCurrentScope, onScopeDispose, ref, shallowRef } from 'vue';
+import {
+  computed,
+  getCurrentScope,
+  onScopeDispose,
+  ref,
+  shallowRef,
+} from 'vue';
 
 const asyncDataCache = new Map();
+let cacheGeneration = 0;
 
 export function clearAsyncDataCache(key) {
+  cacheGeneration += 1;
   if (key) {
     asyncDataCache.delete(key);
   } else {
@@ -20,24 +28,31 @@ export function useAsyncData(
   const data = shallowRef(cached ? cached.data : initial);
   const error = ref(null);
   const loading = ref(false);
+  const hasLoaded = ref(Boolean(cached));
+  const initialLoading = computed(() => loading.value && !hasLoaded.value);
   let generation = 0;
   let active = true;
   let controller;
 
   async function load() {
+    if (!active) return;
     const current = ++generation;
+    const cacheVersion = cacheGeneration;
     controller?.abort();
     controller = new AbortController();
 
-    if (!cached) {
-      loading.value = true;
-    }
+    loading.value = true;
     error.value = null;
 
     try {
       const result = await loader({ signal: controller.signal });
-      if (active && current === generation) {
+      if (
+        active &&
+        current === generation &&
+        cacheVersion === cacheGeneration
+      ) {
         data.value = result;
+        hasLoaded.value = true;
         if (cacheKey) {
           asyncDataCache.set(cacheKey, {
             data: result,
@@ -49,10 +64,16 @@ export function useAsyncData(
       if (
         active &&
         current === generation &&
+        cacheVersion === cacheGeneration &&
         failure.code !== 'CANCELLED' &&
         failure.name !== 'AbortError'
       ) {
         error.value = failure;
+        if ([401, 403, 404].includes(failure.status)) {
+          data.value = initial;
+          hasLoaded.value = false;
+          if (cacheKey) asyncDataCache.delete(cacheKey);
+        }
       }
     } finally {
       if (active && current === generation) {
@@ -80,5 +101,5 @@ export function useAsyncData(
     controller?.abort();
     loading.value = false;
   }
-  return { data, error, loading, load, cancel };
+  return { data, error, loading, initialLoading, hasLoaded, load, cancel };
 }

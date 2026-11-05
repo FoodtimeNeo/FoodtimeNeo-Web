@@ -41,7 +41,9 @@ describe('CanteenDetailView', () => {
     ]);
     const wrapper = mountView();
     await flushPromises();
-    expect(fetchCanteen).toHaveBeenCalledWith('c1');
+    expect(fetchCanteen).toHaveBeenCalledWith('c1', {
+      signal: expect.any(AbortSignal),
+    });
     expect(wrapper.text()).toContain('西区食堂');
     expect(wrapper.text()).toContain('面档');
   });

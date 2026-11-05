@@ -35,7 +35,7 @@ watch(
 const {
   data: canteens,
   error,
-  loading,
+  initialLoading: loading,
   load,
 } = useAsyncData(fetchCanteens, {
   initial: [],
@@ -100,7 +100,7 @@ const waterfallColumns = computed(() => {
 });
 
 async function loadCommunityPosts() {
-  communityLoading.value = true;
+  communityLoading.value = communityPosts.value.length === 0;
   try {
     const res = await fetchCommunityPosts({
       page: 1,

@@ -35,11 +35,11 @@ const router = useRouter();
 const tab = ref('notices');
 
 const notices = usePagedData(fetchOwnNotices);
-const messages = usePagedData(fetchOwnMessages);
+const messages = usePagedData(fetchOwnMessages, { immediate: false });
 const messageUnread = useAsyncData(async () => fetchUnreadMessageCount(), {
   initial: { unreadCount: 0 },
 });
-const conversations = usePagedData(fetchConversations);
+const conversations = usePagedData(fetchConversations, { immediate: false });
 const conversationUnread = useAsyncData(async () => fetchConversationUnread(), {
   initial: { unreadCount: 0 },
 });
@@ -65,7 +65,18 @@ async function readMessage(row) {
   actionError.value = '';
   try {
     await markMessageRead(row.id);
-    await Promise.all([messages.load(), messageUnread.load()]);
+    messages.data.value = {
+      ...messages.data.value,
+      items: messages.items.value.map((item) =>
+        item.id === row.id ? { ...item, isRead: true } : item,
+      ),
+    };
+    if (messageUnread.hasLoaded.value) {
+      messageUnread.cancel();
+      messageUnread.data.value = {
+        unreadCount: Math.max(0, messageUnread.data.value.unreadCount - 1),
+      };
+    } else await messageUnread.load();
     refreshInbox();
   } catch (error) {
     actionError.value = error.message || '标记已读失败';
@@ -80,7 +91,12 @@ async function readAllMessages() {
   actionError.value = '';
   try {
     await markAllMessagesRead();
-    await Promise.all([messages.load(), messageUnread.load()]);
+    messages.data.value = {
+      ...messages.data.value,
+      items: messages.items.value.map((item) => ({ ...item, isRead: true })),
+    };
+    messageUnread.cancel();
+    messageUnread.data.value = { unreadCount: 0 };
     refreshInbox();
   } catch (error) {
     actionError.value = error.message || '全部标为已读失败';
@@ -134,7 +150,8 @@ function messageIconClass(row) {
 
 function selectTab(next) {
   tab.value = next;
-  if (next === 'chats') conversations.load();
+  const state = { notices, messages, chats: conversations }[next];
+  if (state && !state.hasLoaded.value && !state.loading.value) state.load();
 }
 
 function openConversation(row) {
@@ -202,7 +219,7 @@ async function openMessage(row) {
     <p v-if="actionError" role="alert">{{ actionError }}</p>
 
     <section v-if="tab === 'notices'" aria-label="公告列表">
-      <LoadingState v-if="notices.loading.value" />
+      <LoadingState v-if="notices.initialLoading.value" />
       <ErrorState
         v-else-if="notices.error.value"
         :description="notices.error.value.message"
@@ -246,7 +263,7 @@ async function openMessage(row) {
       >
         {{ actingId === 'all' ? '标记中' : '全部标为已读' }}
       </button>
-      <LoadingState v-if="messages.loading.value" />
+      <LoadingState v-if="messages.initialLoading.value" />
       <ErrorState
         v-else-if="messages.error.value"
         :description="messages.error.value.message"
@@ -323,7 +340,7 @@ async function openMessage(row) {
     </section>
 
     <section v-else-if="tab === 'chats'" aria-label="私信会话列表">
-      <LoadingState v-if="conversations.loading.value" />
+      <LoadingState v-if="conversations.initialLoading.value" />
       <ErrorState
         v-else-if="conversations.error.value"
         :description="conversations.error.value.message"

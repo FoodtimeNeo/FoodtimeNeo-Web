@@ -11,7 +11,7 @@ import ErrorState from '@/components/base/ErrorState.vue';
 const {
   data: canteens,
   error,
-  loading,
+  initialLoading: loading,
   load,
 } = useAsyncData(fetchCanteens, {
   initial: [],

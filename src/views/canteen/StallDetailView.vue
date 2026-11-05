@@ -1,6 +1,6 @@
 <script setup>
 import VenueRatingSummary from '@/components/venue/VenueRatingSummary.vue';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchStalls, fetchStallDishes } from '@/api/canteen.api.js';
@@ -14,20 +14,42 @@ import ErrorState from '@/components/base/ErrorState.vue';
 const route = useRoute();
 const canteenId = computed(() => String(route.params.canteenId));
 const stallId = computed(() => String(route.params.stallId));
-const { data, error, loading, load } = useAsyncData(async (options) => {
-  const stalls = await fetchStalls(canteenId.value, options);
-  const stall = stalls.find((item) => item.id === stallId.value);
-  if (!stall)
-    throw new ApiError('档口不存在或已停用', {
-      status: 404,
-      code: 'NOT_FOUND',
-    });
-  const dishes = await fetchStallDishes(stall.id, options);
-  return {
-    stall,
-    dishes,
-  };
+const {
+  data: stall,
+  error,
+  initialLoading: loading,
+  loading: stallPending,
+  load,
+} = useAsyncData(
+  async (options) => {
+    const stalls = await fetchStalls(canteenId.value, options);
+    const stall = stalls.find((item) => item.id === stallId.value);
+    if (!stall)
+      throw new ApiError('档口不存在或已停用', {
+        status: 404,
+        code: 'NOT_FOUND',
+      });
+    return stall;
+  },
+  { cacheKey: `stall:${canteenId.value}:${stallId.value}`, ttl: 0 },
+);
+const {
+  data: dishItems,
+  error: dishesError,
+  initialLoading: dishesLoading,
+  load: loadDishes,
+} = useAsyncData((options) => fetchStallDishes(stallId.value, options), {
+  initial: [],
+  immediate: false,
+  cacheKey: `dishes:${stallId.value}`,
+  ttl: 0,
 });
+watch(stallPending, (pending) => {
+  if (!pending && stall.value && !error.value) loadDishes();
+});
+const data = computed(() =>
+  stall.value ? { stall: stall.value, dishes: dishItems.value } : null,
+);
 const { query, matches: dishes } = useCatalogSearch(
   () => data.value?.dishes || [],
   () => `dishes:${stallId.value}`,
@@ -57,7 +79,9 @@ const sortedDishes = computed(() =>
           class="stall-detail__hero-doodle"
           aria-hidden="true"
         />
-        <span class="stall-detail__dish-count stamp"
+        <span
+          v-if="!dishesLoading && !dishesError"
+          class="stall-detail__dish-count stamp"
           >{{ data.dishes.length }} 道菜品</span
         >
         <VenueRatingSummary type="stall" :target-id="stallId" />
@@ -71,42 +95,50 @@ const sortedDishes = computed(() =>
         <span class="section-rule__index">04</span>
         <span class="section-rule__line"></span>
       </div>
-      <CatalogSearch
-        v-if="data.dishes.length"
-        v-model="query"
-        label="搜索菜品"
-        placeholder="输入当前档口的菜名"
-        :count="dishes.length"
-        :total="data.dishes.length"
-        unit="道菜品"
+      <LoadingState v-if="dishesLoading" />
+      <ErrorState
+        v-else-if="dishesError"
+        :description="dishesError.message"
+        @retry="loadDishes"
       />
-      <EmptyState
-        v-if="!dishes.length"
-        :title="data.dishes.length ? '没有匹配的菜品' : '这个档口还没有菜品'"
-        :description="
-          data.dishes.length
-            ? '试试其他关键词，或查看全部菜品。'
-            : '可以通过上方入口投稿菜品。'
-        "
-      >
-        <button
+      <template v-else>
+        <CatalogSearch
           v-if="data.dishes.length"
-          class="button-ink"
-          type="button"
-          @click="query = ''"
+          v-model="query"
+          label="搜索菜品"
+          placeholder="输入当前档口的菜名"
+          :count="dishes.length"
+          :total="data.dishes.length"
+          unit="道菜品"
+        />
+        <EmptyState
+          v-if="!dishes.length"
+          :title="data.dishes.length ? '没有匹配的菜品' : '这个档口还没有菜品'"
+          :description="
+            data.dishes.length
+              ? '试试其他关键词，或查看全部菜品。'
+              : '可以通过上方入口投稿菜品。'
+          "
         >
-          查看全部菜品
-        </button>
-      </EmptyState>
-      <ul v-else class="stall-detail__list">
-        <li v-for="dish in sortedDishes" :key="dish.id">
-          <DishPriceCard
-            :dish="dish"
-            :canteen-id="canteenId"
-            :rating="dish.averageScore ?? null"
-          />
-        </li>
-      </ul>
+          <button
+            v-if="data.dishes.length"
+            class="button-ink"
+            type="button"
+            @click="query = ''"
+          >
+            查看全部菜品
+          </button>
+        </EmptyState>
+        <ul v-else class="stall-detail__list">
+          <li v-for="dish in sortedDishes" :key="dish.id">
+            <DishPriceCard
+              :dish="dish"
+              :canteen-id="canteenId"
+              :rating="dish.averageScore ?? null"
+            />
+          </li>
+        </ul>
+      </template>
     </template>
   </div>
 </template>

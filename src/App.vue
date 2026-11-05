@@ -66,7 +66,9 @@ function closePopup(visible) {
     <component :is="layouts[route.meta.layout] ?? DefaultLayout">
       <component
         :is="Component"
-        :key="route.fullPath + ':' + (auth.user?.id || 'guest')"
+        :key="
+          route.fullPath + ':' + (auth.user?.id || 'guest') + ':' + auth.role
+        "
       />
     </component>
   </RouterView>
