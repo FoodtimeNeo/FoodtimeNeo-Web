@@ -24,6 +24,12 @@
       "url": "https://bjtufoodtime.top/downloads/app-release-11-14.patch",
       "sha256": "3662b6a290af90c3dbec1a7bee65eb244d902104fd41b032cfe33cacf0c80bf6",
       "size": 1867466
+    },
+    {
+      "baseVersionCode": 10,
+      "url": "https://bjtufoodtime.top/downloads/app-release-10-14.patch",
+      "sha256": "d74c6231a6ae729b83c24d4b6b2b3f220f78bb70545c168eebf53f198f4fb32b",
+      "size": 1869653
     }
   ]
 }
