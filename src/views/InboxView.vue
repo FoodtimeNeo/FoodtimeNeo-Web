@@ -1,5 +1,6 @@
 <script setup>
 import { inject, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchOwnNotices } from '@/api/notice.api.js';
@@ -20,6 +21,7 @@ import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 
 const refreshInbox = inject('refreshInbox', () => {});
+const router = useRouter();
 
 const tab = ref('notices');
 
@@ -72,6 +74,70 @@ async function readAllMessages() {
   } finally {
     actingId.value = null;
   }
+}
+
+function isCommunityMessage(row) {
+  if (!row?.refId || row.refType !== 'community-post') return false;
+  return [
+    'LIKE_POST',
+    'LIKE_COMMENT',
+    'COMMENT_POST',
+    'REPLY_COMMENT',
+  ].includes(row.category);
+}
+
+function messageCategoryLabel(row) {
+  switch (row?.category) {
+    case 'LIKE_POST':
+      return '食记点赞';
+    case 'LIKE_COMMENT':
+      return '评论点赞';
+    case 'COMMENT_POST':
+      return '食记评论';
+    case 'REPLY_COMMENT':
+      return '评论回复';
+    default:
+      return row?.category || '系统消息';
+  }
+}
+
+function messageIcon(row) {
+  switch (row?.category) {
+    case 'LIKE_POST':
+    case 'LIKE_COMMENT':
+      return '♥';
+    case 'COMMENT_POST':
+      return '💬';
+    case 'REPLY_COMMENT':
+      return '↩';
+    default:
+      return '🔔';
+  }
+}
+
+function messageIconClass(row) {
+  switch (row?.category) {
+    case 'LIKE_POST':
+    case 'LIKE_COMMENT':
+      return 'is-like';
+    case 'COMMENT_POST':
+      return 'is-comment';
+    case 'REPLY_COMMENT':
+      return 'is-reply';
+    default:
+      return 'is-system';
+  }
+}
+
+async function openMessage(row) {
+  if (actingId.value) return;
+  if (!row.isRead) await readMessage(row);
+  if (!isCommunityMessage(row) || !router) return;
+  await router.push({
+    name: 'communityDetail',
+    params: { postId: row.refId },
+    query: row.refCommentId ? { comment: row.refCommentId } : {},
+  });
 }
 </script>
 
@@ -170,21 +236,52 @@ async function readAllMessages() {
         <article
           v-for="row in messages.items.value"
           :key="row.id"
-          class="inbox-page__item"
-          :class="{ 'is-unread': !row.isRead }"
+          class="inbox-page__item inbox-page__message"
+          :class="{
+            'is-unread': !row.isRead,
+            'is-community': isCommunityMessage(row),
+          }"
+          @click="isCommunityMessage(row) && openMessage(row)"
         >
-          <h2>
-            <span v-if="!row.isRead" class="inbox-page__dot" aria-label="未读"
-              >●</span
-            >{{ row.title }}
-          </h2>
-          <p class="inbox-page__meta">{{ formatTime(row.createdAt) }}</p>
+          <div class="inbox-page__message-head">
+            <span
+              class="inbox-page__icon"
+              :class="messageIconClass(row)"
+              aria-hidden="true"
+              >{{ messageIcon(row) }}</span
+            >
+            <div class="inbox-page__message-copy">
+              <h2>
+                <span
+                  v-if="!row.isRead"
+                  class="inbox-page__dot"
+                  aria-label="未读"
+                  >●</span
+                >{{ row.title }}
+              </h2>
+              <p class="inbox-page__meta">
+                {{ messageCategoryLabel(row) }} ·
+                {{ formatTime(row.createdAt) }}
+                <span v-if="row.actorCount > 1" class="inbox-page__count"
+                  >{{ row.actorCount }}人</span
+                >
+              </p>
+            </div>
+          </div>
           <p class="inbox-page__preview">{{ row.body }}</p>
+          <button
+            v-if="isCommunityMessage(row)"
+            type="button"
+            :disabled="actingId !== null"
+            @click.stop="openMessage(row)"
+          >
+            查看原帖
+          </button>
           <button
             v-if="!row.isRead"
             type="button"
             :disabled="actingId !== null"
-            @click="readMessage(row)"
+            @click.stop="readMessage(row)"
           >
             {{ actingId === row.id ? '标记中' : '标为已读' }}
           </button>
@@ -240,6 +337,45 @@ async function readAllMessages() {
 }
 .inbox-page__item.is-unread {
   border-color: var(--zine-stamp-red);
+  background: rgb(255 244 238 / 92%);
+}
+.inbox-page__item.is-community {
+  cursor: pointer;
+}
+.inbox-page__message-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.inbox-page__message-copy {
+  flex: 1;
+  min-width: 0;
+}
+.inbox-page__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+}
+.inbox-page__icon.is-like {
+  color: var(--zine-stamp-red);
+  background: rgb(201 52 30 / 12%);
+}
+.inbox-page__icon.is-comment {
+  color: #3f7291;
+  background: rgb(63 114 145 / 14%);
+}
+.inbox-page__icon.is-reply {
+  color: #5b7a3a;
+  background: rgb(91 122 58 / 14%);
+}
+.inbox-page__icon.is-system {
+  color: #b88924;
+  background: rgb(184 137 36 / 14%);
 }
 .inbox-page__item h2 {
   margin: 0 0 4px;
@@ -253,6 +389,11 @@ async function readAllMessages() {
   margin: 0 0 8px;
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
+}
+.inbox-page__count {
+  margin-left: 8px;
+  color: var(--zine-stamp-red);
+  font-weight: 700;
 }
 .inbox-page__preview {
   display: -webkit-box;

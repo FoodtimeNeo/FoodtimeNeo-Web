@@ -26,6 +26,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  focusCommentId: {
+    type: String,
+    default: '',
+  },
 });
 
 const emit = defineEmits(['deleted', 'close']);
@@ -400,6 +404,7 @@ function formatPostTime(isoString) {
             <CommunityCommentSection
               ref="commentSectionRef"
               :post-id="post.id"
+              :focus-comment-id="focusCommentId"
               @changed="load"
               @reply-target-change="onReplyTargetChange"
             />

@@ -12,6 +12,7 @@ import CommunityCommentItem from './CommunityCommentItem.vue';
 const props = defineProps({
   postId: { type: String, required: true },
   embedded: Boolean,
+  focusCommentId: { type: String, default: '' },
 });
 const emit = defineEmits(['changed', 'replyTargetChange']);
 const { remove: removeContent, removing, outcome } = useCommunityRemoval();
@@ -24,7 +25,8 @@ const loading = ref(false),
   error = ref(''),
   draft = ref(''),
   target = ref(null),
-  input = ref(null);
+  input = ref(null),
+  sectionRef = ref(null);
 let epoch = 0,
   requestId = crypto.randomUUID(),
   payloadKey = '';
@@ -44,6 +46,19 @@ async function loadedPage(fetchPage, count) {
   } while (page.hasMore && items.length < count);
   return { ...page, items };
 }
+async function focusComment() {
+  const id = props.focusCommentId;
+  if (!id || !sectionRef.value) return;
+  await nextTick();
+  const element = Array.from(
+    sectionRef.value.querySelectorAll('[data-comment-id]'),
+  ).find((node) => node.dataset.commentId === id);
+  if (!element) return;
+  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  element.classList.add('is-highlighted');
+  window.setTimeout(() => element.classList.remove('is-highlighted'), 2600);
+}
+
 async function replies(root, more = false, version = epoch, preserve = false) {
   const prior = threads.value[root.id];
   const postId = props.postId;
@@ -88,6 +103,7 @@ async function load(more = false, preserve = false, newRoot = false) {
         .filter((r) => r.status === 'approved')
         .map((r) => replies(r, false, version, preserve)),
     );
+    await focusComment();
   } catch (e) {
     if (version === epoch) error.value = e.message || '评论加载失败';
   } finally {
@@ -110,6 +126,7 @@ watch(
   },
   { immediate: true },
 );
+watch(() => props.focusCommentId, focusComment);
 const POLL_INTERVAL = 2000;
 const POLL_TIMEOUT = 30000;
 const polling = new Set();
@@ -270,6 +287,7 @@ defineExpose({
 </script>
 <template>
   <section
+    ref="sectionRef"
     class="community-comments"
     :class="{ 'is-embedded': embedded }"
     aria-label="评论与回复"

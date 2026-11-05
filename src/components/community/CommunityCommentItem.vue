@@ -107,6 +107,10 @@ async function like() {
   padding: 12px 0;
   transition: background 150ms ease;
 }
+.comment-item.is-highlighted {
+  background: rgb(201 52 30 / 9%);
+  border-radius: 10px;
+}
 .avatar {
   width: 34px;
   height: 34px;
