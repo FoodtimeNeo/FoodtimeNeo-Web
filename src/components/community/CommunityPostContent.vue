@@ -1,5 +1,6 @@
 <script setup>
 import { nextTick, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
@@ -14,6 +15,7 @@ import {
   followUser,
   unfollowUser,
 } from '@/api/follow.api.js';
+import { startConversation } from '@/api/directMessage.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 
@@ -39,6 +41,7 @@ const props = defineProps({
 const emit = defineEmits(['deleted', 'close']);
 
 const auth = useAuthStore();
+const router = useRouter();
 const {
   canRemove,
   remove: removeContent,
@@ -53,6 +56,7 @@ const actionError = ref('');
 const acting = ref(false);
 const isFollowing = ref(false);
 const followBusy = ref(false);
+const chatBusy = ref(false);
 
 const commentSectionRef = ref(null);
 const scrollAreaRef = ref(null);
@@ -153,6 +157,23 @@ async function remove() {
     if (current !== version) return;
     actionError.value = e.message || '删除失败';
     ElMessage.error(actionError.value);
+  }
+}
+
+async function openDirectMessage() {
+  const authorId = post.value?.userId;
+  if (!authorId || chatBusy.value || authorId === auth.user?.id) return;
+  chatBusy.value = true;
+  try {
+    const conversation = await startConversation(authorId);
+    await router.push({
+      name: 'directChat',
+      params: { conversationId: conversation.id },
+    });
+  } catch (error) {
+    ElMessage.error(error.message || '无法发起私信，请稍后重试');
+  } finally {
+    chatBusy.value = false;
   }
 }
 
@@ -320,6 +341,15 @@ function formatPostTime(isoString) {
             {{ isFollowing ? '已关注' : '关注' }}
           </button>
           <button
+            v-if="post.userId !== auth.user?.id"
+            type="button"
+            class="mobile-message-btn"
+            :disabled="chatBusy"
+            @click="openDirectMessage"
+          >
+            私信
+          </button>
+          <button
             type="button"
             class="mobile-share-btn"
             aria-label="分享"
@@ -375,6 +405,15 @@ function formatPostTime(isoString) {
               @click="toggleFollow"
             >
               {{ isFollowing ? '已关注' : '关注' }}
+            </button>
+            <button
+              v-if="post.userId !== auth.user?.id"
+              type="button"
+              class="redbook-message-btn"
+              :disabled="chatBusy"
+              @click="openDirectMessage"
+            >
+              私信
             </button>
           </div>
         </header>
@@ -667,6 +706,23 @@ function formatPostTime(isoString) {
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .redbook-message-btn {
+    padding: 5px 16px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #555;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 160ms ease;
+
+    &:hover {
+      border-color: var(--ft-color-primary, #e60026);
+      color: var(--ft-color-primary, #e60026);
+    }
   }
 
   .redbook-follow-btn {
@@ -981,6 +1037,16 @@ function formatPostTime(isoString) {
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .mobile-message-btn {
+      padding: 4px 14px;
+      border-radius: 999px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #555;
+      font-size: 12px;
+      font-weight: 600;
     }
 
     .mobile-follow-btn {

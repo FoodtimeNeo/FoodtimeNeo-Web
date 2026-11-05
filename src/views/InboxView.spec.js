@@ -16,6 +16,12 @@ const messageApi = vi.hoisted(() => ({
 }));
 vi.mock('@/api/message.api.js', () => messageApi);
 
+const directApi = vi.hoisted(() => ({
+  fetchConversations: vi.fn(),
+  fetchConversationUnread: vi.fn(),
+}));
+vi.mock('@/api/directMessage.api.js', () => directApi);
+
 const routerPush = vi.hoisted(() => vi.fn());
 vi.mock('vue-router', () => ({ useRouter: () => ({ push: routerPush }) }));
 
@@ -71,6 +77,13 @@ beforeEach(() => {
   messageApi.fetchUnreadMessageCount.mockResolvedValue({ unreadCount: 1 });
   messageApi.markMessageRead.mockResolvedValue(undefined);
   messageApi.markAllMessagesRead.mockResolvedValue(undefined);
+  directApi.fetchConversations.mockResolvedValue({
+    items: [],
+    total: 0,
+    page: 1,
+    size: 20,
+  });
+  directApi.fetchConversationUnread.mockResolvedValue({ unreadCount: 0 });
 });
 
 it('默认展示公告空态，切换后展示系统消息', async () => {
@@ -146,5 +159,35 @@ it('点击互动消息跳转原帖并携带评论与楼层定位', async () => {
     name: 'communityDetail',
     params: { postId: 'post-1' },
     query: { comment: 'reply-2', root: 'root-1' },
+  });
+});
+
+it('私信标签展示会话并跳转聊天页', async () => {
+  directApi.fetchConversations.mockResolvedValue({
+    items: [
+      {
+        id: 'c1',
+        other: { id: 'u2', displayName: '小红', avatarUrl: null },
+        lastMessage: '今晚吃什么',
+        unreadCount: 3,
+        updatedAt: '2026-11-06T10:00:00Z',
+      },
+    ],
+    total: 1,
+    page: 1,
+    size: 20,
+  });
+  directApi.fetchConversationUnread.mockResolvedValue({ unreadCount: 3 });
+  const wrapper = mountPage();
+  await flushPromises();
+  await buttonByText(wrapper, '私信').trigger('click');
+  await flushPromises();
+  expect(wrapper.text()).toContain('小红');
+  expect(wrapper.text()).toContain('今晚吃什么');
+  expect(wrapper.text()).toContain('3');
+  await wrapper.find('.inbox-page__chat').trigger('click');
+  expect(routerPush).toHaveBeenCalledWith({
+    name: 'directChat',
+    params: { conversationId: 'c1' },
   });
 });
