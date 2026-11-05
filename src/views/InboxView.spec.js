@@ -16,6 +16,9 @@ const messageApi = vi.hoisted(() => ({
 }));
 vi.mock('@/api/message.api.js', () => messageApi);
 
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: routerPush }) }));
+
 import InboxView from './InboxView.vue';
 
 const messageRow = {
@@ -51,6 +54,7 @@ function buttonByText(wrapper, text) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  routerPush.mockReset();
   noticeApi.fetchOwnNotices.mockResolvedValue({
     items: [],
     total: 0,
@@ -112,4 +116,35 @@ it('全部标为已读调用批量接口', async () => {
   await buttonByText(wrapper, '全部标为已读').trigger('click');
   await flushPromises();
   expect(messageApi.markAllMessagesRead).toHaveBeenCalledOnce();
+});
+
+it('点击互动消息跳转原帖并携带评论与楼层定位', async () => {
+  messageApi.fetchOwnMessages.mockResolvedValue({
+    items: [
+      {
+        ...messageRow,
+        id: 'm2',
+        category: 'REPLY_COMMENT',
+        refType: 'community-post',
+        refId: 'post-1',
+        refCommentId: 'reply-2',
+        refRootCommentId: 'root-1',
+        isRead: true,
+      },
+    ],
+    total: 1,
+    page: 1,
+    size: 20,
+  });
+  const wrapper = mountPage();
+  await flushPromises();
+  await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
+  await buttonByText(wrapper, '查看原帖').trigger('click');
+  await flushPromises();
+  expect(routerPush).toHaveBeenCalledWith({
+    name: 'communityDetail',
+    params: { postId: 'post-1' },
+    query: { comment: 'reply-2', root: 'root-1' },
+  });
 });

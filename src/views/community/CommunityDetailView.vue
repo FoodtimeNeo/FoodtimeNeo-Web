@@ -10,6 +10,8 @@ const router = useRouter();
     <div class="community-detail-card">
       <CommunityPostContent
         :post-id="route.params.postId"
+        :focus-comment-id="String(route.query?.comment || '')"
+        :focus-root-id="String(route.query?.root || '')"
         @deleted="router.replace('/community')"
       />
     </div>

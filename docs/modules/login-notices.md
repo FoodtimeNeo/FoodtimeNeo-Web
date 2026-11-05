@@ -11,3 +11,7 @@ data=null 表示未配置当前公告或该用户已免弹。非空内容使用 
 公告管理入口和后端发布权限均限制 superadmin。创建/编辑 UI 的 content 化、当前公告配置 UI 后续完成；本轮不新增这些管理功能。
 
 需要 Backend V27 及配套接口。config 只有 id、notice_id 两列；初始化 notice_id=NULL 时不弹出，不自动选择最新公告。首次启用需在管理流程完成前明确配置当前公告 ID。
+
+## 社区互动消息
+
+个人消息新增 `LIKE_POST`、`LIKE_COMMENT`、`COMMENT_POST`、`REPLY_COMMENT` 四类。信箱按分类展示图标与文案，`actorCount > 1` 时显示聚合人数。`refType=community-post` 的互动消息可进入原帖：路由 query 携带 `comment`（目标评论）与 `root`（所在楼层），评论区按需继续翻页直到定位并高亮；找不到时静默保持普通列表。自己的点赞/评论不产生消息，点赞全部取消后对应消息由服务端删除。
