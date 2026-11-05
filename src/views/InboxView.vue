@@ -19,6 +19,10 @@ import PaginationControls from '@/components/base/PaginationControls.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
+import {
+  communityMessageTarget,
+  isCommunityMessage,
+} from '@/utils/messageLinks.js';
 
 const refreshInbox = inject('refreshInbox', () => {});
 const router = useRouter();
@@ -76,16 +80,6 @@ async function readAllMessages() {
   }
 }
 
-function isCommunityMessage(row) {
-  if (!row?.refId || row.refType !== 'community-post') return false;
-  return [
-    'LIKE_POST',
-    'LIKE_COMMENT',
-    'COMMENT_POST',
-    'REPLY_COMMENT',
-  ].includes(row.category);
-}
-
 function messageCategoryLabel(row) {
   switch (row?.category) {
     case 'LIKE_POST':
@@ -132,12 +126,9 @@ function messageIconClass(row) {
 async function openMessage(row) {
   if (actingId.value) return;
   if (!row.isRead) await readMessage(row);
-  if (!isCommunityMessage(row) || !router) return;
-  await router.push({
-    name: 'communityDetail',
-    params: { postId: row.refId },
-    query: row.refCommentId ? { comment: row.refCommentId } : {},
-  });
+  const target = communityMessageTarget(row);
+  if (!target || !router) return;
+  await router.push(target);
 }
 </script>
 

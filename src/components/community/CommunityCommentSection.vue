@@ -13,6 +13,7 @@ const props = defineProps({
   postId: { type: String, required: true },
   embedded: Boolean,
   focusCommentId: { type: String, default: '' },
+  focusRootId: { type: String, default: '' },
 });
 const emit = defineEmits(['changed', 'replyTargetChange']);
 const { remove: removeContent, removing, outcome } = useCommunityRemoval();
@@ -46,17 +47,72 @@ async function loadedPage(fetchPage, count) {
   } while (page.hasMore && items.length < count);
   return { ...page, items };
 }
+let focusing = false;
 async function focusComment() {
   const id = props.focusCommentId;
-  if (!id || !sectionRef.value) return;
-  await nextTick();
-  const element = Array.from(
-    sectionRef.value.querySelectorAll('[data-comment-id]'),
-  ).find((node) => node.dataset.commentId === id);
-  if (!element) return;
-  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  element.classList.add('is-highlighted');
-  window.setTimeout(() => element.classList.remove('is-highlighted'), 2600);
+  if (!id || !sectionRef.value || focusing) return;
+  focusing = true;
+  try {
+    await ensureFocusedLoaded(id);
+    await nextTick();
+    const element = Array.from(
+      sectionRef.value.querySelectorAll('[data-comment-id]'),
+    ).find((node) => node.dataset.commentId === id);
+    if (!element) return;
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    element.classList.add('is-highlighted');
+    window.setTimeout(() => element.classList.remove('is-highlighted'), 2600);
+  } finally {
+    focusing = false;
+  }
+}
+
+/** 深链可能指向未加载的楼层或回复：按需再翻页，找到后由 focusComment 定位。 */
+async function ensureFocusedLoaded(id) {
+  const rootId = props.focusRootId;
+  if (!rootId) return;
+  if (!roots.value.length) {
+    const page = await fetchRootComments(props.postId);
+    roots.value = page.items;
+    cursor.value = page.nextCursor;
+    hasMore.value = page.hasMore;
+    await Promise.all(
+      page.items
+        .filter((root) => root.status === 'approved')
+        .map((root) => replies(root, false, epoch)),
+    );
+  }
+  let guard = 0;
+  while (
+    !roots.value.some((root) => root.id === rootId) &&
+    hasMore.value &&
+    guard++ < 10
+  ) {
+    const page = await fetchRootComments(props.postId, {
+      cursor: cursor.value,
+    });
+    roots.value = [...roots.value, ...page.items];
+    cursor.value = page.nextCursor;
+    hasMore.value = page.hasMore;
+    await Promise.all(
+      page.items
+        .filter((root) => root.status === 'approved')
+        .map((root) => replies(root, false, epoch)),
+    );
+  }
+  if (id === rootId) return;
+  const root = roots.value.find((item) => item.id === rootId);
+  if (!root) return;
+  guard = 0;
+  while (
+    !(threads.value[rootId]?.items || []).some(
+      (comment) => comment.id === id,
+    ) &&
+    threads.value[rootId]?.hasMore &&
+    guard++ < 20
+  ) {
+    await replies(root, true, epoch);
+  }
 }
 
 async function replies(root, more = false, version = epoch, preserve = false) {
@@ -126,7 +182,7 @@ watch(
   },
   { immediate: true },
 );
-watch(() => props.focusCommentId, focusComment);
+watch(() => [props.focusCommentId, props.focusRootId], focusComment);
 const POLL_INTERVAL = 2000;
 const POLL_TIMEOUT = 30000;
 const polling = new Set();

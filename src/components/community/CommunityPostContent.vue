@@ -30,6 +30,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  focusRootId: {
+    type: String,
+    default: '',
+  },
 });
 
 const emit = defineEmits(['deleted', 'close']);
@@ -405,6 +409,7 @@ function formatPostTime(isoString) {
               ref="commentSectionRef"
               :post-id="post.id"
               :focus-comment-id="focusCommentId"
+              :focus-root-id="focusRootId"
               @changed="load"
               @reply-target-change="onReplyTargetChange"
             />
