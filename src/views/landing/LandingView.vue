@@ -4,14 +4,11 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 
 // 引入放大左上角 70% 的专属高清底图与合成真实截图的手机 Mockup
-import bgTopLeft70 from '@/assets/images/decoration02/bg-topleft-70.png';
+import bgTopLeft70 from '@/assets/images/decoration02/bg-topleft-70.jpg';
 import mockupRealPhone from '@/assets/images/decoration02/mockup-real-phone.png';
 import androidApkSticker from '@/assets/images/decoration02/extras-original-assets/standalone-android-apk-sticker.png';
 import redStamp from '@/assets/images/decoration02/extras-original-assets/standalone-red-stamp.png';
 import paperClipImg from '@/assets/images/decoration/回形针.png';
-import dishImgBeef from '@/assets/images/dishs/番茄肥牛饭.jpg';
-import dishImgNoodle from '@/assets/images/dishs/红烧牛肉面-学苑.png';
-import dishImgChicken from '@/assets/images/dishs/黑胶鸡腿饭.png';
 
 import {
   APK_DOWNLOAD_URL,
@@ -185,9 +182,6 @@ function goToWeb() {
               <p class="feed-text">
                 这个红烧肉饭真的绝了！分量大，味道好，强烈推荐！
               </p>
-              <img :src="dishImgBeef" alt="第一食堂菜品" />
-              <img :src="dishImgNoodle" alt="第二食堂菜品" />
-              <img :src="dishImgChicken" alt="红烧肉盖饭" />
             </div>
           </div>
         </section>
