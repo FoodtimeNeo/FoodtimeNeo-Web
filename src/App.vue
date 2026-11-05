@@ -10,6 +10,7 @@ import { useInboxStore } from '@/store/useInboxStore.js';
 import { useLoginNotice } from '@/composables/useLoginNotice.js';
 import { fetchUnreadNoticeCount } from '@/api/notice.api.js';
 import { fetchUnreadMessageCount } from '@/api/message.api.js';
+import { fetchConversationUnread } from '@/api/directMessage.api.js';
 
 const auth = useAuthStore();
 const inbox = useInboxStore();
@@ -27,13 +28,16 @@ async function refreshInbox() {
   if (!auth.isAuthenticated) return;
   const ticket = ++generation;
   try {
-    const [notices, messages] = await Promise.all([
+    const [notices, messages, chats] = await Promise.all([
       fetchUnreadNoticeCount(),
       fetchUnreadMessageCount(),
+      fetchConversationUnread(),
     ]);
     if (ticket === generation && auth.isAuthenticated)
       inbox.setUnreadCount(
-        (notices?.unreadCount || 0) + (messages?.unreadCount || 0),
+        (notices?.unreadCount || 0) +
+          (messages?.unreadCount || 0) +
+          (chats?.unreadCount || 0),
       );
   } catch {
     /* The inbox itself exposes retryable errors; login must remain usable. */

@@ -98,6 +98,17 @@ export const routes = [
     },
   },
   {
+    path: '/inbox/chat/:conversationId',
+    name: 'directChat',
+    component: () => import('@/views/inbox/DirectChatView.vue'),
+    meta: {
+      title: '私信',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/admin/reviews',
     name: 'managedReviews',
     component: () => import('@/views/admin/ManagedReviewsView.vue'),

@@ -23,6 +23,11 @@ import {
   communityMessageTarget,
   isCommunityMessage,
 } from '@/utils/messageLinks.js';
+import {
+  fetchConversations,
+  fetchConversationUnread,
+} from '@/api/directMessage.api.js';
+import MediaImage from '@/components/base/MediaImage.vue';
 
 const refreshInbox = inject('refreshInbox', () => {});
 const router = useRouter();
@@ -32,6 +37,10 @@ const tab = ref('notices');
 const notices = usePagedData(fetchOwnNotices);
 const messages = usePagedData(fetchOwnMessages);
 const messageUnread = useAsyncData(async () => fetchUnreadMessageCount(), {
+  initial: { unreadCount: 0 },
+});
+const conversations = usePagedData(fetchConversations);
+const conversationUnread = useAsyncData(async () => fetchConversationUnread(), {
   initial: { unreadCount: 0 },
 });
 
@@ -123,6 +132,19 @@ function messageIconClass(row) {
   }
 }
 
+function selectTab(next) {
+  tab.value = next;
+  if (next === 'chats') conversations.load();
+}
+
+function openConversation(row) {
+  router.push({ name: 'directChat', params: { conversationId: row.id } });
+}
+
+function conversationInitial(row) {
+  return Array.from(row?.other?.displayName?.trim() || '饭')[0];
+}
+
 async function openMessage(row) {
   if (actingId.value) return;
   if (!row.isRead) await readMessage(row);
@@ -147,7 +169,7 @@ async function openMessage(row) {
         role="tab"
         :aria-selected="tab === 'notices'"
         :class="{ 'is-active': tab === 'notices' }"
-        @click="tab = 'notices'"
+        @click="selectTab('notices')"
       >
         公告
       </button>
@@ -156,11 +178,23 @@ async function openMessage(row) {
         role="tab"
         :aria-selected="tab === 'messages'"
         :class="{ 'is-active': tab === 'messages' }"
-        @click="tab = 'messages'"
+        @click="selectTab('messages')"
       >
         系统消息
         <span v-if="(messageUnread.data.value?.unreadCount ?? 0) > 0">
           （{{ messageUnread.data.value.unreadCount }} 未读）
+        </span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        :aria-selected="tab === 'chats'"
+        :class="{ 'is-active': tab === 'chats' }"
+        @click="selectTab('chats')"
+      >
+        私信
+        <span v-if="(conversationUnread.data.value?.unreadCount ?? 0) > 0">
+          （{{ conversationUnread.data.value.unreadCount }} 未读）
         </span>
       </button>
     </div>
@@ -203,7 +237,7 @@ async function openMessage(row) {
       />
     </section>
 
-    <section v-else aria-label="系统消息列表">
+    <section v-else-if="tab === 'messages'" aria-label="系统消息列表">
       <button
         v-if="messages.items.value.some((row) => !row.isRead)"
         type="button"
@@ -288,6 +322,56 @@ async function openMessage(row) {
       />
     </section>
 
+    <section v-else-if="tab === 'chats'" aria-label="私信会话列表">
+      <LoadingState v-if="conversations.loading.value" />
+      <ErrorState
+        v-else-if="conversations.error.value"
+        :description="conversations.error.value.message"
+        @retry="conversations.load"
+      />
+      <EmptyState
+        v-else-if="!conversations.items.value.length"
+        title="还没有私信"
+        description="在社区食记或关注列表找到同学，点击「私信」开始聊天。"
+      />
+      <template v-else>
+        <button
+          v-for="row in conversations.items.value"
+          :key="row.id"
+          type="button"
+          class="inbox-page__chat"
+          @click="openConversation(row)"
+        >
+          <span class="inbox-page__chat-avatar">
+            <MediaImage
+              compact
+              :src="row.other.avatarUrl || ''"
+              :alt="row.other.displayName"
+              :empty="conversationInitial(row)"
+            />
+          </span>
+          <span class="inbox-page__chat-copy">
+            <strong>{{ row.other.displayName }}</strong>
+            <span>{{ row.lastMessage || '还没有消息，打个招呼吧' }}</span>
+          </span>
+          <span class="inbox-page__chat-meta">
+            <time>{{ formatTime(row.updatedAt) }}</time>
+            <span v-if="row.unreadCount > 0" class="inbox-page__chat-badge">
+              {{ row.unreadCount > 99 ? '99+' : row.unreadCount }}
+            </span>
+          </span>
+        </button>
+      </template>
+      <PaginationControls
+        v-if="conversations.total.value > conversations.size.value"
+        :page="conversations.page.value"
+        :total="conversations.total.value"
+        :size="conversations.size.value"
+        :disabled="conversations.loading.value"
+        @change="conversations.page.value = $event"
+      />
+    </section>
+
     <NoticeDialog
       v-model="noticeOpen"
       :notice="activeNotice"
@@ -332,6 +416,73 @@ async function openMessage(row) {
 }
 .inbox-page__item.is-community {
   cursor: pointer;
+}
+.inbox-page__chat {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--ft-color-secondary);
+  background: var(--zine-paper-card);
+  text-align: left;
+  cursor: pointer;
+}
+.inbox-page__chat:hover,
+.inbox-page__chat:focus-visible {
+  border-color: var(--zine-stamp-red);
+}
+.inbox-page__chat-avatar {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--ft-color-border);
+  border-radius: 50%;
+}
+.inbox-page__chat-avatar :deep(.media-image) {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.inbox-page__chat-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+.inbox-page__chat-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-page__chat-copy span {
+  overflow: hidden;
+  color: var(--ft-color-text-muted);
+  font-size: var(--ft-font-size-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inbox-page__chat-meta {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: var(--ft-color-text-muted);
+  font-size: var(--ft-font-size-xs);
+}
+.inbox-page__chat-badge {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--zine-stamp-red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
 }
 .inbox-page__message-head {
   display: flex;
