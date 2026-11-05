@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
 import { fetchCommunityPosts } from '@/api/community.api.js';
@@ -10,13 +10,38 @@ import PostCreateModal from '@/components/community/PostCreateModal.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
+import { fetchDailyRecommendations } from '@/api/recommendation.api.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
+
+const auth = useAuthStore();
+const {
+  data: recommendations,
+  loading: recommendationsLoading,
+  error: recommendationsError,
+  load: loadRecommendations,
+  cancel: cancelRecommendations,
+} = useAsyncData(fetchDailyRecommendations, { initial: [], immediate: false });
+watch(
+  () => (auth.user ? `${auth.user.id}:${auth.user.role}` : ''),
+  (actor) => {
+    cancelRecommendations();
+    recommendations.value = [];
+    recommendationsError.value = null;
+    if (actor) loadRecommendations();
+  },
+  { immediate: true },
+);
 
 const {
   data: canteens,
   error,
   loading,
   load,
-} = useAsyncData(fetchCanteens, { initial: [], cacheKey: 'canteens_list' });
+} = useAsyncData(fetchCanteens, {
+  initial: [],
+  cacheKey: 'canteens_list',
+  ttl: 0,
+});
 
 // 02 社区动态部分
 const communityPosts = ref([]);
@@ -25,8 +50,6 @@ const communityTotal = ref(0);
 const isCreateModalOpen = ref(false);
 const activePostId = ref('');
 const isDetailModalOpen = ref(false);
-let sectionObserver = null;
-
 const screenWidth = ref(
   typeof window !== 'undefined' ? window.innerWidth : 1200,
 );
@@ -102,27 +125,6 @@ onMounted(() => {
   loadCommunityPosts();
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', handleResize);
-
-    if ('IntersectionObserver' in window) {
-      sectionObserver = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-visible');
-              sectionObserver?.unobserve(entry.target);
-            }
-          }
-        },
-        { threshold: 0.3 },
-      );
-      document
-        .querySelectorAll('.home-page__section')
-        .forEach((section) => sectionObserver.observe(section));
-    } else {
-      document
-        .querySelectorAll('.home-page__section')
-        .forEach((section) => section.classList.add('is-visible'));
-    }
   }
 });
 
@@ -130,8 +132,6 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleResize);
   }
-  sectionObserver?.disconnect();
-  sectionObserver = null;
 });
 </script>
 
@@ -183,34 +183,72 @@ onUnmounted(() => {
         class="home-page__hero-note hero-stagger-3"
         aria-label="今日食堂档案"
       >
-        <div class="hero-polaroid-card">
-          <img
-            src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
-            alt=""
-            class="hero-tape-decor"
-            aria-hidden="true"
-          />
-          <img
-            src="@/assets/images/decoration02/A/stickers/A_polaroid-noodle.png"
-            alt="校园食堂风味手账"
-            class="hero-polaroid-media"
-          />
-          <img
-            src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
-            alt=""
-            class="hero-stamp-decor"
-            aria-hidden="true"
-          />
-        </div>
+        <RouterLink
+          class="hero-polaroid-link"
+          :to="{ name: 'canteenList' }"
+          aria-label="进入01食堂页"
+        >
+          <div class="hero-polaroid-card">
+            <img
+              src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
+              alt=""
+              class="hero-tape-decor"
+              aria-hidden="true"
+            />
+            <img
+              src="@/assets/images/decoration02/A/stickers/A_polaroid-noodle.png"
+              alt="校园食堂风味手账"
+              class="hero-polaroid-media"
+            />
+            <img
+              src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
+              alt=""
+              class="hero-stamp-decor"
+              aria-hidden="true"
+            />
+          </div>
+        </RouterLink>
         <span class="sticker sticker--r2">今日食堂档案</span>
       </aside>
       <span class="home-page__hero-sketch" aria-hidden="true"></span>
     </header>
 
-    <!-- 01 食堂档案 -->
-    <section class="home-page__section" aria-labelledby="canteens-title">
+    <!-- 01 今日推荐 -->
+    <section class="home-page__section" aria-labelledby="recommendations-title">
       <div class="section-rule">
         <span class="section-rule__index">01</span>
+        <span class="section-rule__line"></span>
+      </div>
+      <div class="section-title-wrap">
+        <h2 id="recommendations-title" class="section-title">
+          今日<span class="zine-highlight">推荐</span>
+        </h2>
+        <img
+          src="@/assets/images/decoration02/A/illustrations/A_food-tray-lineart.png"
+          alt=""
+          class="section-title-doodle"
+          aria-hidden="true"
+        />
+      </div>
+      <LoadingState v-if="recommendationsLoading" />
+      <ErrorState
+        v-else-if="recommendationsError"
+        title="今日推荐暂时无法加载"
+        :description="recommendationsError.message"
+        @retry="loadRecommendations"
+      />
+      <EmptyState
+        v-else-if="!recommendations.length"
+        title="今日暂无推荐"
+        description="有可推荐的菜品后会在这里展示，先逛逛食堂吧。"
+      />
+      <CanteenCarousel v-else :items="recommendations" variant="dish" />
+    </section>
+
+    <!-- 02 食堂档案 -->
+    <section class="home-page__section" aria-labelledby="canteens-title">
+      <div class="section-rule">
+        <span class="section-rule__index">02</span>
         <span class="section-rule__line"></span>
       </div>
       <div class="section-title-wrap">
@@ -234,13 +272,13 @@ onUnmounted(() => {
       <CanteenCarousel v-else :canteens="canteens" />
     </section>
 
-    <!-- 02 校园食记 · 社区动态（第二部分，饱满紧凑的真实多列瀑布流） -->
+    <!-- 03 校园食记 · 社区动态（第三部分，饱满紧凑的真实多列瀑布流） -->
     <section
       class="home-page__section home-page__community-section"
       aria-labelledby="community-title"
     >
       <div class="section-rule">
-        <span class="section-rule__index">02</span>
+        <span class="section-rule__index">03</span>
         <span class="section-rule__line"></span>
       </div>
       <div class="home-page__section-header">
@@ -340,6 +378,17 @@ onUnmounted(() => {
   }
 }
 
+@keyframes sectionFloatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .hero-appear {
   --hero-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --hero-duration: 800ms;
@@ -430,6 +479,17 @@ onUnmounted(() => {
     padding: 28px 20px 20px;
     border-left: 1px dashed rgb(58 36 24 / 35%);
     background: rgb(241 236 226 / 64%);
+
+    .hero-polaroid-link {
+      display: block;
+      color: inherit;
+      text-decoration: none;
+
+      &:focus-visible {
+        outline: 2px solid var(--zine-stamp-red);
+        outline-offset: 6px;
+      }
+    }
 
     .hero-polaroid-card {
       position: relative;
@@ -574,19 +634,7 @@ onUnmounted(() => {
 
   &__section {
     position: relative;
-    opacity: 0;
-    transform: translateY(10px);
-    filter: blur(4px);
-    transition:
-      opacity 0.8s cubic-bezier(0.33, 1, 0.68, 1),
-      transform 1.05s cubic-bezier(0.16, 1, 0.3, 1),
-      filter 0.8s cubic-bezier(0.33, 1, 0.68, 1);
-
-    &.is-visible {
-      opacity: 1;
-      transform: none;
-      filter: none;
-    }
+    animation: sectionFloatUp 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   &__grid {

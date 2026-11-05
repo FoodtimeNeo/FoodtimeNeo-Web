@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { allowMediaSession, invalidateMedia } from '@/utils/mediaLoader.js';
 import { clearSession } from '@/utils/authSession.js';
+import { clearVenueDrafts } from '@/utils/venueDrafts.js';
 import { ApiError, invalidateSession } from '@/api/http.js';
 import {
   login as loginApi,
@@ -43,6 +44,7 @@ export const useAuthStore = defineStore('auth', {
       this.revision += 1;
     },
     clear() {
+      clearVenueDrafts();
       invalidateMedia();
       this.user = null;
       this.initialized = true;

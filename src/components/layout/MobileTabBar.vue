@@ -66,12 +66,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
     padding: 4px max(4px, env(safe-area-inset-right))
       var(--app-mobile-safe-bottom) max(4px, env(safe-area-inset-left));
     border-top: 1px solid var(--ft-color-secondary);
-    background: linear-gradient(
-      180deg,
-      rgb(255 250 240 / 96%),
-      rgb(242 239 230 / 98%)
-    );
-    backdrop-filter: blur(8px);
+    background: linear-gradient(180deg, #fffaf0, #f2efe6);
   }
 
   .mobile-tab-bar__item {

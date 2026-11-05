@@ -18,6 +18,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  items: {
+    type: Array,
+    default: null,
+  },
+  variant: {
+    type: String,
+    default: 'canteen',
+  },
 });
 
 const emit = defineEmits(['select']);
@@ -29,11 +37,20 @@ const isWheeling = ref(false);
 let wheelVelocity = 0;
 let wheelFrameId = 0;
 let wheelIdleTimer = null;
+let cachedLoopDistance = 0;
+let isLoopDistanceValid = false;
+let measuredLoopCount = -1;
+let geometryObserver = null;
+let childObserver = null;
 
+function invalidateLoopDistance() {
+  isLoopDistanceValid = false;
+}
+const sourceItems = computed(() => props.items ?? props.canteens);
 const displayItems = computed(() =>
-  props.canteens.length > 1
-    ? [...props.canteens, ...props.canteens]
-    : props.canteens,
+  sourceItems.value.length > 1
+    ? [...sourceItems.value, ...sourceItems.value]
+    : sourceItems.value,
 );
 
 const {
@@ -48,7 +65,7 @@ const {
 
 useAutoHorizontalScroll(trackRef, {
   pauseWhen: computed(() => isDragging.value || isWheeling.value),
-  loopItemCount: computed(() => props.canteens.length),
+  loopItemCount: computed(() => sourceItems.value.length),
   speed: 36,
   pauseOnHover: true,
   pauseOnTouch: true,
@@ -73,13 +90,21 @@ function visibleChips(canteen) {
   if (hasRating(canteen.rating)) {
     chips.push(canteen.rating >= 4.5 ? '超高口碑' : '大众推荐');
   }
+  if (canteen.canteenName) {
+    chips.push(canteen.canteenName);
+  }
   if (canteen.stallsCount) {
     chips.push(`${canteen.stallsCount}个档口`);
   }
   if (canteen.avgPrice || canteen.price) {
-    chips.push(`¥${canteen.avgPrice || canteen.price || 15}/人`);
+    const price = canteen.avgPrice || canteen.price || 15;
+    chips.push(props.variant === 'dish' ? `¥${price}` : `¥${price}/人`);
   }
   return chips.length ? chips : ['校园招牌', '打卡推荐'];
+}
+
+function isLocalImage(item) {
+  return item.localImage === true;
 }
 
 function stopWheelAnimation() {
@@ -111,7 +136,7 @@ function applyScrollStep(track, delta) {
   const loopDistance = getLoopDistance();
   let nextScrollLeft = track.scrollLeft + delta;
 
-  if (loopDistance > 0 && props.canteens.length > 1) {
+  if (loopDistance > 0 && sourceItems.value.length > 1) {
     nextScrollLeft =
       ((nextScrollLeft % loopDistance) + loopDistance) % loopDistance;
     track.scrollLeft = nextScrollLeft;
@@ -162,34 +187,46 @@ function handlePointerDown(event) {
   onPointerDown(event);
 }
 
-function handleSelect(canteenId) {
+function handleSelect(item) {
   stopWheelAnimation();
-  if (wasDragged.value || !canteenId) {
+  if (wasDragged.value || !item?.id) {
     return;
   }
 
-  emit('select', canteenId);
-  router.push({ name: 'canteenDetail', params: { canteenId } });
+  emit('select', item.id);
+  if (item.route) {
+    router.push(item.route);
+  } else if (props.variant === 'canteen') {
+    router.push({ name: 'canteenDetail', params: { canteenId: item.id } });
+  }
 }
 
 function getLoopDistance() {
   const target = trackRef.value;
   if (!target) return 0;
-  const loopCount = props.canteens.length;
+  const loopCount = sourceItems.value.length;
+  if (isLoopDistanceValid && measuredLoopCount === loopCount) {
+    return cachedLoopDistance;
+  }
+  measuredLoopCount = loopCount;
+  isLoopDistanceValid = true;
   if (loopCount > 1 && target.children.length >= loopCount * 2) {
     const firstItem = target.children[0];
     const secondLoopFirstItem = target.children[loopCount];
     if (firstItem && secondLoopFirstItem) {
       const distance = secondLoopFirstItem.offsetLeft - firstItem.offsetLeft;
       if (Number.isFinite(distance) && distance > 1) {
-        return distance;
+        cachedLoopDistance = distance;
+        return cachedLoopDistance;
       }
     }
   }
   const fallbackDistance = target.scrollWidth - target.clientWidth;
-  return Number.isFinite(fallbackDistance) && fallbackDistance > 1
-    ? fallbackDistance
-    : 0;
+  cachedLoopDistance =
+    Number.isFinite(fallbackDistance) && fallbackDistance > 1
+      ? fallbackDistance
+      : 0;
+  return cachedLoopDistance;
 }
 
 function handleWheel(event) {
@@ -256,6 +293,19 @@ onMounted(() => {
   if (root) {
     root.addEventListener('wheel', handleWheel, { passive: false });
   }
+  const track = trackRef.value;
+  if (track) {
+    if (typeof ResizeObserver !== 'undefined') {
+      geometryObserver = new ResizeObserver(invalidateLoopDistance);
+      geometryObserver.observe(track);
+    }
+    if (typeof MutationObserver !== 'undefined') {
+      childObserver = new MutationObserver(invalidateLoopDistance);
+      childObserver.observe(track, { childList: true });
+    }
+    window.addEventListener('resize', invalidateLoopDistance);
+    getLoopDistance();
+  }
 });
 
 onUnmounted(() => {
@@ -264,6 +314,13 @@ onUnmounted(() => {
   if (root) {
     root.removeEventListener('wheel', handleWheel);
   }
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', invalidateLoopDistance);
+  }
+  geometryObserver?.disconnect();
+  childObserver?.disconnect();
+  geometryObserver = null;
+  childObserver = null;
 });
 </script>
 
@@ -271,7 +328,7 @@ onUnmounted(() => {
   <div ref="rootRef" class="canteen-carousel" data-test="canteen-carousel">
     <div class="canteen-carousel__subhead">
       <span class="canteen-carousel__hint handwrite"
-        >→ 划划看，发现心仪食堂</span
+        >→ 划划看，发现心仪{{ variant === 'dish' ? '菜品' : '食堂' }}</span
       >
     </div>
 
@@ -293,16 +350,23 @@ onUnmounted(() => {
         :class="`canteen-card--${index % 4}`"
         role="button"
         tabindex="0"
-        @click="handleSelect(canteen.id)"
-        @keydown.enter="handleSelect(canteen.id)"
+        @click="handleSelect(canteen)"
+        @keydown.enter="handleSelect(canteen)"
       >
         <div class="canteen-card__media" :class="imageFrameClass(index)">
           <span class="canteen-card__postage" aria-hidden="true"></span>
           <span class="canteen-card__tape" aria-hidden="true"></span>
+          <img
+            v-if="isLocalImage(canteen)"
+            :src="canteen.coverImageUrl"
+            :alt="`${canteen.name}封面图`"
+            class="canteen-card__image"
+            loading="lazy"
+          />
           <MediaImage
+            v-else
             :src="canteen.coverImageUrl || ''"
             :alt="`${canteen.name}封面图`"
-            loading="lazy"
             class="canteen-card__image"
           />
         </div>
@@ -383,7 +447,6 @@ onUnmounted(() => {
     cursor: grab;
     touch-action: pan-x;
     user-select: none;
-    will-change: scroll-position;
 
     &::-webkit-scrollbar {
       display: none;
@@ -550,7 +613,6 @@ onUnmounted(() => {
     pointer-events: none;
     z-index: 1;
     opacity: 0.6;
-    mix-blend-mode: multiply;
   }
 
   &__tape {
@@ -563,7 +625,6 @@ onUnmounted(() => {
     background: rgba(255, 255, 255, 0.76);
     border: 1px solid rgba(58, 36, 24, 0.16);
     box-shadow: 0 1px 3px rgba(58, 36, 24, 0.08);
-    backdrop-filter: blur(1.5px);
     z-index: 2;
     pointer-events: none;
     overflow: hidden;
@@ -655,6 +716,7 @@ onUnmounted(() => {
 
   .zine-rating-stamp {
     display: inline-flex;
+    mix-blend-mode: normal;
     align-items: center;
     justify-content: center;
     width: 32px;

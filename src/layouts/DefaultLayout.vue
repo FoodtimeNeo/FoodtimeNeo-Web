@@ -7,11 +7,12 @@ import MobileTabBar from '@/components/layout/MobileTabBar.vue';
 import { resolveBreadcrumbs } from '@/components/layout/navigation.js';
 
 const route = useRoute();
+defineProps({ compact: Boolean });
 const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 </script>
 
 <template>
-  <div class="default-layout">
+  <div class="default-layout" :class="{ 'default-layout--compact': compact }">
     <div class="desk-decor desk-decor--torn-left" aria-hidden="true"></div>
     <div class="desk-decor desk-decor--note-left" aria-hidden="true"></div>
     <div class="desk-decor desk-decor--stamp-left" aria-hidden="true"></div>
@@ -110,13 +111,23 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
   padding-top: var(--paper-wave-height);
 }
 
+.default-layout--compact .default-layout__paper {
+  --paper-wave-height: 24px;
+  margin-top: 16px;
+}
+.default-layout--compact .breadcrumbs {
+  padding: 20px 16px 8px;
+}
+.default-layout--compact .default-layout__main {
+  padding-top: 0;
+}
+
 .desk-decor {
-  position: fixed;
+  position: absolute;
   z-index: 0;
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  mix-blend-mode: multiply;
   pointer-events: none;
 }
 
@@ -181,6 +192,12 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 }
 
 @media (max-width: 768px) {
+  .default-layout--compact .default-layout__paper {
+    margin-top: 0;
+  }
+  .default-layout--compact .breadcrumbs {
+    padding: 8px var(--zine-page-padding-mobile);
+  }
   .default-layout__paper {
     width: 100%;
     min-height: calc(100vh - 64px);

@@ -69,9 +69,14 @@ const activeName = computed(() => resolveActiveNavigation(route));
             >{{ inbox.unreadCount > 99 ? '99+' : inbox.unreadCount }}</span
           >
         </RouterLink>
-        <span class="app-header__user">{{
-          auth.isAuthenticated ? auth.displayName : '访客模式'
-        }}</span>
+        <RouterLink
+          class="app-header__user"
+          :to="{ name: 'profile' }"
+          aria-label="进入04我的页"
+          >{{
+            auth.isAuthenticated ? auth.displayName : '访客模式'
+          }}</RouterLink
+        >
       </span>
     </div>
   </header>
@@ -84,8 +89,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
   top: 0;
   min-height: 82px;
   border-bottom: 1px solid var(--ft-color-secondary);
-  background: rgb(242 239 230 / 94%);
-  backdrop-filter: blur(8px);
+  background: #f2efe6;
 }
 
 .app-header__inner {
@@ -175,7 +179,18 @@ const activeName = computed(() => resolveActiveNavigation(route));
 }
 
 .app-header__user {
+  display: inline-flex;
   margin-left: 10px;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.app-header__user:hover,
+.app-header__user:focus-visible {
+  color: var(--zine-stamp-red);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .app-header__dot {
@@ -211,7 +226,6 @@ const activeName = computed(() => resolveActiveNavigation(route));
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  mix-blend-mode: multiply;
   pointer-events: none;
 }
 

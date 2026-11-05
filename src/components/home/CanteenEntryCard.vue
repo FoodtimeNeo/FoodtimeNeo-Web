@@ -31,6 +31,13 @@ defineProps({
     <div class="canteen-entry__body">
       <span class="sticker sticker--r-1">食堂档案</span>
       <h3 class="canteen-entry__name">{{ canteen.name }}</h3>
+      <p>
+        {{
+          canteen.averageScore == null
+            ? '暂无评分'
+            : `★ ${Number(canteen.averageScore).toFixed(1)} · ${canteen.reviewCount} 条评价`
+        }}
+      </p>
       <span class="canteen-entry__link handwrite">翻开看看 →</span>
     </div>
   </RouterLink>

@@ -7,8 +7,18 @@ const api = vi.hoisted(() => ({
   upload: vi.fn(),
   auth: { user: null },
 }));
-vi.mock('@/api/profile.api.js', () => ({ updateOwnProfile: api.update }));
-vi.mock('@/api/submission.api.js', () => ({ uploadImage: api.upload }));
+vi.mock('@/api/profile.api.js', () => ({
+  updateOwnProfile: api.update,
+  uploadAvatar: api.upload,
+}));
+vi.mock('@/components/profile/AvatarCropper.vue', () => ({
+  default: {
+    name: 'AvatarCropper',
+    props: ['file'],
+    emits: ['confirm', 'cancel'],
+    template: '<div class="cropper-stub" />',
+  },
+}));
 vi.mock('@/store/useAuthStore.js', () => ({ useAuthStore: () => api.auth }));
 const avatar = '/api/v1/media/11111111-1111-1111-1111-111111111111';
 const user = {
@@ -39,7 +49,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-async function choose(type = 'image/png') {
+async function choose(type = 'image/png', accept = true) {
   const input = wrapper.get('input[type="file"]');
   Object.defineProperty(input.element, 'files', {
     value: [new File(['image'], 'avatar.png', { type })],
@@ -47,6 +57,14 @@ async function choose(type = 'image/png') {
   });
   await input.trigger('change');
   await flushPromises();
+  const selected = input.element.files[0];
+  if (accept && wrapper.findComponent({ name: 'AvatarCropper' }).exists()) {
+    wrapper
+      .findComponent({ name: 'AvatarCropper' })
+      .vm.$emit('confirm', selected);
+    await flushPromises();
+  }
+  return selected;
 }
 async function submit() {
   await wrapper.get('form').trigger('submit');
@@ -54,6 +72,20 @@ async function submit() {
 }
 
 describe('个人昵称与头像编辑', () => {
+  it('只显示一个选图入口，取消再次裁剪保留已有草稿', async () => {
+    expect(wrapper.get('input[type="file"]').attributes()).toHaveProperty(
+      'hidden',
+    );
+    expect(
+      wrapper.findAll('button').filter((b) => b.text() === '选择新头像'),
+    ).toHaveLength(1);
+    const previous = await choose();
+    await choose('image/png', false);
+    wrapper.findComponent({ name: 'AvatarCropper' }).vm.$emit('cancel');
+    await flushPromises();
+    await submit();
+    expect(api.upload).toHaveBeenCalledWith(previous);
+  });
   it('仅修改昵称时保留当前头像，并返回服务端资料', async () => {
     await wrapper.get('input[name="displayName"]').setValue('  新昵称  ');
     await submit();

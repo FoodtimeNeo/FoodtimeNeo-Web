@@ -22,6 +22,15 @@ export function useAutoHorizontalScroll(targetRef, options = {}) {
   let isFocusInside = false;
   let reducedMotionQuery = null;
   let coarsePointerQuery = null;
+  let loopDistance = 0;
+  let isLoopDistanceValid = false;
+  let measuredLoopItemCount = -1;
+  let resizeObserver = null;
+  let mutationObserver = null;
+
+  function invalidateLoopDistance() {
+    isLoopDistanceValid = false;
+  }
 
   function shouldPause() {
     return (
@@ -45,25 +54,38 @@ export function useAutoHorizontalScroll(targetRef, options = {}) {
     };
   }
 
-  function getLoopDistance(target) {
-    const loopItemCount = Math.max(
-      0,
-      Number(unref(options.loopItemCount) ?? 0),
-    );
+  function getLoopItemCount() {
+    return Math.max(0, Number(unref(options.loopItemCount) ?? 0));
+  }
+
+  function measureLoopDistance(target) {
+    const loopItemCount = getLoopItemCount();
+    measuredLoopItemCount = loopItemCount;
+    isLoopDistanceValid = true;
     const firstLoopItem = target.children[0];
     const secondLoopItem = target.children[loopItemCount];
 
     if (loopItemCount > 0 && firstLoopItem && secondLoopItem) {
-      const loopDistance = secondLoopItem.offsetLeft - firstLoopItem.offsetLeft;
-      if (Number.isFinite(loopDistance) && loopDistance > 1) {
+      const measuredDistance =
+        secondLoopItem.offsetLeft - firstLoopItem.offsetLeft;
+      if (Number.isFinite(measuredDistance) && measuredDistance > 1) {
+        loopDistance = measuredDistance;
         return loopDistance;
       }
     }
 
     const fallbackDistance = target.scrollWidth - target.clientWidth;
-    return Number.isFinite(fallbackDistance)
+    loopDistance = Number.isFinite(fallbackDistance)
       ? Math.max(0, fallbackDistance)
       : 0;
+    return loopDistance;
+  }
+
+  function getLoopDistance(target) {
+    if (isLoopDistanceValid && measuredLoopItemCount === getLoopItemCount()) {
+      return loopDistance;
+    }
+    return measureLoopDistance(target);
   }
 
   function step(time) {
@@ -147,6 +169,16 @@ export function useAutoHorizontalScroll(targetRef, options = {}) {
       target.addEventListener('pointerleave', onPointerLeave);
       target.addEventListener('focusin', onFocusIn);
       target.addEventListener('focusout', onFocusOut);
+      if (typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(invalidateLoopDistance);
+        resizeObserver.observe(target);
+      }
+      if (typeof MutationObserver !== 'undefined') {
+        mutationObserver = new MutationObserver(invalidateLoopDistance);
+        mutationObserver.observe(target, { childList: true });
+      }
+      window.addEventListener('resize', invalidateLoopDistance);
+      measureLoopDistance(target);
     }
 
     start();
@@ -161,6 +193,13 @@ export function useAutoHorizontalScroll(targetRef, options = {}) {
       target.removeEventListener('focusin', onFocusIn);
       target.removeEventListener('focusout', onFocusOut);
     }
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('resize', invalidateLoopDistance);
+    }
+    resizeObserver?.disconnect();
+    mutationObserver?.disconnect();
+    resizeObserver = null;
+    mutationObserver = null;
   });
 
   return {
