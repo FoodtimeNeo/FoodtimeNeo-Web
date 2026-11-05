@@ -1,15 +1,15 @@
 {
-  "versionName": "1.3.3",
-  "versionCode": 13,
-  "bytes": 21965071,
-  "sha256": "8cc5a199ee3e59a475bf56775f58ff7fd96aa83fb4b026af6867131a1e3292ae",
+  "versionName": "1.3.4",
+  "versionCode": 14,
+  "bytes": 21965815,
+  "sha256": "05f62eca11d044242c94a603ed4c79d49ad5859b9652fdd635c8767b0e8938f9",
   "signerCertificateSha256": "94e7db3a30937a0cd8bc8596f80666122e3bd3f3323e55bfef14f72e9c454b92",
   "sourceRepository": "FoodtimeNeo/FoodtimeNeo-Android",
   "sourceRef": "refs/heads/main",
-  "sourceCommit": "48c0750dbe246dab576bc37de5b1f4bf2274a9ba",
-  "releaseTag": "v1.3.3",
-  "releaseUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/tag/v1.3.3",
-  "artifactUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.3.3/app-release.apk",
-  "releaseAssetId": 712706184,
-  "buildRunUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/actions/runs/41996940593"
+  "sourceCommit": "5a4ecdeac5052643e13306999812c9a07cf60fd0",
+  "releaseTag": "v1.3.4",
+  "releaseUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/tag/v1.3.4",
+  "artifactUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.3.4/app-release.apk",
+  "releaseAssetId": 712781835,
+  "buildRunUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/actions/runs/42000532468"
 }
