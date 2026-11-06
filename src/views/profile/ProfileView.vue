@@ -114,44 +114,44 @@ async function logout() {
         "
         >编辑资料</InkButton
       >
-      <nav class="profile-page__links" aria-label="个人功能">
-        <RouterLink class="paper-link" :to="{ name: 'myVenueReviews' }"
-          ><span class="stamp">点评</span
-          ><span>餐厅与档口点评<small>我的评价、回复与审核状态</small></span
-          ><strong>→</strong></RouterLink
-        >
-        <RouterLink class="paper-link" :to="{ name: 'inboxView' }"
-          ><span class="stamp">信箱</span
-          ><span>消息信箱<small>公告与系统消息</small></span
-          ><strong>→</strong></RouterLink
-        >
-        <RouterLink class="paper-link" :to="{ name: 'myReviewReplies' }"
-          ><span class="stamp">回复</span
-          ><span>我的回复<small>楼内讨论与审核状态</small></span
-          ><strong>→</strong></RouterLink
-        >
-        <RouterLink class="paper-link" :to="{ name: 'myReviews' }"
-          ><span class="stamp">01</span
-          ><span>我的评论<small>已发布的点评</small></span
-          ><strong>→</strong></RouterLink
-        >
-        <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
-          ><span class="stamp">02</span
-          ><span>我的提交<small>投稿记录与审核结果</small></span
-          ><strong>→</strong></RouterLink
-        >
-        <RouterLink class="paper-link" :to="{ name: 'changePassword' }"
-          ><span class="stamp">03</span> 修改密码 <strong>→</strong></RouterLink
-        >
-      </nav>
-      <p v-if="exitError" role="alert">{{ exitError }}</p>
-      <InkButton
-        class="profile-page__logout"
-        :disabled="exiting"
-        @click="logout"
-        >{{ exiting ? '退出中…' : '退出登录' }}</InkButton
-      >
     </template>
+    <nav class="profile-page__links" aria-label="个人功能">
+      <RouterLink class="paper-link" :to="{ name: 'myVenueReviews' }"
+        ><span class="stamp">点评</span
+        ><span>餐厅与档口点评<small>我的评价、回复与审核状态</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'inboxView' }"
+        ><span class="stamp">信箱</span
+        ><span>消息信箱<small>公告与系统消息</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'myReviewReplies' }"
+        ><span class="stamp">回复</span
+        ><span>我的回复<small>楼内讨论与审核状态</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'myReviews' }"
+        ><span class="stamp">01</span
+        ><span>我的评论<small>已发布的点评</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
+        ><span class="stamp">02</span
+        ><span>我的提交<small>投稿记录与审核结果</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'changePassword' }"
+        ><span class="stamp">03</span> 修改密码 <strong>→</strong></RouterLink
+      >
+    </nav>
+    <p v-if="exitError" role="alert">{{ exitError }}</p>
+    <InkButton
+      class="profile-page__logout"
+      :disabled="exiting"
+      @click="logout"
+      >{{ exiting ? '退出中…' : '退出登录' }}</InkButton
+    >
   </div>
 </template>
 <style scoped>

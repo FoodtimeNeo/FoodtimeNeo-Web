@@ -18,16 +18,23 @@ const canteenId = computed(() => String(route.params.canteenId));
 const {
   data: canteen,
   error: canteenError,
-  loading: canteenLoading,
+  initialLoading: canteenLoading,
   load: loadCanteen,
-} = useAsyncData(() => fetchCanteen(canteenId.value));
+} = useAsyncData((options) => fetchCanteen(canteenId.value, options), {
+  cacheKey: `canteen:${canteenId.value}`,
+  ttl: 0,
+});
 
 const {
   data: stalls,
   error: stallsError,
-  loading: stallsLoading,
+  initialLoading: stallsLoading,
   load: loadStalls,
-} = useAsyncData(() => fetchStalls(canteenId.value), { initial: [] });
+} = useAsyncData((options) => fetchStalls(canteenId.value, options), {
+  initial: [],
+  cacheKey: `stalls:${canteenId.value}`,
+  ttl: 0,
+});
 const { query, matches: filteredStalls } = useCatalogSearch(
   stalls,
   () => `stalls:${canteenId.value}`,
@@ -83,51 +90,50 @@ const { query, matches: filteredStalls } = useCatalogSearch(
           >
         </div>
       </header>
+    </template>
+    <section v-if="!canteenError" aria-labelledby="stalls-title">
+      <div class="section-rule">
+        <span class="section-rule__index">03</span>
+        <span class="section-rule__line"></span>
+      </div>
+      <h2 id="stalls-title" class="canteen-detail__subtitle">档口</h2>
 
-      <section aria-labelledby="stalls-title">
-        <div class="section-rule">
-          <span class="section-rule__index">03</span>
-          <span class="section-rule__line"></span>
-        </div>
-        <h2 id="stalls-title" class="canteen-detail__subtitle">档口</h2>
-
-        <LoadingState v-if="stallsLoading" message="正在清点档口…" />
-        <ErrorState
-          v-else-if="stallsError"
-          :description="stallsError.message"
-          @retry="loadStalls"
+      <LoadingState v-if="stallsLoading" message="正在清点档口…" />
+      <ErrorState
+        v-else-if="stallsError"
+        :description="stallsError.message"
+        @retry="loadStalls"
+      />
+      <EmptyState
+        v-else-if="!stalls.length"
+        title="这个食堂还没有档口"
+        description="管理员添加后会显示在这里。"
+      />
+      <template v-else>
+        <CatalogSearch
+          v-model="query"
+          label="搜索档口"
+          placeholder="输入当前食堂的档口名称"
+          :count="filteredStalls.length"
+          :total="stalls.length"
+          unit="个档口"
         />
         <EmptyState
-          v-else-if="!stalls.length"
-          title="这个食堂还没有档口"
-          description="管理员添加后会显示在这里。"
-        />
-        <template v-else>
-          <CatalogSearch
-            v-model="query"
-            label="搜索档口"
-            placeholder="输入当前食堂的档口名称"
-            :count="filteredStalls.length"
-            :total="stalls.length"
-            unit="个档口"
-          />
-          <EmptyState
-            v-if="!filteredStalls.length"
-            title="没有匹配的档口"
-            description="只搜索当前食堂的档口名称，试试其他关键词。"
-          >
-            <button class="button-ink" type="button" @click="query = ''">
-              查看全部档口
-            </button>
-          </EmptyState>
-          <ul v-else class="canteen-detail__grid">
-            <li v-for="stall in filteredStalls" :key="stall.id">
-              <StallEntryCard :stall="stall" :canteen-id="canteenId" />
-            </li>
-          </ul>
-        </template>
-      </section>
-    </template>
+          v-if="!filteredStalls.length"
+          title="没有匹配的档口"
+          description="只搜索当前食堂的档口名称，试试其他关键词。"
+        >
+          <button class="button-ink" type="button" @click="query = ''">
+            查看全部档口
+          </button>
+        </EmptyState>
+        <ul v-else class="canteen-detail__grid">
+          <li v-for="stall in filteredStalls" :key="stall.id">
+            <StallEntryCard :stall="stall" :canteen-id="canteenId" />
+          </li>
+        </ul>
+      </template>
+    </section>
   </main>
 </template>
 

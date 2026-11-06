@@ -90,14 +90,25 @@ it('默认展示公告空态，切换后展示系统消息', async () => {
   const wrapper = mountPage();
   await flushPromises();
   expect(wrapper.text()).toContain('暂无公告');
+  expect(messageApi.fetchOwnMessages).not.toHaveBeenCalled();
+  expect(directApi.fetchConversations).not.toHaveBeenCalled();
   await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
   expect(wrapper.text()).toContain('你的点评已通过');
+  await buttonByText(wrapper, '公告').trigger('click');
+  await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
+  expect(messageApi.fetchOwnMessages).toHaveBeenCalledTimes(1);
 });
 
-it('单条消息标为已读后刷新列表与未读数', async () => {
+it('单条消息标为已读后保留原卡片，不重新读取列表', async () => {
   const wrapper = mountPage();
   await flushPromises();
   await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
+  const card = wrapper.get(
+    'section[aria-label="系统消息列表"] article',
+  ).element;
   messageApi.fetchOwnMessages.mockResolvedValue({
     items: [{ ...messageRow, isRead: true }],
     total: 1,
@@ -111,7 +122,10 @@ it('单条消息标为已读后刷新列表与未读数', async () => {
     .trigger('click');
   await flushPromises();
   expect(messageApi.markMessageRead).toHaveBeenCalledWith('m1');
-  expect(messageApi.fetchOwnMessages).toHaveBeenCalledTimes(2);
+  expect(messageApi.fetchOwnMessages).toHaveBeenCalledTimes(1);
+  expect(
+    wrapper.get('section[aria-label="系统消息列表"] article').element,
+  ).toBe(card);
   expect(wrapper.text()).not.toContain('标为已读');
 });
 
@@ -119,6 +133,7 @@ it('全部标为已读调用批量接口', async () => {
   const wrapper = mountPage();
   await flushPromises();
   await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
   messageApi.fetchOwnMessages.mockResolvedValue({
     items: [{ ...messageRow, isRead: true }],
     total: 1,
