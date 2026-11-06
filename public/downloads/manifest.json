@@ -2,28 +2,46 @@
   "versionCode": 16,
   "versionName": "1.4.1",
   "apk": {
-    "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.1/app-release.apk",
+    "url": "https://bjtufoodtime.top/downloads/FoodtimeNeo-Android.apk",
     "sha256": "a2e7adbd1b03faa4c9f141c25571730a987e95af2b72242738273eef8381c349",
     "size": 21980675
   },
   "patches": [
     {
       "baseVersionCode": 15,
-      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.1/app-release-15-16.patch",
+      "url": "https://bjtufoodtime.top/downloads/app-release-15-16.patch",
       "sha256": "891710c30361f85c50f06dbc43e3705a9e59fd879687e013120b4acc246cfd18",
       "size": 1868835
     },
     {
       "baseVersionCode": 14,
-      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.1/app-release-14-16.patch",
+      "url": "https://bjtufoodtime.top/downloads/app-release-14-16.patch",
       "sha256": "ef32c8db8cef4afd8c7d470a9fb9859abceb26091bf23162b143607352685449",
       "size": 1883083
     },
     {
       "baseVersionCode": 13,
-      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.1/app-release-13-16.patch",
+      "url": "https://bjtufoodtime.top/downloads/app-release-13-16.patch",
       "sha256": "9fd72342a76427da7851e685c6c4540ea6b7cb02124d2279d7f23ffe7ab8f1ef",
       "size": 1883583
+    },
+    {
+      "baseVersionCode": 12,
+      "url": "https://bjtufoodtime.top/downloads/app-release-12-16.patch",
+      "sha256": "352f12c9e5bb162650f963e6fcf8159b031c502ac1f96f43ebe6d5ce8fbf7022",
+      "size": 1883324
+    },
+    {
+      "baseVersionCode": 11,
+      "url": "https://bjtufoodtime.top/downloads/app-release-11-16.patch",
+      "sha256": "9177717e1ae48fac01cc4fdf69ae1e797be6d55e74894545fd8e6c5f82e2e43c",
+      "size": 1884009
+    },
+    {
+      "baseVersionCode": 10,
+      "url": "https://bjtufoodtime.top/downloads/app-release-10-16.patch",
+      "sha256": "6ab7741c491fc71bb01f81a36ab9455493741cd1b2b97116520e9528e3072e06",
+      "size": 1885171
     }
   ]
 }
