@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { useAsyncData } from './useAsyncData.js';
 import { ApiError } from '@/api/http.js';
-export function usePagedData(loader) {
+export function usePagedData(loader, options = {}) {
   const page = ref(1);
   const state = useAsyncData(
     async (options) => {
@@ -16,7 +16,7 @@ export function usePagedData(loader) {
         throw new ApiError('分页响应不符合接口约定', { code: 'PROTOCOL' });
       return result;
     },
-    { initial: { items: [], total: 0, page: 1, size: 20 } },
+    { initial: { items: [], total: 0, page: 1, size: 20 }, ...options },
   );
   watch(page, state.load);
   return {

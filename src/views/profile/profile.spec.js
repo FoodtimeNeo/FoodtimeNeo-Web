@@ -27,6 +27,15 @@ beforeEach(() => {
 const view = (component) =>
   mount(component, { global: { stubs: { RouterLink: RouterLinkStub } } });
 describe('个人记录与改密', () => {
+  it('个人信息读取未完成时，固定功能入口已经显示', async () => {
+    api.fetchProfile.mockImplementationOnce(() => new Promise(() => {}));
+    const wrapper = view(ProfileView);
+    expect(wrapper.get('nav[aria-label="个人功能"]').text()).toContain(
+      '消息信箱',
+    );
+    expect(wrapper.text()).toContain('修改密码');
+    wrapper.unmount();
+  });
   it('普通用户可以打开资料编辑，保存后同步名称、头像和登录状态', async () => {
     api.fetchProfile.mockResolvedValue({
       id: 'u1',

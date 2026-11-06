@@ -16,6 +16,15 @@ const messageApi = vi.hoisted(() => ({
 }));
 vi.mock('@/api/message.api.js', () => messageApi);
 
+const directApi = vi.hoisted(() => ({
+  fetchConversations: vi.fn(),
+  fetchConversationUnread: vi.fn(),
+}));
+vi.mock('@/api/directMessage.api.js', () => directApi);
+
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: routerPush }) }));
+
 import InboxView from './InboxView.vue';
 
 const messageRow = {
@@ -51,6 +60,7 @@ function buttonByText(wrapper, text) {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  routerPush.mockReset();
   noticeApi.fetchOwnNotices.mockResolvedValue({
     items: [],
     total: 0,
@@ -67,20 +77,38 @@ beforeEach(() => {
   messageApi.fetchUnreadMessageCount.mockResolvedValue({ unreadCount: 1 });
   messageApi.markMessageRead.mockResolvedValue(undefined);
   messageApi.markAllMessagesRead.mockResolvedValue(undefined);
+  directApi.fetchConversations.mockResolvedValue({
+    items: [],
+    total: 0,
+    page: 1,
+    size: 20,
+  });
+  directApi.fetchConversationUnread.mockResolvedValue({ unreadCount: 0 });
 });
 
 it('默认展示公告空态，切换后展示系统消息', async () => {
   const wrapper = mountPage();
   await flushPromises();
   expect(wrapper.text()).toContain('暂无公告');
+  expect(messageApi.fetchOwnMessages).not.toHaveBeenCalled();
+  expect(directApi.fetchConversations).not.toHaveBeenCalled();
   await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
   expect(wrapper.text()).toContain('你的点评已通过');
+  await buttonByText(wrapper, '公告').trigger('click');
+  await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
+  expect(messageApi.fetchOwnMessages).toHaveBeenCalledTimes(1);
 });
 
-it('单条消息标为已读后刷新列表与未读数', async () => {
+it('单条消息标为已读后保留原卡片，不重新读取列表', async () => {
   const wrapper = mountPage();
   await flushPromises();
   await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
+  const card = wrapper.get(
+    'section[aria-label="系统消息列表"] article',
+  ).element;
   messageApi.fetchOwnMessages.mockResolvedValue({
     items: [{ ...messageRow, isRead: true }],
     total: 1,
@@ -94,7 +122,10 @@ it('单条消息标为已读后刷新列表与未读数', async () => {
     .trigger('click');
   await flushPromises();
   expect(messageApi.markMessageRead).toHaveBeenCalledWith('m1');
-  expect(messageApi.fetchOwnMessages).toHaveBeenCalledTimes(2);
+  expect(messageApi.fetchOwnMessages).toHaveBeenCalledTimes(1);
+  expect(
+    wrapper.get('section[aria-label="系统消息列表"] article').element,
+  ).toBe(card);
   expect(wrapper.text()).not.toContain('标为已读');
 });
 
@@ -102,6 +133,7 @@ it('全部标为已读调用批量接口', async () => {
   const wrapper = mountPage();
   await flushPromises();
   await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
   messageApi.fetchOwnMessages.mockResolvedValue({
     items: [{ ...messageRow, isRead: true }],
     total: 1,
@@ -112,4 +144,65 @@ it('全部标为已读调用批量接口', async () => {
   await buttonByText(wrapper, '全部标为已读').trigger('click');
   await flushPromises();
   expect(messageApi.markAllMessagesRead).toHaveBeenCalledOnce();
+});
+
+it('点击互动消息跳转原帖并携带评论与楼层定位', async () => {
+  messageApi.fetchOwnMessages.mockResolvedValue({
+    items: [
+      {
+        ...messageRow,
+        id: 'm2',
+        category: 'REPLY_COMMENT',
+        refType: 'community-post',
+        refId: 'post-1',
+        refCommentId: 'reply-2',
+        refRootCommentId: 'root-1',
+        isRead: true,
+      },
+    ],
+    total: 1,
+    page: 1,
+    size: 20,
+  });
+  const wrapper = mountPage();
+  await flushPromises();
+  await buttonByText(wrapper, '系统消息').trigger('click');
+  await flushPromises();
+  await buttonByText(wrapper, '查看原帖').trigger('click');
+  await flushPromises();
+  expect(routerPush).toHaveBeenCalledWith({
+    name: 'communityDetail',
+    params: { postId: 'post-1' },
+    query: { comment: 'reply-2', root: 'root-1' },
+  });
+});
+
+it('私信标签展示会话并跳转聊天页', async () => {
+  directApi.fetchConversations.mockResolvedValue({
+    items: [
+      {
+        id: 'c1',
+        other: { id: 'u2', displayName: '小红', avatarUrl: null },
+        lastMessage: '今晚吃什么',
+        unreadCount: 3,
+        updatedAt: '2026-11-06T10:00:00Z',
+      },
+    ],
+    total: 1,
+    page: 1,
+    size: 20,
+  });
+  directApi.fetchConversationUnread.mockResolvedValue({ unreadCount: 3 });
+  const wrapper = mountPage();
+  await flushPromises();
+  await buttonByText(wrapper, '私信').trigger('click');
+  await flushPromises();
+  expect(wrapper.text()).toContain('小红');
+  expect(wrapper.text()).toContain('今晚吃什么');
+  expect(wrapper.text()).toContain('3');
+  await wrapper.find('.inbox-page__chat').trigger('click');
+  expect(routerPush).toHaveBeenCalledWith({
+    name: 'directChat',
+    params: { conversationId: 'c1' },
+  });
 });

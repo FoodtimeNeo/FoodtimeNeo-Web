@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { usePagedData } from '@/composables/usePagedData.js';
@@ -20,22 +20,62 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 const route = useRoute();
 const dishId = computed(() => String(route.params.dishId));
-const { data, error, loading, load } = useAsyncData(async (options) => {
-  const dish = await fetchDish(dishId.value, options);
-  if (
-    dish.diningHallId !== route.params.canteenId ||
-    dish.stallId !== route.params.stallId
-  )
-    throw new ApiError('菜品与当前食堂或档口不匹配', {
-      status: 404,
-      code: 'NOT_FOUND',
-    });
-  const [images, rating] = await Promise.all([
-    fetchDishImages(dish.id, 1, options),
-    fetchDishRating(dish.id, options),
-  ]);
-  return { dish, images: images.items, rating };
+const {
+  data: dish,
+  error,
+  initialLoading: loading,
+  loading: dishPending,
+  load,
+} = useAsyncData(
+  async (options) => {
+    const dish = await fetchDish(dishId.value, options);
+    if (
+      dish.diningHallId !== route.params.canteenId ||
+      dish.stallId !== route.params.stallId
+    )
+      throw new ApiError('菜品与当前食堂或档口不匹配', {
+        status: 404,
+        code: 'NOT_FOUND',
+      });
+    return dish;
+  },
+  {
+    cacheKey: `dish:${route.params.canteenId}:${route.params.stallId}:${dishId.value}`,
+    ttl: 0,
+  },
+);
+const {
+  data: images,
+  error: imageError,
+  initialLoading: imagesLoading,
+  load: loadImages,
+} = useAsyncData((options) => fetchDishImages(dishId.value, 1, options), {
+  initial: { items: [] },
+  immediate: false,
 });
+const {
+  data: rating,
+  error: ratingError,
+  initialLoading: ratingLoading,
+  load: loadRating,
+} = useAsyncData((options) => fetchDishRating(dishId.value, options), {
+  immediate: false,
+});
+watch(dishPending, (pending) => {
+  if (!pending && dish.value && !error.value) {
+    loadImages();
+    loadRating();
+  }
+});
+const data = computed(() =>
+  dish.value
+    ? {
+        dish: dish.value,
+        images: images.value.items,
+        rating: rating.value,
+      }
+    : null,
+);
 const {
   items: reviews,
   page,
@@ -72,11 +112,17 @@ const params = computed(() => ({
             aria-label="上传菜品图片"
             >＋</RouterLink
           >
+          <ErrorState
+            v-if="imageError"
+            :description="imageError.message"
+            @retry="loadImages"
+          />
           <MediaImage
+            v-else
             frame="polygon"
             :src="data.images[0]?.imageUrl || ''"
             :alt="data.dish.name"
-            empty="暂未上传菜品图片"
+            :empty="imagesLoading ? '正在加载图片…' : '暂未上传菜品图片'"
           />
           <RouterLink
             class="dish-detail__gallery-link sticker sticker--r2"
@@ -95,21 +141,29 @@ const params = computed(() => ({
             {{ data.dish.description }}
           </p>
           <div class="dish-detail__rating">
-            <span class="zine-rating-stamp">
-              {{
-                data.rating.averageScore === null
-                  ? '—'
-                  : Number(data.rating.averageScore).toFixed(1)
-              }}
-            </span>
-            <p>
-              <strong>综合评分</strong>
-              <span v-if="data.rating.averageScore === null">暂无评分</span>
-              <span v-else
-                >{{ Number(data.rating.averageScore).toFixed(2) }} / 5</span
-              >
-              {{ data.rating.reviewCount }} 条评价 · 实时统计
-            </p>
+            <LoadingState v-if="ratingLoading" />
+            <ErrorState
+              v-else-if="ratingError"
+              :description="ratingError.message"
+              @retry="loadRating"
+            />
+            <template v-else-if="data.rating">
+              <span class="zine-rating-stamp">
+                {{
+                  data.rating.averageScore === null
+                    ? '—'
+                    : Number(data.rating.averageScore).toFixed(1)
+                }}
+              </span>
+              <p>
+                <strong>综合评分</strong>
+                <span v-if="data.rating.averageScore === null">暂无评分</span>
+                <span v-else
+                  >{{ Number(data.rating.averageScore).toFixed(2) }} / 5</span
+                >
+                {{ data.rating.reviewCount }} 条评价 · 实时统计
+              </p>
+            </template>
           </div>
           <RouterLink
             class="dish-detail__review-link button-ink is-primary"

@@ -14,7 +14,9 @@ vi.mock('vue-router', () => ({
   RouterLink: RouterLinkStub,
 }));
 import DishDetailView from './DishDetailView.vue';
+import { clearAsyncDataCache } from '@/composables/useAsyncData.js';
 beforeEach(() => {
+  clearAsyncDataCache();
   Object.values(api).forEach((fn) => fn.mockReset());
   api.fetchDish.mockResolvedValue({
     id: 'd1',
@@ -51,6 +53,38 @@ beforeEach(() => {
   });
 });
 describe('菜品真实详情', () => {
+  it('图片或评分慢时，菜品信息、点评与操作入口仍可用；重试只读取失败区域', async () => {
+    let completeImage;
+    api.fetchDishImages.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          completeImage = resolve;
+        }),
+    );
+    api.fetchDishRating.mockRejectedValueOnce(new Error('评分断网'));
+    const wrapper = mount(DishDetailView, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('牛肉面');
+    expect(wrapper.text()).toContain('好吃');
+    expect(wrapper.text()).toContain('写点评');
+    expect(wrapper.text()).toContain('评分断网');
+    const heading = wrapper.get('h1').element;
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text() === '重试')
+      .trigger('click');
+    await flushPromises();
+    expect(api.fetchDish).toHaveBeenCalledTimes(1);
+    expect(api.fetchDishReviews).toHaveBeenCalledTimes(1);
+    expect(api.fetchDishImages).toHaveBeenCalledTimes(1);
+    expect(api.fetchDishRating).toHaveBeenCalledTimes(2);
+    expect(wrapper.get('h1').element).toBe(heading);
+    completeImage({ items: [] });
+    await flushPromises();
+    wrapper.unmount();
+  });
   it('写点评按钮进入当前菜品子页面，不使用选择目标的查询参数', async () => {
     const wrapper = mount(DishDetailView, {
       global: { stubs: { RouterLink: RouterLinkStub } },
