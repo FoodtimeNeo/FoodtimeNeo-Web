@@ -1,35 +1,29 @@
 {
-  "versionCode": 14,
-  "versionName": "1.3.4",
+  "versionCode": 15,
+  "versionName": "1.4.0",
   "apk": {
-    "url": "https://bjtufoodtime.top/downloads/FoodtimeNeo-Android.apk",
-    "sha256": "05f62eca11d044242c94a603ed4c79d49ad5859b9652fdd635c8767b0e8938f9",
-    "size": 21965815
+    "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.0/app-release.apk",
+    "sha256": "c693c128cc9247053d1154d645eed236c4f9f86a52f9597de125b626649b67cb",
+    "size": 21980163
   },
   "patches": [
     {
+      "baseVersionCode": 14,
+      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.0/app-release-14-15.patch",
+      "sha256": "17a5c6e1bfadd974db20e171645f0a66ad66e11a10f5dba44d67893eaf0ef658",
+      "size": 1882105
+    },
+    {
       "baseVersionCode": 13,
-      "url": "https://bjtufoodtime.top/downloads/app-release-13-14.patch",
-      "sha256": "03ad2bfc3f981152c994c300d59c2df80ed865e29f3ef6a8a13cfc95d45f9956",
-      "size": 1861121
+      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.0/app-release-13-15.patch",
+      "sha256": "cde91f89151e77ee80e6f7d4434456330b40206e4da68920a44fa83c9a4bdbef",
+      "size": 1882784
     },
     {
       "baseVersionCode": 12,
-      "url": "https://bjtufoodtime.top/downloads/app-release-12-14.patch",
-      "sha256": "c5bbfaca5f110471d2b698f50ea4fa4b9639987fc5ea7bfefcc1ce9f4b2e77f2",
-      "size": 1862807
-    },
-    {
-      "baseVersionCode": 11,
-      "url": "https://bjtufoodtime.top/downloads/app-release-11-14.patch",
-      "sha256": "3662b6a290af90c3dbec1a7bee65eb244d902104fd41b032cfe33cacf0c80bf6",
-      "size": 1867466
-    },
-    {
-      "baseVersionCode": 10,
-      "url": "https://bjtufoodtime.top/downloads/app-release-10-14.patch",
-      "sha256": "d74c6231a6ae729b83c24d4b6b2b3f220f78bb70545c168eebf53f198f4fb32b",
-      "size": 1869653
+      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v1.4.0/app-release-12-15.patch",
+      "sha256": "54697b718b75a04cf2f90f732c9ac1572f6b85e3e4ed71d07f82bd3a4c189853",
+      "size": 1882952
     }
   ]
 }
