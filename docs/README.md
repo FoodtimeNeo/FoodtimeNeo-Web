@@ -48,6 +48,7 @@ docs/
 |                                      | [v1.1.2 发布说明](releases/release-1.1.2.md)        | 社区互动与管理员控制台                                      |
 |                                      | [v1.1.3 发布说明](releases/release-1.1.3.md)        | 头像维护、公告管理与完整权限加固                            |
 |                                      | [v1.3.0 发布说明](releases/release-1.3.0.md)        | 访客账号、邮箱白名单、大图压缩与管理审核增强                |
+|                                      | [v1.4.0 发布说明](releases/release-1.4.0.md)        | 社区互动消息、私信与增量页面刷新                            |
 |                                      | [历史工程验收记录](releases/verification.md)        | 真实环境端到端验证证据与回归测试覆盖报告                    |
 
 ---
