@@ -8,6 +8,8 @@
 
 餐厅与档口独立点评及完整互动：见 [功能与接口说明](modules/venue-reviews.md)。
 
+按用户名查找同学、关注和私信：见 [搜索用户](modules/user-search.md)。
+
 管理页单列紧凑改进：见 [布局与交互说明](modules/admin-density.md)。
 
 评论管理详情弹窗与审核日志分类检查：见 [正式菜品点评管理](modules/managed-reviews.md)。

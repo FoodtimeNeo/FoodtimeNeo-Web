@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { allowMediaSession, invalidateMedia } from '@/utils/mediaLoader.js';
 import { clearSession } from '@/utils/authSession.js';
 import { clearVenueDrafts } from '@/utils/venueDrafts.js';
+import { useUserSearchStore } from '@/store/useUserSearchStore.js';
 import { clearAsyncDataCache } from '@/composables/useAsyncData.js';
 import { ApiError, invalidateSession } from '@/api/http.js';
 import {
@@ -37,6 +38,7 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     setSession({ user }) {
       if (this.user?.id !== user?.id || this.user?.role !== user?.role) {
+        useUserSearchStore().clear();
         clearAsyncDataCache();
         allowMediaSession();
         invalidateMedia();
@@ -46,6 +48,7 @@ export const useAuthStore = defineStore('auth', {
       this.revision += 1;
     },
     clear() {
+      useUserSearchStore().clear();
       clearAsyncDataCache();
       clearVenueDrafts();
       invalidateMedia();

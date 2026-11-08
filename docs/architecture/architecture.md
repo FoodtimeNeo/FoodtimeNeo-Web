@@ -93,6 +93,8 @@ views ──► components ──► components/base
 
 `CatalogSearch` 只展示输入、清除按钮及实际结果数量。`useCatalogSearch` 对当前已加载目录的名称进行本地匹配，兼容全角字符、大小写和多个关键词，不新增聚合查询接口。`useCatalogSearchStore` 在内存中按当前用户和具体食堂/档口保留最多50处关键词，返回列表时恢复；不持久化账号、业务数据或搜索记录。
 
+`UserSearchView` 为独立的服务端用户搜索页，由信箱、关注／粉丝列表进入；API 与内存关键词分别位于 `user-search.api.js`、`useUserSearchStore`。分页、局部加载及行操作规则见[搜索用户](../modules/user-search.md)。
+
 认证状态只在内存中保留；HttpOnly Cookie 由浏览器管理。HTTP 层限制同站请求、单次获取 CSRF、不自动重放写请求，并在会话轮换时阻止旧写入和迟到响应。上传预览在页面离开时释放，媒体引用经过安全路径验证。
 
 `ImageFileField` 只做本地选图、解码校验和预览，通过 `change` 返回有效文件或空值，通过 `checking` 告知解码状态；不会自行上传。新选择与清除使旧解码失效，外部 `validationMessage` 与内部错误一同关联到输入框，暴露 `focus()` 供投稿错误摘要定位。
