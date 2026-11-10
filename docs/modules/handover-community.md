@@ -10,7 +10,9 @@
 
 ## 详情与楼中楼
 
-`CommunityPostContent`由弹窗和独立详情路由共同使用，包含完整正文、多图轮播、点赞收藏和评论区。`CommunityImageViewer`支持滑动、方向键、圆点和大图缩放；全屏预览使用Element Plus的ImageViewer。
+首页和社区的帖子弹窗、独立详情页共用 `CommunityImageViewer`。轮播和黑底全屏看图默认使用现有 480px 缩略图。仅“加载原图”请求当前原图，成功解码后替换，失败保留缩略图并允许重试。翻图回到缩略图，退出或翻图时释放不再使用的请求。
+
+全屏画布支持单击关闭、双击放大或复位、双指缩放、放大后拖动和原比例时左右滑动翻图。桌面另支持鼠标滚轮、方向键、`+`、`-` 和 `Escape`。顶部操作与底部作者、摘要和互动按钮独立于画布。底部信息可以收起并恢复，从查看帖子或评论返回原详情。
 
 `CommunityCommentSection`读取一级评论游标页及每楼的回复页。回复可以针对楼内任何合法对象，始终只缩进一层；选择对象时保存根评论和实际回复ID，不把@姓名拼入正文。评论回复最多500字，待审/驳回内容仅作者可见。删除根评论后保留占位及合法回复，删除操作要求明确确认。
 
@@ -23,10 +25,11 @@
 | `src/api/community.api.js`                              | 真实接口、游标、个人列表、互动及审核适配           |
 | `src/views/community/CommunityFeedView.vue`             | 双列瀑布流、发现/我的/收藏分类及加载更多           |
 | `src/components/community/PostCreateModal.vue`          | 标题正文、图片选择排序、上传及发布去重             |
-| `src/components/community/CommunityPostContent.vue`     | 共用详情与服务端互动状态                           |
-| `src/components/community/CommunityPostDetailModal.vue` | ElDialog弹窗容器                                   |
+| `src/components/community/CommunityPostContent.vue`     | 独立详情内容与服务端互动状态                       |
+| `src/components/community/CommunityPostDetailModal.vue` | 首页和社区卡片的帖子详情弹窗                       |
 | `src/views/community/CommunityDetailView.vue`           | 独立详情路由与返回入口                             |
-| `src/components/community/CommunityImageViewer.vue`     | 轮播与全屏大图                                     |
+| `src/components/community/CommunityImageViewer.vue`     | 帖内缩略图轮播                                     |
+| `src/components/community/CommunityPhotoDialog.vue`     | 全屏缩放、翻图、可收起信息及按需加载原图           |
 | `src/components/community/CommunityCommentSection.vue`  | 根评论/回复分页、回复对象与草稿                    |
 | `src/components/community/CommunityCommentItem.vue`     | 单条评论、审核/删除状态及点赞                      |
 | `src/views/admin/AdminAuditView.vue`                    | 社区审核范围、完整配图与回复上下文、人工决定及下架 |

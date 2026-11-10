@@ -11,7 +11,7 @@ let wrapper;
 function render(items = images) {
   wrapper = mount(CommunityImageViewer, {
     props: { images: items, alt: '九图食记' },
-    global: { stubs: { ElImageViewer: true } },
+    global: { stubs: { CommunityPhotoDialog: true } },
   });
   return wrapper;
 }
@@ -41,7 +41,7 @@ describe('CommunityImageViewer', () => {
       .get('.community-image-viewer__stage')
       .trigger('keydown.enter');
     expect(
-      wrapper.getComponent({ name: 'ElImageViewer' }).props('initialIndex'),
+      wrapper.getComponent({ name: 'CommunityPhotoDialog' }).props('index'),
     ).toBe(8);
   });
 
@@ -80,9 +80,9 @@ describe('CommunityImageViewer', () => {
     expect(wrapper.find('[role="tablist"]').exists()).toBe(false);
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
     await wrapper.get('.community-image-viewer__slide').trigger('click');
-    expect(wrapper.findComponent({ name: 'ElImageViewer' }).exists()).toBe(
-      true,
-    );
+    expect(
+      wrapper.findComponent({ name: 'CommunityPhotoDialog' }).exists(),
+    ).toBe(true);
   });
 
   it('没有配图时显示空态，不能打开放大层', async () => {
@@ -91,9 +91,9 @@ describe('CommunityImageViewer', () => {
     await wrapper
       .get('.community-image-viewer__stage')
       .trigger('keydown.enter');
-    expect(wrapper.findComponent({ name: 'ElImageViewer' }).exists()).toBe(
-      false,
-    );
+    expect(
+      wrapper.findComponent({ name: 'CommunityPhotoDialog' }).exists(),
+    ).toBe(false);
   });
 
   it('帖子互动刷新产生相同图片的新数组时保留图片位置和放大层', async () => {
@@ -104,14 +104,14 @@ describe('CommunityImageViewer', () => {
       .trigger('keydown.enter');
     await wrapper.setProps({ images: images.map((image) => ({ ...image })) });
     expect(wrapper.get('[role="status"]').text()).toBe('9 / 9');
-    expect(wrapper.findComponent({ name: 'ElImageViewer' }).exists()).toBe(
-      true,
-    );
+    expect(
+      wrapper.findComponent({ name: 'CommunityPhotoDialog' }).exists(),
+    ).toBe(true);
 
     await wrapper.setProps({ images: images.slice(0, 3) });
     expect(wrapper.get('[role="status"]').text()).toBe('1 / 3');
-    expect(wrapper.findComponent({ name: 'ElImageViewer' }).exists()).toBe(
-      false,
-    );
+    expect(
+      wrapper.findComponent({ name: 'CommunityPhotoDialog' }).exists(),
+    ).toBe(false);
   });
 });

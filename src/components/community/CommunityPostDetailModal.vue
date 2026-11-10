@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
@@ -14,6 +14,8 @@ import {
   setPostFavorite,
 } from '@/api/community.api.js';
 import CommunityCommentSection from './CommunityCommentSection.vue';
+import CommunityImageViewer from './CommunityImageViewer.vue';
+import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 
@@ -63,15 +65,9 @@ const isLiked = ref(false);
 const isFavorited = ref(false);
 const replyTarget = ref(null);
 
-const currentImageIndex = ref(0);
 const quickCommentText = ref('');
 const isSubmittingComment = ref(false);
 const detailModalRef = ref(null);
-
-const images = computed(() => post.value?.images || []);
-const currentImage = computed(
-  () => images.value[currentImageIndex.value]?.url || '',
-);
 
 function formatPostTime(isoString) {
   if (!isoString) return '';
@@ -91,7 +87,6 @@ async function loadPostData(id) {
   loading.value = true;
   error.value = null;
   post.value = null;
-  currentImageIndex.value = 0;
   replyTarget.value = null;
   quickCommentText.value = '';
   try {
@@ -186,18 +181,6 @@ onUnmounted(() => {
   }
 });
 
-function prevImage() {
-  if (currentImageIndex.value > 0) {
-    currentImageIndex.value -= 1;
-  }
-}
-
-function nextImage() {
-  if (currentImageIndex.value < images.value.length - 1) {
-    currentImageIndex.value += 1;
-  }
-}
-
 async function toggleLike() {
   if (!post.value) return;
   const next = !isLiked.value;
@@ -249,7 +232,11 @@ async function toggleFollow() {
 
 function handleShare() {
   if (typeof window !== 'undefined' && navigator.clipboard) {
-    navigator.clipboard.writeText(window.location.href);
+    const url = new URL(
+      `/community/posts/${encodeURIComponent(props.postId)}`,
+      window.location.origin,
+    );
+    navigator.clipboard.writeText(url.href);
     ElMessage.success('已复制帖子链接到剪贴板');
   } else {
     ElMessage.success('已生成分享卡片');
@@ -396,51 +383,25 @@ async function removePost() {
             <div class="redbook-layout-main">
               <!-- 左侧：图片区域（自适应尺寸居中，保持原图比例） -->
               <div class="redbook-media-pane">
-                <div class="redbook-media-pane__wrapper">
-                  <img
-                    v-if="currentImage"
-                    :src="currentImage"
-                    :alt="post.title"
-                    class="redbook-media-pane__img"
-                    loading="lazy"
-                  />
-                  <div v-else class="redbook-media-pane__empty">
-                    <span>暂无图片</span>
-                  </div>
-
-                  <!-- 切换箭头 -->
-                  <button
-                    v-if="images.length > 1 && currentImageIndex > 0"
-                    type="button"
-                    class="redbook-img-nav redbook-img-nav--prev"
-                    aria-label="上一张"
-                    @click="prevImage"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    v-if="
-                      images.length > 1 && currentImageIndex < images.length - 1
-                    "
-                    type="button"
-                    class="redbook-img-nav redbook-img-nav--next"
-                    aria-label="下一张"
-                    @click="nextImage"
-                  >
-                    ›
-                  </button>
-
-                  <!-- 底部轮播小圆点 -->
-                  <div v-if="images.length > 1" class="redbook-dots">
-                    <span
-                      v-for="(_, idx) in images"
-                      :key="idx"
-                      class="redbook-dot"
-                      :class="{ 'is-active': idx === currentImageIndex }"
-                      @click="currentImageIndex = idx"
-                    ></span>
-                  </div>
-                </div>
+                <CommunityImageViewer
+                  :images="post.images || []"
+                  :alt="post.title"
+                >
+                  <template #context="{ close: closePhoto }">
+                    <CommunityPhotoContext
+                      :post="post"
+                      :time="formatPostTime(post.createdAt)"
+                      :like-busy="isLiked !== Boolean(post.likedByMe)"
+                      @post="closePhoto"
+                      @comment="
+                        closePhoto();
+                        focusCommentInput();
+                      "
+                      @share="handleShare"
+                      @like="toggleLike"
+                    />
+                  </template>
+                </CommunityImageViewer>
               </div>
 
               <!-- 右侧：作者信息、正文、滚动评论 -->
@@ -810,87 +771,14 @@ async function removePost() {
   position: relative;
   overflow: hidden;
 
-  &__wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  &__img {
-    max-width: 100%;
+  :deep(.community-image-viewer__stage) {
+    flex: 1;
+    min-height: 0;
     max-height: 100%;
-    object-fit: contain;
-    user-select: none;
-    transition: opacity 200ms ease;
-  }
-
-  &__empty {
-    color: var(--ft-color-text-muted, #999);
-    font-size: 15px;
-  }
-}
-
-.redbook-img-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 0;
-  background: rgb(255 255 255 / 82%);
-  color: #333;
-  font-size: 24px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
-  transition: all 180ms ease;
-
-  &:hover {
-    background: #fff;
-    transform: translateY(-50%) scale(1.1);
-  }
-
-  &--prev {
-    left: 14px;
-  }
-
-  &--next {
-    right: 14px;
-  }
-}
-
-.redbook-dots {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgb(0 0 0 / 25%);
-  border-radius: 12px;
-  backdrop-filter: blur(4px);
-}
-
-.redbook-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 50%);
-  cursor: pointer;
-  transition: all 180ms ease;
-
-  &.is-active {
-    background: #fff;
-    width: 14px;
-    border-radius: 4px;
+    border: 0;
+    border-radius: 0;
+    background: inherit;
+    box-shadow: none;
   }
 }
 
@@ -1418,16 +1306,11 @@ async function removePost() {
     height: auto;
     background: #000;
 
-    &__wrapper {
-      width: 100%;
+    :deep(.community-image-viewer__stage) {
+      flex: none;
       height: auto;
-      max-height: 70vh;
-    }
-
-    &__img {
-      width: 100%;
-      max-height: 70vh;
-      object-fit: contain;
+      max-height: 58vh;
+      min-height: 220px;
     }
   }
 

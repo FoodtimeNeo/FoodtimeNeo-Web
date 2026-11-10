@@ -1,9 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { ElImageViewer } from 'element-plus';
 import MediaImage from '@/components/base/MediaImage.vue';
-import { useMediaSource } from '@/composables/useMediaSource.js';
-import { mediaVariant } from '@/utils/mediaUrl.js';
+import CommunityPhotoDialog from './CommunityPhotoDialog.vue';
 
 const props = defineProps({
   images: {
@@ -24,17 +22,6 @@ const stageRatio = computed(() => {
     ? `${first.width} / ${first.height}`
     : '4 / 3';
 });
-const { source: lightboxSource } = useMediaSource(
-  () => mediaVariant(props.images[currentIndex.value]?.url, 'full'),
-  isLightboxOpen,
-);
-const lightboxUrls = computed(() =>
-  props.images.map((_, index) =>
-    index === currentIndex.value && lightboxSource.value
-      ? lightboxSource.value
-      : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
-  ),
-);
 const nearCurrent = (index) =>
   index === currentIndex.value ||
   (index === currentIndex.value + 1 &&
@@ -50,29 +37,42 @@ watch(
 
 // 触摸滑动逻辑
 let startX = 0;
+let startY = 0;
 let deltaX = 0;
+let deltaY = 0;
+let suppressClick = false;
 
 function handleTouchStart(e) {
   if (e.touches && e.touches.length > 0) {
     startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY || 0;
     deltaX = 0;
+    deltaY = 0;
+    suppressClick = false;
   }
 }
 
 function handleTouchMove(e) {
   if (e.touches && e.touches.length > 0) {
     deltaX = e.touches[0].clientX - startX;
+    deltaY = (e.touches[0].clientY || 0) - startY;
   }
 }
 
 function handleTouchEnd() {
   const threshold = 40; // 滑动阈值
-  if (deltaX > threshold) {
+  suppressClick = Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10;
+  if (deltaX > threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
     prevImage();
-  } else if (deltaX < -threshold) {
+  } else if (deltaX < -threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
     nextImage();
   }
   deltaX = 0;
+}
+
+function cancelInlineSwipe() {
+  deltaX = 0;
+  deltaY = 0;
 }
 
 function nextImage() {
@@ -91,7 +91,11 @@ function goToIndex(index) {
   currentIndex.value = index;
 }
 
-function openLightbox() {
+function openLightbox(event) {
+  if (event?.type === 'click' && suppressClick) {
+    suppressClick = false;
+    return;
+  }
   if (props.images.length > 0) {
     isLightboxOpen.value = true;
   }
@@ -114,6 +118,7 @@ function closeLightbox() {
       @touchstart="handleTouchStart"
       @touchmove="handleTouchMove"
       @touchend="handleTouchEnd"
+      @touchcancel="cancelInlineSwipe"
       @keydown.left="prevImage"
       @keydown.right="nextImage"
       @keydown.enter.prevent="openLightbox"
@@ -136,7 +141,7 @@ function closeLightbox() {
             :alt="`${alt} 第 ${idx + 1} 张`"
             class="community-image-viewer__img"
             loading="lazy"
-            size="full"
+            size="thumb"
             :eager="idx === currentIndex"
             fit="contain"
           />
@@ -201,16 +206,18 @@ function closeLightbox() {
       ></button>
     </div>
 
-    <ElImageViewer
+    <CommunityPhotoDialog
       v-if="isLightboxOpen"
-      :url-list="lightboxUrls"
-      :initial-index="currentIndex"
-      :infinite="false"
-      :z-index="4000"
-      teleported
+      :images="images"
+      :index="currentIndex"
+      :alt="alt"
       @close="closeLightbox"
-      @switch="goToIndex"
-    />
+      @change="goToIndex"
+    >
+      <template v-if="$slots.context" #default="controls">
+        <slot name="context" v-bind="controls" />
+      </template>
+    </CommunityPhotoDialog>
   </div>
 </template>
 
