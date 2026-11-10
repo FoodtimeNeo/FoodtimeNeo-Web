@@ -179,6 +179,9 @@ async function openMessage(row) {
       ><span class="section-rule__line"></span>
     </div>
     <h1 class="section-title">消息<span class="zine-highlight">信箱</span></h1>
+    <RouterLink class="button-ink" :to="{ name: 'userSearch' }"
+      >搜索用户</RouterLink
+    >
 
     <div class="inbox-page__tabs" role="tablist" aria-label="信箱分类">
       <button

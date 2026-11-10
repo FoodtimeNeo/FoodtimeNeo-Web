@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/users/search',
+    name: 'userSearch',
+    component: () => import('@/views/profile/UserSearchView.vue'),
+    meta: {
+      title: '搜索用户',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/venue/:type/:targetId/reviews',
     name: 'venueReviews',
     component: () => import('@/views/venue/VenueReviewsView.vue'),

@@ -70,6 +70,7 @@ async function toggle(row) {
     </h1>
 
     <nav class="follow-page__tabs" aria-label="关注分类">
+      <RouterLink :to="{ name: 'userSearch' }">搜索用户</RouterLink>
       <RouterLink
         :to="{ name: 'myFollowing' }"
         :class="{ 'is-active': !isFollowers }"
