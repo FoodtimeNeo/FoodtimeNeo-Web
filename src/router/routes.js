@@ -273,6 +273,17 @@ export const routes = [
     },
   },
   {
+    path: '/community/authors/:userId',
+    name: 'communityAuthor',
+    component: () => import('@/views/community/CommunityAuthorView.vue'),
+    meta: {
+      title: '作者主页',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'community',
+    },
+  },
+  {
     path: '/community/posts/:postId',
     name: 'communityDetail',
     component: () => import('@/views/community/CommunityDetailView.vue'),

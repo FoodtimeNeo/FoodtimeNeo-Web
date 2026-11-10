@@ -346,7 +346,17 @@ async function removePost() {
                 <span v-else class="mobile-author-fallback">{{
                   (post.author?.name || '饭')[0]
                 }}</span>
-                <span class="mobile-author-name">{{
+                <RouterLink
+                  v-if="post.userId"
+                  class="mobile-author-name"
+                  :to="{
+                    name: 'communityAuthor',
+                    params: { userId: post.userId },
+                  }"
+                  @click="emit('update:modelValue', false)"
+                  >{{ post.author?.name || '校园干饭人' }}</RouterLink
+                >
+                <span v-else class="mobile-author-name">{{
                   post.author?.name || '校园干饭人'
                 }}</span>
               </div>
@@ -431,7 +441,17 @@ async function removePost() {
                     </div>
                   </div>
                   <div class="redbook-author-meta">
-                    <span class="redbook-author-name">{{
+                    <RouterLink
+                      v-if="post.userId"
+                      class="redbook-author-name"
+                      :to="{
+                        name: 'communityAuthor',
+                        params: { userId: post.userId },
+                      }"
+                      @click="emit('update:modelValue', false)"
+                      >{{ post.author?.name || '校园干饭人' }}</RouterLink
+                    >
+                    <span v-else class="redbook-author-name">{{
                       post.author?.name || '校园干饭人'
                     }}</span>
                   </div>
