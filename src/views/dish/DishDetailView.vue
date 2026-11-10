@@ -15,6 +15,7 @@ import { formatPrice } from '@/utils/mediaUrl.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import DishReviewList from '@/components/dish/DishReviewList.vue';
+import DishFavoriteButton from '@/components/canteen/DishFavoriteButton.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -137,6 +138,7 @@ const params = computed(() => ({
             {{ data.dish.diningHallName }} · {{ data.dish.stallName }}
           </p>
           <p class="dish-detail__price">{{ formatPrice(data.dish.price) }}</p>
+          <DishFavoriteButton :key="dishId" :dish-id="dishId" />
           <p v-if="data.dish.description" class="dropcap">
             {{ data.dish.description }}
           </p>

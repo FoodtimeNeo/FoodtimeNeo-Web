@@ -20,6 +20,7 @@ import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
+import DishLink from '@/components/canteen/DishLink.vue';
 
 const props = defineProps({
   postId: {
@@ -470,6 +471,13 @@ function formatPostTime(isoString) {
 
           <h1 class="post-title">{{ post.title }}</h1>
           <p class="post-body">{{ post.content }}</p>
+          <DishLink
+            v-if="post.linkedDish"
+            :dish="post.linkedDish"
+            class="button-ink"
+          >
+            菜品 · {{ post.linkedDish.name }}
+          </DishLink>
 
           <div v-if="post.tags && post.tags.length" class="post-tags">
             <span v-for="tag in post.tags" :key="tag" class="post-tag">

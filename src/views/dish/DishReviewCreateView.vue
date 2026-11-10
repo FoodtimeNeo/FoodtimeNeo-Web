@@ -132,6 +132,7 @@ async function submitReview() {
             title: `${dish.value.name}品鉴心得`,
             content: form.content.trim(),
             images: imageList,
+            linkedDish: { id: dish.value.id, name: dish.value.name },
           },
         },
       });

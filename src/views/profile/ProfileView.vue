@@ -136,6 +136,12 @@ async function logout() {
         ><span>我的评论<small>已发布的点评</small></span
         ><strong>→</strong></RouterLink
       >
+      <RouterLink class="paper-link" :to="{ name: 'favoriteDishes' }"
+        ><span class="stamp">想吃</span> ><span
+          >想吃清单<small>保存的菜品</small></span
+        >
+        ><strong>→</strong></RouterLink
+      >
       <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
         ><span class="stamp">02</span
         ><span>我的提交<small>投稿记录与审核结果</small></span

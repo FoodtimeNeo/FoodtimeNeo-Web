@@ -206,6 +206,17 @@ export const routes = [
     },
   },
   {
+    path: '/profile/dish-favorites',
+    name: 'favoriteDishes',
+    component: () => import('@/views/profile/FavoriteDishesView.vue'),
+    meta: {
+      title: '想吃清单',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/profile/reviews',
     name: 'myReviews',
     component: () => import('@/views/profile/MyReviewsView.vue'),

@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 
 const createCommunityPost = vi.fn();
 const uploadImage = vi.fn();
+const searchDishes = vi.fn();
 
 vi.mock('@/api/community.api.js', () => ({
   createCommunityPost: (...args) => createCommunityPost(...args),
@@ -11,6 +12,9 @@ vi.mock('@/api/community.api.js', () => ({
 
 vi.mock('@/api/submission.api.js', () => ({
   uploadImage: (...args) => uploadImage(...args),
+}));
+vi.mock('@/api/dish.api.js', () => ({
+  searchDishes: (...args) => searchDishes(...args),
 }));
 
 import PostCreateModal from './PostCreateModal.vue';
@@ -36,6 +40,7 @@ describe('PostCreateModal', () => {
     setActivePinia(createPinia());
     createCommunityPost.mockReset();
     uploadImage.mockReset();
+    searchDishes.mockReset();
   });
 
   it('不存在链接输入框和快捷预设配图，展示手账真实图片上传区', () => {
@@ -68,7 +73,7 @@ describe('PostCreateModal', () => {
     expect(imgs[0].attributes('src')).toBe('https://example.com/soup.jpg');
   });
 
-  it('可以通过文件上传添加图片并在提交时正常发帖', async () => {
+  it('选择关联菜品后，提交图片和所选菜品 ID', async () => {
     uploadImage.mockResolvedValue({ imageUrl: '/api/v1/media/img-real-1' });
     createCommunityPost.mockResolvedValue({
       id: 'post-new-1',
@@ -77,6 +82,26 @@ describe('PostCreateModal', () => {
     });
 
     const wrapper = mountModal();
+    searchDishes.mockResolvedValue({
+      items: [
+        {
+          id: 'dish-1',
+          name: '三明治',
+          diningHallName: '学苑',
+          stallName: '一号档口',
+        },
+      ],
+      page: 1,
+      size: 20,
+      total: 1,
+    });
+    const button = (label) =>
+      wrapper.findAll('button').find((item) => item.text() === label);
+    await button('选择菜品').trigger('click');
+    await wrapper.get('#post-dish-keyword').setValue('三明治');
+    await button('搜索菜品').trigger('click');
+    await flushPromises();
+    await button('三明治 · 学苑 · 一号档口').trigger('click');
 
     await wrapper.find('#post-title').setValue('自制三明治');
     await wrapper.find('#post-content').setValue('全麦面包配煎蛋，美味健康！');
@@ -107,6 +132,7 @@ describe('PostCreateModal', () => {
       title: '自制三明治',
       content: '全麦面包配煎蛋，美味健康！',
       images: ['/api/v1/media/img-real-1'],
+      dishId: 'dish-1',
     });
 
     // 发射了 created 事件

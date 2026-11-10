@@ -5,6 +5,8 @@ const api = vi.hoisted(() => ({
   fetchDishReviews: vi.fn(),
   fetchDishImages: vi.fn(),
   fetchDishRating: vi.fn(),
+  fetchDishFavorite: vi.fn(),
+  setDishFavorite: vi.fn(),
 }));
 vi.mock('@/api/dish.api.js', () => api);
 vi.mock('vue-router', () => ({
@@ -37,6 +39,8 @@ beforeEach(() => {
     averageScore: 4.25,
     reviewCount: 30,
   });
+  api.fetchDishFavorite.mockResolvedValue({ saved: false });
+  api.setDishFavorite.mockResolvedValue({ saved: true });
   api.fetchDishReviews.mockResolvedValue({
     items: [
       {
@@ -53,6 +57,19 @@ beforeEach(() => {
   });
 });
 describe('菜品真实详情', () => {
+  it('收藏后只更新想吃按钮，不重新请求详情或评价', async () => {
+    const wrapper = mount(DishDetailView, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    });
+    await flushPromises();
+    await wrapper.get('button[aria-pressed="false"]').trigger('click');
+    await flushPromises();
+    expect(api.setDishFavorite).toHaveBeenCalledExactlyOnceWith('d1', true);
+    expect(wrapper.get('button[aria-pressed="true"]').text()).toBe('已想吃');
+    expect(api.fetchDish).toHaveBeenCalledTimes(1);
+    expect(api.fetchDishReviews).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
   it('图片或评分慢时，菜品信息、点评与操作入口仍可用；重试只读取失败区域', async () => {
     let completeImage;
     api.fetchDishImages.mockImplementationOnce(
