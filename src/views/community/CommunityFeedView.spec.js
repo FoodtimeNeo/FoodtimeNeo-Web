@@ -59,13 +59,14 @@ describe('CommunityFeedView', () => {
     await flushPromises();
     const tab = wrapper
       .findAll('.community-tabs button')
-      .find((item) => item.text() === '只看关注');
+      .find((item) => item.text() === '关注');
     await tab.trigger('click');
     await flushPromises();
     expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
       cursor: undefined,
       following: true,
     });
+    await wrapper.get('.community-tools__search').trigger('click');
     await wrapper.get('#community-keyword').setValue('  鸡腿饭  ');
     await wrapper.get('.community-search').trigger('submit');
     await flushPromises();
@@ -209,17 +210,67 @@ describe('CommunityFeedView', () => {
     expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
   });
 
-  it('顶部右上角存在发帖按钮，点击可唤起发帖弹窗', async () => {
-    fetchCommunityPosts.mockResolvedValue({ items: [], total: 0 });
+  it('下拉松手才刷新，加载期间保留已显示的食记', async () => {
+    fetchCommunityPosts.mockResolvedValueOnce({
+      items: [{ id: 'p1', title: '食堂瓦罐汤' }],
+    });
+    let respond;
+    fetchCommunityPosts.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          respond = resolve;
+        }),
+    );
     const wrapper = mountView();
     await flushPromises();
 
-    const topBtn = wrapper.find('.community-header-post-btn');
-    expect(topBtn.exists()).toBe(true);
+    const stream = wrapper.get('.community-stream');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 90, clientY: 40 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 90, clientY: 170 }],
+    });
+    expect(wrapper.get('.community-refresh').classes()).toContain(
+      'is-dragging',
+    );
+    expect(fetchCommunityPosts).toHaveBeenCalledTimes(1);
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: 90, clientY: 170 }],
+    });
+    expect(fetchCommunityPosts).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('食堂瓦罐汤');
+    respond({ items: [{ id: 'p2', title: '新食记' }] });
+    await flushPromises();
+    expect(wrapper.text()).toContain('新食记');
+    expect(wrapper.get('.community-refresh').classes()).not.toContain(
+      'is-visible',
+    );
+    wrapper.unmount();
+  });
 
-    expect(wrapper.find('.el-dialog-stub').exists()).toBe(false);
-    await topBtn.trigger('click');
-    expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
+  it('横向滑动从发现切换到关注', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    const stream = wrapper.get('.community-stream');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 50, clientY: 80 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 155, clientY: 85 }],
+    });
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: 155, clientY: 85 }],
+    });
+    expect(wrapper.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '关注',
+    );
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: undefined,
+      following: true,
+    });
+    wrapper.unmount();
   });
 
   it('发帖成功后再次打开使用空白预填数据', async () => {
@@ -230,7 +281,7 @@ describe('CommunityFeedView', () => {
 
     const modal = wrapper.findComponent({ name: 'PostCreateModal' });
     modal.vm.$emit('created', { id: 'pending-post' });
-    await wrapper.find('.community-header-post-btn').trigger('click');
+    await wrapper.get('.community-fab-btn').trigger('click');
 
     expect(modal.props('initialData')).toEqual({});
   });
