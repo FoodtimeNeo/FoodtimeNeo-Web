@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
@@ -15,11 +15,7 @@ import EmptyState from '@/components/base/EmptyState.vue';
 
 const route = useRoute();
 
-const posts = ref([]);
-const loading = ref(false);
-const cursor = ref(null);
-const mode = ref('public'),
-  currentPage = ref(1);
+const mode = ref('public');
 const input = ref('');
 const keyword = ref('');
 const searchOpen = ref(false);
@@ -31,20 +27,43 @@ const tabs = [
   { id: 'favorites', label: '收藏' },
   { id: 'mine', label: '我的食记' },
 ];
-let gesture;
-const publicMode = computed(
-  () => mode.value === 'public' || mode.value === 'following',
+const pages = reactive(
+  tabs.map(() => ({
+    posts: [],
+    loading: false,
+    error: '',
+    cursor: null,
+    page: 1,
+    hasMore: false,
+    query: '',
+    version: 0,
+  })),
 );
-const emptyTitle = computed(() => {
-  if (publicMode.value && keyword.value) return '没有匹配的食记';
-  if (mode.value === 'following') return '关注的人还没有公开食记';
-  if (mode.value === 'mine') return '你还没有发布食记';
-  if (mode.value === 'favorites') return '你还没有收藏食记';
+const activeIndex = computed(() =>
+  tabs.findIndex(({ id }) => id === mode.value),
+);
+const activePage = computed(() => pages[activeIndex.value]);
+const pager = ref(null);
+const drag = ref(0);
+const dragging = ref(false);
+const otherIndex = ref(-1);
+const swipeOrigin = ref(-1);
+const heldHeight = ref(0);
+const incomingTop = ref(0);
+const position = computed(() => activeIndex.value + drag.value);
+const SETTLE_MS = 240;
+let settleTimer;
+let gesture;
+const isPublic = (section) => section === 'public' || section === 'following';
+const publicMode = computed(() => isPublic(mode.value));
+
+function emptyTitle(section) {
+  if (isPublic(section) && keyword.value) return '没有匹配的食记';
+  if (section === 'following') return '关注的人还没有公开食记';
+  if (section === 'mine') return '你还没有发布食记';
+  if (section === 'favorites') return '你还没有收藏食记';
   return '社区暂无公开帖子';
-});
-let feedVersion = 0;
-const hasMore = ref(false);
-const loadError = ref('');
+}
 const isCreateModalOpen = ref(false);
 const prefillData = ref({});
 const activePostId = ref('');
@@ -66,49 +85,48 @@ function openCreateModal(prefill = null) {
 }
 
 async function loadFeed(more = false) {
-  if (loading.value) return;
-  const version = feedVersion;
-  loadError.value = '';
-  loading.value = true;
+  const section = mode.value;
+  const feed = activePage.value;
+  if (feed.loading) return;
+  const version = ++feed.version;
+  const query = feed.query;
+  feed.error = '';
+  feed.loading = true;
   try {
     // 关键需求：新发的帖子需要审核才能展示，故默认只拉取 approved 状态的帖子
-    const pageNumber = more ? currentPage.value + 1 : 1;
-    const res = publicMode.value
+    const pageNumber = more ? feed.page + 1 : 1;
+    const res = isPublic(section)
       ? await fetchCommunityPosts({
-          cursor: more ? cursor.value : undefined,
-          ...(mode.value === 'following' ? { following: true } : {}),
-          ...(keyword.value ? { q: keyword.value } : {}),
+          cursor: more ? feed.cursor : undefined,
+          ...(section === 'following' ? { following: true } : {}),
+          ...(query ? { q: query } : {}),
         })
       : await (
-          mode.value === 'mine'
-            ? fetchMyCommunityPosts
-            : fetchMyCommunityFavorites
+          section === 'mine' ? fetchMyCommunityPosts : fetchMyCommunityFavorites
         )({ page: pageNumber, size: 20 });
-    if (version !== feedVersion) return;
-    currentPage.value = pageNumber;
-    posts.value = more
-      ? [...posts.value, ...(res.items || [])]
-      : res.items || [];
-    cursor.value = res.nextCursor;
-    hasMore.value = publicMode.value
+    if (version !== feed.version) return;
+    feed.page = pageNumber;
+    feed.posts = more ? [...feed.posts, ...(res.items || [])] : res.items || [];
+    feed.cursor = res.nextCursor;
+    feed.hasMore = isPublic(section)
       ? !!res.hasMore
       : pageNumber * 20 < res.total;
   } catch (error) {
-    if (version !== feedVersion) return;
-    loadError.value = error.message || '加载社区帖子失败';
-    ElMessage.error(loadError.value);
+    if (version !== feed.version) return;
+    feed.error = error.message || '加载社区帖子失败';
+    if (mode.value === section) ElMessage.error(feed.error);
   } finally {
-    if (version === feedVersion) loading.value = false;
+    if (version === feed.version) feed.loading = false;
   }
 }
 
 // 响应式瀑布流分配算法（电脑端 3 列，手机端 2 列）
-const columns = computed(() => {
+function distribute(posts) {
   const colCount = columnCount.value;
   const cols = Array.from({ length: colCount }, () => []);
   const colHeights = Array.from({ length: colCount }, () => 0);
 
-  for (const post of posts.value) {
+  for (const post of posts) {
     const img = post.images?.[0];
     let estimatedHeight = 240; // 默认基准高度
     if (img && img.width && img.height) {
@@ -128,24 +146,38 @@ const columns = computed(() => {
   }
 
   return cols;
-});
+}
+const columns = computed(() => pages.map((page) => distribute(page.posts)));
 
 function handleCardClick(post) {
+  if (dragging.value || settleTimer) return;
   activePostId.value = post.id;
   isDetailModalOpen.value = true;
 }
 
 function changeMode(next, reload = false) {
   if (next === mode.value && !reload) return;
-  feedVersion++;
   mode.value = next;
   refreshing.value = false;
-  loading.value = false;
-  posts.value = [];
-  cursor.value = null;
-  hasMore.value = false;
-  currentPage.value = 1;
+  const feed = activePage.value;
+  const query = publicMode.value ? keyword.value : '';
+  if (reload || feed.query !== query) {
+    Object.assign(feed, {
+      version: feed.version + 1,
+      query,
+      loading: false,
+      posts: [],
+      cursor: null,
+      hasMore: false,
+      page: 1,
+    });
+  }
   loadFeed();
+}
+
+function selectTab(section) {
+  if (dragging.value || settleTimer) return;
+  changeMode(section);
 }
 function search() {
   const query = input.value.trim();
@@ -169,6 +201,7 @@ function startGesture(event) {
     cancelGesture();
     return;
   }
+  if (settleTimer) return;
   const finger = event.touches[0];
   gesture = { x: finger.clientX, y: finger.clientY, top: window.scrollY <= 0 };
 }
@@ -180,7 +213,8 @@ function moveGesture(event) {
   const dy = finger.clientY - gesture.y;
   if (!gesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
     if (Math.abs(dx) > Math.abs(dy) * 1.3) gesture.axis = 'swipe';
-    else if (gesture.top && dy > 0 && !loading.value) gesture.axis = 'pull';
+    else if (gesture.top && dy > 0 && !activePage.value.loading)
+      gesture.axis = 'pull';
     else gesture.axis = 'scroll';
   }
   if (gesture.axis === 'pull') {
@@ -192,12 +226,57 @@ function moveGesture(event) {
     pull.value = Math.min(66, Math.max(0, (dy - 10) * 0.55));
   } else if (gesture.axis === 'swipe' && event.cancelable) {
     event.preventDefault();
+    if (!dragging.value) {
+      const bounds = pager.value.getBoundingClientRect();
+      heldHeight.value = bounds.height;
+      incomingTop.value = Math.max(0, -bounds.top);
+      swipeOrigin.value = activeIndex.value;
+      dragging.value = true;
+    }
+    const index = activeIndex.value;
+    const width = pager.value.clientWidth || screenWidth.value;
+    const fraction = Math.max(-1, Math.min(1, -dx / width));
+    const clamped = Math.max(
+      -index,
+      Math.min(tabs.length - 1 - index, fraction),
+    );
+    otherIndex.value = clamped ? index + Math.sign(clamped) : -1;
+    drag.value = clamped;
   }
+}
+
+function finishSlide() {
+  clearTimeout(settleTimer);
+  settleTimer = undefined;
+  otherIndex.value = -1;
+  if (incomingTop.value && heldHeight.value && pager.value) {
+    const top = pager.value.getBoundingClientRect().top;
+    if (top < 0 && swipeOrigin.value !== activeIndex.value) {
+      window.scrollBy({ top, behavior: 'instant' });
+    }
+  }
+  heldHeight.value = 0;
+  incomingTop.value = 0;
+  swipeOrigin.value = -1;
+}
+
+function settleSwipe(direction = 0) {
+  if (!dragging.value) return;
+  const index = activeIndex.value;
+  const next = direction && tabs[index + direction];
+  dragging.value = false;
+  if (next) {
+    otherIndex.value = index;
+    changeMode(next.id);
+  }
+  drag.value = 0;
+  settleTimer = setTimeout(finishSlide, SETTLE_MS);
 }
 
 function cancelGesture() {
   gesture = undefined;
   pull.value = 0;
+  settleSwipe();
 }
 
 async function endGesture(event) {
@@ -206,22 +285,23 @@ async function endGesture(event) {
   const dx = finger.clientX - gesture.x;
   const dy = finger.clientY - gesture.y;
   const axis = gesture.axis;
-  cancelGesture();
+  gesture = undefined;
+  pull.value = 0;
   if (axis === 'swipe' && Math.abs(dx) >= 64 && Math.abs(dx) > Math.abs(dy)) {
-    const index = tabs.findIndex(({ id }) => id === mode.value);
-    const next = tabs[index + (dx < 0 ? 1 : -1)];
-    if (next) changeMode(next.id);
-  } else if (axis === 'pull' && dy >= 88 && !loading.value) {
-    const version = feedVersion;
+    settleSwipe(dx < 0 ? 1 : -1);
+  } else if (axis === 'swipe') {
+    settleSwipe();
+  } else if (axis === 'pull' && dy >= 88 && !activePage.value.loading) {
+    const section = mode.value;
     refreshing.value = true;
     await loadFeed();
-    if (version === feedVersion) refreshing.value = false;
+    if (section === mode.value) refreshing.value = false;
   }
 }
 function handlePostCreated() {
   // 提交成功后，旧的点评预填内容不能再次注入新弹窗。
   prefillData.value = {};
-  changeMode('mine');
+  changeMode('mine', true);
 }
 
 onMounted(() => {
@@ -238,6 +318,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  clearTimeout(settleTimer);
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleResize);
   }
@@ -245,7 +326,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="community-feed-view">
+  <div
+    class="community-feed-view"
+    :class="{ 'is-sliding': dragging }"
+    :style="{ '--slide-duration': `${SETTLE_MS}ms` }"
+  >
     <header class="community-feed-view__header">
       <nav class="community-tabs" aria-label="食记分类">
         <button
@@ -253,10 +338,15 @@ onUnmounted(() => {
           :key="tab.id"
           type="button"
           :aria-pressed="mode === tab.id"
-          @click="changeMode(tab.id)"
+          @click="selectTab(tab.id)"
         >
           {{ tab.label }}
         </button>
+        <span
+          class="community-tabs__indicator"
+          :style="{ transform: `translateX(${position * 100}%)` }"
+          aria-hidden="true"
+        ></span>
       </nav>
       <div class="community-tools">
         <button
@@ -337,48 +427,77 @@ onUnmounted(() => {
         <p>随手拍、聊美味，看看同学们今天都在打卡什么好吃的。</p>
         <span class="community-feed-view__sketches" aria-hidden="true"></span>
       </div>
-      <p v-if="loadError && !posts.length" role="alert">
-        {{ loadError }} <button type="button" @click="loadFeed()">重试</button>
-      </p>
-      <LoadingState v-if="loading && !refreshing && !posts.length" />
-
-      <EmptyState
-        v-else-if="posts.length === 0"
-        :title="emptyTitle"
-        :description="
-          keyword && publicMode
-            ? '试试其他关键词。'
-            : mode === 'following'
-              ? '在食记或用户搜索中关注感兴趣的同学。'
-              : ''
-        "
-      />
-
-      <!-- 瀑布流布局 (电脑 3 列，手机 2 列) -->
-      <main v-else class="community-waterfall" aria-label="帖子列表">
-        <div
-          v-for="(col, colIdx) in columns"
-          :key="colIdx"
-          class="community-waterfall__col"
-        >
-          <CommunityPostCard
-            v-for="post in col"
-            :key="post.id"
-            :post="post"
-            @click="handleCardClick(post)"
-          />
-        </div>
-      </main>
-
-      <button
-        v-if="hasMore"
-        type="button"
-        class="community-more"
-        :disabled="loading"
-        @click="loadFeed(true)"
+      <div
+        ref="pager"
+        class="community-pager"
+        :style="{ minHeight: heldHeight ? `${heldHeight}px` : undefined }"
       >
-        {{ loading ? '加载中…' : '加载更多' }}
-      </button>
+        <template v-for="(tab, index) in tabs" :key="tab.id">
+          <section
+            v-if="index === activeIndex || index === otherIndex"
+            class="community-pager__page"
+            :class="{ 'is-active': index === activeIndex }"
+            :inert="index !== activeIndex"
+            :style="{
+              transform: `translateX(${(index - position) * 100}%)`,
+              top: index !== swipeOrigin ? `${incomingTop}px` : undefined,
+            }"
+            :aria-label="tab.label"
+          >
+            <p
+              v-if="pages[index].error && !pages[index].posts.length"
+              role="alert"
+            >
+              {{ pages[index].error }}
+              <button type="button" @click="loadFeed()">重试</button>
+            </p>
+            <LoadingState
+              v-if="
+                (pages[index].loading &&
+                  !(refreshing && index === activeIndex) &&
+                  !pages[index].posts.length) ||
+                (index !== activeIndex &&
+                  (!pages[index].version ||
+                    (isPublic(tab.id) && pages[index].query !== keyword)))
+              "
+            />
+            <EmptyState
+              v-else-if="!pages[index].posts.length"
+              :title="emptyTitle(tab.id)"
+              :description="
+                keyword && isPublic(tab.id)
+                  ? '试试其他关键词。'
+                  : tab.id === 'following'
+                    ? '在食记或用户搜索中关注感兴趣的同学。'
+                    : ''
+              "
+            />
+            <div v-else class="community-waterfall" aria-label="帖子列表">
+              <div
+                v-for="(col, colIdx) in columns[index]"
+                :key="colIdx"
+                class="community-waterfall__col"
+              >
+                <CommunityPostCard
+                  v-for="post in col"
+                  :key="post.id"
+                  :post="post"
+                  @click="handleCardClick(post)"
+                />
+              </div>
+            </div>
+            <button
+              v-if="pages[index].hasMore"
+              type="button"
+              class="community-more"
+              :disabled="pages[index].loading"
+              @click="loadFeed(true)"
+            >
+              {{ pages[index].loading ? '加载中…' : '加载更多' }}
+            </button>
+          </section>
+        </template>
+      </div>
     </div>
 
     <Teleport to="body">
@@ -448,13 +567,15 @@ onUnmounted(() => {
 }
 
 .community-tabs {
+  position: relative;
   display: flex;
   flex: 1;
   min-width: 0;
 
   button {
     position: relative;
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     min-height: 44px;
     padding: 4px;
     border: 0;
@@ -468,15 +589,24 @@ onUnmounted(() => {
       color: var(--ft-color-primary);
       font-weight: 700;
     }
+  }
 
-    &[aria-pressed='true']::after {
-      position: absolute;
-      right: calc(50% - 9px);
-      bottom: 0;
+  &__indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    width: 25%;
+    justify-items: center;
+    pointer-events: none;
+    transition: transform var(--slide-duration)
+      cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    &::after {
       width: 18px;
       height: 3px;
       border-radius: 2px;
-      background: currentColor;
+      background: var(--ft-color-primary);
       content: '';
     }
   }
@@ -535,6 +665,29 @@ onUnmounted(() => {
   position: relative;
   min-height: 45dvh;
   touch-action: pan-y pinch-zoom;
+}
+
+.community-pager {
+  position: relative;
+  min-height: 35dvh;
+  overflow: clip;
+
+  &__page {
+    position: absolute;
+    inset: 0 0 auto;
+    min-height: 35dvh;
+    transition: transform var(--slide-duration)
+      cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    &.is-active {
+      position: relative;
+    }
+  }
+}
+
+.is-sliding .community-pager__page,
+.is-sliding .community-tabs__indicator {
+  transition: none;
 }
 
 .community-refresh {
@@ -660,7 +813,9 @@ onUnmounted(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .community-refresh {
+  .community-refresh,
+  .community-pager__page,
+  .community-tabs__indicator {
     transition: none;
   }
 

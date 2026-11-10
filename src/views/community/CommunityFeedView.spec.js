@@ -273,6 +273,91 @@ describe('CommunityFeedView', () => {
     wrapper.unmount();
   });
 
+  it('拖动时同步移动页面和红线，长滑仍只前进一页', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    fetchMyCommunityFavorites.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    const stream = wrapper.get('.community-stream');
+    Object.defineProperty(
+      wrapper.get('.community-pager').element,
+      'clientWidth',
+      { value: 400 },
+    );
+    const indicator = wrapper.get('.community-tabs__indicator');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 380, clientY: 80 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 280, clientY: 80 }],
+    });
+    expect(indicator.element.style.transform).toBe('translateX(125%)');
+    expect(
+      wrapper.get('.community-pager__page.is-active').element.style.transform,
+    ).toBe('translateX(-25%)');
+    expect(
+      wrapper.get('.community-pager__page[aria-label="收藏"]').element.style
+        .transform,
+    ).toBe('translateX(75%)');
+    expect(fetchMyCommunityFavorites).not.toHaveBeenCalled();
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: -500, clientY: 80 }],
+    });
+    expect(indicator.element.style.transform).toBe('translateX(200%)');
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: -500, clientY: 80 }],
+    });
+    expect(wrapper.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '收藏',
+    );
+    expect(fetchMyCommunityPosts).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('短滑和边缘外滑都留在原页', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    const stream = wrapper.get('.community-stream');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 90, clientY: 80 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 120, clientY: 80 }],
+    });
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: 120, clientY: 80 }],
+    });
+    expect(wrapper.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '发现',
+    );
+    expect(
+      wrapper.get('.community-tabs__indicator').element.style.transform,
+    ).toBe('translateX(100%)');
+    expect(fetchCommunityPosts).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+
+    const edge = mountView();
+    await edge.get('.community-tabs button').trigger('click');
+    const edgeStream = edge.get('.community-stream');
+    await edgeStream.trigger('touchstart', {
+      touches: [{ clientX: 30, clientY: 80 }],
+    });
+    await edgeStream.trigger('touchmove', {
+      touches: [{ clientX: 260, clientY: 80 }],
+    });
+    await edgeStream.trigger('touchend', {
+      changedTouches: [{ clientX: 260, clientY: 80 }],
+    });
+    expect(edge.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '关注',
+    );
+    expect(edge.get('.community-tabs__indicator').element.style.transform).toBe(
+      'translateX(0%)',
+    );
+    edge.unmount();
+  });
+
   it('发帖成功后再次打开使用空白预填数据', async () => {
     fetchCommunityPosts.mockResolvedValue({ items: [], total: 0 });
     fetchMyCommunityPosts.mockResolvedValue({ items: [], total: 0 });
