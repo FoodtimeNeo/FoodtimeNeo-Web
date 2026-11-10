@@ -22,6 +22,16 @@ const mode = ref('public'),
   currentPage = ref(1);
 const input = ref('');
 const keyword = ref('');
+const searchOpen = ref(false);
+const refreshing = ref(false);
+const pull = ref(0);
+const tabs = [
+  { id: 'following', label: '关注' },
+  { id: 'public', label: '发现' },
+  { id: 'favorites', label: '收藏' },
+  { id: 'mine', label: '我的食记' },
+];
+let gesture;
 const publicMode = computed(
   () => mode.value === 'public' || mode.value === 'following',
 );
@@ -125,9 +135,11 @@ function handleCardClick(post) {
   isDetailModalOpen.value = true;
 }
 
-function changeMode(next) {
+function changeMode(next, reload = false) {
+  if (next === mode.value && !reload) return;
   feedVersion++;
   mode.value = next;
+  refreshing.value = false;
   loading.value = false;
   posts.value = [];
   cursor.value = null;
@@ -139,7 +151,72 @@ function search() {
   const query = input.value.trim();
   if (query === keyword.value) return;
   keyword.value = query;
-  changeMode(mode.value);
+  changeMode(mode.value, true);
+}
+
+function toggleSearch() {
+  const wasOpen = searchOpen.value && publicMode.value;
+  if (!publicMode.value) changeMode('public');
+  searchOpen.value = !wasOpen;
+  if (!searchOpen.value) {
+    input.value = '';
+    search();
+  }
+}
+
+function startGesture(event) {
+  if (event.touches.length !== 1) {
+    cancelGesture();
+    return;
+  }
+  const finger = event.touches[0];
+  gesture = { x: finger.clientX, y: finger.clientY, top: window.scrollY <= 0 };
+}
+
+function moveGesture(event) {
+  if (!gesture || event.touches.length !== 1) return;
+  const finger = event.touches[0];
+  const dx = finger.clientX - gesture.x;
+  const dy = finger.clientY - gesture.y;
+  if (!gesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
+    if (Math.abs(dx) > Math.abs(dy) * 1.3) gesture.axis = 'swipe';
+    else if (gesture.top && dy > 0 && !loading.value) gesture.axis = 'pull';
+    else gesture.axis = 'scroll';
+  }
+  if (gesture.axis === 'pull') {
+    if (!event.cancelable) {
+      cancelGesture();
+      return;
+    }
+    event.preventDefault();
+    pull.value = Math.min(66, Math.max(0, (dy - 10) * 0.55));
+  } else if (gesture.axis === 'swipe' && event.cancelable) {
+    event.preventDefault();
+  }
+}
+
+function cancelGesture() {
+  gesture = undefined;
+  pull.value = 0;
+}
+
+async function endGesture(event) {
+  if (!gesture) return;
+  const finger = event.changedTouches[0];
+  const dx = finger.clientX - gesture.x;
+  const dy = finger.clientY - gesture.y;
+  const axis = gesture.axis;
+  cancelGesture();
+  if (axis === 'swipe' && Math.abs(dx) >= 64 && Math.abs(dx) > Math.abs(dy)) {
+    const index = tabs.findIndex(({ id }) => id === mode.value);
+    const next = tabs[index + (dx < 0 ? 1 : -1)];
+    if (next) changeMode(next.id);
+  } else if (axis === 'pull' && dy >= 88 && !loading.value) {
+    const version = feedVersion;
+    refreshing.value = true;
+    await loadFeed();
+    if (version === feedVersion) refreshing.value = false;
+  }
 }
 function handlePostCreated() {
   // 提交成功后，旧的点评预填内容不能再次注入新弹窗。
@@ -170,45 +247,49 @@ onUnmounted(() => {
 <template>
   <div class="community-feed-view">
     <header class="community-feed-view__header">
-      <div class="community-feed-view__banner">
-        <h1 class="community-feed-view__title">校园食记 · 社区</h1>
-        <img
-          src="@/assets/images/decoration02/C/illustrations/C_doodle-sparkles.png"
-          alt=""
-          class="community-feed-view__banner-sparkle"
-          aria-hidden="true"
-        />
+      <nav class="community-tabs" aria-label="食记分类">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          :aria-pressed="mode === tab.id"
+          @click="changeMode(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+      </nav>
+      <div class="community-tools">
+        <button
+          class="community-tools__search"
+          type="button"
+          aria-label="搜索食记"
+          :aria-expanded="searchOpen && publicMode"
+          @click="toggleSearch"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="m15.2 15.2 5.3 5.3" />
+          </svg>
+        </button>
+        <RouterLink :to="{ name: 'home' }" aria-label="回到食堂首页">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path d="m3 10.5 9-7.5 9 7.5M5.5 9.5V20h13V9.5M10 20v-6h4v6" />
+          </svg>
+        </RouterLink>
       </div>
-      <!-- 入口一：在社区页右上角放置加号发帖按钮 -->
-      <button
-        type="button"
-        class="community-header-post-btn"
-        aria-label="发布新帖子"
-        @click="openCreateModal()"
-      >
-        <span class="btn-plus">＋</span>
-        <span>发帖</span>
-      </button>
     </header>
-
-    <nav class="community-tabs" aria-label="食记分类">
-      <button
-        v-for="tab in [
-          { id: 'public', label: '发现食记' },
-          { id: 'following', label: '只看关注' },
-          { id: 'mine', label: '我的食记' },
-          { id: 'favorites', label: '我的收藏' },
-        ]"
-        :key="tab.id"
-        type="button"
-        :aria-pressed="mode === tab.id"
-        @click="changeMode(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    </nav>
     <form
-      v-if="publicMode"
+      v-if="searchOpen && publicMode"
       class="community-search"
       role="search"
       @submit.prevent="search"
@@ -223,59 +304,94 @@ onUnmounted(() => {
       />
       <button class="button-ink" type="submit">搜索</button>
     </form>
-    <p v-if="loadError" role="alert">
-      {{ loadError }} <button type="button" @click="loadFeed()">重试</button>
-    </p>
-    <LoadingState v-if="loading && !posts.length" />
-
-    <EmptyState
-      v-else-if="posts.length === 0"
-      :title="emptyTitle"
-      :description="
-        keyword && publicMode
-          ? '试试其他关键词。'
-          : mode === 'following'
-            ? '在食记或用户搜索中关注感兴趣的同学。'
-            : ''
-      "
-    />
-
-    <!-- 瀑布流布局 (电脑 3 列，手机 2 列) -->
-    <main v-else class="community-waterfall" aria-label="帖子列表">
-      <div
-        v-for="(col, colIdx) in columns"
-        :key="colIdx"
-        class="community-waterfall__col"
+    <div
+      class="community-stream"
+      @touchstart.passive="startGesture"
+      @touchmove="moveGesture"
+      @touchend="endGesture"
+      @touchcancel="cancelGesture"
+    >
+      <span
+        class="community-refresh"
+        :class="{
+          'is-visible': pull > 0 || refreshing,
+          'is-dragging': pull > 0,
+          'is-refreshing': refreshing,
+        }"
+        :style="{ '--pull-offset': `${refreshing ? 44 : pull}px` }"
+        :aria-hidden="!refreshing"
+        role="status"
+        aria-label="正在刷新食记"
       >
-        <CommunityPostCard
-          v-for="post in col"
-          :key="post.id"
-          :post="post"
-          @click="handleCardClick(post)"
-        />
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M5 8a8 8 0 1 1-1 7M5 8V3M5 8h5" />
+        </svg>
+      </span>
+      <div class="community-feed-view__banner">
+        <h1 class="community-feed-view__title">校园食记 · 社区动态</h1>
+        <p>随手拍、聊美味，看看同学们今天都在打卡什么好吃的。</p>
+        <span class="community-feed-view__sketches" aria-hidden="true"></span>
       </div>
-    </main>
+      <p v-if="loadError && !posts.length" role="alert">
+        {{ loadError }} <button type="button" @click="loadFeed()">重试</button>
+      </p>
+      <LoadingState v-if="loading && !refreshing && !posts.length" />
 
-    <button
-      v-if="hasMore"
-      type="button"
-      class="community-more"
-      :disabled="loading"
-      @click="loadFeed(true)"
-    >
-      {{ loading ? '加载中…' : '加载更多' }}
-    </button>
+      <EmptyState
+        v-else-if="posts.length === 0"
+        :title="emptyTitle"
+        :description="
+          keyword && publicMode
+            ? '试试其他关键词。'
+            : mode === 'following'
+              ? '在食记或用户搜索中关注感兴趣的同学。'
+              : ''
+        "
+      />
 
-    <!-- 移动端快捷发帖按钮；桌面端使用页首主按钮 -->
-    <button
-      type="button"
-      class="community-fab-btn"
-      aria-label="发布新帖子"
-      title="发布新美食帖"
-      @click="openCreateModal()"
-    >
-      <span class="community-fab-btn__icon">+</span>
-    </button>
+      <!-- 瀑布流布局 (电脑 3 列，手机 2 列) -->
+      <main v-else class="community-waterfall" aria-label="帖子列表">
+        <div
+          v-for="(col, colIdx) in columns"
+          :key="colIdx"
+          class="community-waterfall__col"
+        >
+          <CommunityPostCard
+            v-for="post in col"
+            :key="post.id"
+            :post="post"
+            @click="handleCardClick(post)"
+          />
+        </div>
+      </main>
+
+      <button
+        v-if="hasMore"
+        type="button"
+        class="community-more"
+        :disabled="loading"
+        @click="loadFeed(true)"
+      >
+        {{ loading ? '加载中…' : '加载更多' }}
+      </button>
+    </div>
+
+    <Teleport to="body">
+      <button
+        type="button"
+        class="community-fab-btn"
+        aria-label="发布新帖子"
+        title="发布新美食帖"
+        @click="openCreateModal()"
+      >
+        <span class="community-fab-btn__icon">+</span>
+      </button>
+    </Teleport>
 
     <!-- 发帖弹窗 -->
     <PostCreateModal
@@ -294,93 +410,185 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+.community-feed-view {
+  min-height: calc(100vh - 200px);
+  padding: 16px var(--zine-page-padding, 32px) 80px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--ft-color-border);
+  }
+
+  &__banner {
+    padding: 16px 0 12px;
+
+    p {
+      margin: 5px 0 2px;
+      color: var(--ft-color-text-muted);
+      font-family: var(--ft-font-family-note);
+    }
+  }
+
+  &__title {
+    margin: 0;
+    font: 900 clamp(21px, 4vw, 26px) var(--ft-font-family-title, serif);
+  }
+
+  &__sketches {
+    display: block;
+    width: 80px;
+    height: 26px;
+    background:
+      var(--zine-decor-food-sketch-2) left / 34px auto no-repeat,
+      var(--zine-decor-food-sketch-4) right / 34px auto no-repeat;
+    pointer-events: none;
+  }
+}
+
+.community-tabs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+
+  button {
+    position: relative;
+    flex: 1;
+    min-height: 44px;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--ft-color-text-muted);
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &[aria-pressed='true'] {
+      color: var(--ft-color-primary);
+      font-weight: 700;
+    }
+
+    &[aria-pressed='true']::after {
+      position: absolute;
+      right: calc(50% - 9px);
+      bottom: 0;
+      width: 18px;
+      height: 3px;
+      border-radius: 2px;
+      background: currentColor;
+      content: '';
+    }
+  }
+}
+
+.community-tools {
+  display: flex;
+  flex: none;
+
+  a,
+  button {
+    display: grid;
+    width: 42px;
+    height: 44px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ft-color-text);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--ft-color-primary);
+    }
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
 .community-search {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
-  margin: 12px 0;
+  margin: 10px 0 0;
+
   input {
     min-width: 0;
     flex: 1;
     min-height: 44px;
     padding: 8px 12px;
-    border: 1px solid var(--ft-color-text);
+    border: 1px solid var(--ft-color-border);
     background: var(--zine-paper-card);
     font-size: 16px;
   }
 }
-.community-tabs {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  button {
-    min-height: 44px;
-    padding: 8px 16px;
-    border: 1px solid var(--ft-color-border);
-    background: transparent;
-    border-radius: 0;
-    color: inherit;
-    cursor: pointer;
-    &[aria-pressed='true'] {
-      color: var(--ft-color-primary);
-      border-color: currentColor;
-      background: var(--zine-paper-card);
-      box-shadow: 2px 2px 0 rgb(58 36 24 / 18%);
-    }
-  }
-}
-.community-more {
-  display: block;
-  margin: 24px auto;
-  min-height: 44px;
-  padding: 8px 24px;
-  cursor: pointer;
-}
-.community-feed-view {
+
+.community-stream {
   position: relative;
-  min-height: calc(100vh - 200px);
-  padding: var(--ft-space-3, 24px) var(--zine-page-padding, 32px) 80px;
+  min-height: 45dvh;
+  touch-action: pan-y pinch-zoom;
+}
 
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: var(--ft-space-3, 24px);
-    border-bottom: 2px dashed var(--ft-color-border, #d5ccbc);
-    padding-bottom: var(--ft-space-2, 16px);
+.community-refresh {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: calc(50% - 20px);
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--ft-color-border);
+  border-radius: 50%;
+  background: var(--zine-paper-card);
+  box-shadow: 0 3px 9px rgb(58 36 24 / 14%);
+  color: var(--ft-color-primary);
+  opacity: 0;
+  transform: translateY(calc(var(--pull-offset) - 28px));
+  transition:
+    transform 180ms ease-out,
+    opacity 180ms ease-out;
+  pointer-events: none;
+
+  &.is-visible {
+    opacity: 1;
   }
 
-  &__banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  &.is-dragging {
+    transition: opacity 100ms ease-out;
   }
 
-  &__title {
-    margin: 0;
-    font-size: 26px;
-    font-family: var(--ft-font-family-title, serif);
-    font-weight: 900;
-    color: var(--ft-color-primary, #c9341e);
-    letter-spacing: 0.5px;
-  }
-
-  &__banner-sparkle {
+  svg {
     width: 24px;
-    height: auto;
-    opacity: 0.85;
-    transform: rotate(10deg);
-    pointer-events: none;
+    height: 24px;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &.is-refreshing svg {
+    animation: community-spin 0.85s linear infinite;
   }
 }
 
-/* 瀑布流容器 (电脑 3 列，手机 2 列) */
+@keyframes community-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .community-waterfall {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
   align-items: start;
   max-width: 1080px;
   margin: 0 auto;
@@ -390,100 +598,74 @@ onUnmounted(() => {
     flex-direction: column;
     min-width: 0;
   }
+
+  :deep(.community-post-card) {
+    border-color: var(--ft-color-border);
+    border-radius: 10px;
+    box-shadow: none;
+  }
 }
 
-.community-header-post-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
-  background: var(--ft-color-primary, #c9341e);
-  color: #fff;
-  border: 1px solid var(--ft-color-primary-strong, #ab1f0b);
-  border-radius: 0;
-  font-size: 14px;
-  font-weight: 700;
+.community-more {
+  display: block;
+  margin: 20px auto;
+  min-height: 44px;
+  padding: 8px 24px;
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ft-color-primary-strong, #ab1f0b);
-  transition: all var(--ft-transition-fast, 180ms ease);
-  flex: none;
-
-  &:hover {
-    background: var(--ft-color-primary-strong, #ab1f0b);
-    transform: translateY(-1px);
-    box-shadow: 3px 3px 0 var(--ft-color-primary-strong, #ab1f0b);
-  }
-
-  .btn-plus {
-    font-size: 18px;
-    line-height: 1;
-    font-weight: 800;
-    margin-top: -1px;
-  }
 }
 
-/* 右下角悬浮发帖按钮 (Floating Action Button) */
 .community-fab-btn {
   position: fixed;
-  right: 28px;
-  bottom: 84px;
-  width: 58px;
-  height: 58px;
+  z-index: 24;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 0;
   border-radius: 50%;
-  background: var(--ft-color-primary, #c9341e);
+  background: var(--ft-color-primary);
+  box-shadow: 0 4px 14px rgb(58 36 24 / 22%);
   color: #fff;
-  border: 2px solid #fff;
-  box-shadow:
-    0 6px 18px rgb(171 31 11 / 40%),
-    0 2px 4px rgb(58 36 24 / 20%);
   cursor: pointer;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  transition:
-    transform var(--ft-transition-fast, 180ms ease),
-    background var(--ft-transition-fast, 180ms ease),
-    box-shadow var(--ft-transition-fast, 180ms ease);
 
   &:hover {
-    transform: scale(1.08) rotate(90deg);
-    background: var(--ft-color-primary-strong, #ab1f0b);
-    box-shadow: 0 8px 24px rgb(171 31 11 / 50%);
-  }
-
-  &:active {
-    transform: scale(0.96);
+    background: var(--ft-color-primary-strong);
   }
 
   &__icon {
-    font-size: 36px;
-    font-weight: 300;
-    line-height: 1;
-    margin-top: -3px;
+    font:
+      300 32px / 1 system-ui,
+      sans-serif;
   }
 }
 
 @media (max-width: 768px) {
   .community-feed-view {
-    padding: var(--ft-space-2, 16px) var(--zine-page-padding-mobile, 14px) 100px;
+    padding: 8px var(--zine-page-padding-mobile, 14px) 74px;
   }
 
   .community-waterfall {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
 
   .community-fab-btn {
-    display: flex;
-    right: 20px;
-    bottom: calc(var(--app-mobile-tabbar-height, 72px) + 20px);
-    width: 52px;
-    height: 52px;
+    right: 16px;
+    bottom: calc(
+      var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom) + 12px
+    );
+  }
+}
 
-    &__icon {
-      font-size: 32px;
-    }
+@media (prefers-reduced-motion: reduce) {
+  .community-refresh {
+    transition: none;
+  }
+
+  .community-refresh.is-refreshing svg {
+    animation: none;
   }
 }
 </style>
