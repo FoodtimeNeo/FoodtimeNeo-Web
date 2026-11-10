@@ -102,7 +102,13 @@ describe('PostCreateModal', () => {
     ]);
     const button = (label) =>
       wrapper.findAll('button').find((item) => item.text() === label);
-    await button('选择菜品').trigger('click');
+    const level = (name) =>
+      wrapper
+        .findAll('.dish-picker__trigger')
+        .find((item) => item.text().startsWith(name));
+    expect(level('档口').element.disabled).toBe(true);
+    expect(level('菜品').element.disabled).toBe(true);
+    await level('食堂').trigger('click');
     await flushPromises();
     const filter = () => wrapper.get('#post-dish-keyword');
     expect(button('学苑食堂')).toBeTruthy();
@@ -110,12 +116,15 @@ describe('PostCreateModal', () => {
     await filter().setValue('学苑');
     expect(button('学一食堂')).toBeUndefined();
     await button('学苑食堂').trigger('click');
+    expect(wrapper.find('#post-dish-keyword').exists()).toBe(false);
+    await level('档口').trigger('click');
     await flushPromises();
     expect(filter().element.value).toBe('');
     expect(button('一号档口')).toBeTruthy();
     await filter().setValue('二号');
     expect(button('一号档口')).toBeUndefined();
     await button('二号档口').trigger('click');
+    await level('菜品').trigger('click');
     await flushPromises();
     expect(filter().element.value).toBe('');
     expect(button('三明治')).toBeTruthy();
@@ -132,7 +141,9 @@ describe('PostCreateModal', () => {
       'stall-2',
       expect.any(Object),
     );
-    expect(wrapper.text()).toContain('学苑食堂 · 二号档口 · 三明治');
+    expect(level('食堂').text()).toContain('学苑食堂');
+    expect(level('档口').text()).toContain('二号档口');
+    expect(level('菜品').text()).toContain('三明治');
 
     await wrapper.find('#post-title').setValue('自制三明治');
     await wrapper.find('#post-content').setValue('全麦面包配煎蛋，美味健康！');

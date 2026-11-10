@@ -9,17 +9,29 @@ import { useAsyncData } from '@/composables/useAsyncData.js';
 import { filterCatalogByName } from '@/composables/useCatalogSearch.js';
 
 const selected = defineModel({ type: Object, default: null });
-const open = ref(false);
+const open = ref('');
 const query = ref('');
 const hall = ref(null);
 const stall = ref(null);
-const level = computed(() =>
-  stall.value ? '菜品' : hall.value ? '档口' : '食堂',
-);
+const levels = computed(() => [
+  { key: 'hall', label: '食堂', name: hall.value?.name, enabled: true },
+  {
+    key: 'stall',
+    label: '档口',
+    name: stall.value?.name,
+    enabled: !!hall.value,
+  },
+  {
+    key: 'dish',
+    label: '菜品',
+    name: selected.value?.name,
+    enabled: !!stall.value,
+  },
+]);
 const state = useAsyncData(
   (options) => {
-    if (stall.value) return fetchStallDishes(stall.value.id, options);
-    if (hall.value) return fetchStalls(hall.value.id, options);
+    if (open.value === 'dish') return fetchStallDishes(stall.value.id, options);
+    if (open.value === 'stall') return fetchStalls(hall.value.id, options);
     return fetchCanteens(options);
   },
   { immediate: false, initial: [] },
@@ -28,114 +40,167 @@ const matches = computed(() =>
   filterCatalogByName(state.data.value, query.value),
 );
 
-watch([open, hall, stall], () => {
+watch(
+  selected,
+  (dish) => {
+    if (!dish) return;
+    if (dish.diningHallId)
+      hall.value = { id: dish.diningHallId, name: dish.diningHallName };
+    if (dish.stallId) stall.value = { id: dish.stallId, name: dish.stallName };
+  },
+  { immediate: true },
+);
+
+watch(open, (level) => {
   state.cancel();
   state.data.value = [];
   state.error.value = null;
   query.value = '';
-  if (open.value) state.load();
+  if (level) state.load();
 });
 
-function resetHall() {
-  hall.value = null;
-  stall.value = null;
-}
-
-function toggle() {
-  if (!open.value) resetHall();
-  open.value = !open.value;
-}
-
 function pick(item) {
-  if (!hall.value) hall.value = item;
-  else if (!stall.value) stall.value = item;
-  else {
+  if (open.value === 'hall' && hall.value?.id !== item.id) {
+    hall.value = item;
+    stall.value = null;
+    selected.value = null;
+  } else if (open.value === 'stall' && stall.value?.id !== item.id) {
+    stall.value = item;
+    selected.value = null;
+  } else if (open.value === 'dish') {
     selected.value = {
       ...item,
+      diningHallId: hall.value.id,
       diningHallName: hall.value.name,
+      stallId: stall.value.id,
       stallName: stall.value.name,
     };
-    open.value = false;
   }
+  open.value = '';
 }
 </script>
 
 <template>
   <fieldset class="dish-picker">
     <legend>关联菜品（可选）</legend>
-    <p v-if="selected">
-      {{
-        [selected.diningHallName, selected.stallName, selected.name]
-          .filter(Boolean)
-          .join(' · ')
-      }}
-    </p>
-    <button type="button" :aria-expanded="open" @click="toggle">
-      {{ open ? '收起选择' : selected ? '更换菜品' : '选择菜品' }}
-    </button>
-    <button v-if="selected" type="button" @click="selected = null">
+    <div v-for="level in levels" :key="level.key" class="dish-picker__level">
+      <button
+        type="button"
+        class="dish-picker__trigger"
+        :disabled="!level.enabled"
+        :aria-expanded="open === level.key"
+        @click="open = open === level.key ? '' : level.key"
+      >
+        <span>{{ level.label }}</span>
+        <span
+          >{{ level.name || '请选择' }}
+          <span aria-hidden="true">{{
+            open === level.key ? '⌃' : '⌄'
+          }}</span></span
+        >
+      </button>
+      <div v-if="open === level.key" class="dish-picker__panel">
+        <input
+          id="post-dish-keyword"
+          v-model="query"
+          type="search"
+          maxlength="50"
+          :aria-label="`筛选${level.label}`"
+          :placeholder="`筛选${level.label}，留空显示全部`"
+          @keydown.enter.prevent
+        />
+        <p v-if="state.loading.value" role="status">
+          正在加载{{ level.label }}…
+        </p>
+        <template v-else-if="state.error.value">
+          <p role="alert">{{ state.error.value.message }}</p>
+          <button type="button" @click="state.load">重试</button>
+        </template>
+        <p v-else-if="!matches.length" role="status">
+          没有可选的{{ level.label }}。
+        </p>
+        <ul v-else :aria-label="`选择${level.label}`">
+          <li v-for="item in matches" :key="item.id">
+            <button type="button" @click="pick(item)">{{ item.name }}</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <button
+      v-if="selected"
+      class="dish-picker__remove"
+      type="button"
+      @click="selected = null"
+    >
       移除关联
     </button>
-    <div v-if="open">
-      <div v-if="hall" class="dish-picker__parents">
-        <button type="button" @click="resetHall">
-          更换食堂 · {{ hall.name }}
-        </button>
-        <button v-if="stall" type="button" @click="stall = null">
-          更换档口 · {{ stall.name }}
-        </button>
-      </div>
-      <label for="post-dish-keyword">筛选{{ level }}</label>
-      <input
-        id="post-dish-keyword"
-        v-model="query"
-        type="search"
-        maxlength="50"
-        :placeholder="`输入${level}名称，留空显示全部`"
-        @keydown.enter.prevent
-      />
-      <p v-if="state.loading.value" role="status">正在加载{{ level }}…</p>
-      <template v-else-if="state.error.value">
-        <p role="alert">{{ state.error.value.message }}</p>
-        <button type="button" @click="state.load">重试</button>
-      </template>
-      <p v-else-if="!matches.length" role="status">没有可选的{{ level }}。</p>
-      <ul v-else :key="level" :aria-label="`选择${level}`">
-        <li v-for="item in matches" :key="item.id">
-          <button type="button" @click="pick(item)">{{ item.name }}</button>
-        </li>
-      </ul>
-    </div>
   </fieldset>
 </template>
 
 <style scoped>
 .dish-picker {
   margin: 12px 0;
-  border: 1px solid var(--ft-color-text);
+  border: 1px solid var(--ft-color-border);
   min-width: 0;
+  padding: 0 10px 6px;
 }
-.dish-picker input,
-.dish-picker button {
+.dish-picker__level + .dish-picker__level {
+  border-top: 1px solid var(--ft-color-border);
+}
+.dish-picker button,
+.dish-picker input {
   min-height: 40px;
-  max-width: 100%;
-  margin: 4px;
-  padding: 4px 8px;
+  font: inherit;
+}
+.dish-picker__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: var(--ft-color-text);
+  cursor: pointer;
+}
+.dish-picker__trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.dish-picker__panel {
+  padding: 4px 6px;
+}
+.dish-picker input {
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: 8px;
 }
 .dish-picker ul {
-  list-style: none;
+  margin: 4px 0;
   padding: 0;
-  max-height: min(36vh, 280px);
+  list-style: none;
+  max-height: min(24dvh, 144px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 .dish-picker li button {
-  display: block;
-  width: calc(100% - 8px);
+  width: 100%;
   text-align: left;
+  padding-inline: 8px;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
 }
-.dish-picker__parents {
-  display: flex;
-  flex-wrap: wrap;
+.dish-picker li button:hover,
+.dish-picker li button:focus-visible {
+  background: var(--zine-paper-card);
+}
+.dish-picker__remove {
+  background: transparent;
+  border: 0;
+  color: var(--ft-color-primary);
+  cursor: pointer;
 }
 </style>
