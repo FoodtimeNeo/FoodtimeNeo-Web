@@ -19,20 +19,21 @@ setMediaGate(ensureMediaWorkerMigration);
 app.use(createPinia());
 app.use(router);
 setMediaUnauthorizedHandler(() => useAuthStore().clear());
-router.afterEach(() => invalidateMedia());
-window.addEventListener('pagehide', invalidateMedia);
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) {
-    invalidateMedia();
     ensureLatestVersion();
-    useAuthStore().refresh();
+    useAuthStore()
+      .refresh()
+      .catch(() => {});
   }
 });
 document.addEventListener('visibilitychange', () => {
-  invalidateMedia();
   if (document.hidden) return;
   ensureLatestVersion();
-  if (useAuthStore().isAuthenticated) useAuthStore().refresh();
+  if (useAuthStore().isAuthenticated)
+    useAuthStore()
+      .refresh()
+      .catch(() => {});
 });
 installApi({
   router,

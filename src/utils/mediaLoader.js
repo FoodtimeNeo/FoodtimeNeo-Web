@@ -4,9 +4,7 @@ import { safeMediaUrl } from './mediaUrl.js';
 // Only live display references are retained here; persistent bytes belong to HTTP caching.
 export const mediaRevision = ref(0);
 const pending = new Map();
-const publicResources = new Set();
-// 已解码过的图片在本次会话内直接复用，避免切换页面时出现白屏重载；
-// 后台仍会按 no-cache 重新校验权限，校验失败即移除。
+// 浏览器负责磁盘缓存，内存中的地址只在同一会话内复用。
 const displayCache = new Map();
 const DISPLAY_TTL = 5 * 60 * 1000;
 // 条数 + 字节双重上限：缩略图很小，但灯箱/画廊的 full 图最大 10MB。
@@ -23,7 +21,6 @@ export function setMediaGate(ready) {
 }
 export function allowMediaSession() {
   blocked = false;
-  publicResources.clear();
 }
 export function setMediaUnauthorizedHandler(handler) {
   unauthorized = handler;
@@ -42,7 +39,7 @@ export function invalidateMedia() {
   mediaRevision.value += 1;
 }
 
-function remember(source, url, bytes) {
+function remember(source, url, bytes, headers) {
   // 单张过大的原图不进入展示缓存，避免一次加载占满预算。
   if (bytes > DISPLAY_SINGLE_MAX) return;
   const existing = displayCache.get(source);
@@ -53,7 +50,21 @@ function remember(source, url, bytes) {
     if (existing.url !== url)
       setTimeout(() => URL.revokeObjectURL(existing.url), 30000);
   }
-  displayCache.set(source, { url, storedAt: Date.now(), bytes });
+  const now = Date.now();
+  const policy = headers.get('Cache-Control') || '';
+  const maxAge = /(?:^|[,\s])max-age=(\d+)/i.exec(policy);
+  const ageHeader = Number(headers.get('Age')) || 0;
+  const date = Date.parse(headers.get('Date') || '');
+  const age = Math.max(
+    0,
+    ageHeader * 1000,
+    Number.isFinite(date) ? now - date : 0,
+  );
+  const freshUntil =
+    maxAge && !/no-cache/i.test(policy)
+      ? now + Number(maxAge[1]) * 1000 - age
+      : null;
+  displayCache.set(source, { url, storedAt: now, freshUntil, bytes });
   displayBytes += bytes;
   while (displayCache.size > DISPLAY_MAX || displayBytes > DISPLAY_MAX_BYTES) {
     const [oldest, entry] = displayCache.entries().next().value;
@@ -69,7 +80,7 @@ export function peekMedia(value) {
   if (!source || !source.startsWith('/api/v1/media/') || blocked) return '';
   const entry = displayCache.get(source);
   if (!entry) return '';
-  if (Date.now() - entry.storedAt > DISPLAY_TTL) {
+  if (Date.now() >= (entry.freshUntil ?? entry.storedAt + DISPLAY_TTL)) {
     displayCache.delete(source);
     displayBytes -= entry.bytes;
     setTimeout(() => URL.revokeObjectURL(entry.url), 30000);
@@ -84,7 +95,7 @@ function revalidate(source) {
   fetch(source, {
     credentials: 'same-origin',
     redirect: 'error',
-    cache: publicResources.has(source) ? 'default' : 'no-cache',
+    cache: 'default',
   })
     .then(async (response) => {
       if (generation !== mediaRevision.value) return;
@@ -96,7 +107,8 @@ function revalidate(source) {
       }
       if (
         !response.ok ||
-        !response.headers.get('Content-Type')?.startsWith('image/')
+        !response.headers.get('Content-Type')?.startsWith('image/') ||
+        /no-store/i.test(response.headers.get('Cache-Control') || '')
       ) {
         const entry = displayCache.get(source);
         if (entry) {
@@ -108,7 +120,7 @@ function revalidate(source) {
       }
       const blob = await response.blob();
       if (generation !== mediaRevision.value) return;
-      remember(source, URL.createObjectURL(blob), blob.size);
+      remember(source, URL.createObjectURL(blob), blob.size, response.headers);
     })
     .catch(() => {
       /* 后台校验失败时保留已展示的内容，等下次真正加载时再处理 */
@@ -126,7 +138,7 @@ export function acquireMedia(value) {
     return { promise: Promise.resolve(source), release() {} };
   const cached = peekMedia(source);
   if (cached) {
-    revalidate(source);
+    if (displayCache.get(source).freshUntil === null) revalidate(source);
     return { promise: Promise.resolve(cached), release() {} };
   }
   let task = pending.get(source);
@@ -150,7 +162,7 @@ export function acquireMedia(value) {
         const response = await fetch(source, {
           credentials: 'same-origin',
           redirect: 'error',
-          cache: publicResources.has(source) ? 'default' : 'no-cache',
+          cache: 'default',
           signal: task.controller.signal,
         });
         if (
@@ -169,15 +181,6 @@ export function acquireMedia(value) {
         )
           throw new Error('图片暂不可用');
         const policy = response.headers.get('Cache-Control') || '';
-        if (
-          /\bpublic\b/i.test(policy) &&
-          /\bimmutable\b/i.test(policy) &&
-          !/no-store|no-cache/i.test(policy)
-        ) {
-          if (publicResources.size >= 256)
-            publicResources.delete(publicResources.values().next().value);
-          publicResources.add(source);
-        } else publicResources.delete(source);
         const blob = await response.blob();
         if (
           generation !== mediaRevision.value ||
@@ -187,7 +190,8 @@ export function acquireMedia(value) {
           throw new Error('图片请求已失效');
         task.url = URL.createObjectURL(blob);
         // no-store 预览（待审/暂存）不能被后续展示复用。
-        if (!/no-store/i.test(policy)) remember(source, task.url, blob.size);
+        if (!/no-store/i.test(policy))
+          remember(source, task.url, blob.size, response.headers);
         return task.url;
       } finally {
         task.settled = true;

@@ -57,6 +57,7 @@ const pages = reactive(
     hasMore: false,
     query: '',
     version: 0,
+    loadedAt: null,
   })),
 );
 const activeIndex = computed(() =>
@@ -72,6 +73,7 @@ const heldHeight = ref(0);
 const incomingTop = ref(0);
 const position = computed(() => activeIndex.value + drag.value);
 const SETTLE_MS = 240;
+const FEED_FRESH_MS = 60_000;
 let settleTimer;
 let gesture;
 const isPublic = (section) => section === 'public' || section === 'following';
@@ -87,6 +89,9 @@ function emptyTitle(section) {
 const isCreateModalOpen = ref(false);
 const prefillData = ref({});
 const activePostId = ref('');
+const activePost = computed(() =>
+  activePage.value.posts.find(({ id }) => id === activePostId.value),
+);
 const isDetailModalOpen = ref(false);
 const screenWidth = ref(
   typeof window !== 'undefined' ? window.innerWidth : 1200,
@@ -131,6 +136,7 @@ async function loadFeed(more = false) {
     feed.hasMore = isPublic(section)
       ? !!res.hasMore
       : pageNumber * 20 < res.total;
+    if (!more) feed.loadedAt = Date.now();
   } catch (error) {
     if (version !== feed.version) return;
     feed.error = error.message || '加载社区帖子失败';
@@ -190,7 +196,29 @@ function changeMode(next, reload = false) {
       cursor: null,
       hasMore: false,
       page: 1,
+      loadedAt: null,
     });
+  }
+  if (feed.loadedAt === null || Date.now() - feed.loadedAt >= FEED_FRESH_MS)
+    loadFeed();
+}
+
+function invalidateSection(section) {
+  pages[tabs.findIndex(({ id }) => id === section)].loadedAt = null;
+}
+
+function updatePost(post) {
+  for (const page of pages) {
+    const index = page.posts.findIndex(({ id }) => id === post.id);
+    if (index >= 0) page.posts[index] = post;
+  }
+  invalidateSection('favorites');
+}
+
+function onPostDeleted() {
+  for (const page of pages) {
+    page.posts = page.posts.filter(({ id }) => id !== activePostId.value);
+    page.loadedAt = null;
   }
   loadFeed();
 }
@@ -338,6 +366,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  for (const page of pages) page.version++;
   clearTimeout(settleTimer);
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleResize);
@@ -488,7 +517,7 @@ onUnmounted(() => {
                 "
               />
               <EmptyState
-                v-else-if="!pages[index].posts.length"
+                v-else-if="!pages[index].error && !pages[index].posts.length"
                 :title="emptyTitle(tab.id)"
                 :description="
                   keyword && isPublic(tab.id)
@@ -550,7 +579,10 @@ onUnmounted(() => {
     <CommunityPostDetailModal
       v-model="isDetailModalOpen"
       :post-id="activePostId"
-      @deleted="loadFeed()"
+      :initial-post="activePost"
+      @post-updated="updatePost"
+      @follow-updated="invalidateSection('following')"
+      @deleted="onPostDeleted"
     />
   </div>
 </template>

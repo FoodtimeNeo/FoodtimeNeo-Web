@@ -68,8 +68,8 @@ export const useAuthStore = defineStore('auth', {
           })
           .catch((error) => {
             if (revision !== this.revision) return this.user;
-            this.user = null;
             if (error.status === 401) {
+              this.clear();
               invalidateSession();
               return null;
             }
