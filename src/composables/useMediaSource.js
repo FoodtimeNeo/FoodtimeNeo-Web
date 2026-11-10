@@ -17,7 +17,7 @@ export function useMediaSource(input, enabled = true) {
       source.value = peekMedia(url);
       failed.value = false;
       loading.value = Boolean(url && active);
-      if (!url || !active || document.hidden) {
+      if (!url || !active) {
         loading.value = false;
         return;
       }

@@ -40,12 +40,14 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  initialPost: { type: Object, default: null },
 });
 
 const emit = defineEmits([
   'update:modelValue',
   'close',
   'postUpdated',
+  'followUpdated',
   'deleted',
 ]);
 
@@ -60,6 +62,7 @@ const loading = ref(false);
 const error = ref(null);
 const commentSection = ref(null);
 let epoch = 0;
+let detailRequest;
 
 const auth = useAuthStore();
 const isFollowing = ref(false);
@@ -87,13 +90,21 @@ function formatPostTime(isoString) {
 async function loadPostData(id) {
   const version = ++epoch;
   if (!id) return;
+  detailRequest?.abort();
+  detailRequest = new AbortController();
   loading.value = true;
   error.value = null;
-  post.value = null;
+  const initial = props.initialPost?.id === id ? props.initialPost : null;
+  post.value = initial ? { ...initial } : null;
+  isLiked.value = Boolean(initial?.likedByMe);
+  isFavorited.value = Boolean(initial?.favoritedByMe);
+  isFollowing.value = false;
   replyTarget.value = null;
   quickCommentText.value = '';
   try {
-    const result = await fetchCommunityPostDetail(id);
+    const result = await fetchCommunityPostDetail(id, {
+      signal: detailRequest.signal,
+    });
     if (version !== epoch || !props.modelValue || props.postId !== id) return;
     post.value = result;
     isLiked.value = !!result.likedByMe;
@@ -112,7 +123,10 @@ async function loadPostData(id) {
         });
     }
   } catch (failure) {
-    if (version === epoch) error.value = failure;
+    if (version !== epoch) return;
+    if ([401, 403, 404].includes(failure.status)) post.value = null;
+    if (!post.value) error.value = failure;
+    else ElMessage.error('暂时无法更新食记，已保留当前内容');
   } finally {
     if (version === epoch) loading.value = false;
   }
@@ -144,6 +158,7 @@ watch(
       loadPostData(newId);
     } else if (!isOpen) {
       ++epoch;
+      detailRequest?.abort();
       post.value = null;
       error.value = null;
       quickCommentText.value = '';
@@ -179,13 +194,14 @@ onMounted(() => {
 
 onUnmounted(() => {
   ++epoch;
+  detailRequest?.abort();
   if (typeof window !== 'undefined') {
     window.removeEventListener('keydown', handleKeydown);
   }
 });
 
 async function toggleLike() {
-  if (!post.value) return;
+  if (!post.value || loading.value) return;
   const next = !isLiked.value;
   isLiked.value = next;
   try {
@@ -201,7 +217,7 @@ async function toggleLike() {
 }
 
 async function toggleFavorite() {
-  if (!post.value) return;
+  if (!post.value || loading.value) return;
   const next = !isFavorited.value;
   isFavorited.value = next;
   try {
@@ -218,13 +234,20 @@ async function toggleFavorite() {
 
 async function toggleFollow() {
   const authorId = post.value?.author?.id;
-  if (!authorId || followBusy.value || authorId === auth.user?.id) return;
+  if (
+    !authorId ||
+    loading.value ||
+    followBusy.value ||
+    authorId === auth.user?.id
+  )
+    return;
   followBusy.value = true;
   try {
     const state = isFollowing.value
       ? await unfollowUser(authorId)
       : await followUser(authorId);
     isFollowing.value = state.followed;
+    emit('followUpdated');
     ElMessage.success(state.followed ? '已关注作者' : '已取消关注');
   } catch (error) {
     ElMessage.error(error.message || '关注操作失败，请稍后重试');
@@ -309,7 +332,7 @@ async function removePost() {
 
         <!-- 弹窗主体卡片容器 -->
         <div class="redbook-modal__card" @click.stop>
-          <LoadingState v-if="loading" />
+          <LoadingState v-if="loading && !post" />
 
           <ErrorState
             v-else-if="error"

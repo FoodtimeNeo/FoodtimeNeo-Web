@@ -42,11 +42,11 @@ it('并发图片请求合并；再次展示复用已加载图片并在后台重�
   const next = acquireMedia(url);
   // 同步即可拿到已缓存的图片
   expect(await next.promise).toBe('blob:media');
-  // 后台仍按 no-cache 重新校验权限
-  expect(fetch.mock.calls[1][1].cache).toBe('no-cache');
+  // 浏览器遵循响应的 no-cache 策略，在后台校验权限。
+  expect(fetch.mock.calls[1][1].cache).toBe('default');
   next.release();
 });
-it('只对服务端明确允许的不可变公开图片使用HTTP新鲜缓存', async () => {
+it('不可变目录图命中展示缓存时不再访问网络', async () => {
   fetch.mockResolvedValue(response('public, max-age=31536000, immutable'));
   const first = acquireMedia(url);
   await first.promise;
@@ -54,7 +54,29 @@ it('只对服务端明确允许的不可变公开图片使用HTTP新鲜缓存', 
   const second = acquireMedia(url);
   await second.promise;
   second.release();
-  expect(fetch.mock.calls[1][1].cache).toBe('default');
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch.mock.calls[0][1].cache).toBe('default');
+});
+it('公开食记的同会话缩略图与已请求原图各自复用，过期才发起校验', async () => {
+  const clock = vi.spyOn(Date, 'now').mockReturnValue(1000);
+  const original = url.replace('thumb', 'full');
+  fetch.mockResolvedValue(response('private, max-age=300, must-revalidate'));
+  try {
+    for (const target of [url, url, original, url, original]) {
+      const request = acquireMedia(target);
+      await request.promise;
+      request.release();
+    }
+    expect(fetch.mock.calls.map(([target]) => target)).toEqual([url, original]);
+    clock.mockReturnValue(301_000);
+    fetch.mockResolvedValue(response('', 404));
+    const expired = acquireMedia(url);
+    await expect(expired.promise).rejects.toThrow('暂不可用');
+    expired.release();
+    expect(fetch).toHaveBeenCalledTimes(3);
+  } finally {
+    clock.mockRestore();
+  }
 });
 it('退出或切号后迟到响应不能创建展示引用', async () => {
   let resolve;
@@ -145,5 +167,5 @@ it('no-store预览不成为后续展示的可复用条目，失败不回退旧�
   const second = acquireMedia(url);
   await expect(second.promise).rejects.toThrow();
   second.release();
-  expect(fetch.mock.calls[1][1].cache).toBe('no-cache');
+  expect(fetch.mock.calls[1][1].cache).toBe('default');
 });
