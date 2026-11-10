@@ -15,6 +15,7 @@ import {
 } from '@/api/community.api.js';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
+import DishLink from '@/components/canteen/DishLink.vue';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -503,6 +504,14 @@ async function removePost() {
 
                   <!-- 正文内容 -->
                   <p class="redbook-post-text">{{ post.content }}</p>
+                  <DishLink
+                    v-if="post.linkedDish"
+                    :dish="post.linkedDish"
+                    class="button-ink"
+                    @click="$emit('update:modelValue', false)"
+                  >
+                    菜品 · {{ post.linkedDish.name }}
+                  </DishLink>
 
                   <!-- 发布时间与食堂位置 -->
                   <div class="redbook-post-footline">

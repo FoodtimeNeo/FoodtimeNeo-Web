@@ -3,6 +3,7 @@ import { ref, reactive, watch, onUnmounted } from 'vue';
 import { ElMessage, ElDialog } from 'element-plus';
 import { createCommunityPost } from '@/api/community.api.js';
 import { uploadImage } from '@/api/submission.api.js';
+import DishPicker from './DishPicker.vue';
 
 const props = defineProps({
   modelValue: {
@@ -19,6 +20,7 @@ const emit = defineEmits(['update:modelValue', 'created']);
 
 const submitting = ref(false);
 const fileInputRef = ref(null);
+const linkedDish = ref(null);
 const requestId = ref(crypto.randomUUID());
 let submittedPayload = null;
 
@@ -50,6 +52,7 @@ watch(
       submittedPayload = null;
       cleanObjectUrls();
       formImages.value = [];
+      linkedDish.value = props.initialData?.linkedDish || null;
       if (props.initialData) {
         form.title = props.initialData.title || '';
         form.content = props.initialData.content || '';
@@ -183,12 +186,14 @@ async function handleSubmit() {
   }
   submitting.value = true;
   try {
+    const dishId = linkedDish.value?.id;
     const finalImageUrls = await resolveImageUrls();
 
     const payloadKey = JSON.stringify([
       form.title.trim(),
       form.content.trim(),
       finalImageUrls,
+      dishId,
     ]);
     if (submittedPayload && submittedPayload !== payloadKey)
       requestId.value = crypto.randomUUID();
@@ -198,6 +203,7 @@ async function handleSubmit() {
       title: form.title.trim(),
       content: form.content.trim(),
       images: finalImageUrls,
+      ...(dishId ? { dishId } : {}),
     });
 
     ElMessage.success({
@@ -249,6 +255,11 @@ async function handleSubmit() {
     </template>
 
     <form class="post-create-form" @submit.prevent="handleSubmit">
+      <DishPicker
+        v-if="modelValue"
+        v-model="linkedDish"
+        :disabled="submitting"
+      />
       <!-- 标题 -->
       <div class="post-create-form__item">
         <div class="item-header">

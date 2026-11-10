@@ -45,6 +45,7 @@ export async function createCommunityPost(payload, options = {}) {
       content: payload.content,
       imageUrls: payload.imageUrls || payload.images || [],
       clientRequestId: payload.clientRequestId,
+      ...(payload.dishId ? { dishId: payload.dishId } : {}),
     },
     options,
   );

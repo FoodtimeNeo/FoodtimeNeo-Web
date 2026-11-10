@@ -220,6 +220,7 @@ describe('菜品附属点评', () => {
           title: '牛肉面品鉴心得',
           content: '同步至社区的美食点评',
           images: [],
+          linkedDish: { id: 'd1', name: '牛肉面' },
         },
       },
     });
