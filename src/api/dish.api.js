@@ -1,4 +1,6 @@
 import { http } from './http.js';
+export const searchDishes = (q, page = 1, options = {}) =>
+  http.get('/dishes/search', { ...options, params: { q, page, size: 20 } });
 export const fetchDish = (id, options = {}) =>
   http.get(`/dishes/${encodeURIComponent(id)}`, options);
 export const fetchDishReviews = (id, page = 1, options = {}) =>

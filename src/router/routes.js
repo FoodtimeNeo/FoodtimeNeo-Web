@@ -262,6 +262,17 @@ export const routes = [
     },
   },
   {
+    path: '/canteens/search',
+    name: 'dishSearch',
+    component: () => import('@/views/canteen/DishSearchView.vue'),
+    meta: {
+      title: '跨食堂搜菜',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
+  },
+  {
     path: '/canteens/:canteenId',
     name: 'canteenDetail',
     component: () => import('@/views/canteen/CanteenDetailView.vue'),
