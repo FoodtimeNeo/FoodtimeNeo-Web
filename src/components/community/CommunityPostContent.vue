@@ -19,6 +19,7 @@ import { startConversation } from '@/api/directMessage.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
+import ReportButton from '@/components/base/ReportButton.vue';
 
 const props = defineProps({
   postId: {
@@ -322,6 +323,15 @@ function formatPostTime(isoString) {
           }}</span>
         </div>
         <div class="mobile-header-actions">
+          <ReportButton
+            v-if="
+              auth.user?.id &&
+              post.userId !== auth.user.id &&
+              post.status === 'approved'
+            "
+            target-type="post"
+            :target-id="post.id"
+          />
           <button
             v-if="canRemove(post)"
             type="button"
@@ -403,6 +413,15 @@ function formatPostTime(isoString) {
             }}</time>
           </div>
           <div class="author-actions">
+            <ReportButton
+              v-if="
+                auth.user?.id &&
+                post.userId !== auth.user.id &&
+                post.status === 'approved'
+              "
+              target-type="post"
+              :target-id="post.id"
+            />
             <button
               v-if="canRemove(post)"
               type="button"

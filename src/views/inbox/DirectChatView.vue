@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   fetchConversation,
   fetchConversationMessages,
@@ -9,11 +9,13 @@ import {
   markConversationRead,
   sendDirectMessage,
 } from '@/api/directMessage.api.js';
+import { fetchBlockState, setUserBlock } from '@/api/safety.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { formatTime } from '@/utils/recordLabels.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
+import ReportButton from '@/components/base/ReportButton.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -29,10 +31,14 @@ const draft = ref('');
 const olderCursor = ref(null);
 const loadingOlder = ref(false);
 const listRef = ref(null);
+const blocked = ref(false);
+const editingBlock = ref(false);
 let pollTimer;
 
 const other = computed(() => conversation.value?.other || null);
-const canSend = computed(() => draft.value.trim().length > 0 && !sending.value);
+const canSend = computed(
+  () => draft.value.trim().length > 0 && !sending.value && !blocked.value,
+);
 
 function isMine(message) {
   return message.senderId === auth.user?.id;
@@ -49,6 +55,10 @@ async function load({ quiet = false } = {}) {
       fetchConversationMessages(conversationId),
     ]);
     conversation.value = detail;
+    if (detail.other?.id) {
+      const state = await fetchBlockState(detail.other.id).catch(() => null);
+      if (state) blocked.value = state.blocked;
+    }
     messages.value = page.items;
     olderCursor.value = page.nextCursor;
     await markRead();
@@ -92,7 +102,7 @@ async function loadOlder() {
 
 async function send() {
   const content = draft.value.trim();
-  if (!content || sending.value) return;
+  if (!canSend.value) return;
   if (content.length > 1000) {
     actionError.value = '消息不能超过1000字';
     return;
@@ -144,6 +154,33 @@ async function removeConversation() {
   }
 }
 
+async function manageBlock() {
+  const id = other.value?.id;
+  if (!id || editingBlock.value) return;
+  editingBlock.value = true;
+  try {
+    blocked.value = (await fetchBlockState(id)).blocked;
+    const next = !blocked.value;
+    const label = next ? '拉黑' : '解除拉黑';
+    const confirmed = await ElMessageBox.confirm(
+      next ? '拉黑后双方无法继续发送私信。' : '解除你对该用户的私信限制？',
+      label,
+      { confirmButtonText: label, cancelButtonText: '取消' },
+    ).then(
+      () => true,
+      () => false,
+    );
+    if (!confirmed) return;
+    blocked.value = (await setUserBlock(id, next)).blocked;
+    actionError.value = '';
+    ElMessage.success(next ? '已拉黑' : '已解除拉黑');
+  } catch (failure) {
+    actionError.value = failure.message || '无法更新拉黑状态';
+  } finally {
+    editingBlock.value = false;
+  }
+}
+
 onMounted(async () => {
   await load();
   pollTimer = window.setInterval(poll, 4000);
@@ -174,15 +211,20 @@ onUnmounted(() => window.clearInterval(pollTimer));
         </span>
         <div>
           <h1>{{ other?.displayName || '私信' }}</h1>
-          <p>私信 · 仅你们两人可见</p>
+          <p>一对一私信</p>
         </div>
-        <button
-          type="button"
-          class="chat-page__remove"
-          @click="removeConversation"
-        >
-          删除会话
-        </button>
+        <div class="chat-page__controls">
+          <button type="button" :disabled="editingBlock" @click="manageBlock">
+            {{ blocked ? '解除拉黑' : '拉黑管理' }}
+          </button>
+          <button
+            type="button"
+            class="chat-page__remove"
+            @click="removeConversation"
+          >
+            删除会话
+          </button>
+        </div>
       </header>
 
       <div ref="listRef" class="chat-page__list" aria-live="polite">
@@ -206,13 +248,21 @@ onUnmounted(() => window.clearInterval(pollTimer));
         >
           <p>{{ message.content }}</p>
           <time>{{ formatTime(message.createdAt) }}</time>
+          <ReportButton
+            v-if="!isMine(message)"
+            target-type="message"
+            :target-id="message.id"
+          />
         </article>
       </div>
 
       <p v-if="actionError" role="alert" class="chat-page__error">
         {{ actionError }}
       </p>
-      <form class="chat-page__composer" @submit.prevent="send">
+      <p v-if="blocked" class="chat-page__error">
+        已拉黑该用户，解除拉黑后可继续聊天。
+      </p>
+      <form v-else class="chat-page__composer" @submit.prevent="send">
         <textarea
           v-model="draft"
           maxlength="1000"
@@ -274,8 +324,14 @@ onUnmounted(() => window.clearInterval(pollTimer));
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
 }
-.chat-page__remove {
+.chat-page__controls {
   margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.chat-page__controls button {
   border: 1px solid var(--ft-color-border);
   background: var(--zine-paper-card);
   color: var(--ft-color-text-muted);

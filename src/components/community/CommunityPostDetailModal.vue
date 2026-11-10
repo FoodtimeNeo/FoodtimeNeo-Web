@@ -14,6 +14,7 @@ import {
   setPostFavorite,
 } from '@/api/community.api.js';
 import CommunityCommentSection from './CommunityCommentSection.vue';
+import ReportButton from '@/components/base/ReportButton.vue';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -349,6 +350,15 @@ async function removePost() {
                 }}</span>
               </div>
               <div class="mobile-header-actions">
+                <ReportButton
+                  v-if="
+                    auth.user?.id &&
+                    post.userId !== auth.user.id &&
+                    post.status === 'approved'
+                  "
+                  target-type="post"
+                  :target-id="post.id"
+                />
                 <button
                   v-if="canRemove(post)"
                   type="button"
@@ -424,6 +434,15 @@ async function removePost() {
                       post.author?.name || '校园干饭人'
                     }}</span>
                   </div>
+                  <ReportButton
+                    v-if="
+                      auth.user?.id &&
+                      post.userId !== auth.user.id &&
+                      post.status === 'approved'
+                    "
+                    target-type="post"
+                    :target-id="post.id"
+                  />
                   <button
                     v-if="canRemove(post)"
                     type="button"
