@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, inject, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
@@ -20,6 +20,7 @@ import ReportButton from '@/components/base/ReportButton.vue';
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const refreshInbox = inject('refreshInbox', () => {});
 const conversationId = String(route.params.conversationId || '');
 const conversation = ref(null);
 const messages = ref([]);
@@ -34,6 +35,8 @@ const listRef = ref(null);
 const blocked = ref(false);
 const editingBlock = ref(false);
 let pollTimer;
+let polling = false;
+let disposed = false;
 
 const other = computed(() => conversation.value?.other || null);
 const canSend = computed(
@@ -74,6 +77,7 @@ async function load({ quiet = false } = {}) {
 async function markRead() {
   try {
     await markConversationRead(conversationId);
+    if (!disposed) refreshInbox();
   } catch {
     /* 已读失败不影响阅读，下次进入会重试。 */
   }
@@ -128,9 +132,11 @@ async function send() {
 }
 
 async function poll() {
-  if (document.hidden) return;
+  if (document.hidden || loading.value || polling || disposed) return;
+  polling = true;
   try {
     const page = await fetchConversationMessages(conversationId);
+    if (disposed) return;
     const known = new Set(messages.value.map((item) => item.id));
     const incoming = page.items.filter((item) => !known.has(item.id));
     if (incoming.length) {
@@ -141,6 +147,8 @@ async function poll() {
     }
   } catch {
     /* 轮询失败静默，保留当前消息。 */
+  } finally {
+    polling = false;
   }
 }
 
@@ -183,9 +191,15 @@ async function manageBlock() {
 
 onMounted(async () => {
   await load();
+  if (disposed) return;
   pollTimer = window.setInterval(poll, 4000);
+  document.addEventListener('visibilitychange', poll);
 });
-onUnmounted(() => window.clearInterval(pollTimer));
+onUnmounted(() => {
+  disposed = true;
+  window.clearInterval(pollTimer);
+  document.removeEventListener('visibilitychange', poll);
+});
 </script>
 
 <template>

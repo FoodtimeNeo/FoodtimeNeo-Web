@@ -16,6 +16,7 @@ import {
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
 import DishLink from '@/components/canteen/DishLink.vue';
+import { shareCommunityPost } from '@/composables/usePostShare.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -233,16 +234,7 @@ async function toggleFollow() {
 }
 
 function handleShare() {
-  if (typeof window !== 'undefined' && navigator.clipboard) {
-    const url = new URL(
-      `/community/posts/${encodeURIComponent(props.postId)}`,
-      window.location.origin,
-    );
-    navigator.clipboard.writeText(url.href);
-    ElMessage.success('已复制帖子链接到剪贴板');
-  } else {
-    ElMessage.success('已生成分享卡片');
-  }
+  return shareCommunityPost(post.value?.id);
 }
 
 function focusCommentInput() {
