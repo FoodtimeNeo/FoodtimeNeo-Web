@@ -110,3 +110,21 @@ it('加载会话后发送消息并追加到列表', async () => {
   expect(wrapper.find('textarea').element.value).toBe('');
   wrapper.unmount();
 });
+
+it('页面重新可见时刷新私信，重叠事件只发一次请求', async () => {
+  const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+  const wrapper = mount(DirectChatView);
+  await flushPromises();
+  let complete;
+  api.fetchConversationMessages.mockReturnValueOnce(
+    new Promise((resolve) => (complete = resolve)),
+  );
+  document.dispatchEvent(new Event('visibilitychange'));
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(api.fetchConversationMessages).toHaveBeenCalledTimes(2);
+  complete({ items: [{ id: 'm3', senderId: 'u2', content: '又一条私信' }] });
+  await flushPromises();
+  expect(wrapper.text()).toContain('又一条私信');
+  wrapper.unmount();
+  hidden.mockRestore();
+});

@@ -21,6 +21,7 @@ import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
 import DishLink from '@/components/canteen/DishLink.vue';
+import { shareCommunityPost } from '@/composables/usePostShare.js';
 
 const props = defineProps({
   postId: {
@@ -198,12 +199,7 @@ async function toggleFollow() {
 }
 
 function handleShare() {
-  if (typeof window !== 'undefined' && navigator.clipboard) {
-    navigator.clipboard.writeText(window.location.href);
-    ElMessage.success('已复制帖子链接到剪贴板');
-  } else {
-    ElMessage.success('已生成分享链接');
-  }
+  return shareCommunityPost(post.value?.id);
 }
 
 function onReplyTargetChange(targetData) {

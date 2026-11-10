@@ -1,5 +1,5 @@
 <script setup>
-import { computed, provide, watch, onUnmounted } from 'vue';
+import { computed, provide, watch, onMounted, onUnmounted } from 'vue';
 import { RouterView } from 'vue-router';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import BlankLayout from '@/layouts/BlankLayout.vue';
@@ -17,6 +17,7 @@ const inbox = useInboxStore();
 const loginNotice = useLoginNotice();
 onUnmounted(() => {
   generation++;
+  document.removeEventListener('visibilitychange', refreshVisibleInbox);
 });
 const layouts = {
   blank: BlankLayout,
@@ -24,8 +25,10 @@ const layouts = {
   default: DefaultLayout,
 };
 let generation = 0;
+let lastInboxRefresh = 0;
 async function refreshInbox() {
   if (!auth.isAuthenticated) return;
+  lastInboxRefresh = Date.now();
   const ticket = ++generation;
   try {
     const [notices, messages, chats] = await Promise.all([
@@ -43,6 +46,13 @@ async function refreshInbox() {
     /* The inbox itself exposes retryable errors; login must remain usable. */
   }
 }
+function refreshVisibleInbox() {
+  if (!document.hidden && Date.now() - lastInboxRefresh >= 10000)
+    refreshInbox();
+}
+onMounted(() =>
+  document.addEventListener('visibilitychange', refreshVisibleInbox),
+);
 provide('refreshInbox', refreshInbox);
 watch(
   () => auth.user?.id || '',
