@@ -19,6 +19,9 @@ import { startConversation } from '@/api/directMessage.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
+import ReportButton from '@/components/base/ReportButton.vue';
+import DishLink from '@/components/canteen/DishLink.vue';
+import { shareCommunityPost } from '@/composables/usePostShare.js';
 
 const props = defineProps({
   postId: {
@@ -196,12 +199,7 @@ async function toggleFollow() {
 }
 
 function handleShare() {
-  if (typeof window !== 'undefined' && navigator.clipboard) {
-    navigator.clipboard.writeText(window.location.href);
-    ElMessage.success('已复制帖子链接到剪贴板');
-  } else {
-    ElMessage.success('已生成分享链接');
-  }
+  return shareCommunityPost(post.value?.id);
 }
 
 function onReplyTargetChange(targetData) {
@@ -317,11 +315,26 @@ function formatPostTime(isoString) {
           <span v-else class="mobile-author-fallback">
             {{ (post.author?.name || '饭')[0] }}
           </span>
-          <span class="mobile-author-name">{{
+          <RouterLink
+            v-if="post.userId"
+            class="mobile-author-name"
+            :to="{ name: 'communityAuthor', params: { userId: post.userId } }"
+            >{{ post.author?.name || '同学' }}</RouterLink
+          >
+          <span v-else class="mobile-author-name">{{
             post.author?.name || '同学'
           }}</span>
         </div>
         <div class="mobile-header-actions">
+          <ReportButton
+            v-if="
+              auth.user?.id &&
+              post.userId !== auth.user.id &&
+              post.status === 'approved'
+            "
+            target-type="post"
+            :target-id="post.id"
+          />
           <button
             v-if="canRemove(post)"
             type="button"
@@ -397,12 +410,29 @@ function formatPostTime(isoString) {
             </span>
           </div>
           <div class="author-meta">
-            <span class="author-name">{{ post.author?.name || '同学' }}</span>
+            <RouterLink
+              v-if="post.userId"
+              class="author-name"
+              :to="{ name: 'communityAuthor', params: { userId: post.userId } }"
+              >{{ post.author?.name || '同学' }}</RouterLink
+            >
+            <span v-else class="author-name">{{
+              post.author?.name || '同学'
+            }}</span>
             <time class="author-time">{{
               formatPostTime(post.createdAt)
             }}</time>
           </div>
           <div class="author-actions">
+            <ReportButton
+              v-if="
+                auth.user?.id &&
+                post.userId !== auth.user.id &&
+                post.status === 'approved'
+              "
+              target-type="post"
+              :target-id="post.id"
+            />
             <button
               v-if="canRemove(post)"
               type="button"
@@ -451,6 +481,13 @@ function formatPostTime(isoString) {
 
           <h1 class="post-title">{{ post.title }}</h1>
           <p class="post-body">{{ post.content }}</p>
+          <DishLink
+            v-if="post.linkedDish"
+            :dish="post.linkedDish"
+            class="button-ink"
+          >
+            菜品 · {{ post.linkedDish.name }}
+          </DishLink>
 
           <div v-if="post.tags && post.tags.length" class="post-tags">
             <span v-for="tag in post.tags" :key="tag" class="post-tag">

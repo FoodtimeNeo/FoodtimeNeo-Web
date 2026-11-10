@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
@@ -15,14 +15,75 @@ import EmptyState from '@/components/base/EmptyState.vue';
 
 const route = useRoute();
 
-const posts = ref([]);
-const loading = ref(false);
-const cursor = ref(null);
-const mode = ref('public'),
-  currentPage = ref(1);
-let feedVersion = 0;
-const hasMore = ref(false);
-const loadError = ref('');
+const mode = ref('public');
+const input = ref('');
+const keyword = ref('');
+const searchOpen = ref(false);
+const refreshing = ref(false);
+const pull = ref(0);
+const tabs = [
+  {
+    id: 'following',
+    label: '关注',
+    heading: '关注',
+    intro: '看看关注的同学最近都在吃啥，顺便给下一顿找点灵感。',
+  },
+  {
+    id: 'public',
+    label: '发现',
+    heading: '社区动态',
+    intro: '随手拍、聊美味，看看同学们今天都在打卡什么好吃的。',
+  },
+  {
+    id: 'favorites',
+    label: '收藏',
+    heading: '收藏',
+    intro: '把喜欢的校园味道收在这里，馋了就翻一翻，下次再去吃。',
+  },
+  {
+    id: 'mine',
+    label: '我的食记',
+    heading: '我的',
+    intro: '把三餐里的小欢喜记下来，回头翻翻，都是自己的校园味道。',
+  },
+];
+const pages = reactive(
+  tabs.map(() => ({
+    posts: [],
+    loading: false,
+    error: '',
+    cursor: null,
+    page: 1,
+    hasMore: false,
+    query: '',
+    version: 0,
+  })),
+);
+const activeIndex = computed(() =>
+  tabs.findIndex(({ id }) => id === mode.value),
+);
+const activePage = computed(() => pages[activeIndex.value]);
+const pager = ref(null);
+const drag = ref(0);
+const dragging = ref(false);
+const otherIndex = ref(-1);
+const swipeOrigin = ref(-1);
+const heldHeight = ref(0);
+const incomingTop = ref(0);
+const position = computed(() => activeIndex.value + drag.value);
+const SETTLE_MS = 240;
+let settleTimer;
+let gesture;
+const isPublic = (section) => section === 'public' || section === 'following';
+const publicMode = computed(() => isPublic(mode.value));
+
+function emptyTitle(section) {
+  if (isPublic(section) && keyword.value) return '没有匹配的食记';
+  if (section === 'following') return '关注的人还没有公开食记';
+  if (section === 'mine') return '你还没有发布食记';
+  if (section === 'favorites') return '你还没有收藏食记';
+  return '社区暂无公开帖子';
+}
 const isCreateModalOpen = ref(false);
 const prefillData = ref({});
 const activePostId = ref('');
@@ -44,45 +105,48 @@ function openCreateModal(prefill = null) {
 }
 
 async function loadFeed(more = false) {
-  if (loading.value) return;
-  const version = feedVersion;
-  loadError.value = '';
-  loading.value = true;
+  const section = mode.value;
+  const feed = activePage.value;
+  if (feed.loading) return;
+  const version = ++feed.version;
+  const query = feed.query;
+  feed.error = '';
+  feed.loading = true;
   try {
     // 关键需求：新发的帖子需要审核才能展示，故默认只拉取 approved 状态的帖子
-    const pageNumber = more ? currentPage.value + 1 : 1;
-    const res =
-      mode.value === 'public'
-        ? await fetchCommunityPosts({ cursor: more ? cursor.value : undefined })
-        : await (
-            mode.value === 'mine'
-              ? fetchMyCommunityPosts
-              : fetchMyCommunityFavorites
-          )({ page: pageNumber, size: 20 });
-    if (version !== feedVersion) return;
-    currentPage.value = pageNumber;
-    posts.value = more
-      ? [...posts.value, ...(res.items || [])]
-      : res.items || [];
-    cursor.value = res.nextCursor;
-    hasMore.value =
-      mode.value === 'public' ? !!res.hasMore : pageNumber * 20 < res.total;
+    const pageNumber = more ? feed.page + 1 : 1;
+    const res = isPublic(section)
+      ? await fetchCommunityPosts({
+          cursor: more ? feed.cursor : undefined,
+          ...(section === 'following' ? { following: true } : {}),
+          ...(query ? { q: query } : {}),
+        })
+      : await (
+          section === 'mine' ? fetchMyCommunityPosts : fetchMyCommunityFavorites
+        )({ page: pageNumber, size: 20 });
+    if (version !== feed.version) return;
+    feed.page = pageNumber;
+    feed.posts = more ? [...feed.posts, ...(res.items || [])] : res.items || [];
+    feed.cursor = res.nextCursor;
+    feed.hasMore = isPublic(section)
+      ? !!res.hasMore
+      : pageNumber * 20 < res.total;
   } catch (error) {
-    if (version !== feedVersion) return;
-    loadError.value = error.message || '加载社区帖子失败';
-    ElMessage.error(loadError.value);
+    if (version !== feed.version) return;
+    feed.error = error.message || '加载社区帖子失败';
+    if (mode.value === section) ElMessage.error(feed.error);
   } finally {
-    if (version === feedVersion) loading.value = false;
+    if (version === feed.version) feed.loading = false;
   }
 }
 
 // 响应式瀑布流分配算法（电脑端 3 列，手机端 2 列）
-const columns = computed(() => {
+function distribute(posts) {
   const colCount = columnCount.value;
   const cols = Array.from({ length: colCount }, () => []);
   const colHeights = Array.from({ length: colCount }, () => 0);
 
-  for (const post of posts.value) {
+  for (const post of posts) {
     const img = post.images?.[0];
     let estimatedHeight = 240; // 默认基准高度
     if (img && img.width && img.height) {
@@ -102,26 +166,162 @@ const columns = computed(() => {
   }
 
   return cols;
-});
+}
+const columns = computed(() => pages.map((page) => distribute(page.posts)));
 
 function handleCardClick(post) {
+  if (dragging.value || settleTimer) return;
   activePostId.value = post.id;
   isDetailModalOpen.value = true;
 }
 
-function changeMode(next) {
-  feedVersion++;
+function changeMode(next, reload = false) {
+  if (next === mode.value && !reload) return;
   mode.value = next;
-  loading.value = false;
-  posts.value = [];
-  cursor.value = null;
-  currentPage.value = 1;
+  refreshing.value = false;
+  const feed = activePage.value;
+  const query = publicMode.value ? keyword.value : '';
+  if (reload || feed.query !== query) {
+    Object.assign(feed, {
+      version: feed.version + 1,
+      query,
+      loading: false,
+      posts: [],
+      cursor: null,
+      hasMore: false,
+      page: 1,
+    });
+  }
   loadFeed();
+}
+
+function selectTab(section) {
+  if (dragging.value || settleTimer) return;
+  changeMode(section);
+}
+function search() {
+  const query = input.value.trim();
+  if (query === keyword.value) return;
+  keyword.value = query;
+  changeMode(mode.value, true);
+}
+
+function toggleSearch() {
+  const wasOpen = searchOpen.value && publicMode.value;
+  if (!publicMode.value) changeMode('public');
+  searchOpen.value = !wasOpen;
+  if (!searchOpen.value) {
+    input.value = '';
+    search();
+  }
+}
+
+function startGesture(event) {
+  if (event.touches.length !== 1) {
+    cancelGesture();
+    return;
+  }
+  if (settleTimer) return;
+  const finger = event.touches[0];
+  gesture = { x: finger.clientX, y: finger.clientY, top: window.scrollY <= 0 };
+}
+
+function moveGesture(event) {
+  if (!gesture || event.touches.length !== 1) return;
+  const finger = event.touches[0];
+  const dx = finger.clientX - gesture.x;
+  const dy = finger.clientY - gesture.y;
+  if (!gesture.axis && Math.max(Math.abs(dx), Math.abs(dy)) > 10) {
+    if (Math.abs(dx) > Math.abs(dy) * 1.3) gesture.axis = 'swipe';
+    else if (gesture.top && dy > 0 && !activePage.value.loading)
+      gesture.axis = 'pull';
+    else gesture.axis = 'scroll';
+  }
+  if (gesture.axis === 'pull') {
+    if (!event.cancelable) {
+      cancelGesture();
+      return;
+    }
+    event.preventDefault();
+    pull.value = Math.min(66, Math.max(0, (dy - 10) * 0.55));
+  } else if (gesture.axis === 'swipe' && event.cancelable) {
+    event.preventDefault();
+    if (!dragging.value) {
+      const bounds = pager.value.getBoundingClientRect();
+      heldHeight.value = bounds.height;
+      incomingTop.value = Math.max(0, -bounds.top);
+      swipeOrigin.value = activeIndex.value;
+      dragging.value = true;
+    }
+    const index = activeIndex.value;
+    const width = pager.value.clientWidth || screenWidth.value;
+    const fraction = Math.max(-1, Math.min(1, -dx / width));
+    const clamped = Math.max(
+      -index,
+      Math.min(tabs.length - 1 - index, fraction),
+    );
+    otherIndex.value = clamped ? index + Math.sign(clamped) : -1;
+    drag.value = clamped;
+  }
+}
+
+function finishSlide() {
+  clearTimeout(settleTimer);
+  settleTimer = undefined;
+  otherIndex.value = -1;
+  if (incomingTop.value && heldHeight.value && pager.value) {
+    const top = pager.value.getBoundingClientRect().top;
+    if (top < 0 && swipeOrigin.value !== activeIndex.value) {
+      window.scrollBy({ top, behavior: 'instant' });
+    }
+  }
+  heldHeight.value = 0;
+  incomingTop.value = 0;
+  swipeOrigin.value = -1;
+}
+
+function settleSwipe(direction = 0) {
+  if (!dragging.value) return;
+  const index = activeIndex.value;
+  const next = direction && tabs[index + direction];
+  dragging.value = false;
+  if (next) {
+    otherIndex.value = index;
+    changeMode(next.id);
+  }
+  drag.value = 0;
+  settleTimer = setTimeout(finishSlide, SETTLE_MS);
+}
+
+function cancelGesture() {
+  gesture = undefined;
+  pull.value = 0;
+  settleSwipe();
+}
+
+async function endGesture(event) {
+  if (!gesture) return;
+  const finger = event.changedTouches[0];
+  const dx = finger.clientX - gesture.x;
+  const dy = finger.clientY - gesture.y;
+  const axis = gesture.axis;
+  gesture = undefined;
+  pull.value = 0;
+  if (axis === 'swipe' && Math.abs(dx) >= 64 && Math.abs(dx) > Math.abs(dy)) {
+    settleSwipe(dx < 0 ? 1 : -1);
+  } else if (axis === 'swipe') {
+    settleSwipe();
+  } else if (axis === 'pull' && dy >= 88 && !activePage.value.loading) {
+    const section = mode.value;
+    refreshing.value = true;
+    await loadFeed();
+    if (section === mode.value) refreshing.value = false;
+  }
 }
 function handlePostCreated() {
   // 提交成功后，旧的点评预填内容不能再次注入新弹窗。
   prefillData.value = {};
-  changeMode('mine');
+  changeMode('mine', true);
 }
 
 onMounted(() => {
@@ -138,6 +338,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  clearTimeout(settleTimer);
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleResize);
   }
@@ -145,97 +346,198 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="community-feed-view">
+  <div
+    class="community-feed-view"
+    :class="{ 'is-sliding': dragging }"
+    :style="{ '--slide-duration': `${SETTLE_MS}ms` }"
+  >
     <header class="community-feed-view__header">
-      <div class="community-feed-view__banner">
-        <h1 class="community-feed-view__title">校园食记 · 社区</h1>
-        <img
-          src="@/assets/images/decoration02/C/illustrations/C_doodle-sparkles.png"
-          alt=""
-          class="community-feed-view__banner-sparkle"
+      <nav class="community-tabs" aria-label="食记分类">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          :aria-pressed="mode === tab.id"
+          @click="selectTab(tab.id)"
+        >
+          {{ tab.label }}
+        </button>
+        <span
+          class="community-tabs__indicator"
+          :style="{ transform: `translateX(${position * 100}%)` }"
           aria-hidden="true"
-        />
+        ></span>
+      </nav>
+      <div class="community-tools">
+        <button
+          class="community-tools__search"
+          type="button"
+          aria-label="搜索食记"
+          :aria-expanded="searchOpen && publicMode"
+          @click="toggleSearch"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="m15.2 15.2 5.3 5.3" />
+          </svg>
+        </button>
+        <RouterLink :to="{ name: 'home' }" aria-label="回到食堂首页">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path d="m3 10.5 9-7.5 9 7.5M5.5 9.5V20h13V9.5M10 20v-6h4v6" />
+          </svg>
+        </RouterLink>
       </div>
-      <!-- 入口一：在社区页右上角放置加号发帖按钮 -->
+    </header>
+    <form
+      v-if="searchOpen && publicMode"
+      class="community-search"
+      role="search"
+      @submit.prevent="search"
+    >
+      <label for="community-keyword">搜索食记</label>
+      <input
+        id="community-keyword"
+        v-model="input"
+        type="search"
+        maxlength="50"
+        placeholder="菜名、档口或关键词"
+      />
+      <button class="button-ink" type="submit">搜索</button>
+    </form>
+    <div
+      class="community-stream"
+      @touchstart.passive="startGesture"
+      @touchmove="moveGesture"
+      @touchend="endGesture"
+      @touchcancel="cancelGesture"
+    >
+      <span
+        class="community-refresh"
+        :class="{
+          'is-visible': pull > 0 || refreshing,
+          'is-dragging': pull > 0,
+          'is-refreshing': refreshing,
+        }"
+        :style="{ '--pull-offset': `${refreshing ? 44 : pull}px` }"
+        :aria-hidden="!refreshing"
+        role="status"
+        aria-label="正在刷新食记"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M5 8a8 8 0 1 1-1 7M5 8V3M5 8h5" />
+        </svg>
+      </span>
+      <div
+        ref="pager"
+        class="community-pager"
+        :style="{ minHeight: heldHeight ? `${heldHeight}px` : undefined }"
+      >
+        <template v-for="(tab, index) in tabs" :key="tab.id">
+          <section
+            v-if="index === activeIndex || index === otherIndex"
+            class="community-pager__page"
+            :class="{ 'is-active': index === activeIndex }"
+            :inert="index !== activeIndex"
+            :style="{
+              transform: `translateX(${(index - position) * 100}%)`,
+              top: index !== swipeOrigin ? `${incomingTop}px` : undefined,
+            }"
+            :aria-label="tab.label"
+          >
+            <div class="community-feed-view__banner">
+              <h1 class="community-feed-view__title">
+                校园食记 · {{ tab.heading }}
+              </h1>
+              <p>{{ tab.intro }}</p>
+              <span
+                class="community-feed-view__sketches"
+                aria-hidden="true"
+              ></span>
+            </div>
+            <div class="community-pager__feed">
+              <p
+                v-if="pages[index].error && !pages[index].posts.length"
+                role="alert"
+              >
+                {{ pages[index].error }}
+                <button type="button" @click="loadFeed()">重试</button>
+              </p>
+              <LoadingState
+                v-if="
+                  (pages[index].loading &&
+                    !(refreshing && index === activeIndex) &&
+                    !pages[index].posts.length) ||
+                  (index !== activeIndex &&
+                    (!pages[index].version ||
+                      (isPublic(tab.id) && pages[index].query !== keyword)))
+                "
+              />
+              <EmptyState
+                v-else-if="!pages[index].posts.length"
+                :title="emptyTitle(tab.id)"
+                :description="
+                  keyword && isPublic(tab.id)
+                    ? '试试其他关键词。'
+                    : tab.id === 'following'
+                      ? '在食记或用户搜索中关注感兴趣的同学。'
+                      : ''
+                "
+              />
+              <div v-else class="community-waterfall" aria-label="帖子列表">
+                <div
+                  v-for="(col, colIdx) in columns[index]"
+                  :key="colIdx"
+                  class="community-waterfall__col"
+                >
+                  <CommunityPostCard
+                    v-for="post in col"
+                    :key="post.id"
+                    :post="post"
+                    @click="handleCardClick(post)"
+                  />
+                </div>
+              </div>
+              <button
+                v-if="pages[index].hasMore"
+                type="button"
+                class="community-more"
+                :disabled="pages[index].loading"
+                @click="loadFeed(true)"
+              >
+                {{ pages[index].loading ? '加载中…' : '加载更多' }}
+              </button>
+            </div>
+          </section>
+        </template>
+      </div>
+    </div>
+
+    <Teleport to="body">
       <button
         type="button"
-        class="community-header-post-btn"
+        class="community-fab-btn"
         aria-label="发布新帖子"
+        title="发布新美食帖"
         @click="openCreateModal()"
       >
-        <span class="btn-plus">＋</span>
-        <span>发帖</span>
+        <span class="community-fab-btn__icon">+</span>
       </button>
-    </header>
-
-    <nav class="community-tabs" aria-label="食记分类">
-      <button
-        v-for="tab in [
-          { id: 'public', label: '发现食记' },
-          { id: 'mine', label: '我的食记' },
-          { id: 'favorites', label: '我的收藏' },
-        ]"
-        :key="tab.id"
-        type="button"
-        :aria-pressed="mode === tab.id"
-        @click="changeMode(tab.id)"
-      >
-        {{ tab.label }}
-      </button>
-    </nav>
-    <p v-if="loadError" role="alert">
-      {{ loadError }} <button type="button" @click="loadFeed()">重试</button>
-    </p>
-    <LoadingState v-if="loading && !posts.length" />
-
-    <EmptyState
-      v-else-if="posts.length === 0"
-      :title="
-        mode === 'public'
-          ? '社区暂无公开帖子'
-          : mode === 'mine'
-            ? '你还没有发布食记'
-            : '你还没有收藏食记'
-      "
-      description="点击右上角「+」号，抢先发布第一篇美食手账吧！"
-    />
-
-    <!-- 瀑布流布局 (电脑 3 列，手机 2 列) -->
-    <main v-else class="community-waterfall" aria-label="帖子列表">
-      <div
-        v-for="(col, colIdx) in columns"
-        :key="colIdx"
-        class="community-waterfall__col"
-      >
-        <CommunityPostCard
-          v-for="post in col"
-          :key="post.id"
-          :post="post"
-          @click="handleCardClick(post)"
-        />
-      </div>
-    </main>
-
-    <button
-      v-if="hasMore"
-      type="button"
-      class="community-more"
-      :disabled="loading"
-      @click="loadFeed(true)"
-    >
-      {{ loading ? '加载中…' : '加载更多' }}
-    </button>
-
-    <!-- 移动端快捷发帖按钮；桌面端使用页首主按钮 -->
-    <button
-      type="button"
-      class="community-fab-btn"
-      aria-label="发布新帖子"
-      title="发布新美食帖"
-      @click="openCreateModal()"
-    >
-      <span class="community-fab-btn__icon">+</span>
-    </button>
+    </Teleport>
 
     <!-- 发帖弹窗 -->
     <PostCreateModal
@@ -254,77 +556,222 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-.community-tabs {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  button {
-    min-height: 44px;
-    padding: 8px 16px;
-    border: 1px solid var(--ft-color-border);
-    background: transparent;
-    border-radius: 0;
-    color: inherit;
-    cursor: pointer;
-    &[aria-pressed='true'] {
-      color: var(--ft-color-primary);
-      border-color: currentColor;
-      background: var(--zine-paper-card);
-      box-shadow: 2px 2px 0 rgb(58 36 24 / 18%);
-    }
-  }
-}
-.community-more {
-  display: block;
-  margin: 24px auto;
-  min-height: 44px;
-  padding: 8px 24px;
-  cursor: pointer;
-}
 .community-feed-view {
-  position: relative;
   min-height: calc(100vh - 200px);
-  padding: var(--ft-space-3, 24px) var(--zine-page-padding, 32px) 80px;
+  padding: 16px var(--zine-page-padding, 32px) 80px;
 
   &__header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 16px;
-    margin-bottom: var(--ft-space-3, 24px);
-    border-bottom: 2px dashed var(--ft-color-border, #d5ccbc);
-    padding-bottom: var(--ft-space-2, 16px);
+    gap: 8px;
+    border-bottom: 1px solid var(--ft-color-border);
   }
 
   &__banner {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    padding: 16px 0 12px;
+
+    p {
+      margin: 5px 0 2px;
+      color: var(--ft-color-text-muted);
+      font-family: var(--ft-font-family-note);
+    }
   }
 
   &__title {
     margin: 0;
-    font-size: 26px;
-    font-family: var(--ft-font-family-title, serif);
-    font-weight: 900;
-    color: var(--ft-color-primary, #c9341e);
-    letter-spacing: 0.5px;
+    font: 900 clamp(21px, 4vw, 26px) var(--ft-font-family-title, serif);
   }
 
-  &__banner-sparkle {
-    width: 24px;
-    height: auto;
-    opacity: 0.85;
-    transform: rotate(10deg);
+  &__sketches {
+    display: block;
+    width: 80px;
+    height: 26px;
+    background:
+      var(--zine-decor-food-sketch-2) left / 34px auto no-repeat,
+      var(--zine-decor-food-sketch-4) right / 34px auto no-repeat;
     pointer-events: none;
   }
 }
 
-/* 瀑布流容器 (电脑 3 列，手机 2 列) */
+.community-tabs {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+
+  button {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--ft-color-text-muted);
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &[aria-pressed='true'] {
+      color: var(--ft-color-primary);
+      font-weight: 700;
+    }
+  }
+
+  &__indicator {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    width: 25%;
+    justify-items: center;
+    pointer-events: none;
+    transition: transform var(--slide-duration)
+      cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    &::after {
+      width: 18px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--ft-color-primary);
+      content: '';
+    }
+  }
+}
+
+.community-tools {
+  display: flex;
+  flex: none;
+
+  a,
+  button {
+    display: grid;
+    width: 42px;
+    height: 44px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ft-color-text);
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--ft-color-primary);
+    }
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+.community-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 10px 0 0;
+
+  input {
+    min-width: 0;
+    flex: 1;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--ft-color-border);
+    background: var(--zine-paper-card);
+    font-size: 16px;
+  }
+}
+
+.community-stream {
+  position: relative;
+  min-height: 45dvh;
+  touch-action: pan-y pinch-zoom;
+}
+
+.community-pager {
+  position: relative;
+  min-height: 35dvh;
+  overflow: clip;
+
+  &__page {
+    position: absolute;
+    inset: 0 0 auto;
+    transition: transform var(--slide-duration)
+      cubic-bezier(0.22, 0.61, 0.36, 1);
+
+    &.is-active {
+      position: relative;
+    }
+  }
+
+  &__feed {
+    min-height: 35dvh;
+  }
+}
+
+.is-sliding .community-pager__page,
+.is-sliding .community-tabs__indicator {
+  transition: none;
+}
+
+.community-refresh {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: calc(50% - 20px);
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--ft-color-border);
+  border-radius: 50%;
+  background: var(--zine-paper-card);
+  box-shadow: 0 3px 9px rgb(58 36 24 / 14%);
+  color: var(--ft-color-primary);
+  opacity: 0;
+  transform: translateY(calc(var(--pull-offset) - 28px));
+  transition:
+    transform 180ms ease-out,
+    opacity 180ms ease-out;
+  pointer-events: none;
+
+  &.is-visible {
+    opacity: 1;
+  }
+
+  &.is-dragging {
+    transition: opacity 100ms ease-out;
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  &.is-refreshing svg {
+    animation: community-spin 0.85s linear infinite;
+  }
+}
+
+@keyframes community-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .community-waterfall {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 12px;
   align-items: start;
   max-width: 1080px;
   margin: 0 auto;
@@ -334,100 +781,76 @@ onUnmounted(() => {
     flex-direction: column;
     min-width: 0;
   }
+
+  :deep(.community-post-card) {
+    border-color: var(--ft-color-border);
+    border-radius: 10px;
+    box-shadow: none;
+  }
 }
 
-.community-header-post-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 20px;
-  background: var(--ft-color-primary, #c9341e);
-  color: #fff;
-  border: 1px solid var(--ft-color-primary-strong, #ab1f0b);
-  border-radius: 0;
-  font-size: 14px;
-  font-weight: 700;
+.community-more {
+  display: block;
+  margin: 20px auto;
+  min-height: 44px;
+  padding: 8px 24px;
   cursor: pointer;
-  box-shadow: 2px 2px 0 var(--ft-color-primary-strong, #ab1f0b);
-  transition: all var(--ft-transition-fast, 180ms ease);
-  flex: none;
-
-  &:hover {
-    background: var(--ft-color-primary-strong, #ab1f0b);
-    transform: translateY(-1px);
-    box-shadow: 3px 3px 0 var(--ft-color-primary-strong, #ab1f0b);
-  }
-
-  .btn-plus {
-    font-size: 18px;
-    line-height: 1;
-    font-weight: 800;
-    margin-top: -1px;
-  }
 }
 
-/* 右下角悬浮发帖按钮 (Floating Action Button) */
 .community-fab-btn {
   position: fixed;
-  right: 28px;
-  bottom: 84px;
-  width: 58px;
-  height: 58px;
+  z-index: 24;
+  right: 24px;
+  bottom: 24px;
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 0;
   border-radius: 50%;
-  background: var(--ft-color-primary, #c9341e);
+  background: var(--ft-color-primary);
+  box-shadow: 0 4px 14px rgb(58 36 24 / 22%);
   color: #fff;
-  border: 2px solid #fff;
-  box-shadow:
-    0 6px 18px rgb(171 31 11 / 40%),
-    0 2px 4px rgb(58 36 24 / 20%);
   cursor: pointer;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  transition:
-    transform var(--ft-transition-fast, 180ms ease),
-    background var(--ft-transition-fast, 180ms ease),
-    box-shadow var(--ft-transition-fast, 180ms ease);
 
   &:hover {
-    transform: scale(1.08) rotate(90deg);
-    background: var(--ft-color-primary-strong, #ab1f0b);
-    box-shadow: 0 8px 24px rgb(171 31 11 / 50%);
-  }
-
-  &:active {
-    transform: scale(0.96);
+    background: var(--ft-color-primary-strong);
   }
 
   &__icon {
-    font-size: 36px;
-    font-weight: 300;
-    line-height: 1;
-    margin-top: -3px;
+    font:
+      300 32px / 1 system-ui,
+      sans-serif;
   }
 }
 
 @media (max-width: 768px) {
   .community-feed-view {
-    padding: var(--ft-space-2, 16px) var(--zine-page-padding-mobile, 14px) 100px;
+    padding: 8px var(--zine-page-padding-mobile, 14px) 74px;
   }
 
   .community-waterfall {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
   }
 
   .community-fab-btn {
-    display: flex;
-    right: 20px;
-    bottom: calc(var(--app-mobile-tabbar-height, 72px) + 20px);
-    width: 52px;
-    height: 52px;
+    right: 16px;
+    bottom: calc(
+      var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom) + 12px
+    );
+  }
+}
 
-    &__icon {
-      font-size: 32px;
-    }
+@media (prefers-reduced-motion: reduce) {
+  .community-refresh,
+  .community-pager__page,
+  .community-tabs__indicator {
+    transition: none;
+  }
+
+  .community-refresh.is-refreshing svg {
+    animation: none;
   }
 }
 </style>

@@ -4,6 +4,9 @@ import { createPinia, setActivePinia } from 'pinia';
 
 const createCommunityPost = vi.fn();
 const uploadImage = vi.fn();
+const fetchCanteens = vi.fn();
+const fetchStalls = vi.fn();
+const fetchStallDishes = vi.fn();
 
 vi.mock('@/api/community.api.js', () => ({
   createCommunityPost: (...args) => createCommunityPost(...args),
@@ -11,6 +14,11 @@ vi.mock('@/api/community.api.js', () => ({
 
 vi.mock('@/api/submission.api.js', () => ({
   uploadImage: (...args) => uploadImage(...args),
+}));
+vi.mock('@/api/canteen.api.js', () => ({
+  fetchCanteens: (...args) => fetchCanteens(...args),
+  fetchStalls: (...args) => fetchStalls(...args),
+  fetchStallDishes: (...args) => fetchStallDishes(...args),
 }));
 
 import PostCreateModal from './PostCreateModal.vue';
@@ -36,6 +44,9 @@ describe('PostCreateModal', () => {
     setActivePinia(createPinia());
     createCommunityPost.mockReset();
     uploadImage.mockReset();
+    fetchCanteens.mockReset();
+    fetchStalls.mockReset();
+    fetchStallDishes.mockReset();
   });
 
   it('不存在链接输入框和快捷预设配图，展示手账真实图片上传区', () => {
@@ -68,7 +79,7 @@ describe('PostCreateModal', () => {
     expect(imgs[0].attributes('src')).toBe('https://example.com/soup.jpg');
   });
 
-  it('可以通过文件上传添加图片并在提交时正常发帖', async () => {
+  it('选择关联菜品后，提交图片和所选菜品 ID', async () => {
     uploadImage.mockResolvedValue({ imageUrl: '/api/v1/media/img-real-1' });
     createCommunityPost.mockResolvedValue({
       id: 'post-new-1',
@@ -77,6 +88,62 @@ describe('PostCreateModal', () => {
     });
 
     const wrapper = mountModal();
+    fetchCanteens.mockResolvedValue([
+      { id: 'hall-1', name: '学苑食堂' },
+      { id: 'hall-2', name: '学一食堂' },
+    ]);
+    fetchStalls.mockResolvedValue([
+      { id: 'stall-1', name: '一号档口' },
+      { id: 'stall-2', name: '二号档口' },
+    ]);
+    fetchStallDishes.mockResolvedValue([
+      { id: 'dish-1', name: '三明治' },
+      { id: 'dish-2', name: '鸡腿饭' },
+    ]);
+    const button = (label) =>
+      wrapper.findAll('button').find((item) => item.text() === label);
+    const level = (name) =>
+      wrapper
+        .findAll('.dish-picker__trigger')
+        .find((item) => item.text().startsWith(name));
+    expect(level('档口').element.disabled).toBe(true);
+    expect(level('菜品').element.disabled).toBe(true);
+    await level('食堂').trigger('click');
+    await flushPromises();
+    const filter = () => wrapper.get('#post-dish-keyword');
+    expect(button('学苑食堂')).toBeTruthy();
+    expect(button('学一食堂')).toBeTruthy();
+    await filter().setValue('学苑');
+    expect(button('学一食堂')).toBeUndefined();
+    await button('学苑食堂').trigger('click');
+    expect(wrapper.find('#post-dish-keyword').exists()).toBe(false);
+    await level('档口').trigger('click');
+    await flushPromises();
+    expect(filter().element.value).toBe('');
+    expect(button('一号档口')).toBeTruthy();
+    await filter().setValue('二号');
+    expect(button('一号档口')).toBeUndefined();
+    await button('二号档口').trigger('click');
+    await level('菜品').trigger('click');
+    await flushPromises();
+    expect(filter().element.value).toBe('');
+    expect(button('三明治')).toBeTruthy();
+    await filter().setValue('鸡腿');
+    expect(button('三明治')).toBeUndefined();
+    await filter().setValue('');
+    await button('三明治').trigger('click');
+    expect(fetchCanteens).toHaveBeenCalledTimes(1);
+    expect(fetchStalls).toHaveBeenCalledExactlyOnceWith(
+      'hall-1',
+      expect.any(Object),
+    );
+    expect(fetchStallDishes).toHaveBeenCalledExactlyOnceWith(
+      'stall-2',
+      expect.any(Object),
+    );
+    expect(level('食堂').text()).toContain('学苑食堂');
+    expect(level('档口').text()).toContain('二号档口');
+    expect(level('菜品').text()).toContain('三明治');
 
     await wrapper.find('#post-title').setValue('自制三明治');
     await wrapper.find('#post-content').setValue('全麦面包配煎蛋，美味健康！');
@@ -107,6 +174,7 @@ describe('PostCreateModal', () => {
       title: '自制三明治',
       content: '全麦面包配煎蛋，美味健康！',
       images: ['/api/v1/media/img-real-1'],
+      dishId: 'dish-1',
     });
 
     // 发射了 created 事件

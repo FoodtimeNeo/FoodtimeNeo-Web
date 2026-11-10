@@ -14,6 +14,9 @@ import {
   setPostFavorite,
 } from '@/api/community.api.js';
 import CommunityCommentSection from './CommunityCommentSection.vue';
+import ReportButton from '@/components/base/ReportButton.vue';
+import DishLink from '@/components/canteen/DishLink.vue';
+import { shareCommunityPost } from '@/composables/usePostShare.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -231,16 +234,7 @@ async function toggleFollow() {
 }
 
 function handleShare() {
-  if (typeof window !== 'undefined' && navigator.clipboard) {
-    const url = new URL(
-      `/community/posts/${encodeURIComponent(props.postId)}`,
-      window.location.origin,
-    );
-    navigator.clipboard.writeText(url.href);
-    ElMessage.success('已复制帖子链接到剪贴板');
-  } else {
-    ElMessage.success('已生成分享卡片');
-  }
+  return shareCommunityPost(post.value?.id);
 }
 
 function focusCommentInput() {
@@ -344,11 +338,30 @@ async function removePost() {
                 <span v-else class="mobile-author-fallback">{{
                   (post.author?.name || '饭')[0]
                 }}</span>
-                <span class="mobile-author-name">{{
+                <RouterLink
+                  v-if="post.userId"
+                  class="mobile-author-name"
+                  :to="{
+                    name: 'communityAuthor',
+                    params: { userId: post.userId },
+                  }"
+                  @click="emit('update:modelValue', false)"
+                  >{{ post.author?.name || '校园干饭人' }}</RouterLink
+                >
+                <span v-else class="mobile-author-name">{{
                   post.author?.name || '校园干饭人'
                 }}</span>
               </div>
               <div class="mobile-header-actions">
+                <ReportButton
+                  v-if="
+                    auth.user?.id &&
+                    post.userId !== auth.user.id &&
+                    post.status === 'approved'
+                  "
+                  target-type="post"
+                  :target-id="post.id"
+                />
                 <button
                   v-if="canRemove(post)"
                   type="button"
@@ -420,10 +433,29 @@ async function removePost() {
                     </div>
                   </div>
                   <div class="redbook-author-meta">
-                    <span class="redbook-author-name">{{
+                    <RouterLink
+                      v-if="post.userId"
+                      class="redbook-author-name"
+                      :to="{
+                        name: 'communityAuthor',
+                        params: { userId: post.userId },
+                      }"
+                      @click="emit('update:modelValue', false)"
+                      >{{ post.author?.name || '校园干饭人' }}</RouterLink
+                    >
+                    <span v-else class="redbook-author-name">{{
                       post.author?.name || '校园干饭人'
                     }}</span>
                   </div>
+                  <ReportButton
+                    v-if="
+                      auth.user?.id &&
+                      post.userId !== auth.user.id &&
+                      post.status === 'approved'
+                    "
+                    target-type="post"
+                    :target-id="post.id"
+                  />
                   <button
                     v-if="canRemove(post)"
                     type="button"
@@ -484,6 +516,14 @@ async function removePost() {
 
                   <!-- 正文内容 -->
                   <p class="redbook-post-text">{{ post.content }}</p>
+                  <DishLink
+                    v-if="post.linkedDish"
+                    :dish="post.linkedDish"
+                    class="button-ink"
+                    @click="$emit('update:modelValue', false)"
+                  >
+                    菜品 · {{ post.linkedDish.name }}
+                  </DishLink>
 
                   <!-- 发布时间与食堂位置 -->
                   <div class="redbook-post-footline">

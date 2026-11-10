@@ -49,6 +49,78 @@ describe('CommunityFeedView', () => {
     mockPush.mockReset();
   });
 
+  it('显示各分类自己的标题与说明，保留发现页原文', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    fetchMyCommunityFavorites.mockResolvedValue({ items: [] });
+    fetchMyCommunityPosts.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+
+    const expected = [
+      [
+        '发现',
+        '社区动态',
+        '随手拍、聊美味，看看同学们今天都在打卡什么好吃的。',
+      ],
+      ['关注', '关注', '看看关注的同学最近都在吃啥，顺便给下一顿找点灵感。'],
+      ['收藏', '收藏', '把喜欢的校园味道收在这里，馋了就翻一翻，下次再去吃。'],
+      [
+        '我的食记',
+        '我的',
+        '把三餐里的小欢喜记下来，回头翻翻，都是自己的校园味道。',
+      ],
+    ];
+    for (const [label, heading, intro] of expected) {
+      const tab = wrapper
+        .findAll('.community-tabs button')
+        .find((item) => item.text() === label);
+      await tab.trigger('click');
+      const banner = wrapper.get(
+        '.community-pager__page.is-active .community-feed-view__banner',
+      );
+      expect(banner.get('h1').text()).toBe(`校园食记 · ${heading}`);
+      expect(banner.get('p').text()).toBe(intro);
+    }
+    await flushPromises();
+    wrapper.unmount();
+  });
+
+  it('只看关注可以搜索食记，翻页保留查询范围', async () => {
+    fetchCommunityPosts.mockResolvedValue({
+      items: [],
+      hasMore: true,
+      nextCursor: 'next',
+    });
+    const wrapper = mountView();
+    await flushPromises();
+    const tab = wrapper
+      .findAll('.community-tabs button')
+      .find((item) => item.text() === '关注');
+    await tab.trigger('click');
+    await flushPromises();
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: undefined,
+      following: true,
+    });
+    await wrapper.get('.community-tools__search').trigger('click');
+    await wrapper.get('#community-keyword').setValue('  鸡腿饭  ');
+    await wrapper.get('.community-search').trigger('submit');
+    await flushPromises();
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: undefined,
+      following: true,
+      q: '鸡腿饭',
+    });
+    await wrapper.get('.community-more').trigger('click');
+    await flushPromises();
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: 'next',
+      following: true,
+      q: '鸡腿饭',
+    });
+    wrapper.unmount();
+  });
+
   it('使用公开信息流并以两列渲染', async () => {
     fetchCommunityPosts.mockResolvedValue({
       items: [
@@ -174,17 +246,152 @@ describe('CommunityFeedView', () => {
     expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
   });
 
-  it('顶部右上角存在发帖按钮，点击可唤起发帖弹窗', async () => {
-    fetchCommunityPosts.mockResolvedValue({ items: [], total: 0 });
+  it('下拉松手才刷新，加载期间保留已显示的食记', async () => {
+    fetchCommunityPosts.mockResolvedValueOnce({
+      items: [{ id: 'p1', title: '食堂瓦罐汤' }],
+    });
+    let respond;
+    fetchCommunityPosts.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          respond = resolve;
+        }),
+    );
     const wrapper = mountView();
     await flushPromises();
 
-    const topBtn = wrapper.find('.community-header-post-btn');
-    expect(topBtn.exists()).toBe(true);
+    const stream = wrapper.get('.community-stream');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 90, clientY: 40 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 90, clientY: 170 }],
+    });
+    expect(wrapper.get('.community-refresh').classes()).toContain(
+      'is-dragging',
+    );
+    expect(fetchCommunityPosts).toHaveBeenCalledTimes(1);
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: 90, clientY: 170 }],
+    });
+    expect(fetchCommunityPosts).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('食堂瓦罐汤');
+    respond({ items: [{ id: 'p2', title: '新食记' }] });
+    await flushPromises();
+    expect(wrapper.text()).toContain('新食记');
+    expect(wrapper.get('.community-refresh').classes()).not.toContain(
+      'is-visible',
+    );
+    wrapper.unmount();
+  });
 
-    expect(wrapper.find('.el-dialog-stub').exists()).toBe(false);
-    await topBtn.trigger('click');
-    expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
+  it('横向滑动从发现切换到关注', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    const stream = wrapper.get('.community-stream');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 50, clientY: 80 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 155, clientY: 85 }],
+    });
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: 155, clientY: 85 }],
+    });
+    expect(wrapper.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '关注',
+    );
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: undefined,
+      following: true,
+    });
+    wrapper.unmount();
+  });
+
+  it('拖动时同步移动页面和红线，长滑仍只前进一页', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    fetchMyCommunityFavorites.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    const stream = wrapper.get('.community-stream');
+    Object.defineProperty(
+      wrapper.get('.community-pager').element,
+      'clientWidth',
+      { value: 400 },
+    );
+    const indicator = wrapper.get('.community-tabs__indicator');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 380, clientY: 80 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 280, clientY: 80 }],
+    });
+    expect(indicator.element.style.transform).toBe('translateX(125%)');
+    expect(
+      wrapper.get('.community-pager__page.is-active').element.style.transform,
+    ).toBe('translateX(-25%)');
+    expect(
+      wrapper.get('.community-pager__page[aria-label="收藏"]').element.style
+        .transform,
+    ).toBe('translateX(75%)');
+    expect(fetchMyCommunityFavorites).not.toHaveBeenCalled();
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: -500, clientY: 80 }],
+    });
+    expect(indicator.element.style.transform).toBe('translateX(200%)');
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: -500, clientY: 80 }],
+    });
+    expect(wrapper.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '收藏',
+    );
+    expect(fetchMyCommunityPosts).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it('短滑和边缘外滑都留在原页', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    const stream = wrapper.get('.community-stream');
+    await stream.trigger('touchstart', {
+      touches: [{ clientX: 90, clientY: 80 }],
+    });
+    await stream.trigger('touchmove', {
+      touches: [{ clientX: 120, clientY: 80 }],
+    });
+    await stream.trigger('touchend', {
+      changedTouches: [{ clientX: 120, clientY: 80 }],
+    });
+    expect(wrapper.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '发现',
+    );
+    expect(
+      wrapper.get('.community-tabs__indicator').element.style.transform,
+    ).toBe('translateX(100%)');
+    expect(fetchCommunityPosts).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+
+    const edge = mountView();
+    await edge.get('.community-tabs button').trigger('click');
+    const edgeStream = edge.get('.community-stream');
+    await edgeStream.trigger('touchstart', {
+      touches: [{ clientX: 30, clientY: 80 }],
+    });
+    await edgeStream.trigger('touchmove', {
+      touches: [{ clientX: 260, clientY: 80 }],
+    });
+    await edgeStream.trigger('touchend', {
+      changedTouches: [{ clientX: 260, clientY: 80 }],
+    });
+    expect(edge.get('.community-tabs [aria-pressed="true"]').text()).toBe(
+      '关注',
+    );
+    expect(edge.get('.community-tabs__indicator').element.style.transform).toBe(
+      'translateX(0%)',
+    );
+    edge.unmount();
   });
 
   it('发帖成功后再次打开使用空白预填数据', async () => {
@@ -195,7 +402,7 @@ describe('CommunityFeedView', () => {
 
     const modal = wrapper.findComponent({ name: 'PostCreateModal' });
     modal.vm.$emit('created', { id: 'pending-post' });
-    await wrapper.find('.community-header-post-btn').trigger('click');
+    await wrapper.get('.community-fab-btn').trigger('click');
 
     expect(modal.props('initialData')).toEqual({});
   });

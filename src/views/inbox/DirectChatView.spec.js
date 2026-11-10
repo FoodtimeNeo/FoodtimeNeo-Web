@@ -9,6 +9,21 @@ const api = vi.hoisted(() => ({
   hideConversation: vi.fn(),
 }));
 vi.mock('@/api/directMessage.api.js', () => api);
+const safety = vi.hoisted(() => ({
+  fetchBlockState: vi.fn(),
+  setUserBlock: vi.fn(),
+  submitReport: vi.fn(),
+}));
+vi.mock('@/api/safety.api.js', () => safety);
+const dialog = vi.hoisted(() => ({
+  confirm: vi.fn(),
+  prompt: vi.fn(),
+}));
+vi.mock('element-plus', async (importOriginal) => ({
+  ...(await importOriginal()),
+  ElMessageBox: dialog,
+  ElMessage: { success: vi.fn(), error: vi.fn() },
+}));
 
 const route = vi.hoisted(() => ({ params: { conversationId: 'c1' } }));
 const push = vi.hoisted(() => vi.fn());
@@ -24,6 +39,7 @@ import DirectChatView from './DirectChatView.vue';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  safety.fetchBlockState.mockResolvedValue({ blocked: false });
   api.fetchConversation.mockResolvedValue({
     id: 'c1',
     other: { id: 'u2', displayName: '小红', avatarUrl: null },
@@ -51,6 +67,30 @@ beforeEach(() => {
   });
 });
 
+it('只举报被选中的对方私信，并在拉黑成功后关闭发送入口', async () => {
+  const wrapper = mount(DirectChatView);
+  dialog.prompt.mockResolvedValue({ value: ' 骚扰 ' });
+  dialog.confirm.mockResolvedValue(true);
+  safety.setUserBlock.mockResolvedValue({ blocked: true });
+  await flushPromises();
+  const button = (label) =>
+    wrapper.findAll('button').find((item) => item.text() === label);
+  await button('举报').trigger('click');
+  await flushPromises();
+  expect(safety.submitReport).toHaveBeenCalledExactlyOnceWith(
+    'message',
+    'm1',
+    '骚扰',
+  );
+  await button('拉黑管理').trigger('click');
+  await flushPromises();
+  expect(safety.setUserBlock).toHaveBeenCalledExactlyOnceWith('u2', true);
+  expect(wrapper.find('textarea').exists()).toBe(false);
+  expect(wrapper.text()).toContain('解除拉黑');
+  expect(api.sendDirectMessage).not.toHaveBeenCalled();
+  wrapper.unmount();
+});
+
 it('加载会话后发送消息并追加到列表', async () => {
   const wrapper = mount(DirectChatView);
   await flushPromises();
@@ -69,4 +109,22 @@ it('加载会话后发送消息并追加到列表', async () => {
   expect(wrapper.text()).toContain('今晚吃食堂');
   expect(wrapper.find('textarea').element.value).toBe('');
   wrapper.unmount();
+});
+
+it('页面重新可见时刷新私信，重叠事件只发一次请求', async () => {
+  const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(false);
+  const wrapper = mount(DirectChatView);
+  await flushPromises();
+  let complete;
+  api.fetchConversationMessages.mockReturnValueOnce(
+    new Promise((resolve) => (complete = resolve)),
+  );
+  document.dispatchEvent(new Event('visibilitychange'));
+  document.dispatchEvent(new Event('visibilitychange'));
+  expect(api.fetchConversationMessages).toHaveBeenCalledTimes(2);
+  complete({ items: [{ id: 'm3', senderId: 'u2', content: '又一条私信' }] });
+  await flushPromises();
+  expect(wrapper.text()).toContain('又一条私信');
+  wrapper.unmount();
+  hidden.mockRestore();
 });

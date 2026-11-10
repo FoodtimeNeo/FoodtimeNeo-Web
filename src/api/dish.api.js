@@ -1,4 +1,17 @@
 import { http } from './http.js';
+export const searchDishes = (q, page = 1, options = {}) =>
+  http.get('/dishes/search', { ...options, params: { q, page, size: 20 } });
+const favoritePath = (id) =>
+  `/users/me/dish-favorites/${encodeURIComponent(id)}`;
+export const fetchDishFavorite = (id, options = {}) =>
+  http.get(favoritePath(id), options);
+export const setDishFavorite = (id, saved) =>
+  saved ? http.put(favoritePath(id)) : http.delete(favoritePath(id));
+export const fetchFavoriteDishes = (page = 1, options = {}) =>
+  http.get('/users/me/dish-favorites', {
+    ...options,
+    params: { page, size: 20 },
+  });
 export const fetchDish = (id, options = {}) =>
   http.get(`/dishes/${encodeURIComponent(id)}`, options);
 export const fetchDishReviews = (id, page = 1, options = {}) =>

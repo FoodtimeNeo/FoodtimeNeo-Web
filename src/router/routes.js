@@ -131,6 +131,17 @@ export const routes = [
     },
   },
   {
+    path: '/admin/reports',
+    name: 'adminReports',
+    component: () => import('@/views/admin/AdminReportsView.vue'),
+    meta: {
+      title: '举报处理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
     path: '/admin/notices',
     name: 'adminNotices',
     component: () => import('@/views/admin/AdminNoticesView.vue'),
@@ -195,6 +206,17 @@ export const routes = [
     },
   },
   {
+    path: '/profile/dish-favorites',
+    name: 'favoriteDishes',
+    component: () => import('@/views/profile/FavoriteDishesView.vue'),
+    meta: {
+      title: '想吃清单',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/profile/reviews',
     name: 'myReviews',
     component: () => import('@/views/profile/MyReviewsView.vue'),
@@ -251,6 +273,17 @@ export const routes = [
     },
   },
   {
+    path: '/community/authors/:userId',
+    name: 'communityAuthor',
+    component: () => import('@/views/community/CommunityAuthorView.vue'),
+    meta: {
+      title: '作者主页',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'community',
+    },
+  },
+  {
     path: '/community/posts/:postId',
     name: 'communityDetail',
     component: () => import('@/views/community/CommunityDetailView.vue'),
@@ -259,6 +292,17 @@ export const routes = [
       layout: 'default',
       requiresAuth: true,
       nav: 'community',
+    },
+  },
+  {
+    path: '/canteens/search',
+    name: 'dishSearch',
+    component: () => import('@/views/canteen/DishSearchView.vue'),
+    meta: {
+      title: '跨食堂搜菜',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
     },
   },
   {

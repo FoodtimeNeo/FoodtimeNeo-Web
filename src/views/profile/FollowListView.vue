@@ -111,7 +111,12 @@ async function toggle(row) {
               :empty="Array.from(row.displayName?.trim() || '饭')[0]"
             />
           </span>
-          <span class="follow-page__name">{{ row.displayName }}</span>
+          <RouterLink
+            class="follow-page__name"
+            :to="{ name: 'communityAuthor', params: { userId: row.id } }"
+          >
+            {{ row.displayName }}
+          </RouterLink>
           <button
             class="button-ink"
             type="button"
