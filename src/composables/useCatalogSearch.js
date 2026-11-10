@@ -8,6 +8,13 @@ function normalize(value) {
     .toLocaleLowerCase();
 }
 
+export function filterCatalogByName(items, query) {
+  const terms = normalize(query).trim().split(/\s+/).filter(Boolean);
+  return (items || []).filter((item) =>
+    terms.every((term) => normalize(item.name).includes(term)),
+  );
+}
+
 export function useCatalogSearch(items, scope) {
   const preferences = useCatalogSearchStore();
   const auth = useAuthStore();
@@ -16,11 +23,8 @@ export function useCatalogSearch(items, scope) {
     get: () => preferences.queries[key.value] || '',
     set: (value) => preferences.setQuery(key.value, value),
   });
-  const matches = computed(() => {
-    const terms = normalize(query.value).trim().split(/\s+/).filter(Boolean);
-    return (toValue(items) || []).filter((item) =>
-      terms.every((term) => normalize(item.name).includes(term)),
-    );
-  });
+  const matches = computed(() =>
+    filterCatalogByName(toValue(items), query.value),
+  );
   return { query, matches };
 }
