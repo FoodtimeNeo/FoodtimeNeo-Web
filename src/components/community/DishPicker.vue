@@ -1,75 +1,110 @@
 <script setup>
-import { ref } from 'vue';
-import { searchDishes } from '@/api/dish.api.js';
-import { usePagedData } from '@/composables/usePagedData.js';
-import PaginationControls from '@/components/base/PaginationControls.vue';
+import { computed, ref, watch } from 'vue';
+import {
+  fetchCanteens,
+  fetchStalls,
+  fetchStallDishes,
+} from '@/api/canteen.api.js';
+import { useAsyncData } from '@/composables/useAsyncData.js';
+import { filterCatalogByName } from '@/composables/useCatalogSearch.js';
 
 const selected = defineModel({ type: Object, default: null });
 const open = ref(false);
-const input = ref('');
 const query = ref('');
-const state = usePagedData(
-  (page, options) => searchDishes(query.value, page, options),
-  { immediate: false },
+const hall = ref(null);
+const stall = ref(null);
+const level = computed(() =>
+  stall.value ? '菜品' : hall.value ? '档口' : '食堂',
+);
+const state = useAsyncData(
+  (options) => {
+    if (stall.value) return fetchStallDishes(stall.value.id, options);
+    if (hall.value) return fetchStalls(hall.value.id, options);
+    return fetchCanteens(options);
+  },
+  { immediate: false, initial: [] },
+);
+const matches = computed(() =>
+  filterCatalogByName(state.data.value, query.value),
 );
 
-function search() {
-  const keyword = input.value.trim();
-  if (!keyword || state.loading.value) return;
-  query.value = keyword;
-  state.hasLoaded.value = false;
-  if (state.page.value === 1) state.load();
-  else state.page.value = 1;
+watch([open, hall, stall], () => {
+  state.cancel();
+  state.data.value = [];
+  state.error.value = null;
+  query.value = '';
+  if (open.value) state.load();
+});
+
+function resetHall() {
+  hall.value = null;
+  stall.value = null;
 }
 
-function pick(dish) {
-  selected.value = dish;
-  open.value = false;
+function toggle() {
+  if (!open.value) resetHall();
+  open.value = !open.value;
+}
+
+function pick(item) {
+  if (!hall.value) hall.value = item;
+  else if (!stall.value) stall.value = item;
+  else {
+    selected.value = {
+      ...item,
+      diningHallName: hall.value.name,
+      stallName: stall.value.name,
+    };
+    open.value = false;
+  }
 }
 </script>
 
 <template>
   <fieldset class="dish-picker">
     <legend>关联菜品（可选）</legend>
-    <p v-if="selected">{{ selected.name }}</p>
-    <button type="button" @click="open = !open">
-      {{ open ? '收起搜索' : selected ? '更换菜品' : '选择菜品' }}
+    <p v-if="selected">
+      {{
+        [selected.diningHallName, selected.stallName, selected.name]
+          .filter(Boolean)
+          .join(' · ')
+      }}
+    </p>
+    <button type="button" :aria-expanded="open" @click="toggle">
+      {{ open ? '收起选择' : selected ? '更换菜品' : '选择菜品' }}
     </button>
     <button v-if="selected" type="button" @click="selected = null">
       移除关联
     </button>
     <div v-if="open">
-      <label for="post-dish-keyword">搜索菜名</label>
+      <div v-if="hall" class="dish-picker__parents">
+        <button type="button" @click="resetHall">
+          更换食堂 · {{ hall.name }}
+        </button>
+        <button v-if="stall" type="button" @click="stall = null">
+          更换档口 · {{ stall.name }}
+        </button>
+      </div>
+      <label for="post-dish-keyword">筛选{{ level }}</label>
       <input
         id="post-dish-keyword"
-        v-model="input"
+        v-model="query"
+        type="search"
         maxlength="50"
-        :disabled="state.loading.value"
-        @keydown.enter.prevent.stop="search"
+        :placeholder="`输入${level}名称，留空显示全部`"
+        @keydown.enter.prevent
       />
-      <button type="button" :disabled="state.loading.value" @click="search">
-        {{ state.loading.value ? '搜索中…' : '搜索菜品' }}
-      </button>
-      <p v-if="state.error.value" role="alert">
-        {{ state.error.value.message }}
-      </p>
-      <template v-else-if="state.hasLoaded.value && !state.loading.value">
-        <p v-if="!state.items.value.length">没有匹配的菜品。</p>
-        <ul v-else>
-          <li v-for="dish in state.items.value" :key="dish.id">
-            <button type="button" @click="pick(dish)">
-              {{ dish.name }} · {{ dish.diningHallName }} · {{ dish.stallName }}
-            </button>
-          </li>
-        </ul>
-        <PaginationControls
-          v-if="state.total.value > state.size.value || state.page.value > 1"
-          :page="state.page.value"
-          :total="state.total.value"
-          :size="state.size.value"
-          @change="state.page.value = $event"
-        />
+      <p v-if="state.loading.value" role="status">正在加载{{ level }}…</p>
+      <template v-else-if="state.error.value">
+        <p role="alert">{{ state.error.value.message }}</p>
+        <button type="button" @click="state.load">重试</button>
       </template>
+      <p v-else-if="!matches.length" role="status">没有可选的{{ level }}。</p>
+      <ul v-else :key="level" :aria-label="`选择${level}`">
+        <li v-for="item in matches" :key="item.id">
+          <button type="button" @click="pick(item)">{{ item.name }}</button>
+        </li>
+      </ul>
     </div>
   </fieldset>
 </template>
@@ -90,5 +125,17 @@ function pick(dish) {
 .dish-picker ul {
   list-style: none;
   padding: 0;
+  max-height: min(36vh, 280px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.dish-picker li button {
+  display: block;
+  width: calc(100% - 8px);
+  text-align: left;
+}
+.dish-picker__parents {
+  display: flex;
+  flex-wrap: wrap;
 }
 </style>

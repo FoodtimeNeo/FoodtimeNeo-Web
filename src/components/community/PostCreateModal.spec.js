@@ -4,7 +4,9 @@ import { createPinia, setActivePinia } from 'pinia';
 
 const createCommunityPost = vi.fn();
 const uploadImage = vi.fn();
-const searchDishes = vi.fn();
+const fetchCanteens = vi.fn();
+const fetchStalls = vi.fn();
+const fetchStallDishes = vi.fn();
 
 vi.mock('@/api/community.api.js', () => ({
   createCommunityPost: (...args) => createCommunityPost(...args),
@@ -13,8 +15,10 @@ vi.mock('@/api/community.api.js', () => ({
 vi.mock('@/api/submission.api.js', () => ({
   uploadImage: (...args) => uploadImage(...args),
 }));
-vi.mock('@/api/dish.api.js', () => ({
-  searchDishes: (...args) => searchDishes(...args),
+vi.mock('@/api/canteen.api.js', () => ({
+  fetchCanteens: (...args) => fetchCanteens(...args),
+  fetchStalls: (...args) => fetchStalls(...args),
+  fetchStallDishes: (...args) => fetchStallDishes(...args),
 }));
 
 import PostCreateModal from './PostCreateModal.vue';
@@ -40,7 +44,9 @@ describe('PostCreateModal', () => {
     setActivePinia(createPinia());
     createCommunityPost.mockReset();
     uploadImage.mockReset();
-    searchDishes.mockReset();
+    fetchCanteens.mockReset();
+    fetchStalls.mockReset();
+    fetchStallDishes.mockReset();
   });
 
   it('不存在链接输入框和快捷预设配图，展示手账真实图片上传区', () => {
@@ -82,26 +88,51 @@ describe('PostCreateModal', () => {
     });
 
     const wrapper = mountModal();
-    searchDishes.mockResolvedValue({
-      items: [
-        {
-          id: 'dish-1',
-          name: '三明治',
-          diningHallName: '学苑',
-          stallName: '一号档口',
-        },
-      ],
-      page: 1,
-      size: 20,
-      total: 1,
-    });
+    fetchCanteens.mockResolvedValue([
+      { id: 'hall-1', name: '学苑食堂' },
+      { id: 'hall-2', name: '学一食堂' },
+    ]);
+    fetchStalls.mockResolvedValue([
+      { id: 'stall-1', name: '一号档口' },
+      { id: 'stall-2', name: '二号档口' },
+    ]);
+    fetchStallDishes.mockResolvedValue([
+      { id: 'dish-1', name: '三明治' },
+      { id: 'dish-2', name: '鸡腿饭' },
+    ]);
     const button = (label) =>
       wrapper.findAll('button').find((item) => item.text() === label);
     await button('选择菜品').trigger('click');
-    await wrapper.get('#post-dish-keyword').setValue('三明治');
-    await button('搜索菜品').trigger('click');
     await flushPromises();
-    await button('三明治 · 学苑 · 一号档口').trigger('click');
+    const filter = () => wrapper.get('#post-dish-keyword');
+    expect(button('学苑食堂')).toBeTruthy();
+    expect(button('学一食堂')).toBeTruthy();
+    await filter().setValue('学苑');
+    expect(button('学一食堂')).toBeUndefined();
+    await button('学苑食堂').trigger('click');
+    await flushPromises();
+    expect(filter().element.value).toBe('');
+    expect(button('一号档口')).toBeTruthy();
+    await filter().setValue('二号');
+    expect(button('一号档口')).toBeUndefined();
+    await button('二号档口').trigger('click');
+    await flushPromises();
+    expect(filter().element.value).toBe('');
+    expect(button('三明治')).toBeTruthy();
+    await filter().setValue('鸡腿');
+    expect(button('三明治')).toBeUndefined();
+    await filter().setValue('');
+    await button('三明治').trigger('click');
+    expect(fetchCanteens).toHaveBeenCalledTimes(1);
+    expect(fetchStalls).toHaveBeenCalledExactlyOnceWith(
+      'hall-1',
+      expect.any(Object),
+    );
+    expect(fetchStallDishes).toHaveBeenCalledExactlyOnceWith(
+      'stall-2',
+      expect.any(Object),
+    );
+    expect(wrapper.text()).toContain('学苑食堂 · 二号档口 · 三明治');
 
     await wrapper.find('#post-title').setValue('自制三明治');
     await wrapper.find('#post-content').setValue('全麦面包配煎蛋，美味健康！');
