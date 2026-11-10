@@ -23,13 +23,27 @@ export function mapComment(comment) {
   };
 }
 export async function fetchCommunityPosts(
-  { size = 20, cursor } = {},
+  { size = 20, cursor, following, q } = {},
   options = {},
 ) {
   const page = await http.get('/community/feed/cursor', {
     ...options,
-    params: { size, cursor },
+    params: {
+      size,
+      cursor,
+      ...(following ? { following } : {}),
+      ...(q ? { q } : {}),
+    },
   });
+  return { ...page, items: page.items.map(mapPost) };
+}
+export const fetchCommunityAuthor = (id, options = {}) =>
+  http.get(`/community/authors/${encodeURIComponent(id)}`, options);
+export async function fetchAuthorPosts(id, { cursor } = {}, options = {}) {
+  const page = await http.get(
+    `/community/authors/${encodeURIComponent(id)}/posts`,
+    { ...options, params: { size: 20, cursor } },
+  );
   return { ...page, items: page.items.map(mapPost) };
 }
 export async function fetchCommunityPostDetail(id, options = {}) {

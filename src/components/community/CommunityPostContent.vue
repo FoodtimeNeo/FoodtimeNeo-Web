@@ -319,7 +319,13 @@ function formatPostTime(isoString) {
           <span v-else class="mobile-author-fallback">
             {{ (post.author?.name || '饭')[0] }}
           </span>
-          <span class="mobile-author-name">{{
+          <RouterLink
+            v-if="post.userId"
+            class="mobile-author-name"
+            :to="{ name: 'communityAuthor', params: { userId: post.userId } }"
+            >{{ post.author?.name || '同学' }}</RouterLink
+          >
+          <span v-else class="mobile-author-name">{{
             post.author?.name || '同学'
           }}</span>
         </div>
@@ -408,7 +414,15 @@ function formatPostTime(isoString) {
             </span>
           </div>
           <div class="author-meta">
-            <span class="author-name">{{ post.author?.name || '同学' }}</span>
+            <RouterLink
+              v-if="post.userId"
+              class="author-name"
+              :to="{ name: 'communityAuthor', params: { userId: post.userId } }"
+              >{{ post.author?.name || '同学' }}</RouterLink
+            >
+            <span v-else class="author-name">{{
+              post.author?.name || '同学'
+            }}</span>
             <time class="author-time">{{
               formatPostTime(post.createdAt)
             }}</time>

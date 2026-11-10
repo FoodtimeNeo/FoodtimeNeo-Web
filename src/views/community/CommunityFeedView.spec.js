@@ -49,6 +49,41 @@ describe('CommunityFeedView', () => {
     mockPush.mockReset();
   });
 
+  it('只看关注可以搜索食记，翻页保留查询范围', async () => {
+    fetchCommunityPosts.mockResolvedValue({
+      items: [],
+      hasMore: true,
+      nextCursor: 'next',
+    });
+    const wrapper = mountView();
+    await flushPromises();
+    const tab = wrapper
+      .findAll('.community-tabs button')
+      .find((item) => item.text() === '只看关注');
+    await tab.trigger('click');
+    await flushPromises();
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: undefined,
+      following: true,
+    });
+    await wrapper.get('#community-keyword').setValue('  鸡腿饭  ');
+    await wrapper.get('.community-search').trigger('submit');
+    await flushPromises();
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: undefined,
+      following: true,
+      q: '鸡腿饭',
+    });
+    await wrapper.get('.community-more').trigger('click');
+    await flushPromises();
+    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
+      cursor: 'next',
+      following: true,
+      q: '鸡腿饭',
+    });
+    wrapper.unmount();
+  });
+
   it('使用公开信息流并以两列渲染', async () => {
     fetchCommunityPosts.mockResolvedValue({
       items: [

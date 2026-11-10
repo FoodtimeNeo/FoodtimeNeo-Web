@@ -179,7 +179,12 @@ async function chat(row) {
               :alt="row.displayName"
               :empty="Array.from(row.displayName?.trim() || '饭')[0]"
           /></span>
-          <span class="user-search__name">{{ row.displayName }}</span>
+          <RouterLink
+            class="user-search__name"
+            :to="{ name: 'communityAuthor', params: { userId: row.id } }"
+          >
+            {{ row.displayName }}
+          </RouterLink>
           <div class="user-search__actions">
             <button
               type="button"

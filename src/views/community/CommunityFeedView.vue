@@ -20,6 +20,18 @@ const loading = ref(false);
 const cursor = ref(null);
 const mode = ref('public'),
   currentPage = ref(1);
+const input = ref('');
+const keyword = ref('');
+const publicMode = computed(
+  () => mode.value === 'public' || mode.value === 'following',
+);
+const emptyTitle = computed(() => {
+  if (publicMode.value && keyword.value) return '没有匹配的食记';
+  if (mode.value === 'following') return '关注的人还没有公开食记';
+  if (mode.value === 'mine') return '你还没有发布食记';
+  if (mode.value === 'favorites') return '你还没有收藏食记';
+  return '社区暂无公开帖子';
+});
 let feedVersion = 0;
 const hasMore = ref(false);
 const loadError = ref('');
@@ -51,22 +63,26 @@ async function loadFeed(more = false) {
   try {
     // 关键需求：新发的帖子需要审核才能展示，故默认只拉取 approved 状态的帖子
     const pageNumber = more ? currentPage.value + 1 : 1;
-    const res =
-      mode.value === 'public'
-        ? await fetchCommunityPosts({ cursor: more ? cursor.value : undefined })
-        : await (
-            mode.value === 'mine'
-              ? fetchMyCommunityPosts
-              : fetchMyCommunityFavorites
-          )({ page: pageNumber, size: 20 });
+    const res = publicMode.value
+      ? await fetchCommunityPosts({
+          cursor: more ? cursor.value : undefined,
+          ...(mode.value === 'following' ? { following: true } : {}),
+          ...(keyword.value ? { q: keyword.value } : {}),
+        })
+      : await (
+          mode.value === 'mine'
+            ? fetchMyCommunityPosts
+            : fetchMyCommunityFavorites
+        )({ page: pageNumber, size: 20 });
     if (version !== feedVersion) return;
     currentPage.value = pageNumber;
     posts.value = more
       ? [...posts.value, ...(res.items || [])]
       : res.items || [];
     cursor.value = res.nextCursor;
-    hasMore.value =
-      mode.value === 'public' ? !!res.hasMore : pageNumber * 20 < res.total;
+    hasMore.value = publicMode.value
+      ? !!res.hasMore
+      : pageNumber * 20 < res.total;
   } catch (error) {
     if (version !== feedVersion) return;
     loadError.value = error.message || '加载社区帖子失败';
@@ -115,8 +131,15 @@ function changeMode(next) {
   loading.value = false;
   posts.value = [];
   cursor.value = null;
+  hasMore.value = false;
   currentPage.value = 1;
   loadFeed();
+}
+function search() {
+  const query = input.value.trim();
+  if (query === keyword.value) return;
+  keyword.value = query;
+  changeMode(mode.value);
 }
 function handlePostCreated() {
   // 提交成功后，旧的点评预填内容不能再次注入新弹窗。
@@ -172,6 +195,7 @@ onUnmounted(() => {
       <button
         v-for="tab in [
           { id: 'public', label: '发现食记' },
+          { id: 'following', label: '只看关注' },
           { id: 'mine', label: '我的食记' },
           { id: 'favorites', label: '我的收藏' },
         ]"
@@ -183,6 +207,22 @@ onUnmounted(() => {
         {{ tab.label }}
       </button>
     </nav>
+    <form
+      v-if="publicMode"
+      class="community-search"
+      role="search"
+      @submit.prevent="search"
+    >
+      <label for="community-keyword">搜索食记</label>
+      <input
+        id="community-keyword"
+        v-model="input"
+        type="search"
+        maxlength="50"
+        placeholder="菜名、档口或关键词"
+      />
+      <button class="button-ink" type="submit">搜索</button>
+    </form>
     <p v-if="loadError" role="alert">
       {{ loadError }} <button type="button" @click="loadFeed()">重试</button>
     </p>
@@ -190,14 +230,14 @@ onUnmounted(() => {
 
     <EmptyState
       v-else-if="posts.length === 0"
-      :title="
-        mode === 'public'
-          ? '社区暂无公开帖子'
-          : mode === 'mine'
-            ? '你还没有发布食记'
-            : '你还没有收藏食记'
+      :title="emptyTitle"
+      :description="
+        keyword && publicMode
+          ? '试试其他关键词。'
+          : mode === 'following'
+            ? '在食记或用户搜索中关注感兴趣的同学。'
+            : ''
       "
-      description="点击右上角「+」号，抢先发布第一篇美食手账吧！"
     />
 
     <!-- 瀑布流布局 (电脑 3 列，手机 2 列) -->
@@ -254,6 +294,22 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+.community-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 12px 0;
+  input {
+    min-width: 0;
+    flex: 1;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--ft-color-text);
+    background: var(--zine-paper-card);
+    font-size: 16px;
+  }
+}
 .community-tabs {
   display: flex;
   gap: 12px;
