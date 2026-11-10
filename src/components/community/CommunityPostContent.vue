@@ -17,6 +17,7 @@ import {
 } from '@/api/follow.api.js';
 import { startConversation } from '@/api/directMessage.api.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
+import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 
 const props = defineProps({
@@ -362,7 +363,22 @@ function formatPostTime(isoString) {
 
       <!-- 左侧：媒体展示区（大图轮播） -->
       <div class="post-media">
-        <CommunityImageViewer :images="post.images || []" :alt="post.title" />
+        <CommunityImageViewer :images="post.images || []" :alt="post.title">
+          <template #context="{ close }">
+            <CommunityPhotoContext
+              :post="post"
+              :time="formatPostTime(post.createdAt)"
+              :like-busy="acting"
+              @post="close"
+              @comment="
+                close();
+                focusCommentInput();
+              "
+              @share="handleShare"
+              @like="interact('like')"
+            />
+          </template>
+        </CommunityImageViewer>
       </div>
 
       <!-- 右侧：作者信息、正文、滚动评论与吸底操作栏 -->

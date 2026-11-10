@@ -64,8 +64,8 @@ describe('CommunityPostDetailModal', () => {
       status: 'approved',
       tags: ['瓦罐汤', '北京赛区'],
       images: [
-        { id: 'img-1', url: '/soup1.jpg' },
-        { id: 'img-2', url: '/soup2.jpg' },
+        { id: 'img-1', url: 'https://example.com/soup1.jpg' },
+        { id: 'img-2', url: 'https://example.com/soup2.jpg' },
       ],
       likeCount: 10,
       favoriteCount: 5,
@@ -102,9 +102,12 @@ describe('CommunityPostDetailModal', () => {
     expect(wrapper.text()).toContain('看起来真不错！');
 
     // 图片自适应容器存在
-    const mediaImg = wrapper.find('.redbook-media-pane__img');
+    const mediaImg = wrapper.find('.redbook-media-pane .media-image img');
     expect(mediaImg.exists()).toBe(true);
-    expect(mediaImg.attributes('src')).toBe('/soup1.jpg');
+    expect(mediaImg.attributes('src')).toBe('https://example.com/soup1.jpg');
+    expect(wrapper.findComponent({ name: 'MediaImage' }).props('size')).toBe(
+      'thumb',
+    );
 
     // 底部吸底交互栏存在
     const bottomBar = wrapper.find('.redbook-bottom-bar');
