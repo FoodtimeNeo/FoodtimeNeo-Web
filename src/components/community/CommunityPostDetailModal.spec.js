@@ -39,12 +39,34 @@ describe('CommunityPostDetailModal', () => {
       props: { modelValue: true, postId: 'old' },
       global: { stubs: { Teleport: true, CommunityCommentSection: true } },
     });
+    const [, request] = fetchCommunityPostDetail.mock.calls[0];
     await wrapper.setProps({ postId: 'new' });
+    expect(request.signal.aborted).toBe(true);
     await flushPromises();
     resolveOld({ id: 'old', title: '过时食记', images: [] });
     await flushPromises();
     expect(wrapper.text()).toContain('当前食记');
     expect(wrapper.text()).not.toContain('过时食记');
+    wrapper.unmount();
+  });
+  it('先显示列表已有的正文；服务器确认帖子不可见时移除旧内容', async () => {
+    let deny;
+    fetchCommunityPostDetail.mockImplementation(
+      () => new Promise((_, reject) => (deny = reject)),
+    );
+    const wrapper = mount(CommunityPostDetailModal, {
+      props: {
+        modelValue: true,
+        postId: 'cached',
+        initialPost: { id: 'cached', title: '已浏览的食记', images: [] },
+      },
+      global: { stubs: { Teleport: true, CommunityCommentSection: true } },
+    });
+    expect(wrapper.text()).toContain('已浏览的食记');
+    deny({ status: 404, message: '食记不可见' });
+    await flushPromises();
+    expect(wrapper.text()).not.toContain('已浏览的食记');
+    expect(wrapper.text()).toContain('食记不可见');
     wrapper.unmount();
   });
   beforeEach(() => {
@@ -95,7 +117,9 @@ describe('CommunityPostDetailModal', () => {
 
     await flushPromises();
 
-    expect(fetchCommunityPostDetail).toHaveBeenCalledWith('p1');
+    expect(fetchCommunityPostDetail).toHaveBeenCalledWith('p1', {
+      signal: expect.any(AbortSignal),
+    });
     expect(wrapper.text()).toContain('学一瓦罐汤美味分享');
     expect(wrapper.text()).toContain('干饭学长');
     expect(wrapper.text()).toContain('#瓦罐汤');
