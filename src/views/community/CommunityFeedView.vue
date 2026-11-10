@@ -22,10 +22,30 @@ const searchOpen = ref(false);
 const refreshing = ref(false);
 const pull = ref(0);
 const tabs = [
-  { id: 'following', label: '关注' },
-  { id: 'public', label: '发现' },
-  { id: 'favorites', label: '收藏' },
-  { id: 'mine', label: '我的食记' },
+  {
+    id: 'following',
+    label: '关注',
+    heading: '关注',
+    intro: '看看关注的同学最近都在吃啥，顺便给下一顿找点灵感。',
+  },
+  {
+    id: 'public',
+    label: '发现',
+    heading: '社区动态',
+    intro: '随手拍、聊美味，看看同学们今天都在打卡什么好吃的。',
+  },
+  {
+    id: 'favorites',
+    label: '收藏',
+    heading: '收藏',
+    intro: '把喜欢的校园味道收在这里，馋了就翻一翻，下次再去吃。',
+  },
+  {
+    id: 'mine',
+    label: '我的食记',
+    heading: '我的',
+    intro: '把三餐里的小欢喜记下来，回头翻翻，都是自己的校园味道。',
+  },
 ];
 const pages = reactive(
   tabs.map(() => ({
@@ -422,11 +442,6 @@ onUnmounted(() => {
           <path d="M5 8a8 8 0 1 1-1 7M5 8V3M5 8h5" />
         </svg>
       </span>
-      <div class="community-feed-view__banner">
-        <h1 class="community-feed-view__title">校园食记 · 社区动态</h1>
-        <p>随手拍、聊美味，看看同学们今天都在打卡什么好吃的。</p>
-        <span class="community-feed-view__sketches" aria-hidden="true"></span>
-      </div>
       <div
         ref="pager"
         class="community-pager"
@@ -444,57 +459,69 @@ onUnmounted(() => {
             }"
             :aria-label="tab.label"
           >
-            <p
-              v-if="pages[index].error && !pages[index].posts.length"
-              role="alert"
-            >
-              {{ pages[index].error }}
-              <button type="button" @click="loadFeed()">重试</button>
-            </p>
-            <LoadingState
-              v-if="
-                (pages[index].loading &&
-                  !(refreshing && index === activeIndex) &&
-                  !pages[index].posts.length) ||
-                (index !== activeIndex &&
-                  (!pages[index].version ||
-                    (isPublic(tab.id) && pages[index].query !== keyword)))
-              "
-            />
-            <EmptyState
-              v-else-if="!pages[index].posts.length"
-              :title="emptyTitle(tab.id)"
-              :description="
-                keyword && isPublic(tab.id)
-                  ? '试试其他关键词。'
-                  : tab.id === 'following'
-                    ? '在食记或用户搜索中关注感兴趣的同学。'
-                    : ''
-              "
-            />
-            <div v-else class="community-waterfall" aria-label="帖子列表">
-              <div
-                v-for="(col, colIdx) in columns[index]"
-                :key="colIdx"
-                class="community-waterfall__col"
-              >
-                <CommunityPostCard
-                  v-for="post in col"
-                  :key="post.id"
-                  :post="post"
-                  @click="handleCardClick(post)"
-                />
-              </div>
+            <div class="community-feed-view__banner">
+              <h1 class="community-feed-view__title">
+                校园食记 · {{ tab.heading }}
+              </h1>
+              <p>{{ tab.intro }}</p>
+              <span
+                class="community-feed-view__sketches"
+                aria-hidden="true"
+              ></span>
             </div>
-            <button
-              v-if="pages[index].hasMore"
-              type="button"
-              class="community-more"
-              :disabled="pages[index].loading"
-              @click="loadFeed(true)"
-            >
-              {{ pages[index].loading ? '加载中…' : '加载更多' }}
-            </button>
+            <div class="community-pager__feed">
+              <p
+                v-if="pages[index].error && !pages[index].posts.length"
+                role="alert"
+              >
+                {{ pages[index].error }}
+                <button type="button" @click="loadFeed()">重试</button>
+              </p>
+              <LoadingState
+                v-if="
+                  (pages[index].loading &&
+                    !(refreshing && index === activeIndex) &&
+                    !pages[index].posts.length) ||
+                  (index !== activeIndex &&
+                    (!pages[index].version ||
+                      (isPublic(tab.id) && pages[index].query !== keyword)))
+                "
+              />
+              <EmptyState
+                v-else-if="!pages[index].posts.length"
+                :title="emptyTitle(tab.id)"
+                :description="
+                  keyword && isPublic(tab.id)
+                    ? '试试其他关键词。'
+                    : tab.id === 'following'
+                      ? '在食记或用户搜索中关注感兴趣的同学。'
+                      : ''
+                "
+              />
+              <div v-else class="community-waterfall" aria-label="帖子列表">
+                <div
+                  v-for="(col, colIdx) in columns[index]"
+                  :key="colIdx"
+                  class="community-waterfall__col"
+                >
+                  <CommunityPostCard
+                    v-for="post in col"
+                    :key="post.id"
+                    :post="post"
+                    @click="handleCardClick(post)"
+                  />
+                </div>
+              </div>
+              <button
+                v-if="pages[index].hasMore"
+                type="button"
+                class="community-more"
+                :disabled="pages[index].loading"
+                @click="loadFeed(true)"
+              >
+                {{ pages[index].loading ? '加载中…' : '加载更多' }}
+              </button>
+            </div>
           </section>
         </template>
       </div>
@@ -675,13 +702,16 @@ onUnmounted(() => {
   &__page {
     position: absolute;
     inset: 0 0 auto;
-    min-height: 35dvh;
     transition: transform var(--slide-duration)
       cubic-bezier(0.22, 0.61, 0.36, 1);
 
     &.is-active {
       position: relative;
     }
+  }
+
+  &__feed {
+    min-height: 35dvh;
   }
 }
 

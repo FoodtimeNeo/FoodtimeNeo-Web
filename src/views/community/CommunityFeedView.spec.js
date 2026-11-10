@@ -49,6 +49,42 @@ describe('CommunityFeedView', () => {
     mockPush.mockReset();
   });
 
+  it('显示各分类自己的标题与说明，保留发现页原文', async () => {
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    fetchMyCommunityFavorites.mockResolvedValue({ items: [] });
+    fetchMyCommunityPosts.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+
+    const expected = [
+      [
+        '发现',
+        '社区动态',
+        '随手拍、聊美味，看看同学们今天都在打卡什么好吃的。',
+      ],
+      ['关注', '关注', '看看关注的同学最近都在吃啥，顺便给下一顿找点灵感。'],
+      ['收藏', '收藏', '把喜欢的校园味道收在这里，馋了就翻一翻，下次再去吃。'],
+      [
+        '我的食记',
+        '我的',
+        '把三餐里的小欢喜记下来，回头翻翻，都是自己的校园味道。',
+      ],
+    ];
+    for (const [label, heading, intro] of expected) {
+      const tab = wrapper
+        .findAll('.community-tabs button')
+        .find((item) => item.text() === label);
+      await tab.trigger('click');
+      const banner = wrapper.get(
+        '.community-pager__page.is-active .community-feed-view__banner',
+      );
+      expect(banner.get('h1').text()).toBe(`校园食记 · ${heading}`);
+      expect(banner.get('p').text()).toBe(intro);
+    }
+    await flushPromises();
+    wrapper.unmount();
+  });
+
   it('只看关注可以搜索食记，翻页保留查询范围', async () => {
     fetchCommunityPosts.mockResolvedValue({
       items: [],
