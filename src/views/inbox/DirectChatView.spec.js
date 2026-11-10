@@ -9,6 +9,21 @@ const api = vi.hoisted(() => ({
   hideConversation: vi.fn(),
 }));
 vi.mock('@/api/directMessage.api.js', () => api);
+const safety = vi.hoisted(() => ({
+  fetchBlockState: vi.fn(),
+  setUserBlock: vi.fn(),
+  submitReport: vi.fn(),
+}));
+vi.mock('@/api/safety.api.js', () => safety);
+const dialog = vi.hoisted(() => ({
+  confirm: vi.fn(),
+  prompt: vi.fn(),
+}));
+vi.mock('element-plus', async (importOriginal) => ({
+  ...(await importOriginal()),
+  ElMessageBox: dialog,
+  ElMessage: { success: vi.fn(), error: vi.fn() },
+}));
 
 const route = vi.hoisted(() => ({ params: { conversationId: 'c1' } }));
 const push = vi.hoisted(() => vi.fn());
@@ -24,6 +39,7 @@ import DirectChatView from './DirectChatView.vue';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  safety.fetchBlockState.mockResolvedValue({ blocked: false });
   api.fetchConversation.mockResolvedValue({
     id: 'c1',
     other: { id: 'u2', displayName: '小红', avatarUrl: null },
@@ -49,6 +65,30 @@ beforeEach(() => {
     content: '今晚吃食堂',
     createdAt: '2026-11-06T10:01:00Z',
   });
+});
+
+it('只举报被选中的对方私信，并在拉黑成功后关闭发送入口', async () => {
+  const wrapper = mount(DirectChatView);
+  dialog.prompt.mockResolvedValue({ value: ' 骚扰 ' });
+  dialog.confirm.mockResolvedValue(true);
+  safety.setUserBlock.mockResolvedValue({ blocked: true });
+  await flushPromises();
+  const button = (label) =>
+    wrapper.findAll('button').find((item) => item.text() === label);
+  await button('举报').trigger('click');
+  await flushPromises();
+  expect(safety.submitReport).toHaveBeenCalledExactlyOnceWith(
+    'message',
+    'm1',
+    '骚扰',
+  );
+  await button('拉黑管理').trigger('click');
+  await flushPromises();
+  expect(safety.setUserBlock).toHaveBeenCalledExactlyOnceWith('u2', true);
+  expect(wrapper.find('textarea').exists()).toBe(false);
+  expect(wrapper.text()).toContain('解除拉黑');
+  expect(api.sendDirectMessage).not.toHaveBeenCalled();
+  wrapper.unmount();
 });
 
 it('加载会话后发送消息并追加到列表', async () => {

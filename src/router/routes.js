@@ -131,6 +131,17 @@ export const routes = [
     },
   },
   {
+    path: '/admin/reports',
+    name: 'adminReports',
+    component: () => import('@/views/admin/AdminReportsView.vue'),
+    meta: {
+      title: '举报处理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
     path: '/admin/notices',
     name: 'adminNotices',
     component: () => import('@/views/admin/AdminNoticesView.vue'),

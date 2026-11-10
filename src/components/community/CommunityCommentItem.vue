@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import MediaImage from '@/components/base/MediaImage.vue';
+import ReportButton from '@/components/base/ReportButton.vue';
 import { setCommentLike } from '@/api/community.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 const props = defineProps({
@@ -96,6 +97,16 @@ async function like() {
         >
           删除
         </button>
+        <ReportButton
+          v-if="
+            auth.user?.id &&
+            item.userId !== auth.user.id &&
+            !item.deleted &&
+            item.status === 'approved'
+          "
+          target-type="comment"
+          :target-id="item.id"
+        />
       </div>
     </div>
   </article>
