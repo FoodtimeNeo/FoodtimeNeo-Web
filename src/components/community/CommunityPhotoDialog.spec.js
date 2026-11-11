@@ -66,10 +66,11 @@ it('打开和翻页只请求缩略图，原图成功解码后才替换当前缩�
   const thumbnail = find('img').element;
   expect(request.mock.calls.map(([url]) => url)).toEqual([
     `${images[0].url}?size=thumb`,
+    `${images[1].url}?size=thumb`,
   ]);
   await find('.photo-dialog__original button').trigger('click');
   await flushPromises();
-  const original = find('img:nth-of-type(2)');
+  const original = find('.is-current > img:nth-of-type(2)');
   expect(original.isVisible()).toBe(false);
   expect(find('img').element).toBe(thumbnail);
   await original.trigger('load');
@@ -79,10 +80,50 @@ it('打开和翻页只请求缩略图，原图成功解码后才替换当前缩�
   await flushPromises();
   expect(request.mock.calls.map(([url]) => url)).toEqual([
     `${images[0].url}?size=thumb`,
-    `${images[0].url}?size=full`,
     `${images[1].url}?size=thumb`,
+    `${images[0].url}?size=full`,
   ]);
   expect(find('.photo-dialog__original button').text()).toBe('加载原图');
+});
+
+it('全屏拖动跟手并保留旧图片，缩放和取消手势不触发翻页', async () => {
+  render();
+  await flushPromises();
+  const canvas = find('.photo-dialog__canvas');
+  const track = find('.photo-dialog__track');
+  canvas.element.getBoundingClientRect = () => ({
+    width: 400,
+    height: 700,
+    left: 0,
+    top: 0,
+  });
+  const event = (x, y = 200) => ({
+    button: 0,
+    pointerId: 1,
+    clientX: x,
+    clientY: y,
+  });
+  await canvas.trigger('pointerdown', event(300));
+  await canvas.trigger('pointermove', event(180));
+  expect(track.attributes('style')).toContain('-120px');
+  expect(wrapper.emitted('change')).toBeUndefined();
+  await canvas.trigger('pointerup', event(180));
+  expect(wrapper.emitted('change')).toEqual([[1]]);
+  await wrapper.setProps({ index: 1 });
+  await flushPromises();
+  expect(track.classes()).toContain('is-settling');
+  expect(find('.photo-dialog__slide:first-child img').exists()).toBe(true);
+  await canvas.trigger('pointerdown', event(100));
+  await canvas.trigger('pointermove', event(230));
+  await canvas.trigger('pointercancel');
+  expect(wrapper.emitted('change')).toEqual([[1]]);
+  canvas.element.dispatchEvent(
+    new WheelEvent('wheel', { deltaY: -600, clientX: 200, clientY: 300 }),
+  );
+  await canvas.trigger('pointerdown', event(100));
+  await canvas.trigger('pointermove', event(300));
+  await canvas.trigger('pointerup', event(300));
+  expect(wrapper.emitted('change')).toEqual([[1]]);
 });
 
 it('原图失败可重试，切换图片取消上张未完成的请求', async () => {
