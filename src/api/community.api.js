@@ -51,6 +51,10 @@ export async function fetchCommunityPostDetail(id, options = {}) {
     await http.get(`/community/posts/${encodeURIComponent(id)}`, options),
   );
 }
+export const recordPostView = (id, clientRequestId) =>
+  http.post(`/community/posts/${encodeURIComponent(id)}/views`, {
+    clientRequestId,
+  });
 export async function createCommunityPost(payload, options = {}) {
   return http.post(
     '/community/posts',

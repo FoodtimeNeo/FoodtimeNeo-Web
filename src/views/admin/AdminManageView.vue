@@ -9,7 +9,7 @@ import { usePagedData } from '@/composables/usePagedData.js';
 import { clearAsyncDataCache } from '@/composables/useAsyncData.js';
 import { formatPrice } from '@/utils/mediaUrl.js';
 import { statusLabels } from '@/utils/recordLabels.js';
-import CatalogEditor from './CatalogEditorFormView.vue';
+import CatalogEditor from '@/components/admin/CatalogEditorForm.vue';
 import ParentPicker from '@/components/admin/ParentPicker.vue';
 import CompactMediaPreview from '@/components/admin/CompactMediaPreview.vue';
 import LoadingState from '@/components/base/LoadingState.vue';

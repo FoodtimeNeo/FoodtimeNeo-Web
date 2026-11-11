@@ -1,7 +1,7 @@
 <script setup>
 import { computed, inject, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElDialog, ElMessage, ElMessageBox } from 'element-plus';
 import {
   fetchConversation,
   fetchConversationMessages,
@@ -34,6 +34,10 @@ const loadingOlder = ref(false);
 const listRef = ref(null);
 const blocked = ref(false);
 const editingBlock = ref(false);
+const selectedMessage = ref(null);
+const actionsOpen = ref(false);
+let pressTimer;
+let pressOrigin;
 let pollTimer;
 let polling = false;
 let disposed = false;
@@ -45,6 +49,45 @@ const canSend = computed(
 
 function isMine(message) {
   return message.senderId === auth.user?.id;
+}
+
+function openMessageActions(message) {
+  cancelPress();
+  selectedMessage.value = message;
+  actionsOpen.value = true;
+}
+
+function cancelPress() {
+  window.clearTimeout(pressTimer);
+  pressOrigin = null;
+}
+
+function startPress(event, message) {
+  cancelPress();
+  if (event.pointerType === 'mouse' || event.button > 0) return;
+  pressOrigin = { x: event.clientX, y: event.clientY };
+  pressTimer = window.setTimeout(() => openMessageActions(message), 500);
+}
+
+function movePress(event) {
+  if (
+    pressOrigin &&
+    Math.hypot(event.clientX - pressOrigin.x, event.clientY - pressOrigin.y) >
+      10
+  )
+    cancelPress();
+}
+
+async function copySelectedMessage() {
+  const content = selectedMessage.value?.content;
+  if (!content) return;
+  try {
+    await navigator.clipboard.writeText(content);
+    ElMessage.success('已复制');
+    actionsOpen.value = false;
+  } catch {
+    ElMessage.error('暂时无法复制，请选中文字复制');
+  }
 }
 
 async function load({ quiet = false } = {}) {
@@ -196,6 +239,7 @@ onMounted(async () => {
   document.addEventListener('visibilitychange', poll);
 });
 onUnmounted(() => {
+  cancelPress();
   disposed = true;
   window.clearInterval(pollTimer);
   document.removeEventListener('visibilitychange', poll);
@@ -225,7 +269,7 @@ onUnmounted(() => {
         </span>
         <div>
           <h1>{{ other?.displayName || '私信' }}</h1>
-          <p>一对一私信</p>
+          <p>长按或右键消息，可复制或举报</p>
         </div>
         <div class="chat-page__controls">
           <button type="button" :disabled="editingBlock" @click="manageBlock">
@@ -259,14 +303,19 @@ onUnmounted(() => {
           :key="message.id"
           class="chat-page__message"
           :class="{ 'is-mine': isMine(message) }"
+          tabindex="0"
+          aria-haspopup="dialog"
+          @contextmenu.prevent="openMessageActions(message)"
+          @keydown.enter.prevent="openMessageActions(message)"
+          @keydown.shift.f10.prevent="openMessageActions(message)"
+          @pointerdown="startPress($event, message)"
+          @pointermove="movePress"
+          @pointerup="cancelPress"
+          @pointercancel="cancelPress"
+          @pointerleave="cancelPress"
         >
           <p>{{ message.content }}</p>
           <time>{{ formatTime(message.createdAt) }}</time>
-          <ReportButton
-            v-if="!isMine(message)"
-            target-type="message"
-            :target-id="message.id"
-          />
         </article>
       </div>
 
@@ -289,6 +338,23 @@ onUnmounted(() => {
         </button>
       </form>
     </template>
+    <ElDialog
+      v-model="actionsOpen"
+      title="消息操作"
+      width="min(420px, calc(100vw - 32px))"
+      append-to-body
+      @closed="selectedMessage = null"
+    >
+      <template v-if="selectedMessage">
+        <p class="chat-page__selected">{{ selectedMessage.content }}</p>
+        <button type="button" @click="copySelectedMessage">复制</button>
+        <ReportButton
+          v-if="!isMine(selectedMessage)"
+          target-type="message"
+          :target-id="selectedMessage.id"
+        />
+      </template>
+    </ElDialog>
   </section>
 </template>
 
@@ -391,6 +457,12 @@ onUnmounted(() => {
   margin: 0;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+.chat-page__selected {
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .chat-page__message time {
   display: block;

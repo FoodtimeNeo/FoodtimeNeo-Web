@@ -16,6 +16,7 @@ import MediaImage from '@/components/base/MediaImage.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import DishReviewList from '@/components/dish/DishReviewList.vue';
 import DishFavoriteButton from '@/components/canteen/DishFavoriteButton.vue';
+import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -139,6 +140,13 @@ const params = computed(() => ({
           </p>
           <p class="dish-detail__price">{{ formatPrice(data.dish.price) }}</p>
           <DishFavoriteButton :key="dishId" :dish-id="dishId" />
+          <CatalogQuickActions
+            :id="dishId"
+            type="dishes"
+            :back-to="{ name: 'stallDetail', params }"
+            @updated="load"
+            @images-changed="loadImages"
+          />
           <p v-if="data.dish.description" class="dropcap">
             {{ data.dish.description }}
           </p>

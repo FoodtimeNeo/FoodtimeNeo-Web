@@ -10,7 +10,9 @@
 
 ## 详情与楼中楼
 
-首页和社区的帖子弹窗、独立详情页共用 `CommunityImageViewer`。轮播和黑底全屏看图默认使用现有 480px 缩略图。仅“加载原图”请求当前原图，成功解码后替换，失败保留缩略图并允许重试。翻图回到缩略图，退出或翻图时释放不再使用的请求。
+首页和社区的帖子弹窗、独立详情页共用 `CommunityImageViewer`。轮播和黑底全屏看图默认使用现有 480px 缩略图。仅“加载原图”请求当前原图，成功解码后替换，失败保留缩略图并允许重试。离开当前图片时取消未完成的原图请求，已解码的原图保留到滑出过渡结束。
+
+帖内及全屏图集共用 `useImageCarousel`：图片跟随手指横向拖动，松手后以 280ms 动画停靠，短滑或取消手势回弹；首尾拖动有阻力。连续手势可从动画当前位置接管。纵向手势保留页面滚动，放大后的拖动只平移当前图片。默认仅保留当前及相邻缩略图，过渡期间保留离开的图片；省流量或 2G 连接不自动预载相邻图片。系统要求减少动态效果时关闭停靠动画。
 
 全屏画布支持单击关闭、双击放大或复位、双指缩放、放大后拖动和原比例时左右滑动翻图。桌面另支持鼠标滚轮、方向键、`+`、`-` 和 `Escape`。顶部操作与底部作者、摘要和互动按钮独立于画布。底部信息可以收起并恢复，从查看帖子或评论返回原详情。
 
@@ -30,6 +32,8 @@
 | `src/views/community/CommunityDetailView.vue`           | 独立详情路由与返回入口                             |
 | `src/components/community/CommunityImageViewer.vue`     | 帖内缩略图轮播                                     |
 | `src/components/community/CommunityPhotoDialog.vue`     | 全屏缩放、翻图、可收起信息及按需加载原图           |
+| `src/components/community/CommunityPhotoSlide.vue`      | 保留每页缩略图、原图和加载重试状态                 |
+| `src/composables/useImageCarousel.js`                   | 跟手拖动、方向锁定、停靠回弹及中途接管             |
 | `src/components/community/CommunityCommentSection.vue`  | 根评论/回复分页、回复对象与草稿                    |
 | `src/components/community/CommunityCommentItem.vue`     | 单条评论、审核/删除状态及点赞                      |
 | `src/views/admin/AdminAuditView.vue`                    | 社区审核范围、完整配图与回复上下文、人工决定及下架 |

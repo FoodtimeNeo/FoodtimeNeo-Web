@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { ElDialog } from 'element-plus';
 import { confirmNotice } from '@/api/notice.api.js';
 import NoticeMarkdown from './NoticeMarkdown.vue';
-import { formatTime } from '@/utils/recordLabels.js';
+import { formatNoticeTime } from '@/utils/noticeSchedule.js';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -52,7 +52,7 @@ async function confirm() {
   <ElDialog
     :model-value="modelValue"
     class="notice-dialog"
-    title="系统公告"
+    :title="notice?.isUpdate ? '更新公告' : '系统公告'"
     destroy-on-close
     append-to-body
     :width="'min(640px, 94vw)'"
@@ -63,7 +63,7 @@ async function confirm() {
   >
     <article v-if="notice">
       <p class="notice-dialog__meta">
-        {{ formatTime(notice.createdTime || notice.publishedAt) }}
+        {{ formatNoticeTime(notice.publishedAt || notice.createdTime) }}
       </p>
       <div class="notice-dialog__reader" tabindex="0" aria-label="公告正文">
         <NoticeMarkdown :content="notice.content" />

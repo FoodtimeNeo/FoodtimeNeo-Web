@@ -4,6 +4,63 @@
  */
 export const routes = [
   {
+    path: '/profile/feedback',
+    name: 'myFeedback',
+    component: () => import('@/views/profile/FeedbackView.vue'),
+    meta: {
+      title: '建议与反馈',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/feedback/:feedbackId',
+    name: 'myFeedbackDetail',
+    component: () => import('@/views/profile/FeedbackDetailView.vue'),
+    meta: {
+      title: '反馈详情',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/admin/feedback',
+    name: 'adminFeedback',
+    component: () => import('@/views/profile/FeedbackView.vue'),
+    props: { admin: true },
+    meta: {
+      title: '建议与反馈管理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
+    path: '/admin/feedback/:feedbackId',
+    name: 'adminFeedbackDetail',
+    component: () => import('@/views/profile/FeedbackDetailView.vue'),
+    props: { admin: true },
+    meta: {
+      title: '反馈详情',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
+    path: '/profile/blocked-users',
+    name: 'myBlockedUsers',
+    component: () => import('@/views/profile/BlockedUsersView.vue'),
+    meta: {
+      title: '黑名单',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/users/search',
     name: 'userSearch',
     component: () => import('@/views/profile/UserSearchView.vue'),
@@ -233,6 +290,17 @@ export const routes = [
     component: () => import('@/views/profile/MySubmissionsView.vue'),
     meta: {
       title: '我的提交',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/account-lifecycle',
+    name: 'accountLifecycle',
+    component: () => import('@/views/profile/AccountLifecycleView.vue'),
+    meta: {
+      title: '账号安全与注销',
       layout: 'default',
       requiresAuth: true,
       nav: 'profile',

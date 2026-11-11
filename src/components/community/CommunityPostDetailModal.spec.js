@@ -6,8 +6,10 @@ import CommunityPostDetailModal from './CommunityPostDetailModal.vue';
 const fetchCommunityPostDetail = vi.fn();
 const fetchPostComments = vi.fn();
 const createPostComment = vi.fn();
+const recordPostView = vi.fn();
 
 vi.mock('@/api/community.api.js', () => ({
+  recordPostView: (...args) => recordPostView(...args),
   fetchCommunityPostDetail: (...args) => fetchCommunityPostDetail(...args),
   fetchRootComments: async (...args) => ({
     items: await fetchPostComments(...args),
@@ -74,6 +76,76 @@ describe('CommunityPostDetailModal', () => {
     fetchCommunityPostDetail.mockReset();
     fetchPostComments.mockReset();
     createPostComment.mockReset();
+    recordPostView.mockReset();
+    recordPostView.mockResolvedValue({ viewCount: 1 });
+  });
+
+  it('详情右侧显示浏览量，每次进入计一次，评论刷新不重复累计', async () => {
+    fetchCommunityPostDetail.mockResolvedValue({
+      id: 'p1',
+      title: '食记',
+      images: [],
+      author: {},
+      viewCount: 1200,
+      createdAt: '2026-11-11T10:00:00Z',
+      status: 'approved',
+    });
+    recordPostView.mockResolvedValue({ viewCount: 1201 });
+    const wrapper = mount(CommunityPostDetailModal, {
+      props: { modelValue: true, postId: 'p1' },
+      global: { stubs: { Teleport: true, CommunityCommentSection: true } },
+    });
+    await flushPromises();
+    expect(wrapper.get('.redbook-post-footline').text()).toContain(
+      '1,201 次浏览',
+    );
+    const first = recordPostView.mock.calls[0][1];
+    expect(recordPostView).toHaveBeenCalledTimes(1);
+    wrapper
+      .findComponent({ name: 'CommunityCommentSection' })
+      .vm.$emit('changed');
+    await flushPromises();
+    expect(recordPostView).toHaveBeenCalledTimes(1);
+    expect(wrapper.get('.post-view-count').text()).toContain('1,201');
+    await wrapper.setProps({ modelValue: false });
+    await wrapper.setProps({ modelValue: true });
+    await flushPromises();
+    expect(recordPostView).toHaveBeenCalledTimes(2);
+    expect(recordPostView.mock.calls[1][1]).not.toBe(first);
+    wrapper.unmount();
+  });
+
+  it('统计请求慢时正文照常显示；切帖后旧统计不能覆盖新帖子', async () => {
+    let finish;
+    fetchCommunityPostDetail.mockImplementation(async (id) => ({
+      id,
+      title: id,
+      author: {},
+      images: [],
+      viewCount: id === 'second' ? 9 : 0,
+    }));
+    recordPostView
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      )
+      .mockResolvedValue({ viewCount: 10 });
+    const wrapper = mount(CommunityPostDetailModal, {
+      props: { modelValue: true, postId: 'first' },
+      global: { stubs: { Teleport: true, CommunityCommentSection: true } },
+    });
+    await flushPromises();
+    expect(wrapper.text()).toContain('first');
+    await wrapper.setProps({ postId: 'second' });
+    await flushPromises();
+    finish({ viewCount: 999 });
+    await flushPromises();
+    expect(wrapper.text()).toContain('second');
+    expect(wrapper.get('.post-view-count').text()).toContain('10 次浏览');
+    expect(wrapper.get('.post-view-count').text()).not.toContain('999');
+    wrapper.unmount();
   });
 
   it('modelValue 为 true 时正确拉取帖子并渲染小红书左右双栏结构', async () => {

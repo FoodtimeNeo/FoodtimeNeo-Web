@@ -1,6 +1,6 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useAuthStore } from '@/store/useAuthStore.js';
-import { fetchCurrentNotice } from '@/api/notice.api.js';
+import { fetchCurrentNotices } from '@/api/notice.api.js';
 
 // 登录公告：登录/恢复会话时检查一次；从后台回到前台或 bfcache 恢复时再检查。
 // 同一页面生命周期内同一公告只弹一次，切换当前公告后仍会展示新公告。
@@ -15,6 +15,7 @@ export function useLoginNotice() {
   let foregroundTimer = null;
   // 本页面生命周期内已经展示过并被关闭的公告；页面刷新后重新开始。
   const delivered = new Set();
+  let remaining = 0;
 
   async function check() {
     if (!active || !auth.isAuthenticated || loading.value) return;
@@ -24,17 +25,25 @@ export function useLoginNotice() {
     loading.value = true;
     error.value = '';
     try {
-      const result = await fetchCurrentNotice({ signal: controller.signal });
+      const result = await fetchCurrentNotices({ signal: controller.signal });
       if (!active || ticket !== generation) return;
       if (
-        result &&
-        (typeof result.id !== 'string' || typeof result.content !== 'string')
+        !Array.isArray(result) ||
+        result.length > 2 ||
+        result.some(
+          (row) =>
+            !row ||
+            typeof row.id !== 'string' ||
+            typeof row.content !== 'string',
+        ) ||
+        new Set(result.map((row) => row.id)).size !== result.length
       )
         throw new Error('公告响应格式异常');
-      notice.value =
-        result && !result.dontShowAgain && !delivered.has(result.id)
-          ? result
-          : null;
+      const rows = result.filter(
+        (row) => !row.dontShowAgain && !delivered.has(row.id),
+      );
+      remaining = Math.max(0, rows.length - 1);
+      notice.value = rows[0] || null;
     } catch (failure) {
       if (active && ticket === generation && failure.code !== 'CANCELLED')
         error.value = failure.message || '公告暂时无法加载';
@@ -74,6 +83,7 @@ export function useLoginNotice() {
       error.value = '';
       loading.value = false;
       delivered.clear();
+      remaining = 0;
       if (id && auth.isAuthenticated) check();
     },
     { immediate: true, flush: 'sync' },
@@ -102,6 +112,12 @@ export function useLoginNotice() {
     close: () => {
       if (notice.value?.id) delivered.add(notice.value.id);
       notice.value = null;
+      // Revalidate the second category with server time before showing it: it may have expired
+      // while the first announcement was being read.
+      if (remaining) {
+        remaining = 0;
+        check();
+      }
     },
   };
 }

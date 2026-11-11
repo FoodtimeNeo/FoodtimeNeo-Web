@@ -38,6 +38,14 @@ export function saveManagedItem(type, id, input) {
 }
 export const deleteManagedItem = (type, id) =>
   http.delete(path(type) + '/' + encodeURIComponent(id));
+const imagePath = (type, id) =>
+  path(type) + '/' + encodeURIComponent(id) + '/images';
+export const fetchManagedImages = (type, id, page = 1, options = {}) =>
+  http.get(imagePath(type, id), { ...options, params: { page, size: 12 } });
+export const addManagedImage = (type, id, imageUrl) =>
+  http.post(imagePath(type, id), { imageUrl });
+export const deleteManagedImage = (type, id, imageId) =>
+  http.delete(imagePath(type, id) + '/' + encodeURIComponent(imageId));
 export const fetchManagedReviews = (page = 1, query = '', options = {}) =>
   http.get('/admin/reviews', {
     ...options,

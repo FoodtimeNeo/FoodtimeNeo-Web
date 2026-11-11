@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
+import { useImageCarousel } from '@/composables/useImageCarousel.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import CommunityPhotoDialog from './CommunityPhotoDialog.vue';
 
@@ -14,7 +15,23 @@ const props = defineProps({
   },
 });
 
-const currentIndex = ref(0);
+const stage = ref(null);
+const {
+  currentIndex,
+  track,
+  trackStyle,
+  dragging,
+  settling,
+  nearCurrent,
+  begin,
+  move,
+  end,
+  cancel,
+  reset,
+  goTo: goToIndex,
+  settled,
+  consumeClick,
+} = useImageCarousel({ images: () => props.images, viewport: stage });
 const isLightboxOpen = ref(false);
 const stageRatio = computed(() => {
   const first = props.images[0];
@@ -22,80 +39,39 @@ const stageRatio = computed(() => {
     ? `${first.width} / ${first.height}`
     : '4 / 3';
 });
-const nearCurrent = (index) =>
-  index === currentIndex.value ||
-  (index === currentIndex.value + 1 &&
-    !navigator.connection?.saveData &&
-    !/2g/.test(navigator.connection?.effectiveType || ''));
 watch(
   () => JSON.stringify(props.images.map(({ id, url }) => [id, url])),
   () => {
-    currentIndex.value = 0;
+    reset();
     isLightboxOpen.value = false;
   },
 );
 
-// 触摸滑动逻辑
-let startX = 0;
-let startY = 0;
-let deltaX = 0;
-let deltaY = 0;
-let suppressClick = false;
-
 function handleTouchStart(e) {
-  if (e.touches && e.touches.length > 0) {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY || 0;
-    deltaX = 0;
-    deltaY = 0;
-    suppressClick = false;
-  }
+  if (e.touches.length !== 1) return cancel();
+  begin(e.touches[0].clientX, e.touches[0].clientY || 0);
 }
 
 function handleTouchMove(e) {
-  if (e.touches && e.touches.length > 0) {
-    deltaX = e.touches[0].clientX - startX;
-    deltaY = (e.touches[0].clientY || 0) - startY;
-  }
-}
-
-function handleTouchEnd() {
-  const threshold = 40; // 滑动阈值
-  suppressClick = Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10;
-  if (deltaX > threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-    prevImage();
-  } else if (deltaX < -threshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-    nextImage();
-  }
-  deltaX = 0;
-}
-
-function cancelInlineSwipe() {
-  deltaX = 0;
-  deltaY = 0;
+  if (e.touches.length !== 1) return cancel();
+  if (move(e.touches[0].clientX, e.touches[0].clientY || 0) && e.cancelable)
+    e.preventDefault();
 }
 
 function nextImage() {
   if (currentIndex.value < props.images.length - 1) {
-    currentIndex.value += 1;
+    goToIndex(currentIndex.value + 1);
   }
 }
 
 function prevImage() {
   if (currentIndex.value > 0) {
-    currentIndex.value -= 1;
+    goToIndex(currentIndex.value - 1);
   }
-}
-
-function goToIndex(index) {
-  currentIndex.value = index;
 }
 
 function openLightbox(event) {
-  if (event?.type === 'click' && suppressClick) {
-    suppressClick = false;
-    return;
-  }
+  if (event?.type === 'click' && consumeClick()) return;
   if (props.images.length > 0) {
     isLightboxOpen.value = true;
   }
@@ -110,6 +86,7 @@ function closeLightbox() {
   <div class="community-image-viewer">
     <!-- 主轮播容器 -->
     <div
+      ref="stage"
       class="community-image-viewer__stage"
       :style="{ aspectRatio: stageRatio }"
       tabindex="0"
@@ -117,17 +94,20 @@ function closeLightbox() {
       aria-label="图片轮播"
       @touchstart="handleTouchStart"
       @touchmove="handleTouchMove"
-      @touchend="handleTouchEnd"
-      @touchcancel="cancelInlineSwipe"
-      @keydown.left="prevImage"
-      @keydown.right="nextImage"
+      @touchend="end"
+      @touchcancel="cancel"
+      @keydown.left.prevent="prevImage"
+      @keydown.right.prevent="nextImage"
       @keydown.enter.prevent="openLightbox"
       @keydown.space.prevent="openLightbox"
     >
       <div
         v-if="images.length > 0"
+        ref="track"
         class="community-image-viewer__track"
-        :style="{ transform: `translateX(-${currentIndex * 100}%)` }"
+        :class="{ 'is-settling': settling && !dragging }"
+        :style="trackStyle"
+        @transitionend.self="settled"
       >
         <div
           v-for="(img, idx) in images"
@@ -144,6 +124,7 @@ function closeLightbox() {
             size="thumb"
             :eager="idx === currentIndex"
             fit="contain"
+            @dragstart.prevent
           />
         </div>
       </div>
@@ -253,7 +234,11 @@ function closeLightbox() {
     width: 100%;
     height: 100%;
     align-items: center;
-    transition: transform 320ms cubic-bezier(0.25, 1, 0.5, 1);
+    will-change: transform;
+
+    &.is-settling {
+      transition: transform 280ms cubic-bezier(0.22, 0.68, 0, 1);
+    }
   }
 
   &__slide {
@@ -403,6 +388,12 @@ function closeLightbox() {
         background: var(--ft-color-primary, #e60026);
       }
     }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-image-viewer__track.is-settling {
+    transition: none;
   }
 }
 </style>

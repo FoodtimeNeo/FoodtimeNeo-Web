@@ -97,6 +97,7 @@ function closePopup(visible) {
     </button>
   </aside>
   <NoticeDialog
+    :key="loginNotice.notice.value?.id || 'no-login-notice'"
     :model-value="popupOpen"
     :notice="loginNotice.notice.value"
     @update:model-value="closePopup"

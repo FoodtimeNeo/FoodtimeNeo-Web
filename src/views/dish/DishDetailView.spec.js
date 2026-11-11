@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, flushPromises, RouterLinkStub } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 const api = vi.hoisted(() => ({
   fetchDish: vi.fn(),
   fetchDishReviews: vi.fn(),
@@ -10,6 +11,7 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('@/api/dish.api.js', () => api);
 vi.mock('vue-router', () => ({
+  useRouter: () => ({ replace: vi.fn() }),
   useRoute: () => ({
     params: { canteenId: 'c1', stallId: 's1', dishId: 'd1' },
   }),
@@ -18,6 +20,7 @@ vi.mock('vue-router', () => ({
 import DishDetailView from './DishDetailView.vue';
 import { clearAsyncDataCache } from '@/composables/useAsyncData.js';
 beforeEach(() => {
+  setActivePinia(createPinia());
   clearAsyncDataCache();
   Object.values(api).forEach((fn) => fn.mockReset());
   api.fetchDish.mockResolvedValue({

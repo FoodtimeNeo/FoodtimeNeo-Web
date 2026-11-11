@@ -2,6 +2,8 @@ import { http } from './http.js';
 
 export const fetchCurrentNotice = (options = {}) =>
   http.get('/users/me/notices/current', options);
+export const fetchCurrentNotices = (options = {}) =>
+  http.get('/users/me/notices/current-set', options);
 export const confirmNotice = (id, dontShowAgain) =>
   http.post('/users/me/notices/' + encodeURIComponent(id) + '/confirm', {
     dontShowAgain,
@@ -47,7 +49,15 @@ export const searchAdminNotices = (page, q, options = {}) =>
 export const fetchNoticeSettings = () => http.get('/admin/notices/settings');
 export const setNoticeSettings = (noticeId) =>
   http.put('/admin/notices/settings', { noticeId });
-export const saveNoticeMarkdown = (content, id = null) =>
+export const saveNoticeMarkdown = (content, id = null, schedule = null) =>
   id
-    ? http.put(`/admin/notices/${encodeURIComponent(id)}/markdown`, { content })
-    : http.post('/admin/notices/markdown', { content });
+    ? http.put(
+        `/admin/notices/${encodeURIComponent(id)}/markdown`,
+        schedule ? { content, schedule } : { content },
+      )
+    : http.post(
+        '/admin/notices/markdown',
+        schedule ? { content, schedule } : { content },
+      );
+export const saveNoticeSchedule = (id, schedule) =>
+  http.put(`/admin/notices/${encodeURIComponent(id)}/schedule`, schedule);

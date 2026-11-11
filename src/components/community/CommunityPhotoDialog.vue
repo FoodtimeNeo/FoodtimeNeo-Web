@@ -1,7 +1,14 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useMediaSource } from '@/composables/useMediaSource.js';
-import { mediaVariant } from '@/utils/mediaUrl.js';
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+  watch,
+} from 'vue';
+import CommunityPhotoSlide from './CommunityPhotoSlide.vue';
+import { useImageCarousel } from '@/composables/useImageCarousel.js';
 
 const props = defineProps({
   images: { type: Array, required: true },
@@ -11,25 +18,24 @@ const props = defineProps({
 const emit = defineEmits(['close', 'change']);
 const dialog = ref(null);
 const canvas = ref(null);
+const carousel = useImageCarousel({
+  images: () => props.images,
+  index: () => props.index,
+  viewport: canvas,
+  onChange: (index) => emit('change', index),
+});
+const { track, trackStyle, dragging, settling, nearCurrent, settled } =
+  carousel;
 const imageArea = ref(null);
 const closeButton = ref(null);
 const expanded = ref(true);
-const requestOriginal = ref(null);
-const originalReady = ref(false);
-const imageUrl = computed(() => props.images[props.index]?.url);
-const previewUrl = computed(() => mediaVariant(imageUrl.value, 'thumb'));
-const originalUrl = computed(() => mediaVariant(imageUrl.value, 'full'));
-const canLoadOriginal = computed(
-  () => Boolean(originalUrl.value) && previewUrl.value !== originalUrl.value,
-);
-const preview = useMediaSource(previewUrl);
-const original = useMediaSource(
-  originalUrl,
-  () => requestOriginal.value === props.index && canLoadOriginal.value,
-);
-const showOriginal = computed(
-  () => requestOriginal.value === props.index && originalReady.value,
-);
+const slides = shallowRef({});
+function setSlide(page, slide) {
+  if (slides.value[page] !== slide)
+    slides.value = { ...slides.value, [page]: slide };
+}
+const activeSlide = computed(() => slides.value[props.index]);
+const activeState = computed(() => activeSlide.value?.state || {});
 const scale = ref(1);
 const x = ref(0);
 const y = ref(0);
@@ -60,8 +66,6 @@ watch(
   () => props.index,
   () => {
     clearTap();
-    requestOriginal.value = null;
-    originalReady.value = false;
     fittedAspect = 0;
     resetZoom();
   },
@@ -95,21 +99,18 @@ function zoom(next, from, to = from) {
   moveWithinCanvas();
 }
 
-function onImageLoad(event, isOriginal) {
-  const image = event.currentTarget;
-  fittedAspect = image.naturalWidth / image.naturalHeight || fittedAspect;
-  if (isOriginal) originalReady.value = true;
+function onImageLoad(image) {
+  fittedAspect = image.width / image.height || fittedAspect;
   moveWithinCanvas();
 }
 
 function loadOriginal() {
-  if (requestOriginal.value === props.index) original.retry();
-  else requestOriginal.value = props.index;
+  activeSlide.value?.loadOriginal();
 }
 
 function navigate(direction) {
   const index = props.index + direction;
-  if (index >= 0 && index < props.images.length) emit('change', index);
+  if (index >= 0 && index < props.images.length) carousel.goTo(index);
 }
 
 const point = (event) => ({ x: event.clientX, y: event.clientY });
@@ -127,8 +128,11 @@ function onPointerDown(event) {
   const position = point(event);
   pointers.set(event.pointerId, position);
   canvas.value.setPointerCapture?.(event.pointerId);
-  if (pointers.size === 1) gesture = { start: position, moved: false };
-  else {
+  if (pointers.size === 1) {
+    gesture = { start: position, moved: false };
+    if (scale.value === 1) carousel.begin(position.x, position.y);
+  } else {
+    carousel.cancel();
     clearTap();
     gesture.moved = true;
     gesture.pinched = true;
@@ -154,22 +158,16 @@ function onPointerMove(event) {
     x.value += position.x - previous.x;
     y.value += position.y - previous.y;
     moveWithinCanvas();
+  } else if (!gesture.pinched && scale.value === 1) {
+    carousel.move(position.x, position.y);
   }
 }
 
 function onPointerUp(event) {
   if (!pointers.delete(event.pointerId) || pointers.size) return;
   const position = point(event);
-  const dx = position.x - gesture.start.x;
-  const dy = position.y - gesture.start.y;
   if (gesture.moved) {
-    if (
-      !gesture.pinched &&
-      scale.value === 1 &&
-      Math.abs(dx) > 44 &&
-      Math.abs(dx) > Math.abs(dy) * 1.3
-    )
-      navigate(dx < 0 ? 1 : -1);
+    if (!gesture.pinched && scale.value === 1) carousel.end();
     return;
   }
   if (tap && distance(tap, position) < 36) {
@@ -184,6 +182,7 @@ function onPointerUp(event) {
 }
 
 function onPointerCancel() {
+  carousel.cancel();
   pointers.clear();
   clearTap();
 }
@@ -246,50 +245,45 @@ onBeforeUnmount(() => {
         "
       >
         <div ref="imageArea" class="photo-dialog__image-area">
-          <img
-            v-if="preview.source.value && !preview.failed.value"
-            v-show="!showOriginal"
-            :key="preview.source.value"
-            :src="preview.source.value"
-            :alt="`${alt} 第 ${index + 1} 张`"
-            :style="transform"
-            draggable="false"
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"
-            @load="onImageLoad($event, false)"
-            @error="preview.failed.value = true"
-          />
-          <img
-            v-if="
-              requestOriginal === index &&
-              original.source.value &&
-              !original.failed.value
-            "
-            v-show="showOriginal"
-            :key="original.source.value"
-            :src="original.source.value"
-            :alt="`${alt} 第 ${index + 1} 张`"
-            :style="transform"
-            draggable="false"
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"
-            @load="onImageLoad($event, true)"
-            @error="original.failed.value = true"
-          />
+          <div
+            ref="track"
+            class="photo-dialog__track"
+            :class="{ 'is-settling': settling && !dragging }"
+            :style="trackStyle"
+            @transitionend.self="settled"
+          >
+            <div
+              v-for="(image, page) in images"
+              :key="`${image.url}:${page}`"
+              class="photo-dialog__slide"
+              :class="{ 'is-current': page === index }"
+            >
+              <CommunityPhotoSlide
+                v-if="nearCurrent(page)"
+                :ref="(slide) => setSlide(page, slide)"
+                :image="image"
+                :alt="`${alt} 第 ${page + 1} 张`"
+                :active="page === index"
+                :settling="settling || dragging"
+                :transform="transform"
+                @dimensions="page === index && onImageLoad($event)"
+              />
+            </div>
+          </div>
         </div>
       </div>
       <div
-        v-if="!showOriginal && !preview.source.value"
+        v-if="!activeState.showOriginal && !activeState.previewSource"
         class="photo-dialog__loading"
         role="status"
       >
-        {{ preview.loading.value ? '图片加载中…' : '' }}
+        {{ activeState.previewLoading ? '图片加载中…' : '' }}
       </div>
       <button
-        v-if="preview.failed.value && !showOriginal"
+        v-if="activeState.previewFailed && !activeState.showOriginal"
         class="photo-dialog__retry"
         type="button"
-        @click="preview.retry"
+        @click="activeSlide?.retryPreview()"
       >
         重试缩略图
       </button>
@@ -305,20 +299,20 @@ onBeforeUnmount(() => {
         </button>
         <div class="photo-dialog__original">
           <button
-            v-if="canLoadOriginal"
+            v-if="activeState.canLoadOriginal"
             type="button"
             :disabled="
-              showOriginal ||
-              (requestOriginal === index && !original.failed.value)
+              activeState.showOriginal ||
+              (activeState.originalRequested && !activeState.originalFailed)
             "
             @click="loadOriginal"
           >
             {{
-              showOriginal
+              activeState.showOriginal
                 ? '已加载原图'
-                : original.failed.value
+                : activeState.originalFailed
                   ? '重试加载原图'
-                  : requestOriginal === index
+                  : activeState.originalRequested
                     ? '原图加载中…'
                     : '加载原图'
             }}
@@ -413,6 +407,22 @@ onBeforeUnmount(() => {
   inset: min(58px, 20%) 0;
   pointer-events: none;
 }
+.photo-dialog__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+.photo-dialog__track.is-settling {
+  transition: transform 280ms cubic-bezier(0.22, 0.68, 0, 1);
+}
+.photo-dialog__slide {
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+}
 .photo-dialog--context .photo-dialog__image-area {
   inset-block: min(166px, 20%);
 }
@@ -423,6 +433,11 @@ onBeforeUnmount(() => {
   height: 100%;
   object-fit: contain;
   pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .photo-dialog__track.is-settling {
+    transition: none;
+  }
 }
 .photo-dialog__top {
   position: absolute;

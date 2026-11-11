@@ -40,6 +40,7 @@ describe('管理导航权限', () => {
       expect(wrapper.text()).not.toContain('用户管理');
       expect(wrapper.text()).not.toContain('公告管理');
       expect(wrapper.text()).not.toContain('举报处理');
+      expect(wrapper.text()).not.toContain('建议与反馈');
     },
   );
 
@@ -51,6 +52,7 @@ describe('管理导航权限', () => {
     expect(wrapper.text()).toContain('用户管理');
     expect(wrapper.text()).toContain('公告管理');
     expect(wrapper.text()).toContain('举报处理');
+    expect(wrapper.text()).toContain('建议与反馈');
     expect(wrapper.text()).toContain('数据分析');
   });
 });
