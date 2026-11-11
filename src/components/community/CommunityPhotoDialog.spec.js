@@ -164,12 +164,24 @@ it('收起摘要保留画布，双击缩放并恢复，单击关闭', async () =
     await canvas.trigger('pointerdown', event);
     await canvas.trigger('pointerup', event);
   }
+  const scaleOf = () =>
+    Number(
+      /scale\(([^)]+)\)/.exec(find('img').attributes('style'))?.[1] || '1',
+    );
   await tap();
   await tap();
-  expect(find('img').attributes('style')).toContain('scale(2.5)');
+  await vi.advanceTimersByTimeAsync(80);
+  expect(scaleOf()).toBeGreaterThan(1);
+  expect(scaleOf()).toBeLessThan(2.5);
   expect(wrapper.emitted('close')).toBeUndefined();
+  await vi.advanceTimersByTimeAsync(400);
+  expect(find('img').attributes('style')).toContain('scale(2.5)');
   await tap();
   await tap();
+  await vi.advanceTimersByTimeAsync(80);
+  expect(scaleOf()).toBeGreaterThan(1);
+  expect(scaleOf()).toBeLessThan(2.5);
+  await vi.advanceTimersByTimeAsync(400);
   expect(find('img').attributes('style')).toContain('scale(1)');
   await tap();
   await vi.advanceTimersByTimeAsync(300);
