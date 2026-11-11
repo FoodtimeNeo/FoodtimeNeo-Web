@@ -147,6 +147,9 @@ async function logout() {
         ><span>我的提交<small>投稿记录与审核结果</small></span
         ><strong>→</strong></RouterLink
       >
+      <RouterLink class="paper-link" :to="{ name: 'myBlockedUsers' }"
+        ><span class="stamp">屏蔽</span> 黑名单 <strong>→</strong></RouterLink
+      >
       <RouterLink class="paper-link" :to="{ name: 'changePassword' }"
         ><span class="stamp">03</span> 修改密码 <strong>→</strong></RouterLink
       >
