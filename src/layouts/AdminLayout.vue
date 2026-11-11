@@ -16,6 +16,7 @@ const links = computed(() => [
     ? [
         { name: 'adminNotices', label: '公告管理' },
         { name: 'adminReports', label: '举报处理' },
+        { name: 'adminFeedback', label: '建议与反馈' },
         { name: 'superadminAnalytics', label: '数据分析' },
         { name: 'superadminUsers', label: '用户管理' },
       ]
