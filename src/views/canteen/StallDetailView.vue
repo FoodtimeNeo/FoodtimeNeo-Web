@@ -11,6 +11,7 @@ import DishPriceCard from '@/components/canteen/DishPriceCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
+import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue';
 const route = useRoute();
 const canteenId = computed(() => String(route.params.canteenId));
 const stallId = computed(() => String(route.params.stallId));
@@ -73,6 +74,13 @@ const sortedDishes = computed(() =>
       <header class="stall-detail__hero torn-edge">
         <span class="sticker sticker--r-1">档口菜单</span>
         <h1 class="section-title">{{ data.stall.name }}</h1>
+        <CatalogQuickActions
+          :id="stallId"
+          type="stalls"
+          :back-to="{ name: 'canteenDetail', params: { canteenId } }"
+          @updated="load"
+          @images-changed="load"
+        />
         <img
           src="@/assets/images/decoration02/C/illustrations/C_doodle-food-bowl.png"
           alt=""

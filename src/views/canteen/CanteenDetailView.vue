@@ -11,6 +11,7 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import MediaImage from '@/components/base/MediaImage.vue';
+import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue';
 
 const route = useRoute();
 const canteenId = computed(() => String(route.params.canteenId));
@@ -70,6 +71,13 @@ const { query, matches: filteredStalls } = useCatalogSearch(
         <div class="canteen-detail__hero-content">
           <span class="sticker sticker--r-1">食堂档案</span>
           <h1 class="section-title">{{ canteen.name }}</h1>
+          <CatalogQuickActions
+            :id="canteenId"
+            type="dining-halls"
+            :back-to="{ name: 'canteenList' }"
+            @updated="loadCanteen"
+            @images-changed="loadCanteen"
+          />
           <img
             src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
             alt=""
