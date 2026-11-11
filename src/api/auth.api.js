@@ -1,13 +1,37 @@
-import { http, getCsrf, invalidateSession } from './http.js';
+import { ApiError, http, getCsrf, invalidateSession } from './http.js';
 import { normalizeLoginId } from '@/utils/authValidators.js';
-export async function login({ loginId, password }) {
-  const data = await http.post(
-    '/auth/login',
-    { account: normalizeLoginId(loginId).toLowerCase(), password },
-    { skipUnauthorized: true },
-  );
+export async function login({
+  loginId,
+  password,
+  challengeId,
+  challengeAnswer,
+}) {
+  const payload = {
+    account: normalizeLoginId(loginId).toLowerCase(),
+    password,
+  };
+  if (challengeId && challengeAnswer) {
+    payload.challengeId = challengeId;
+    payload.challengeAnswer = String(challengeAnswer).trim();
+  }
+  const data = await http.post('/auth/login', payload, {
+    skipUnauthorized: true,
+  });
   invalidateSession();
   await getCsrf();
+  return data;
+}
+/** 一次性设备绑定算术题；响应禁止缓存，答案不在客户端保存。 */
+export async function fetchCaptcha() {
+  const data = await http.get('/auth/captcha');
+  if (
+    !data ||
+    typeof data.challengeId !== 'string' ||
+    typeof data.imageBase64 !== 'string' ||
+    typeof data.expiresAt !== 'string'
+  ) {
+    throw new ApiError('验证码响应不符合接口约定', { code: 'PROTOCOL' });
+  }
   return data;
 }
 export const fetchCurrentUser = () =>

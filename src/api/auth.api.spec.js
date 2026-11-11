@@ -7,6 +7,12 @@ const api = vi.hoisted(() => ({
   invalidateSession: vi.fn(),
 }));
 vi.mock('./http.js', () => ({
+  ApiError: class ApiError extends Error {
+    constructor(message, options = {}) {
+      super(message);
+      this.code = options.code;
+    }
+  },
   http: api,
   getCsrf: api.getCsrf,
   invalidateSession: api.invalidateSession,
@@ -15,6 +21,7 @@ import {
   login,
   register,
   fetchRegistrationPolicy,
+  fetchCaptcha,
   sendVerificationCode,
   logout,
   changePassword,
@@ -39,6 +46,37 @@ describe('认证字段与会话轮换', () => {
       { skipUnauthorized: true },
     );
     expect(order).toEqual(['login', 'invalidate', 'csrf']);
+  });
+  it('需要验证码时透传一次性挑战字段', async () => {
+    await login({
+      loginId: '20260001@bjtu.edu.cn',
+      password: 'Pass2026!',
+      challengeId: '00000000-0000-4000-8000-000000000001',
+      challengeAnswer: ' 7 ',
+    });
+    expect(api.post).toHaveBeenCalledWith(
+      '/auth/login',
+      {
+        account: '20260001@bjtu.edu.cn',
+        password: 'Pass2026!',
+        challengeId: '00000000-0000-4000-8000-000000000001',
+        challengeAnswer: '7',
+      },
+      { skipUnauthorized: true },
+    );
+  });
+  it('读取并校验一次性验证码响应', async () => {
+    api.get.mockResolvedValue({
+      challengeId: '00000000-0000-4000-8000-000000000001',
+      imageBase64: 'iVBORw0KGgo=',
+      expiresAt: '2026-11-12T00:02:00Z',
+    });
+    await expect(fetchCaptcha()).resolves.toMatchObject({
+      imageBase64: 'iVBORw0KGgo=',
+    });
+    expect(api.get).toHaveBeenCalledWith('/auth/captcha');
+    api.get.mockResolvedValue({ challengeId: 'x' });
+    await expect(fetchCaptcha()).rejects.toMatchObject({ code: 'PROTOCOL' });
   });
   it('读取公开注册策略', async () => {
     api.get.mockResolvedValue({ mode: 'open' });

@@ -13,11 +13,12 @@
 - 2026-10-15的隔离验收复用此前联调库：Web为 `localhost:3000`，进程环境的 `VITE_API_PROXY_TARGET` 指向 `http://127.0.0.1:18080`。这段记录不表示当前仍有对应进程运行，重新联调按[本地开发说明](../ops/local-development.md)启动并验证实际目标。
 - Cookie 由浏览器和服务端管理，前端不读取 HttpOnly Cookie、不保存 Token/角色/密码。重新打开页面通过 `/auth/me` 获取当前身份，管理路由重新校验服务端角色。
 - 写请求先获取 `/auth/csrf`，令牌只在内存中保留。登录更换会话后重新获取；CSRF 失效不自动重放写请求。
-- 登录使用 `account/password`；注册先读取 `/auth/registration-policy`，按 `mode` 决定邀请码必填、可选或关闭；注册提交 `email/password/verificationCode`，`invitation` 模式下额外提交 `invitationCode`。客户端角色、昵称不能参与注册授权。
+- 登录使用 `account/password`；若返回 `CAPTCHA_REQUIRED`，先 `GET /auth/captcha` 展示图片，再携带 `challengeId`/`challengeAnswer` 重试。注册先读取 `/auth/registration-policy`，按 `mode` 决定邀请码必填、可选或关闭；注册提交 `email/password/verificationCode`，`invitation` 模式下额外提交 `invitationCode`。客户端角色、昵称不能参与注册授权。
 - Backend已移除固定测试验证码：开发和生产环境均须使用邮箱收到的有效随机验证码，Web调用真实注册接口；邮件服务不可用时不能注册。
 - 响应必须是 `code: "OK"` 的统一结构。401 清除页面身份，403/429/503 保留服务端错误；错误对象不包含原始请求和凭据。
 - 不启用旧 Mock 后端或本地身份回退。旧版凭据会清理；切换账号后的迟到响应不能覆盖当前页面身份。
 - 登录或恢复会话后读取 `GET /users/me/capabilities`，页面只按服务器返回的能力名显示和启用动作；读取失败保持空能力，不按角色自行推断。写请求仍由服务器逐次校验，能力名不是客户端授权凭据。
+- 登录验证码为一次性、2 分钟、设备绑定；`CAPTCHA_INVALID` 时清空答案并换题，不将其显示为密码错误。图片只以 base64 在内存展示，不写入 localStorage，答案不进入草稿或日志。
 
 ## 注册策略与邀请码（2026-11-12）
 
