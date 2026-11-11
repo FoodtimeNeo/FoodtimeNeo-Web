@@ -4,6 +4,52 @@
  */
 export const routes = [
   {
+    path: '/profile/feedback',
+    name: 'myFeedback',
+    component: () => import('@/views/profile/FeedbackView.vue'),
+    meta: {
+      title: '建议与反馈',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/feedback/:feedbackId',
+    name: 'myFeedbackDetail',
+    component: () => import('@/views/profile/FeedbackDetailView.vue'),
+    meta: {
+      title: '反馈详情',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/admin/feedback',
+    name: 'adminFeedback',
+    component: () => import('@/views/profile/FeedbackView.vue'),
+    props: { admin: true },
+    meta: {
+      title: '建议与反馈管理',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
+    path: '/admin/feedback/:feedbackId',
+    name: 'adminFeedbackDetail',
+    component: () => import('@/views/profile/FeedbackDetailView.vue'),
+    props: { admin: true },
+    meta: {
+      title: '反馈详情',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresSuperadmin: true,
+    },
+  },
+  {
     path: '/profile/blocked-users',
     name: 'myBlockedUsers',
     component: () => import('@/views/profile/BlockedUsersView.vue'),
