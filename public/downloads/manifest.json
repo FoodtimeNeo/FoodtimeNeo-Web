@@ -1,77 +1,83 @@
 {
-  "versionCode": 21,
-  "versionName": "1.7.1",
+  "versionCode": 22,
+  "versionName": "1.8.0",
   "apk": {
     "url": "https://bjtufoodtime.top/downloads/FoodtimeNeo-Android.apk",
-    "sha256": "1fbd091b7b616748c13b195ee25716eb8b3d25219826475abac3edd303fc2937",
-    "size": 22039603
+    "sha256": "6af2fc9c27dd57c1176400d67f99b581f3706a6704c1a4e07fb78e0c109e310e",
+    "size": 22084867
   },
   "patches": [
     {
+      "baseVersionCode": 21,
+      "url": "https://bjtufoodtime.top/downloads/app-release-21-22.patch",
+      "sha256": "ceaf21973775752b15bfe3d64255ed5fd28a430346156dc18befba12bb9abf8e",
+      "size": 1987563
+    },
+    {
       "baseVersionCode": 20,
-      "url": "https://bjtufoodtime.top/downloads/app-release-20-21.patch",
-      "sha256": "f5f1f06ae237d5a9ef2f81bd4bf7e5d429139aaace48910f15d9000f9abd1182",
-      "size": 1934648
+      "url": "https://bjtufoodtime.top/downloads/app-release-20-22.patch",
+      "sha256": "e0f0f6fa9ce062f869f72d1e2f8fa38b7b0cd642096205ebca3a573f067a7d97",
+      "size": 1987393
     },
     {
       "baseVersionCode": 19,
-      "url": "https://bjtufoodtime.top/downloads/app-release-19-21.patch",
-      "sha256": "385ac48b491a774e726d0b6c734341f9f018a2fd2a504925c3a45075b1864cb6",
-      "size": 1942976
+      "url": "https://bjtufoodtime.top/downloads/app-release-19-22.patch",
+      "sha256": "082b314ae89a2802119bd3da8247fe822bb7b0bc257b220fac5627a70e483f77",
+      "size": 1988528
     },
     {
       "baseVersionCode": 18,
-      "url": "https://bjtufoodtime.top/downloads/app-release-18-21.patch",
-      "sha256": "8a447966dfae31738c8f71bdd10d1068eca8b94c707bec7429262bc5ea1314e8",
-      "size": 1886552
+      "url": "https://bjtufoodtime.top/downloads/app-release-18-22.patch",
+      "sha256": "e7069a4183c5805dd33ac76f854fdbaea5f1403fe23344a6f68aa312f8ecc588",
+      "size": 1987663
     },
     {
       "baseVersionCode": 17,
-      "url": "https://bjtufoodtime.top/downloads/app-release-17-21.patch",
-      "sha256": "efa09354b364e2063427280b83906f4708a5193c96c3e67e6b5c959df18dbabe",
-      "size": 1914830
+      "url": "https://bjtufoodtime.top/downloads/app-release-17-22.patch",
+      "sha256": "4b8d05ea94ee9be46cf1f1378e3755ce48cb62957ced1f0ac57cecb40574bbd5",
+      "size": 1987994
     },
     {
       "baseVersionCode": 16,
-      "url": "https://bjtufoodtime.top/downloads/app-release-16-21.patch",
-      "sha256": "96559a2b00783f4a02bf4129502ee42cb9a9612704694e9b401d65998852148d",
-      "size": 1936899
+      "url": "https://bjtufoodtime.top/downloads/app-release-16-22.patch",
+      "sha256": "4229be74b9576752403707c1c5cbfd3f1319080cbaa10d8e1299afa3a6594a40",
+      "size": 1988629
     },
     {
       "baseVersionCode": 15,
-      "url": "https://bjtufoodtime.top/downloads/app-release-15-21.patch",
-      "sha256": "11654b60de6d9db9d0086b47e27da460d04a1b3b99f76f152cb661263eb9a3be",
-      "size": 1940528
+      "url": "https://bjtufoodtime.top/downloads/app-release-15-22.patch",
+      "sha256": "4175c649c6ff4f17988f045e7de8d95bb3b05ba9baaafd5d27b9c1fb2bac9ad1",
+      "size": 1983433
     },
     {
       "baseVersionCode": 14,
-      "url": "https://bjtufoodtime.top/downloads/app-release-14-21.patch",
-      "sha256": "d602ab8375c4c515f0b52eba3fefca4bddde6b9552fa459f274dba4701546637",
-      "size": 1942868
+      "url": "https://bjtufoodtime.top/downloads/app-release-14-22.patch",
+      "sha256": "95f1deeaf8668e641c62ac670a8ce2e9283ea85308a3eea3165f20dd959225ec",
+      "size": 1987860
     },
     {
       "baseVersionCode": 13,
-      "url": "https://bjtufoodtime.top/downloads/app-release-13-21.patch",
-      "sha256": "3de42b7c872d5c6bce691330e9c11e709cac9a913826def47f53949f9b08b98a",
-      "size": 1942661
+      "url": "https://bjtufoodtime.top/downloads/app-release-13-22.patch",
+      "sha256": "2ed00ce690264c4cc72516f72a9505c9c44b202b78219e0c235b752bfa374488",
+      "size": 1986885
     },
     {
       "baseVersionCode": 12,
-      "url": "https://bjtufoodtime.top/downloads/app-release-12-21.patch",
-      "sha256": "0a05100da0ac7fc1181126eab47e5a81ce2a4dee48318b9592647716b0f83269",
-      "size": 1942774
+      "url": "https://bjtufoodtime.top/downloads/app-release-12-22.patch",
+      "sha256": "1acb4ea4877e08a4fcfe664486adc0a617da85a9a0eee45974119109d9f0f4d2",
+      "size": 1987254
     },
     {
       "baseVersionCode": 11,
-      "url": "https://bjtufoodtime.top/downloads/app-release-11-21.patch",
-      "sha256": "166cd2b7ea3a98d7b8ee0865ef8fa0881719f0f8ce7f4c655243fe212ed004e7",
-      "size": 1941100
+      "url": "https://bjtufoodtime.top/downloads/app-release-11-22.patch",
+      "sha256": "6442759bbe98fedb68f09a835403ab34c0e96c861103919999866e2d4cff1419",
+      "size": 1988418
     },
     {
       "baseVersionCode": 10,
-      "url": "https://bjtufoodtime.top/downloads/app-release-10-21.patch",
-      "sha256": "74ce6393a43e501e1935a7ccec8a62a6519efa394f33a30e6f4cc4b9cdc44e24",
-      "size": 1944002
+      "url": "https://bjtufoodtime.top/downloads/app-release-10-22.patch",
+      "sha256": "70b8dc2ba3050b7a2ea40159e644f46baff7ad095c778f21797a58d55252bd21",
+      "size": 1990143
     }
   ]
 }
