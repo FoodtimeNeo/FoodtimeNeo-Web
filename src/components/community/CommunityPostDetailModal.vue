@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
@@ -10,6 +10,7 @@ import {
 } from '@/api/follow.api.js';
 import {
   fetchCommunityPostDetail,
+  recordPostView,
   setPostLike,
   setPostFavorite,
 } from '@/api/community.api.js';
@@ -63,6 +64,32 @@ const error = ref(null);
 const commentSection = ref(null);
 let epoch = 0;
 let detailRequest;
+const recordedViewCount = ref(0);
+const displayedViewCount = computed(() =>
+  Math.max(recordedViewCount.value, Number(post.value?.viewCount) || 0),
+);
+let viewRequestId = '',
+  viewRecorded = false,
+  recordingView = false;
+
+async function recordView(id, version) {
+  if (viewRecorded || recordingView || !post.value) return;
+  const requestId = viewRequestId;
+  recordingView = true;
+  try {
+    const result = await recordPostView(id, requestId);
+    if (version !== epoch || !props.modelValue || props.postId !== id) return;
+    recordedViewCount.value = Math.max(
+      recordedViewCount.value,
+      Number(result.viewCount) || 0,
+    );
+    viewRecorded = true;
+  } catch {
+    // 阅读不等待统计；后续详情刷新用相同请求编号重试。
+  } finally {
+    if (version === epoch) recordingView = false;
+  }
+}
 
 const auth = useAuthStore();
 const isFollowing = ref(false);
@@ -90,6 +117,10 @@ function formatPostTime(isoString) {
 async function loadPostData(id) {
   const version = ++epoch;
   if (!id) return;
+  recordedViewCount.value = 0;
+  viewRequestId = crypto.randomUUID();
+  viewRecorded = false;
+  recordingView = false;
   detailRequest?.abort();
   detailRequest = new AbortController();
   loading.value = true;
@@ -107,6 +138,7 @@ async function loadPostData(id) {
     });
     if (version !== epoch || !props.modelValue || props.postId !== id) return;
     post.value = result;
+    recordView(id, version);
     isLiked.value = !!result.likedByMe;
     isFavorited.value = !!result.favoritedByMe;
     isFollowing.value = false;
@@ -138,6 +170,7 @@ async function refreshPost() {
     const result = await fetchCommunityPostDetail(id);
     if (version === epoch && props.modelValue && props.postId === id) {
       post.value = result;
+      recordView(id, version);
       emit('postUpdated', result);
     }
   } catch (failure) {
@@ -551,6 +584,26 @@ async function removePost() {
                   <!-- 发布时间与食堂位置 -->
                   <div class="redbook-post-footline">
                     <time>{{ formatPostTime(post.createdAt) }}</time>
+                    <span
+                      class="post-view-count"
+                      :aria-label="`${displayedViewCount} 次浏览`"
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"
+                        />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                      {{ displayedViewCount.toLocaleString('zh-CN') }} 次浏览
+                    </span>
                     <span v-if="post.canteenName">
                       · {{ post.canteenName }}</span
                     >
@@ -728,6 +781,13 @@ async function removePost() {
 </template>
 
 <style scoped lang="scss">
+.post-view-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  white-space: nowrap;
+}
 .detail-reply-target {
   padding: 8px 20px;
   font-size: 12px;
