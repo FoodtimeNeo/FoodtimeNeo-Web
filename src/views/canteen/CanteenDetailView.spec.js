@@ -11,6 +11,7 @@ vi.mock('@/api/canteen.api.js', () => ({
 }));
 
 vi.mock('vue-router', () => ({
+  useRouter: () => ({ replace: vi.fn() }),
   useRoute: () => ({ params: { canteenId: 'c1' } }),
   RouterLink: RouterLinkStub,
 }));
