@@ -33,6 +33,7 @@ function search() {
   else load();
 }
 function edit(row) {
+  if (row.status === 'deleted') return;
   selected.value = row;
   role.value = row.role;
   status.value = row.status;
@@ -40,7 +41,12 @@ function edit(row) {
   notice.value = '';
 }
 async function submit() {
-  if (writing.value || !selected.value || selected.value.id === auth.user?.id)
+  if (
+    writing.value ||
+    !selected.value ||
+    selected.value.id === auth.user?.id ||
+    selected.value.status === 'deleted'
+  )
     return;
   writing.value = true;
   failure.value = '';
@@ -97,6 +103,7 @@ async function submit() {
         >查看该用户评论</RouterLink
       >
       <p v-if="row.id === auth.user?.id">不能修改自己的角色或状态</p>
+      <p v-if="row.status === 'deleted'">此账号已注销，不能恢复或修改权限。</p>
       <form v-if="selected?.id === row.id" @submit.prevent="submit">
         <label
           >角色<select v-model="role" :disabled="writing">
@@ -125,7 +132,9 @@ async function submit() {
       </form>
       <button
         v-else
-        :disabled="writing || row.id === auth.user?.id"
+        :disabled="
+          writing || row.id === auth.user?.id || row.status === 'deleted'
+        "
         @click="edit(row)"
       >
         编辑权限

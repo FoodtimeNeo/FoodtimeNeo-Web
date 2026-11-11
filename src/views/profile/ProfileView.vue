@@ -85,7 +85,7 @@ async function logout() {
         <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
       <SchoolEmailBinder
-        v-if="!profile.schoolEmailVerified"
+        v-if="!profile.schoolEmailVerified && !auth.isAdmin"
         @bound="onSchoolEmailBound"
       />
       <div class="profile-page__follows" aria-label="关注统计">
@@ -116,6 +116,13 @@ async function logout() {
       >
     </template>
     <nav class="profile-page__links" aria-label="个人功能">
+      <RouterLink
+        v-if="!auth.isAdmin"
+        class="paper-link"
+        :to="{ name: 'accountLifecycle' }"
+        ><span class="stamp">账号</span> 账号安全与注销
+        <strong>→</strong></RouterLink
+      >
       <RouterLink class="paper-link" :to="{ name: 'myVenueReviews' }"
         ><span class="stamp">点评</span
         ><span>餐厅与档口点评<small>我的评价、回复与审核状态</small></span

@@ -5,6 +5,7 @@ export const statusLabels = {
   active: '启用',
   inactive: '停用',
   disabled: '禁用',
+  deleted: '已注销',
 };
 export const roleLabels = {
   visitor: '访客',

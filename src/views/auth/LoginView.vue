@@ -55,6 +55,10 @@ async function handleSubmit() {
     </div>
     <span class="sticker sticker--r-2">食堂手账 · SIGN IN</span>
     <h1><span>欢迎回来</span>登录</h1>
+    <p v-if="route.query.accountDeleted === '1'" role="status">
+      账号已注销。邮箱冷却 1
+      小时后可重新注册；重新注册是全新账号，不继承原账号数据。
+    </p>
     <img
       src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
       alt=""
