@@ -15,6 +15,7 @@ import NoticeDialog from '@/components/NoticeDialog.vue';
 import BackLink from '@/components/base/BackLink.vue';
 import NoticeMarkdown from '@/components/NoticeMarkdown.vue';
 import { noticeHeading } from '@/utils/noticeMarkdown.js';
+import { formatNoticeTime } from '@/utils/noticeSchedule.js';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -240,7 +241,9 @@ async function openMessage(row) {
           class="inbox-page__item"
         >
           <h2>{{ noticeHeading(row.content) || '系统公告' }}</h2>
-          <p class="inbox-page__meta">{{ formatTime(row.publishedAt) }}</p>
+          <p class="inbox-page__meta">
+            {{ formatNoticeTime(row.publishedAt) }}
+          </p>
           <div class="inbox-page__markdown">
             <NoticeMarkdown :content="row.content || ''" />
           </div>
