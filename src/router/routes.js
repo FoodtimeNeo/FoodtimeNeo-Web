@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/profile/blocked-users',
+    name: 'myBlockedUsers',
+    component: () => import('@/views/profile/BlockedUsersView.vue'),
+    meta: {
+      title: '黑名单',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/users/search',
     name: 'userSearch',
     component: () => import('@/views/profile/UserSearchView.vue'),
