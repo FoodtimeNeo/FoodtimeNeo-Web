@@ -13,12 +13,23 @@ export async function login({ loginId, password }) {
 export const fetchCurrentUser = () =>
   http.get('/auth/me', { skipUnauthorized: true });
 export const fetchProfile = () => http.get('/users/me/profile');
-export const register = ({ email, password, verificationCode }) =>
-  http.post('/auth/register', {
+export const fetchRegistrationPolicy = () =>
+  http.get('/auth/registration-policy');
+export const register = ({
+  email,
+  password,
+  verificationCode,
+  invitationCode,
+}) => {
+  const payload = {
     email: email.trim().toLowerCase(),
     password,
     verificationCode,
-  });
+  };
+  const code = typeof invitationCode === 'string' ? invitationCode.trim() : '';
+  if (code) payload.invitationCode = code;
+  return http.post('/auth/register', payload);
+};
 export const sendVerificationCode = (email) =>
   http.post('/auth/register/email-code', { email: email.trim().toLowerCase() });
 export const sendPasswordResetCode = (email) =>

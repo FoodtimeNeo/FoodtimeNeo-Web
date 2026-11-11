@@ -14,6 +14,7 @@ vi.mock('./http.js', () => ({
 import {
   login,
   register,
+  fetchRegistrationPolicy,
   sendVerificationCode,
   logout,
   changePassword,
@@ -39,7 +40,26 @@ describe('认证字段与会话轮换', () => {
     );
     expect(order).toEqual(['login', 'invalidate', 'csrf']);
   });
-  it('注册不会提交客户端角色、邀请码或昵称', async () => {
+  it('读取公开注册策略', async () => {
+    api.get.mockResolvedValue({ mode: 'open' });
+    await fetchRegistrationPolicy();
+    expect(api.get).toHaveBeenCalledWith('/auth/registration-policy');
+  });
+  it('注册透传清理后的邀请码', async () => {
+    await register({
+      email: '20260001@bjtu.edu.cn',
+      password: 'Pass2026!',
+      verificationCode: '012345',
+      invitationCode: ' ABCD2345EFGH ',
+    });
+    expect(api.post).toHaveBeenCalledWith('/auth/register', {
+      email: '20260001@bjtu.edu.cn',
+      password: 'Pass2026!',
+      verificationCode: '012345',
+      invitationCode: 'ABCD2345EFGH',
+    });
+  });
+  it('注册不会提交客户端角色、未知邀请字段或昵称', async () => {
     await register({
       email: '20260001@bjtu.edu.cn',
       password: 'Pass2026!',
