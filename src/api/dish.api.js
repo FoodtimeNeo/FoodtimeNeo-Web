@@ -1,6 +1,17 @@
 import { http } from './http.js';
-export const searchDishes = (q, page = 1, options = {}) =>
-  http.get('/dishes/search', { ...options, params: { q, page, size: 20 } });
+export const searchDishes = (q, page = 1, options = {}, filters = {}) => {
+  const params = { q, page, size: 20, sort: filters.sort || 'relevance' };
+  const halls = Array.isArray(filters.diningHallIds)
+    ? filters.diningHallIds.filter(Boolean)
+    : [];
+  if (halls.length) params.diningHallIds = halls.join(',');
+  for (const key of ['minPrice', 'maxPrice', 'minRating']) {
+    const value = filters[key];
+    if (value !== null && value !== undefined && value !== '')
+      params[key] = value;
+  }
+  return http.get('/dishes/search', { ...options, params });
+};
 const favoritePath = (id) =>
   `/users/me/dish-favorites/${encodeURIComponent(id)}`;
 export const fetchDishFavorite = (id, options = {}) =>
