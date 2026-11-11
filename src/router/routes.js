@@ -296,6 +296,17 @@ export const routes = [
     },
   },
   {
+    path: '/profile/account-lifecycle',
+    name: 'accountLifecycle',
+    component: () => import('@/views/profile/AccountLifecycleView.vue'),
+    meta: {
+      title: '账号安全与注销',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/profile/password',
     name: 'changePassword',
     component: () => import('@/views/profile/ChangePasswordView.vue'),

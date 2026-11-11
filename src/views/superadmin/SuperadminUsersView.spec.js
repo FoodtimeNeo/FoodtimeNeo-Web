@@ -52,6 +52,31 @@ it('自身权限不能编辑，搜索与分页使用实际字段', async () => {
   await flushPromises();
   expect(api.fetchUsers.mock.calls.at(-1).slice(0, 2)).toEqual([1, 'user']);
 });
+it('已注销账号不能恢复或修改权限', async () => {
+  api.fetchUsers.mockResolvedValue({
+    items: [
+      {
+        id: 'gone',
+        displayName: '已注销用户',
+        email: 'deleted@deleted.invalid',
+        role: 'visitor',
+        status: 'deleted',
+      },
+    ],
+    total: 1,
+    page: 1,
+    size: 20,
+  });
+  const wrapper = mount(SuperadminUsersView);
+  await flushPromises();
+  expect(wrapper.text()).toContain('不能恢复');
+  expect(
+    wrapper.findAll('button').find((button) => button.text() === '编辑权限')
+      .element.disabled,
+  ).toBe(true);
+  expect(api.updateUserAccess).not.toHaveBeenCalled();
+  wrapper.unmount();
+});
 it('取消不写入，失败保留服务端角色和当前草稿', async () => {
   const wrapper = mount(SuperadminUsersView);
   await flushPromises();
