@@ -25,11 +25,15 @@
   --ft-space-5: 40px;
   --ft-space-6: 48px;
 
-  --ft-font-family-title: 'Noto Serif SC', 'Source Han Serif SC', serif;
+  --ft-font-family-title:
+    'Noto Serif SC', 'Source Han Serif SC', 'Noto Color Emoji', serif;
   --ft-font-family:
     'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-    sans-serif;
-  --ft-font-family-note: 'Ma Shan Zheng', 'KaiTi', cursive;
+    'Noto Color Emoji', sans-serif;
+  --ft-font-family-note: 'Ma Shan Zheng', 'KaiTi', 'Noto Color Emoji', cursive;
+  --ft-font-family-mono:
+    ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono',
+    'Noto Color Emoji', monospace;
   --ft-font-size-xs: 12px;
   --ft-font-size-sm: 14px;
   --ft-font-size-md: 16px;
