@@ -73,6 +73,12 @@ export function validateVerificationCode(value) {
   if (!/^[0-9]{6}$/.test(value)) return '验证码为 6 位数字';
   return '';
 }
+/** 与后端邀请码字符集一致：排除 I/O 与 0/1，12 位。 */
+export function validateInvitationCode(value, required = false) {
+  const code = typeof value === 'string' ? value.trim() : '';
+  if (!code) return required ? '当前注册需要邀请码' : '';
+  return /^[A-HJ-NP-Z2-9]{12}$/.test(code) ? '' : '邀请码为 12 位发放字符';
+}
 export function safeRedirect(value) {
   return typeof value === 'string' &&
     /^\/(?!\/)/.test(value) &&

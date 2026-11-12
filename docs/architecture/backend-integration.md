@@ -4,7 +4,7 @@
 
 2026-11-01：社区详情页及信息流弹窗接入管理员删除帖子、评论和回复；所有登录用户可在“我的 → 编辑资料”修改昵称、上传或移除头像。权限、路径和失败处理见[社区内容管理](../modules/community-management.md)。资料保存调用 `PUT /users/me/profile`，新头像先通过 `/uploads/images` 上传，不能提交他人的图片引用。公告创建与设置仍限 `superadmin`，正文使用安全 Markdown 渲染。本轮浏览器检查使用本地隔离接口样例；后端真实 HTTP、Cookie、CSRF 和数据库回归由独立 CI 环境验证，未在生产库写入测试数据。
 
-本文描述当前Web接入约定，带日期的段落保留当时验收范围。接口以现有 Backend 的 `docs/api` 和 `docs/database-design.md` 为依据，不补造后端字段或接口。按用户确认隐藏邀请码、吐槽、推荐/避雷、今日推荐及排行榜等未支持入口；不新增点赞、收藏或分类。正式邮箱投递仍暂不验证。
+本文描述当前Web接入约定，带日期的段落保留当时验收范围。接口以现有 Backend 的 `docs/api` 和 `docs/database-design.md` 为依据，不补造后端字段或接口。按当前产品范围隐藏吐槽、推荐/避雷、今日推荐及排行榜等未支持入口；不新增点赞、收藏或分类。正式邮箱投递仍暂不验证。
 
 ## 认证与请求
 
@@ -13,10 +13,14 @@
 - 2026-10-15的隔离验收复用此前联调库：Web为 `localhost:3000`，进程环境的 `VITE_API_PROXY_TARGET` 指向 `http://127.0.0.1:18080`。这段记录不表示当前仍有对应进程运行，重新联调按[本地开发说明](../ops/local-development.md)启动并验证实际目标。
 - Cookie 由浏览器和服务端管理，前端不读取 HttpOnly Cookie、不保存 Token/角色/密码。重新打开页面通过 `/auth/me` 获取当前身份，管理路由重新校验服务端角色。
 - 写请求先获取 `/auth/csrf`，令牌只在内存中保留。登录更换会话后重新获取；CSRF 失效不自动重放写请求。
-- 登录使用 `account/password`；注册仅使用 `email/password/verificationCode`。客户端角色、昵称、邀请码不参与注册授权。
+- 登录使用 `account/password`；注册先读取 `/auth/registration-policy`，按 `mode` 决定邀请码必填、可选或关闭；注册提交 `email/password/verificationCode`，`invitation` 模式下额外提交 `invitationCode`。客户端角色、昵称不能参与注册授权。
 - Backend已移除固定测试验证码：开发和生产环境均须使用邮箱收到的有效随机验证码，Web调用真实注册接口；邮件服务不可用时不能注册。
 - 响应必须是 `code: "OK"` 的统一结构。401 清除页面身份，403/429/503 保留服务端错误；错误对象不包含原始请求和凭据。
 - 不启用旧 Mock 后端或本地身份回退。旧版凭据会清理；切换账号后的迟到响应不能覆盖当前页面身份。
+
+## 注册策略与邀请码（2026-11-12）
+
+注册页先调用 `GET /api/v1/auth/registration-policy`，读取 `mode`、`canSendEmailCode`、`invitationRequired`、`revision`；策略读取失败不视为开放，页面显示错误与重试。`open` 模式邀请码可选，`invitation` 模式必填，`closed` 模式停止发码与提交。邀请码只随注册请求提交，不写入草稿、URL、日志或错误信息；服务端返回 `REGISTRATION_CLOSED`、`INVITATION_REQUIRED`、`INVITATION_CODE_INVALID` 时按提示处理并刷新策略。
 
 2026-10-16：用户指定线上服务 `http://154.9.252.201`，开发代理在本机来源之外仅增加该IP的默认HTTP/HTTPS端口，用于本地优化页面访问同一套真实API。目标中的凭据、路径、参数、片段、其他外站及该服务器其他端口均拒绝。直接浏览线上站点已完成登录及食堂→档口→菜品的只读检查；完整质量门禁通过（148项单元测试、Lint、格式检查和构建）。
 
