@@ -19,6 +19,16 @@ vi.mock('vue-router', () => ({
 }));
 import DishDetailView from './DishDetailView.vue';
 import { clearAsyncDataCache } from '@/composables/useAsyncData.js';
+vi.mock('@/api/browsingHistory.api.js', () => ({
+  fetchHistorySettings: vi.fn().mockResolvedValue({
+    enabled: false,
+    revision: 1,
+    dishEpoch: 0,
+    postEpoch: 0,
+  }),
+  recordBrowsingHistory: vi.fn(),
+  updateHistorySettings: vi.fn(),
+}));
 beforeEach(() => {
   setActivePinia(createPinia());
   clearAsyncDataCache();
