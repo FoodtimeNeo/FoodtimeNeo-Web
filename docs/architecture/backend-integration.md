@@ -91,3 +91,9 @@ PUT/DELETE /review-replies/{id}/like 与一级点评点赞共用按钮状态处�
 ## 登录公告自动弹出（2026-11-02）
 
 登录、页面刷新恢复会话、浏览器 bfcache 恢复以及页面从后台重新可见时，Web 请求 `GET /users/me/notices/current` 检查当前公告；普通路由切换不重查。同一页面生命周期内同一公告只弹一次，关闭后不会因为切回前台反复弹出；管理员切换当前公告后，回到前台会展示新的公告。`dontShowAgain=true` 仍由后端返回 `data=null`，账号级免弹跨端生效；关闭弹窗不写数据，确认才保存已读/免弹。请求失败保留重试入口，不阻塞应用。
+
+## 跨食堂搜菜筛选（2026-11-12）
+
+`GET /dishes/search` 的 `q` 可空；支持 `diningHallIds`（逗号分隔 UUID，可多选）、`minPrice`/`maxPrice`、`minRating`（0–5，UI 档位 3.0/3.5/4.0/4.5）、`sort`（`relevance`/`price_asc`/`price_desc`/`rating_desc`）与现有分页。搜索页把非敏感筛选写入 URL，修改条件从第一页重查；旧关键词/旧筛选的迟到响应不得覆盖当前结果。
+
+响应新增可空 `averageScore` 与非负 `reviewCount`。价格或评分未知的菜品保留并排在完整数据之后，不按 0 处理，也不自动标成称重；已知值不符合价格/评分门槛的仍被排除。页面显示“价格未填写/价格待补充”和“暂无评分”，不自行计算平均分。
