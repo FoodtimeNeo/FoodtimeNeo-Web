@@ -13,6 +13,7 @@ const emit = defineEmits(['update:modelValue', 'submitted']);
 const selected = reactive({ name: false, description: false, price: false });
 const values = reactive({ name: '', description: '', price: '' });
 const reason = ref('');
+const requestKey = ref('');
 const evidence = ref([]);
 const uploading = ref(false);
 const submitting = ref(false);
@@ -29,6 +30,7 @@ function reset() {
       ? ''
       : String(props.target.price);
   reason.value = '';
+  requestKey.value = newKey();
   evidence.value = [];
   error.value = '';
 }
@@ -38,6 +40,7 @@ watch(
   (open) => {
     if (open) reset();
   },
+  { immediate: true },
 );
 
 function close() {
@@ -78,7 +81,7 @@ function removeEvidence(index) {
   evidence.value.splice(index, 1);
 }
 
-function idempotencyKey() {
+function newKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -104,7 +107,7 @@ async function submit() {
     changedFields: fields,
     reason: reason.value.trim(),
     evidenceUrls: evidence.value.map((item) => item.url),
-    idempotencyKey: idempotencyKey(),
+    idempotencyKey: requestKey.value,
   };
   if (selected.name) payload.name = values.name.trim();
   if (selected.description) payload.description = values.description.trim();
