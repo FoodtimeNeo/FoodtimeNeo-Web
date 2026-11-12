@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/profile/reports',
+    name: 'myReports',
+    component: () => import('@/views/profile/MyReportsView.vue'),
+    meta: {
+      title: '举报与处理决定',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/profile/history',
     name: 'browsingHistory',
     component: () => import('@/views/profile/BrowsingHistoryView.vue'),

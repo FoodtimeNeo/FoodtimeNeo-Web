@@ -154,6 +154,10 @@ async function logout() {
         ><span>我的提交<small>投稿记录与审核结果</small></span
         ><strong>→</strong></RouterLink
       >
+      <RouterLink class="paper-link" :to="{ name: 'myReports' }"
+        ><span>举报与处理决定<small>举报进度、公开结果与申诉截止</small></span
+        ><strong>→</strong></RouterLink
+      >
       <RouterLink class="paper-link" :to="{ name: 'browsingHistory' }"
         ><span>浏览历史<small>帖子与菜品分栏最近浏览</small></span
         ><strong>→</strong></RouterLink

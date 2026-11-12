@@ -1,6 +1,6 @@
 <script setup>
-import { ref } from 'vue';
-import { fetchReports, reviewReport } from '@/api/safety.api.js';
+import { reactive, ref } from 'vue';
+import { decideReport, fetchReports } from '@/api/safety.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -10,13 +10,34 @@ const state = usePagedData(fetchReports);
 const reviewing = ref('');
 const reviewError = ref('');
 const labels = { post: '食记', comment: '评论', message: '私信' };
+const drafts = reactive({});
 
-async function review(report) {
+function draftFor(report) {
+  if (!drafts[report.id])
+    drafts[report.id] = {
+      outcome: 'upheld',
+      publicReason: '',
+      internalNote: '',
+    };
+  return drafts[report.id];
+}
+
+async function decide(report) {
   if (reviewing.value) return;
+  const draft = draftFor(report);
+  if (!draft.publicReason.trim()) {
+    reviewError.value = '请填写公开理由';
+    return;
+  }
   reviewing.value = report.id;
   reviewError.value = '';
   try {
-    await reviewReport(report.id);
+    await decideReport(report.id, {
+      outcome: draft.outcome,
+      publicReason: draft.publicReason.trim(),
+      internalNote: draft.internalNote.trim() || undefined,
+    });
+    delete drafts[report.id];
     if (state.items.value.length === 1 && state.page.value > 1)
       state.page.value--;
     else await state.load();
@@ -58,13 +79,34 @@ async function review(report) {
           >
             查看原帖
           </RouterLink>
-          <button
-            class="button-ink"
-            :disabled="!!reviewing"
-            @click="review(row)"
-          >
-            标为已处理
-          </button>
+          <div class="report-decision">
+            <label>
+              结论
+              <select v-model="draftFor(row).outcome">
+                <option value="upheld">成立</option>
+                <option value="not_upheld">不成立</option>
+              </select>
+            </label>
+            <label>
+              公开理由
+              <textarea
+                v-model="draftFor(row).publicReason"
+                maxlength="500"
+                rows="2"
+              ></textarea>
+            </label>
+            <label>
+              内部备注（不公开）
+              <input v-model="draftFor(row).internalNote" maxlength="2000" />
+            </label>
+            <button
+              class="button-ink"
+              :disabled="!!reviewing"
+              @click="decide(row)"
+            >
+              {{ reviewing === row.id ? '提交中…' : '提交决定' }}
+            </button>
+          </div>
         </li>
       </ul>
       <PaginationControls
@@ -93,5 +135,25 @@ async function review(report) {
 }
 .reports li a {
   margin-right: 12px;
+}
+.report-decision {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.report-decision label {
+  display: grid;
+  gap: 4px;
+}
+.report-decision textarea,
+.report-decision input,
+.report-decision select {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 560px;
+  padding: 6px 8px;
+}
+.report-decision button {
+  justify-self: start;
 }
 </style>
