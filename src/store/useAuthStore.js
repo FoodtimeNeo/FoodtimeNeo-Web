@@ -25,6 +25,7 @@ function normalizeUser(user) {
     displayName: user.displayName || '用户',
     role: user.role,
     avatarUrl: user.avatarUrl || null,
+    sessionMode: user.sessionMode === 'appeal_only' ? 'appeal_only' : 'normal',
   };
 }
 export const useAuthStore = defineStore('auth', {
@@ -40,6 +41,7 @@ export const useAuthStore = defineStore('auth', {
     role: (state) => state.user?.role || 'guest',
     isAdmin: (state) => ['admin', 'superadmin'].includes(state.user?.role),
     isSuperadmin: (state) => state.user?.role === 'superadmin',
+    isRestricted: (state) => state.user?.sessionMode === 'appeal_only',
     displayName: (state) => state.user?.displayName || '用户',
     can: (state) => (capability) => state.capabilities.includes(capability),
   },

@@ -462,6 +462,16 @@ export const routes = [
     },
   },
   {
+    path: '/appeal',
+    name: 'appealOnly',
+    component: () => import('@/views/account/AppealOnlyView.vue'),
+    meta: {
+      title: '处理决定与申诉',
+      layout: 'blank',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/auth/LoginView.vue'),
