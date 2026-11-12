@@ -68,7 +68,9 @@ async function handleSubmit() {
     captcha.value = null;
     captchaAnswer.value = '';
     await router.replace(
-      safeRedirect(route.query.redirect) || { name: 'home' },
+      auth.isRestricted
+        ? { name: 'appealOnly' }
+        : safeRedirect(route.query.redirect) || { name: 'home' },
     );
   } catch (error) {
     serverError.value = error.message || '登录失败';

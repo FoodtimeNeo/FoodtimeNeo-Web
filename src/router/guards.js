@@ -24,8 +24,16 @@ export function resolveDocumentTitle(to) {
 export function resolveNavigation(to, auth) {
   const meta = to.meta ?? {};
 
-  // 已登录用户访问登录/注册页时，直接回首页。
+  // 已登录用户访问登录/注册页时，直接回首页或受限申诉页。
   if ((to.name === 'login' || to.name === 'register') && auth.isAuthenticated) {
+    return { name: auth.isRestricted ? 'appealOnly' : 'home' };
+  }
+
+  if (auth.isRestricted && to.name !== 'appealOnly') {
+    return { name: 'appealOnly' };
+  }
+
+  if (!auth.isRestricted && to.name === 'appealOnly') {
     return { name: 'home' };
   }
 
@@ -68,6 +76,7 @@ export function installGuards(router) {
       isAuthenticated: auth.isAuthenticated,
       isAdmin: auth.isAdmin,
       isSuperadmin: auth.isSuperadmin,
+      isRestricted: auth.isRestricted,
     });
   });
 
