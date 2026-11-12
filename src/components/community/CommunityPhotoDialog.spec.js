@@ -187,3 +187,32 @@ it('收起摘要保留画布，双击缩放并恢复，单击关闭', async () =
   await vi.advanceTimersByTimeAsync(300);
   expect(wrapper.emitted('close')).toHaveLength(1);
 });
+
+it('看图选项可翻页，首尾操作禁用，Escape 先收起选项再关闭看图', async () => {
+  render();
+  await flushPromises();
+  const menu = find('.photo-dialog__options');
+  const [previous, next] = document.querySelectorAll(
+    '.photo-dialog__menu button',
+  );
+  expect(previous.disabled).toBe(true);
+  expect(next.disabled).toBe(false);
+  next.click();
+  expect(wrapper.emitted('change')).toEqual([[1]]);
+  await wrapper.setProps({ index: 1 });
+  expect(previous.disabled).toBe(false);
+  expect(next.disabled).toBe(true);
+  menu.element.open = true;
+  await new DOMWrapper(document.querySelector('.photo-dialog')).trigger(
+    'keydown',
+    { key: 'Escape' },
+  );
+  expect(menu.element.open).toBe(false);
+  expect(document.activeElement).toBe(menu.element.querySelector('summary'));
+  expect(wrapper.emitted('close')).toBeUndefined();
+  await new DOMWrapper(document.querySelector('.photo-dialog')).trigger(
+    'keydown',
+    { key: 'Escape' },
+  );
+  expect(wrapper.emitted('close')).toHaveLength(1);
+});
