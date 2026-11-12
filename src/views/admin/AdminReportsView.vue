@@ -1,9 +1,11 @@
 <script setup>
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import {
   decideReport,
+  fetchAdminDecisions,
   fetchAdminReportFollowUps,
   fetchReports,
+  performReportAction,
   replyReportFollowUp,
 } from '@/api/safety.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
@@ -18,6 +20,9 @@ const reviewing = ref('');
 const reviewError = ref('');
 const labels = { post: '食记', comment: '评论', message: '私信' };
 const drafts = reactive({});
+const decided = ref([]);
+const decidedLoading = ref(false);
+const decidedError = ref('');
 const threads = reactive({});
 const replies = reactive({});
 
@@ -115,6 +120,32 @@ async function reply(report) {
     draft.submitting = false;
   }
 }
+
+async function loadDecisions() {
+  decidedLoading.value = true;
+  decidedError.value = '';
+  try {
+    decided.value = (await fetchAdminDecisions()).items;
+  } catch (failure) {
+    decidedError.value = failure.message || '无法读取已处理决定';
+  } finally {
+    decidedLoading.value = false;
+  }
+}
+
+async function act(decision, actionType) {
+  try {
+    await performReportAction(decision.reportId, {
+      actionType,
+      note: `由决定 ${decision.decisionId} 触发`,
+    });
+    await loadDecisions();
+  } catch (failure) {
+    decidedError.value = failure.message || '执行动作失败';
+  }
+}
+
+onMounted(loadDecisions);
 
 async function decide(report) {
   if (reviewing.value) return;
@@ -270,6 +301,52 @@ async function decide(report) {
           </div>
         </li>
       </ul>
+      <section class="report-decisions">
+        <h2>已处理决定与执行动作</h2>
+        <p v-if="decidedLoading">正在读取…</p>
+        <p v-else-if="decidedError" role="alert">{{ decidedError }}</p>
+        <p v-else-if="!decided.length">还没有已处理决定。</p>
+        <ul v-else>
+          <li v-for="decision in decided" :key="decision.decisionId">
+            <strong>{{
+              decision.outcome === 'upheld' ? '成立' : '不成立'
+            }}</strong>
+            · {{ decision.targetType }} · {{ decision.publicReason }}
+            <div class="report-decisions__actions">
+              <button
+                v-if="decision.targetType === 'post'"
+                type="button"
+                class="button-ink"
+                @click="act(decision, 'remove_post')"
+              >
+                下架帖子
+              </button>
+              <button
+                v-if="decision.targetType === 'comment'"
+                type="button"
+                class="button-ink"
+                @click="act(decision, 'remove_comment')"
+              >
+                下架评论
+              </button>
+              <button
+                type="button"
+                class="button-ink"
+                @click="act(decision, 'disable_user')"
+              >
+                停用被举报用户
+              </button>
+              <button
+                type="button"
+                class="button-ink"
+                @click="act(decision, 'restore_user')"
+              >
+                恢复被举报用户
+              </button>
+            </div>
+          </li>
+        </ul>
+      </section>
       <PaginationControls
         v-if="state.page.value > 1 || state.total.value > state.size.value"
         :page="state.page.value"

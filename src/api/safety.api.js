@@ -33,6 +33,13 @@ export const submitAppeal = (decisionId, body) =>
     `/users/me/moderation-decisions/${encodeURIComponent(decisionId)}/appeals`,
     body,
   );
+export const fetchAdminDecisions = (page = 1, options = {}) =>
+  http.get('/admin/reports/decisions', {
+    ...options,
+    params: { page, size: 20 },
+  });
+export const performReportAction = (reportId, body) =>
+  http.post(`/admin/reports/${encodeURIComponent(reportId)}/actions`, body);
 export const fetchAdminReportFollowUps = (id, page = 1, options = {}) =>
   http.get(`/admin/reports/${encodeURIComponent(id)}/follow-ups`, {
     ...options,
