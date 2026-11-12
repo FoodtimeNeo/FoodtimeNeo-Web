@@ -491,6 +491,17 @@ export const routes = [
     },
   },
   {
+    path: '/admin/appeals',
+    name: 'adminAppeals',
+    component: () => import('@/views/admin/AdminAppealsView.vue'),
+    meta: {
+      title: '申诉复核',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
     path: '/admin/corrections',
     name: 'adminCorrections',
     component: () => import('@/views/admin/AdminCorrectionsView.vue'),

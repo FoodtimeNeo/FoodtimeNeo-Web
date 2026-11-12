@@ -13,6 +13,9 @@ const links = computed(() => [
   ...(auth.can('correction.review')
     ? [{ name: 'adminCorrections', label: '纠错审核' }]
     : []),
+  ...(auth.can('appeal.review')
+    ? [{ name: 'adminAppeals', label: '申诉复核' }]
+    : []),
   { name: 'managedReviews', label: '评论管理' },
   { name: 'moderationLogs', label: '审核日志' },
   ...(auth.isSuperadmin

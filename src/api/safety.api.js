@@ -21,3 +21,35 @@ export const fetchMyModerationDecisions = (page = 1, options = {}) =>
     ...options,
     params: { page, size: 20 },
   });
+export const fetchReportFollowUps = (id, page = 1, options = {}) =>
+  http.get(`/users/me/reports/${encodeURIComponent(id)}/follow-ups`, {
+    ...options,
+    params: { page, size: 20 },
+  });
+export const addReportFollowUp = (id, body) =>
+  http.post(`/users/me/reports/${encodeURIComponent(id)}/follow-ups`, body);
+export const submitAppeal = (decisionId, body) =>
+  http.post(
+    `/users/me/moderation-decisions/${encodeURIComponent(decisionId)}/appeals`,
+    body,
+  );
+export const fetchAdminReportFollowUps = (id, page = 1, options = {}) =>
+  http.get(`/admin/reports/${encodeURIComponent(id)}/follow-ups`, {
+    ...options,
+    params: { page, size: 20 },
+  });
+export const replyReportFollowUp = (id, body) =>
+  http.post(`/admin/reports/${encodeURIComponent(id)}/follow-ups`, body);
+export const fetchAdminAppeals = (status = '', page = 1, options = {}) =>
+  http.get('/admin/appeals', {
+    ...options,
+    params: { status: status || undefined, page, size: 20 },
+  });
+export const fetchAdminAppeal = (id) =>
+  http.get(`/admin/appeals/${encodeURIComponent(id)}`);
+export const startAppealReview = (id, expectedRevision) =>
+  http.post(`/admin/appeals/${encodeURIComponent(id)}/start`, null, {
+    params: { expectedRevision },
+  });
+export const resolveAppeal = (id, body) =>
+  http.post(`/admin/appeals/${encodeURIComponent(id)}/resolve`, body);

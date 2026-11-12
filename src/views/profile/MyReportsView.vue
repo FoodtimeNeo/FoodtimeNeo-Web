@@ -1,8 +1,11 @@
 <script setup>
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
 import {
+  addReportFollowUp,
   fetchMyModerationDecisions,
   fetchMyReports,
+  fetchReportFollowUps,
+  submitAppeal,
 } from '@/api/safety.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime } from '@/utils/recordLabels.js';
@@ -15,6 +18,8 @@ import PaginationControls from '@/components/base/PaginationControls.vue';
 const tab = ref('reports');
 const reports = usePagedData(fetchMyReports);
 const decisions = usePagedData(fetchMyModerationDecisions);
+const threads = reactive({});
+const appeals = reactive({});
 const labels = {
   post: '食记',
   comment: '评论',
@@ -24,12 +29,110 @@ const labels = {
   pending: '待处理',
   completed: '已完成',
   legacy: '历史记录，未提供详细结果',
+  submitted: '已提交',
+  under_review: '复核中',
+  resolved: '已复核',
 };
 
 function switchTab(value) {
   tab.value = value;
   if (value === 'reports' && !reports.items.value.length) reports.load();
   if (value === 'decisions' && !decisions.items.value.length) decisions.load();
+}
+
+function threadFor(report) {
+  if (!threads[report.id])
+    threads[report.id] = {
+      open: false,
+      items: [],
+      loading: false,
+      content: '',
+      error: '',
+      requestId: crypto.randomUUID(),
+    };
+  return threads[report.id];
+}
+
+async function toggleThread(report) {
+  const thread = threadFor(report);
+  thread.open = !thread.open;
+  if (!thread.open || thread.items.length) return;
+  thread.loading = true;
+  thread.error = '';
+  try {
+    const data = await fetchReportFollowUps(report.id);
+    thread.items = data.items;
+  } catch (error) {
+    thread.error = error.message || '无法读取追问记录';
+  } finally {
+    thread.loading = false;
+  }
+}
+
+async function sendFollowUp(report) {
+  const thread = threadFor(report);
+  if (!thread.content.trim()) {
+    thread.error = '请填写追问内容';
+    return;
+  }
+  thread.loading = true;
+  thread.error = '';
+  try {
+    const created = await addReportFollowUp(report.id, {
+      content: thread.content.trim(),
+      evidenceUrls: [],
+      clientRequestId: thread.requestId,
+    });
+    thread.items.push(created);
+    thread.content = '';
+    thread.requestId = crypto.randomUUID();
+  } catch (error) {
+    thread.error = error.message || '追问提交失败';
+  } finally {
+    thread.loading = false;
+  }
+}
+
+function appealFor(decision) {
+  if (!appeals[decision.decisionId])
+    appeals[decision.decisionId] = {
+      content: '',
+      error: '',
+      submitting: false,
+      requestId: crypto.randomUUID(),
+    };
+  return appeals[decision.decisionId];
+}
+
+function canAppeal(decision) {
+  return (
+    !decision.appealStatus && Date.parse(decision.appealDeadline) > Date.now()
+  );
+}
+
+async function sendAppeal(decision) {
+  const draft = appealFor(decision);
+  if (!draft.content.trim()) {
+    draft.error = '请填写申诉内容';
+    return;
+  }
+  draft.submitting = true;
+  draft.error = '';
+  try {
+    const created = await submitAppeal(decision.decisionId, {
+      content: draft.content.trim(),
+      evidenceUrls: [],
+      clientRequestId: draft.requestId,
+    });
+    decision.appealId = created.id;
+    decision.appealStatus = created.status;
+    draft.content = '';
+    draft.requestId = crypto.randomUUID();
+  } catch (error) {
+    draft.error = error.message || '申诉提交失败';
+  } finally {
+    draft.submitting = false;
+  }
 }
 </script>
 
@@ -81,6 +184,42 @@ function switchTab(value) {
             <p>公开理由：{{ item.publicReason }}</p>
             <small>{{ formatTime(item.decidedAt) }}</small>
           </div>
+          <button
+            type="button"
+            class="my-reports__toggle"
+            @click="toggleThread(item)"
+          >
+            {{ threadFor(item).open ? '收起追问' : '追问记录' }}
+          </button>
+          <div v-if="threadFor(item).open" class="my-reports__thread">
+            <p v-if="threadFor(item).loading">正在读取…</p>
+            <ul>
+              <li v-for="reply in threadFor(item).items" :key="reply.id">
+                <strong>{{
+                  reply.authorRole === 'staff' ? '管理员回复' : '我'
+                }}</strong>
+                <p>{{ reply.content }}</p>
+                <small>{{ formatTime(reply.createdAt) }}</small>
+              </li>
+            </ul>
+            <p v-if="threadFor(item).error" role="alert">
+              {{ threadFor(item).error }}
+            </p>
+            <textarea
+              v-model="threadFor(item).content"
+              rows="2"
+              maxlength="500"
+              placeholder="追加追问或材料说明"
+            ></textarea>
+            <button
+              type="button"
+              class="button-ink"
+              :disabled="threadFor(item).loading"
+              @click="sendFollowUp(item)"
+            >
+              提交追问
+            </button>
+          </div>
         </li>
       </ul>
       <PaginationControls
@@ -117,6 +256,35 @@ function switchTab(value) {
               item.side === 'reporter' ? '举报人' : '被举报人'
             }}</small
           >
+          <p v-if="item.appealStatus">
+            你的申诉：{{ labels[item.appealStatus] || item.appealStatus }}
+            <span v-if="item.appealOutcome">
+              · {{ labels[item.appealOutcome] || item.appealOutcome }}
+            </span>
+          </p>
+          <template v-else-if="canAppeal(item)">
+            <div class="my-reports__appeal">
+              <p>可在截止前提交一次申诉：</p>
+              <textarea
+                v-model="appealFor(item).content"
+                rows="3"
+                maxlength="2000"
+                placeholder="申诉理由，最多2000字"
+              ></textarea>
+              <p v-if="appealFor(item).error" role="alert">
+                {{ appealFor(item).error }}
+              </p>
+              <button
+                type="button"
+                class="button-ink"
+                :disabled="appealFor(item).submitting"
+                @click="sendAppeal(item)"
+              >
+                提交申诉
+              </button>
+            </div>
+          </template>
+          <p v-else>申诉期限已过或已提交。</p>
         </li>
       </ul>
       <PaginationControls
@@ -182,6 +350,32 @@ function switchTab(value) {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px dashed var(--ft-color-secondary);
+  }
+
+  &__toggle {
+    margin-top: 10px;
+    border: 0;
+    background: transparent;
+    color: var(--ft-color-primary);
+    cursor: pointer;
+  }
+
+  &__thread,
+  &__appeal {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--ft-color-secondary);
+
+    ul {
+      padding-left: 18px;
+    }
+
+    textarea {
+      box-sizing: border-box;
+      width: 100%;
+      margin: 6px 0;
+      padding: 6px 8px;
+    }
   }
 }
 </style>

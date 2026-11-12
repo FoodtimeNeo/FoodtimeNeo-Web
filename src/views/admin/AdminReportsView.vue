@@ -1,7 +1,13 @@
 <script setup>
 import { reactive, ref } from 'vue';
-import { decideReport, fetchReports } from '@/api/safety.api.js';
+import {
+  decideReport,
+  fetchAdminReportFollowUps,
+  fetchReports,
+  replyReportFollowUp,
+} from '@/api/safety.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
+import { formatTime } from '@/utils/recordLabels.js';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
@@ -11,6 +17,8 @@ const reviewing = ref('');
 const reviewError = ref('');
 const labels = { post: '食记', comment: '评论', message: '私信' };
 const drafts = reactive({});
+const threads = reactive({});
+const replies = reactive({});
 
 function draftFor(report) {
   if (!drafts[report.id])
@@ -20,6 +28,66 @@ function draftFor(report) {
       internalNote: '',
     };
   return drafts[report.id];
+}
+
+function threadFor(report) {
+  if (!threads[report.id])
+    threads[report.id] = { open: false, items: [], loading: false, error: '' };
+  return threads[report.id];
+}
+
+async function toggleThread(report) {
+  const thread = threadFor(report);
+  thread.open = !thread.open;
+  if (!thread.open || thread.items.length) return;
+  thread.loading = true;
+  thread.error = '';
+  try {
+    const data = await fetchAdminReportFollowUps(report.id);
+    thread.items = data.items;
+  } catch (failure) {
+    thread.error = failure.message || '无法读取追问记录';
+  } finally {
+    thread.loading = false;
+  }
+}
+
+function replyFor(report) {
+  if (!replies[report.id])
+    replies[report.id] = {
+      content: '',
+      internalNote: '',
+      error: '',
+      submitting: false,
+      requestId: crypto.randomUUID(),
+    };
+  return replies[report.id];
+}
+
+async function reply(report) {
+  const draft = replyFor(report);
+  if (!draft.content.trim()) {
+    draft.error = '请填写公开回复';
+    return;
+  }
+  draft.submitting = true;
+  draft.error = '';
+  try {
+    const created = await replyReportFollowUp(report.id, {
+      content: draft.content.trim(),
+      internalNote: draft.internalNote.trim() || undefined,
+      evidenceUrls: [],
+      clientRequestId: draft.requestId,
+    });
+    threadFor(report).items.push(created);
+    draft.content = '';
+    draft.internalNote = '';
+    draft.requestId = crypto.randomUUID();
+  } catch (failure) {
+    draft.error = failure.message || '回复失败';
+  } finally {
+    draft.submitting = false;
+  }
 }
 
 async function decide(report) {
@@ -105,6 +173,54 @@ async function decide(report) {
               @click="decide(row)"
             >
               {{ reviewing === row.id ? '提交中…' : '提交决定' }}
+            </button>
+          </div>
+          <button
+            type="button"
+            class="report-thread-toggle"
+            @click="toggleThread(row)"
+          >
+            {{ threadFor(row).open ? '收起追问' : '查看/回复追问' }}
+          </button>
+          <div v-if="threadFor(row).open" class="report-thread">
+            <p v-if="threadFor(row).loading">正在读取…</p>
+            <ul>
+              <li v-for="item in threadFor(row).items" :key="item.id">
+                <strong>{{
+                  item.authorRole === 'staff' ? '管理员' : '举报人'
+                }}</strong>
+                <p>{{ item.content }}</p>
+                <p v-if="item.internalNote">
+                  <em>内部备注：{{ item.internalNote }}</em>
+                </p>
+                <small>{{ formatTime(item.createdAt) }}</small>
+              </li>
+            </ul>
+            <p v-if="threadFor(row).error" role="alert">
+              {{ threadFor(row).error }}
+            </p>
+            <label>
+              公开回复
+              <textarea
+                v-model="replyFor(row).content"
+                rows="2"
+                maxlength="500"
+              ></textarea>
+            </label>
+            <label>
+              内部备注（不公开）
+              <input v-model="replyFor(row).internalNote" maxlength="2000" />
+            </label>
+            <p v-if="replyFor(row).error" role="alert">
+              {{ replyFor(row).error }}
+            </p>
+            <button
+              type="button"
+              class="button-ink"
+              :disabled="replyFor(row).submitting"
+              @click="reply(row)"
+            >
+              提交回复
             </button>
           </div>
         </li>
