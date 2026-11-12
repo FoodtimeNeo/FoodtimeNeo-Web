@@ -7,6 +7,7 @@ import {
   fetchReportFollowUps,
   submitAppeal,
 } from '@/api/safety.api.js';
+import { uploadImage } from '@/api/submission.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime } from '@/utils/recordLabels.js';
 import BackLink from '@/components/base/BackLink.vue';
@@ -47,6 +48,8 @@ function threadFor(report) {
       items: [],
       loading: false,
       content: '',
+      evidence: [],
+      uploading: false,
       error: '',
       requestId: crypto.randomUUID(),
     };
@@ -69,6 +72,32 @@ async function toggleThread(report) {
   }
 }
 
+async function addEvidence(state, event) {
+  const files = Array.from(event.target.files || []);
+  event.target.value = '';
+  if (!files.length) return;
+  if (state.evidence.length + files.length > 3) {
+    state.error = '证据图片最多3张';
+    return;
+  }
+  state.uploading = true;
+  state.error = '';
+  try {
+    for (const file of files) {
+      const uploaded = await uploadImage(file);
+      state.evidence.push({ url: uploaded.imageUrl, name: file.name });
+    }
+  } catch (error) {
+    state.error = error.message || '证据上传失败';
+  } finally {
+    state.uploading = false;
+  }
+}
+
+function removeEvidence(state, index) {
+  state.evidence.splice(index, 1);
+}
+
 async function sendFollowUp(report) {
   const thread = threadFor(report);
   if (!thread.content.trim()) {
@@ -80,11 +109,12 @@ async function sendFollowUp(report) {
   try {
     const created = await addReportFollowUp(report.id, {
       content: thread.content.trim(),
-      evidenceUrls: [],
+      evidenceUrls: thread.evidence.map((item) => item.url),
       clientRequestId: thread.requestId,
     });
     thread.items.push(created);
     thread.content = '';
+    thread.evidence = [];
     thread.requestId = crypto.randomUUID();
   } catch (error) {
     thread.error = error.message || '追问提交失败';
@@ -97,6 +127,8 @@ function appealFor(decision) {
   if (!appeals[decision.decisionId])
     appeals[decision.decisionId] = {
       content: '',
+      evidence: [],
+      uploading: false,
       error: '',
       submitting: false,
       requestId: crypto.randomUUID(),
@@ -121,12 +153,13 @@ async function sendAppeal(decision) {
   try {
     const created = await submitAppeal(decision.decisionId, {
       content: draft.content.trim(),
-      evidenceUrls: [],
+      evidenceUrls: draft.evidence.map((item) => item.url),
       clientRequestId: draft.requestId,
     });
     decision.appealId = created.id;
     decision.appealStatus = created.status;
     draft.content = '';
+    draft.evidence = [];
     draft.requestId = crypto.randomUUID();
   } catch (error) {
     draft.error = error.message || '申诉提交失败';
@@ -211,10 +244,38 @@ async function sendAppeal(decision) {
               maxlength="500"
               placeholder="追加追问或材料说明"
             ></textarea>
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              multiple
+              :disabled="
+                threadFor(item).uploading ||
+                threadFor(item).evidence.length >= 3
+              "
+              @change="addEvidence(threadFor(item), $event)"
+            />
+            <p v-if="threadFor(item).uploading">正在上传证据…</p>
+            <ul
+              v-if="threadFor(item).evidence.length"
+              class="my-reports__evidence"
+            >
+              <li
+                v-for="(file, index) in threadFor(item).evidence"
+                :key="file.url"
+              >
+                <img :src="file.url" :alt="file.name" />
+                <button
+                  type="button"
+                  @click="removeEvidence(threadFor(item), index)"
+                >
+                  移除
+                </button>
+              </li>
+            </ul>
             <button
               type="button"
               class="button-ink"
-              :disabled="threadFor(item).loading"
+              :disabled="threadFor(item).loading || threadFor(item).uploading"
               @click="sendFollowUp(item)"
             >
               提交追问
@@ -271,13 +332,43 @@ async function sendAppeal(decision) {
                 maxlength="2000"
                 placeholder="申诉理由，最多2000字"
               ></textarea>
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                multiple
+                :disabled="
+                  appealFor(item).uploading ||
+                  appealFor(item).evidence.length >= 3
+                "
+                @change="addEvidence(appealFor(item), $event)"
+              />
+              <p v-if="appealFor(item).uploading">正在上传证据…</p>
+              <ul
+                v-if="appealFor(item).evidence.length"
+                class="my-reports__evidence"
+              >
+                <li
+                  v-for="(file, index) in appealFor(item).evidence"
+                  :key="file.url"
+                >
+                  <img :src="file.url" :alt="file.name" />
+                  <button
+                    type="button"
+                    @click="removeEvidence(appealFor(item), index)"
+                  >
+                    移除
+                  </button>
+                </li>
+              </ul>
               <p v-if="appealFor(item).error" role="alert">
                 {{ appealFor(item).error }}
               </p>
               <button
                 type="button"
                 class="button-ink"
-                :disabled="appealFor(item).submitting"
+                :disabled="
+                  appealFor(item).submitting || appealFor(item).uploading
+                "
                 @click="sendAppeal(item)"
               >
                 提交申诉
@@ -375,6 +466,36 @@ async function sendAppeal(decision) {
       width: 100%;
       margin: 6px 0;
       padding: 6px 8px;
+    }
+  }
+
+  &__evidence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      gap: 4px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    img {
+      width: 88px;
+      height: 88px;
+      object-fit: cover;
+      border: 1px solid var(--ft-color-secondary);
+    }
+
+    button {
+      border: 0;
+      background: transparent;
+      color: var(--ft-color-danger);
+      cursor: pointer;
     }
   }
 }

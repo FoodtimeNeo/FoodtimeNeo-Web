@@ -7,6 +7,7 @@ import {
   replyReportFollowUp,
 } from '@/api/safety.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
+import { uploadImage } from '@/api/submission.api.js';
 import { formatTime } from '@/utils/recordLabels.js';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -57,11 +58,35 @@ function replyFor(report) {
     replies[report.id] = {
       content: '',
       internalNote: '',
+      evidence: [],
+      uploading: false,
       error: '',
       submitting: false,
       requestId: crypto.randomUUID(),
     };
   return replies[report.id];
+}
+
+async function addReplyEvidence(state, event) {
+  const files = Array.from(event.target.files || []);
+  event.target.value = '';
+  if (!files.length) return;
+  if (state.evidence.length + files.length > 3) {
+    state.error = '证据图片最多3张';
+    return;
+  }
+  state.uploading = true;
+  state.error = '';
+  try {
+    for (const file of files) {
+      const uploaded = await uploadImage(file);
+      state.evidence.push({ url: uploaded.imageUrl, name: file.name });
+    }
+  } catch (failure) {
+    state.error = failure.message || '证据上传失败';
+  } finally {
+    state.uploading = false;
+  }
 }
 
 async function reply(report) {
@@ -76,12 +101,13 @@ async function reply(report) {
     const created = await replyReportFollowUp(report.id, {
       content: draft.content.trim(),
       internalNote: draft.internalNote.trim() || undefined,
-      evidenceUrls: [],
+      evidenceUrls: draft.evidence.map((item) => item.url),
       clientRequestId: draft.requestId,
     });
     threadFor(report).items.push(created);
     draft.content = '';
     draft.internalNote = '';
+    draft.evidence = [];
     draft.requestId = crypto.randomUUID();
   } catch (failure) {
     draft.error = failure.message || '回复失败';
@@ -211,13 +237,32 @@ async function decide(report) {
               内部备注（不公开）
               <input v-model="replyFor(row).internalNote" maxlength="2000" />
             </label>
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              multiple
+              :disabled="
+                replyFor(row).uploading || replyFor(row).evidence.length >= 3
+              "
+              @change="addReplyEvidence(replyFor(row), $event)"
+            />
+            <p v-if="replyFor(row).uploading">正在上传证据…</p>
+            <ul
+              v-if="replyFor(row).evidence.length"
+              class="report-thread-evidence"
+            >
+              <li v-for="file in replyFor(row).evidence" :key="file.url">
+                <img :src="file.url" :alt="file.name" />
+                <span>{{ file.name }}</span>
+              </li>
+            </ul>
             <p v-if="replyFor(row).error" role="alert">
               {{ replyFor(row).error }}
             </p>
             <button
               type="button"
               class="button-ink"
-              :disabled="replyFor(row).submitting"
+              :disabled="replyFor(row).submitting || replyFor(row).uploading"
               @click="reply(row)"
             >
               提交回复
