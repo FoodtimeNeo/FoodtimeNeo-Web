@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
-import { mount, flushPromises } from '@vue/test-utils';
+import { enableAutoUnmount, mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 const api = vi.hoisted(() => ({
@@ -39,6 +39,8 @@ const pending = (overrides) => ({
 });
 const mountSection = () =>
   mount(CommunityCommentSection, { props: { postId: 'post' } });
+
+enableAutoUnmount(afterEach);
 
 describe('紧凑楼中楼', () => {
   beforeEach(() => {

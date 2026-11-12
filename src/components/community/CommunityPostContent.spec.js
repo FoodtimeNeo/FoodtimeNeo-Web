@@ -2,6 +2,16 @@ import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import CommunityPostContent from './CommunityPostContent.vue';
+vi.mock('@/api/browsingHistory.api.js', () => ({
+  fetchHistorySettings: vi.fn().mockResolvedValue({
+    enabled: false,
+    revision: 1,
+    dishEpoch: 0,
+    postEpoch: 0,
+  }),
+  recordBrowsingHistory: vi.fn(),
+  updateHistorySettings: vi.fn(),
+}));
 const api = vi.hoisted(() => ({
   fetchCommunityPostDetail: vi.fn(),
   setPostLike: vi.fn(),
