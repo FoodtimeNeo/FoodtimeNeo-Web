@@ -6,12 +6,19 @@ const api = vi.hoisted(() => ({
   logout: vi.fn(),
   fetchCurrentUser: vi.fn(),
 }));
+const capabilities = vi.hoisted(() => ({ fetchCapabilities: vi.fn() }));
 vi.mock('@/api/auth.api.js', () => api);
+vi.mock('@/api/capabilities.api.js', () => capabilities);
 import { useAuthStore } from './useAuthStore.js';
 beforeEach(() => {
   setActivePinia(createPinia());
   localStorage.clear();
   Object.values(api).forEach((fn) => fn.mockReset());
+  capabilities.fetchCapabilities.mockReset();
+  capabilities.fetchCapabilities.mockResolvedValue({
+    capabilities: [],
+    revision: 'default-v1',
+  });
 });
 const user = {
   id: 'one',
@@ -62,6 +69,29 @@ describe('服务端会话', () => {
     expect(store.isAuthenticated).toBe(true);
     await store.logout();
     expect(store.isAuthenticated).toBe(false);
+  });
+  it('登录后只消费服务器能力，不按角色推断', async () => {
+    capabilities.fetchCapabilities.mockResolvedValue({
+      capabilities: ['catalog.edit', 'moderation.review'],
+      revision: 'default-v1',
+    });
+    api.login.mockResolvedValue({ user: { ...user, role: 'admin' } });
+    const store = useAuthStore();
+    await store.login({});
+    expect(store.can('catalog.edit')).toBe(true);
+    expect(store.can('report.review')).toBe(false);
+    expect(store.capabilityRevision).toBe('default-v1');
+    await store.logout();
+    expect(store.capabilities).toEqual([]);
+    expect(store.can('catalog.edit')).toBe(false);
+  });
+  it('能力读取失败不阻止会话建立，也不授予权限', async () => {
+    capabilities.fetchCapabilities.mockRejectedValueOnce({ status: 503 });
+    api.fetchCurrentUser.mockResolvedValue({ ...user, role: 'admin' });
+    const store = useAuthStore();
+    await store.refresh();
+    expect(store.isAuthenticated).toBe(true);
+    expect(store.capabilities).toEqual([]);
   });
   it('访客角色可以建立只读会话', async () => {
     const store = useAuthStore();
