@@ -144,10 +144,10 @@ async function logout() {
         ><strong>→</strong></RouterLink
       >
       <RouterLink class="paper-link" :to="{ name: 'favoriteDishes' }"
-        ><span class="stamp">想吃</span> ><span
-          >想吃清单<small>保存的菜品</small></span
-        >
-        ><strong>→</strong></RouterLink
+        ><span class="stamp">想吃</span
+        ><span>想吃清单<small>保存的菜品</small></span> ><strong
+          >→</strong
+        ></RouterLink
       >
       <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
         ><span class="stamp">02</span
