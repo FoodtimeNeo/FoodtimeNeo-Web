@@ -3,6 +3,13 @@ import { ref, reactive, watch, onUnmounted } from 'vue';
 import { ElMessage, ElDialog } from 'element-plus';
 import { createCommunityPost } from '@/api/community.api.js';
 import { uploadImage } from '@/api/submission.api.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
+import {
+  deleteDraft,
+  isBlankDraft,
+  loadDraft,
+  saveDraft,
+} from '@/utils/postDraft.js';
 import DishPicker from './DishPicker.vue';
 
 const props = defineProps({
@@ -18,11 +25,21 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'created']);
 
+const auth = useAuthStore();
 const submitting = ref(false);
 const fileInputRef = ref(null);
 const linkedDish = ref(null);
 const requestId = ref(crypto.randomUUID());
 let submittedPayload = null;
+const restoredDraft = ref(false);
+const draftStatus = ref('');
+const draftMessage = ref('');
+let saveTimer;
+let lastSavedRevision = 0;
+let hydrating = false;
+const serviceOrigin =
+  typeof window !== 'undefined' ? window.location.origin : 'foodtime';
+const ownerId = () => auth.user?.id || null;
 
 const form = reactive({
   title: '',
@@ -52,6 +69,9 @@ watch(
       submittedPayload = null;
       cleanObjectUrls();
       formImages.value = [];
+      restoredDraft.value = false;
+      draftStatus.value = '';
+      draftMessage.value = '';
       linkedDish.value = props.initialData?.linkedDish || null;
       if (props.initialData) {
         form.title = props.initialData.title || '';
@@ -71,14 +91,157 @@ watch(
           });
         }
       }
+      void restoreDraft();
+    } else {
+      window.clearTimeout(saveTimer);
     }
   },
   { immediate: true },
 );
 
+watch(
+  [() => form.title, () => form.content, formImages, linkedDish],
+  () => {
+    if (!props.modelValue || submitting.value || hydrating) return;
+    window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(() => {
+      void saveNow();
+    }, 500);
+  },
+  { deep: true },
+);
+
 onUnmounted(() => {
+  window.clearTimeout(saveTimer);
   cleanObjectUrls();
 });
+
+async function restoreDraft() {
+  const owner = ownerId();
+  if (!owner) return;
+  if (
+    props.initialData?.title ||
+    props.initialData?.content ||
+    props.initialData?.images?.length
+  )
+    return;
+  hydrating = true;
+  try {
+    const draft = await loadDraft(serviceOrigin, owner);
+    if (!draft || isBlankDraft(draft)) return;
+    form.title = draft.title || '';
+    form.content = draft.content || '';
+    linkedDish.value = draft.linkedDish || null;
+    cleanObjectUrls();
+    formImages.value = (draft.images || []).map((image, index) => {
+      if (image.blob) {
+        const file =
+          image.blob instanceof File
+            ? image.blob
+            : new File([image.blob], image.name || `draft-${index}.jpg`, {
+                type: image.type || image.blob.type || 'image/jpeg',
+              });
+        return {
+          id: image.id || `draft-${index}`,
+          file,
+          previewUrl: URL.createObjectURL(file),
+          isBlob: true,
+        };
+      }
+      return {
+        id: image.id || `draft-url-${index}`,
+        previewUrl: image.url,
+        file: null,
+        isBlob: false,
+      };
+    });
+    lastSavedRevision = draft.localRevision || 0;
+    restoredDraft.value = true;
+    draftStatus.value = 'saved';
+    draftMessage.value = '已恢复上次草稿';
+  } catch {
+    draftStatus.value = 'error';
+    draftMessage.value = '本机草稿读取失败，请检查浏览器存储';
+  } finally {
+    hydrating = false;
+  }
+}
+
+async function saveNow() {
+  const owner = ownerId();
+  if (!owner) return;
+  const images = formImages.value
+    .map((image, index) => {
+      if (image.file)
+        return {
+          id: image.id || `image-${index}`,
+          name: image.file.name || `image-${index}.jpg`,
+          type: image.file.type || 'image/jpeg',
+          size: image.file.size || 0,
+          blob: image.file,
+        };
+      if (image.previewUrl)
+        return { id: image.id || `url-${index}`, url: image.previewUrl };
+      return null;
+    })
+    .filter(Boolean);
+  if (isBlankDraft({ title: form.title, content: form.content, images })) {
+    await deleteDraft(serviceOrigin, owner);
+    draftStatus.value = '';
+    lastSavedRevision = 0;
+    return;
+  }
+  draftStatus.value = 'saving';
+  try {
+    const saved = await saveDraft(serviceOrigin, owner, {
+      title: form.title,
+      content: form.content,
+      linkedDish: linkedDish.value
+        ? { id: linkedDish.value.id, name: linkedDish.value.name }
+        : null,
+      images,
+    });
+    lastSavedRevision = saved?.localRevision || lastSavedRevision;
+    draftStatus.value = 'saved';
+    draftMessage.value = '草稿已保存到本机';
+  } catch {
+    draftStatus.value = 'error';
+    draftMessage.value = '草稿保存失败，请检查存储空间';
+  }
+}
+
+async function handleBeforeClose(done) {
+  if (submitting.value) {
+    ElMessage.info('正在发布，请稍候');
+    return;
+  }
+  window.clearTimeout(saveTimer);
+  await saveNow();
+  if (draftStatus.value === 'saved') ElMessage.success('草稿已保存');
+  else if (draftStatus.value === 'error') ElMessage.warning(draftMessage.value);
+  done();
+}
+
+async function discardDraft() {
+  const owner = ownerId();
+  if (owner) {
+    try {
+      await deleteDraft(serviceOrigin, owner);
+    } catch {
+      ElMessage.warning('草稿删除失败，请重试');
+      return;
+    }
+  }
+  form.title = '';
+  form.content = '';
+  linkedDish.value = null;
+  cleanObjectUrls();
+  formImages.value = [];
+  restoredDraft.value = false;
+  draftStatus.value = '';
+  draftMessage.value = '';
+  lastSavedRevision = 0;
+}
 
 function handleClose() {
   emit('update:modelValue', false);
@@ -211,11 +374,18 @@ async function handleSubmit() {
       duration: 3500,
     });
 
+    // 只有服务器确认成功后清理本机草稿；清理失败不影响发帖结果。
+    window.clearTimeout(saveTimer);
+    const owner = ownerId();
+    if (owner) await deleteDraft(serviceOrigin, owner).catch(() => {});
+
     // 重置并关闭
     form.title = '';
     form.content = '';
     cleanObjectUrls();
     formImages.value = [];
+    restoredDraft.value = false;
+    draftStatus.value = '';
 
     emit('created', post);
     emit('update:modelValue', false);
@@ -236,6 +406,7 @@ async function handleSubmit() {
     :width="'min(560px, 94vw)'"
     :style="{ boxSizing: 'border-box', maxWidth: 'calc(100% - 32px)' }"
     :show-close="true"
+    :before-close="handleBeforeClose"
     @close="handleClose"
   >
     <template #header>
@@ -255,6 +426,25 @@ async function handleSubmit() {
     </template>
 
     <form class="post-create-form" @submit.prevent="handleSubmit">
+      <div v-if="restoredDraft" class="post-draft-banner" role="status">
+        <span>已恢复上次未发布的草稿。</span>
+        <button type="button" @click="restoredDraft = false">继续编辑</button>
+        <button
+          type="button"
+          class="post-draft-banner__danger"
+          @click="discardDraft"
+        >
+          放弃草稿
+        </button>
+      </div>
+      <p
+        v-if="draftMessage"
+        class="post-draft-status"
+        :class="{ 'is-error': draftStatus === 'error' }"
+        role="status"
+      >
+        {{ draftStatus === 'saving' ? '正在保存草稿…' : draftMessage }}
+      </p>
       <DishPicker
         v-if="modelValue"
         v-model="linkedDish"
@@ -526,6 +716,37 @@ async function handleSubmit() {
   }
 }
 
+.post-draft-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px dashed var(--ft-color-secondary);
+  background: rgb(201 52 30 / 6%);
+  font-size: var(--ft-font-size-sm);
+
+  button {
+    border: 0;
+    background: transparent;
+    color: var(--ft-color-primary);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  &__danger {
+    color: var(--ft-color-danger) !important;
+  }
+}
+.post-draft-status {
+  margin: 0;
+  color: var(--ft-color-text-muted);
+  font-size: var(--ft-font-size-sm);
+
+  &.is-error {
+    color: var(--ft-color-danger);
+  }
+}
 .post-create-form {
   display: flex;
   flex-direction: column;
