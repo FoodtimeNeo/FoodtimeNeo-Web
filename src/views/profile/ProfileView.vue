@@ -154,6 +154,10 @@ async function logout() {
         ><span>我的提交<small>投稿记录与审核结果</small></span
         ><strong>→</strong></RouterLink
       >
+      <RouterLink class="paper-link" :to="{ name: 'myCorrections' }"
+        ><span>目录纠错<small>名称、价格与介绍的更正进度</small></span
+        ><strong>→</strong></RouterLink
+      >
       <RouterLink class="paper-link" :to="{ name: 'myFeedback' }"
         ><span class="stamp">建议</span> 建议与反馈
         <strong>→</strong></RouterLink

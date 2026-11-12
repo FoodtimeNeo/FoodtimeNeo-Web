@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { usePagedData } from '@/composables/usePagedData.js';
@@ -17,6 +17,7 @@ import PaginationControls from '@/components/base/PaginationControls.vue';
 import DishReviewList from '@/components/dish/DishReviewList.vue';
 import DishFavoriteButton from '@/components/canteen/DishFavoriteButton.vue';
 import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue';
+import CatalogCorrectionDialog from '@/components/catalog/CatalogCorrectionDialog.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -94,6 +95,20 @@ const params = computed(() => ({
   stallId: route.params.stallId,
   dishId: dishId.value,
 }));
+const correctionOpen = ref(false);
+const correctionTarget = computed(() =>
+  dish.value
+    ? {
+        type: 'dish',
+        id: dish.value.id,
+        revision: dish.value.revision,
+        name: dish.value.name,
+        description: dish.value.description,
+        price: dish.value.price,
+        summary: `${dish.value.diningHallName} · ${dish.value.stallName} · ${dish.value.name}`,
+      }
+    : null,
+);
 </script>
 <template>
   <div class="dish-detail">
@@ -175,14 +190,24 @@ const params = computed(() => ({
               </p>
             </template>
           </div>
-          <RouterLink
-            class="dish-detail__review-link button-ink is-primary"
-            :to="{
-              name: 'dishReviewCreate',
-              params,
-            }"
-            >写点评</RouterLink
-          >
+          <div class="dish-detail__actions">
+            <RouterLink
+              class="dish-detail__review-link button-ink is-primary"
+              :to="{
+                name: 'dishReviewCreate',
+                params,
+              }"
+              >写点评</RouterLink
+            >
+            <button
+              type="button"
+              class="button-ink"
+              :disabled="!correctionTarget"
+              @click="correctionOpen = true"
+            >
+              纠错
+            </button>
+          </div>
         </div>
       </article>
       <section class="dish-detail__reviews" aria-labelledby="reviews-title">
@@ -218,6 +243,10 @@ const params = computed(() => ({
         />
       </section>
     </template>
+    <CatalogCorrectionDialog
+      v-model="correctionOpen"
+      :target="correctionTarget"
+    />
   </div>
 </template>
 

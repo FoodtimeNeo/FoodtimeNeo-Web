@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/profile/corrections',
+    name: 'myCorrections',
+    component: () => import('@/views/profile/MyCorrectionsView.vue'),
+    meta: {
+      title: '我的纠错',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/profile/feedback',
     name: 'myFeedback',
     component: () => import('@/views/profile/FeedbackView.vue'),
@@ -452,6 +463,17 @@ export const routes = [
     component: () => import('@/views/admin/AdminAuditView.vue'),
     meta: {
       title: '内容审核',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
+    path: '/admin/corrections',
+    name: 'adminCorrections',
+    component: () => import('@/views/admin/AdminCorrectionsView.vue'),
+    meta: {
+      title: '目录纠错审核',
       layout: 'admin',
       requiresAuth: true,
       requiresAdmin: true,
