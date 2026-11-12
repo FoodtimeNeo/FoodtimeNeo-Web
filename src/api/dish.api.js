@@ -18,11 +18,12 @@ export const fetchDishFavorite = (id, options = {}) =>
   http.get(favoritePath(id), options);
 export const setDishFavorite = (id, saved) =>
   saved ? http.put(favoritePath(id)) : http.delete(favoritePath(id));
-export const fetchFavoriteDishes = (page = 1, options = {}) =>
-  http.get('/users/me/dish-favorites', {
-    ...options,
-    params: { page, size: 20 },
-  });
+export const fetchFavoriteDishes = (page = 1, options = {}, filters = {}) => {
+  const params = { page, size: 20 };
+  if (filters.groupId) params.groupId = filters.groupId;
+  else if (filters.unfiled) params.unfiled = true;
+  return http.get('/users/me/dish-favorites', { ...options, params });
+};
 export const fetchDish = (id, options = {}) =>
   http.get(`/dishes/${encodeURIComponent(id)}`, options);
 export const fetchDishReviews = (id, page = 1, options = {}) =>

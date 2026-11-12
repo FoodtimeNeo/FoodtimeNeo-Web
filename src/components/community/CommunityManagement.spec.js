@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
 const dialogs = vi.hoisted(() => ({ prompt: vi.fn(), confirm: vi.fn() }));
 vi.mock('@/api/community.api.js', () => api);
 vi.mock('element-plus', () => ({
+  ElDialog: { name: 'ElDialog', template: '<div><slot /></div>' },
   ElMessageBox: dialogs,
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));

@@ -3,6 +3,10 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import {
+  createFavoriteGroup,
+  fetchFavoriteGroups,
+} from '@/api/favoriteGroups.api.js';
 import { deleteDraft, isBlankDraft, loadDraft } from '@/utils/postDraft.js';
 import {
   fetchCommunityPosts,
@@ -18,6 +22,10 @@ import EmptyState from '@/components/base/EmptyState.vue';
 const route = useRoute();
 const auth = useAuthStore();
 const draftSummary = ref(null);
+const postGroups = ref([]);
+const postGroupId = ref(null);
+const postUnfiled = ref(false);
+const postGroupsError = ref('');
 
 function formatBytes(bytes) {
   if (!bytes) return '0 B';
@@ -158,6 +166,43 @@ const activePost = computed(() =>
   activePage.value.posts.find(({ id }) => id === activePostId.value),
 );
 const isDetailModalOpen = ref(false);
+watch(isDetailModalOpen, (open) => {
+  if (!open) void loadPostGroups();
+});
+
+async function loadPostGroups() {
+  if (!auth.user?.id) {
+    postGroups.value = [];
+    return;
+  }
+  postGroupsError.value = '';
+  try {
+    postGroups.value = await fetchFavoriteGroups('post');
+  } catch (error) {
+    postGroupsError.value = error.message || '无法读取收藏分组';
+  }
+}
+
+function selectPostGroup(groupId = null, onlyUnfiled = false) {
+  postGroupId.value = groupId;
+  postUnfiled.value = onlyUnfiled;
+  const feed = pages[tabs.findIndex(({ id }) => id === 'favorites')];
+  feed.version += 1;
+  feed.loadedAt = null;
+  feed.page = 1;
+  if (mode.value === 'favorites') loadFeed();
+}
+
+async function createPostGroup() {
+  const name = window.prompt('新分组名称（1–20 个字符）');
+  if (!name?.trim()) return;
+  try {
+    await createFavoriteGroup('post', name);
+    await loadPostGroups();
+  } catch (error) {
+    postGroupsError.value = error.message || '创建分组失败';
+  }
+}
 const screenWidth = ref(
   typeof window !== 'undefined' ? window.innerWidth : 1200,
 );
@@ -192,8 +237,19 @@ async function loadFeed(more = false) {
           ...(query ? { q: query } : {}),
         })
       : await (
-          section === 'mine' ? fetchMyCommunityPosts : fetchMyCommunityFavorites
-        )({ page: pageNumber, size: 20 });
+          section === 'mine'
+            ? fetchMyCommunityPosts
+            : (params) => fetchMyCommunityFavorites(params)
+        )({
+          page: pageNumber,
+          size: 20,
+          ...(section === 'favorites' && postGroupId.value
+            ? { groupId: postGroupId.value }
+            : {}),
+          ...(section === 'favorites' && postUnfiled.value
+            ? { unfiled: true }
+            : {}),
+        });
     if (version !== feed.version) return;
     feed.page = pageNumber;
     feed.posts = more ? [...feed.posts, ...(res.items || [])] : res.items || [];
@@ -420,6 +476,7 @@ function handlePostCreated() {
 onMounted(() => {
   loadFeed();
   void refreshDraftSummary();
+  void loadPostGroups();
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', handleResize);
   }
@@ -524,6 +581,39 @@ onUnmounted(() => {
       />
       <button class="button-ink" type="submit">搜索</button>
     </form>
+    <div v-if="mode === 'favorites'" class="community-groups">
+      <button
+        type="button"
+        :class="{ 'is-active': !postGroupId && !postUnfiled }"
+        @click="selectPostGroup()"
+      >
+        全部
+      </button>
+      <button
+        type="button"
+        :class="{ 'is-active': postUnfiled }"
+        @click="selectPostGroup(null, true)"
+      >
+        未分组
+      </button>
+      <button
+        v-for="group in postGroups"
+        :key="group.id"
+        type="button"
+        :class="{ 'is-active': postGroupId === group.id }"
+        @click="selectPostGroup(group.id)"
+      >
+        {{ group.name }} ({{ group.itemCount }})
+      </button>
+      <button
+        type="button"
+        class="community-groups__create"
+        @click="createPostGroup"
+      >
+        + 新建分组
+      </button>
+      <p v-if="postGroupsError" role="alert">{{ postGroupsError }}</p>
+    </div>
     <div
       class="community-stream"
       @touchstart.passive="startGesture"
@@ -698,6 +788,36 @@ onUnmounted(() => {
 
     span {
       color: var(--ft-color-text-muted);
+    }
+  }
+
+  .community-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    button {
+      border: 1px solid var(--ft-color-secondary);
+      background: transparent;
+      color: var(--ft-color-text);
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    button.is-active {
+      border-color: var(--ft-color-primary);
+      background: rgb(201 52 30 / 10%);
+    }
+
+    .community-groups__create {
+      border-style: dashed;
+    }
+
+    p[role='alert'] {
+      width: 100%;
+      margin: 0;
+      color: var(--ft-color-danger);
     }
   }
 

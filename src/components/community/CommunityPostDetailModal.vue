@@ -1,6 +1,13 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElDialog, ElMessage } from 'element-plus';
+import {
+  addFavoriteGroupMember,
+  createFavoriteGroup,
+  fetchFavoriteGroupMemberships,
+  fetchFavoriteGroups,
+  removeFavoriteGroupMember,
+} from '@/api/favoriteGroups.api.js';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import {
@@ -96,6 +103,61 @@ const isFollowing = ref(false);
 const followBusy = ref(false);
 const isLiked = ref(false);
 const isFavorited = ref(false);
+const groupDialogOpen = ref(false);
+const postGroups = ref([]);
+const postGroupIds = ref([]);
+const groupLoading = ref(false);
+const groupError = ref('');
+const newGroupName = ref('');
+
+async function openGroups() {
+  if (!post.value?.id) return;
+  groupDialogOpen.value = true;
+  groupLoading.value = true;
+  groupError.value = '';
+  try {
+    const [groups, membership] = await Promise.all([
+      fetchFavoriteGroups('post'),
+      fetchFavoriteGroupMemberships('post', post.value.id),
+    ]);
+    postGroups.value = groups;
+    postGroupIds.value = membership.groupIds || [];
+  } catch (error) {
+    groupError.value = error.message || '无法读取收藏分组';
+  } finally {
+    groupLoading.value = false;
+  }
+}
+
+async function togglePostGroup(group) {
+  if (!post.value?.id) return;
+  const joined = postGroupIds.value.includes(group.id);
+  try {
+    if (joined) {
+      await removeFavoriteGroupMember(group.id, post.value.id);
+      postGroupIds.value = postGroupIds.value.filter((id) => id !== group.id);
+    } else {
+      await addFavoriteGroupMember(group.id, post.value.id);
+      postGroupIds.value = [...postGroupIds.value, group.id];
+    }
+    const refreshed = await fetchFavoriteGroups('post');
+    postGroups.value = refreshed;
+  } catch (error) {
+    groupError.value = error.message || '更新分组失败';
+  }
+}
+
+async function createPostGroup() {
+  const name = newGroupName.value.trim();
+  if (!name) return;
+  try {
+    await createFavoriteGroup('post', name);
+    newGroupName.value = '';
+    postGroups.value = await fetchFavoriteGroups('post');
+  } catch (error) {
+    groupError.value = error.message || '创建分组失败';
+  }
+}
 const replyTarget = ref(null);
 
 const quickCommentText = ref('');
@@ -686,6 +748,15 @@ async function removePost() {
                       }}</span>
                     </button>
                     <button
+                      v-if="isFavorited"
+                      type="button"
+                      class="action-icon-btn"
+                      aria-label="设置收藏分组"
+                      @click="openGroups"
+                    >
+                      <span class="icon-emoji">🏷️</span>
+                    </button>
+                    <button
                       type="button"
                       class="action-icon-btn"
                       :aria-label="`评论 ${post.commentCount || 0}`"
@@ -755,6 +826,15 @@ async function removePost() {
                   <span class="icon-count">{{ post.favoriteCount || 0 }}</span>
                 </button>
                 <button
+                  v-if="isFavorited"
+                  type="button"
+                  class="action-icon-btn"
+                  aria-label="设置收藏分组"
+                  @click="openGroups"
+                >
+                  <span class="icon-emoji">🏷️</span>
+                </button>
+                <button
                   type="button"
                   class="action-icon-btn"
                   :aria-label="`评论 ${post.commentCount || 0}`"
@@ -777,10 +857,55 @@ async function removePost() {
         </div>
       </div>
     </Transition>
+    <ElDialog
+      v-model="groupDialogOpen"
+      title="收藏分组"
+      width="min(420px, 92vw)"
+    >
+      <p v-if="groupError" role="alert">{{ groupError }}</p>
+      <p v-if="groupLoading">正在读取分组…</p>
+      <template v-else>
+        <p v-if="!postGroups.length">还没有分组，可在下方新建。</p>
+        <label v-for="group in postGroups" :key="group.id" class="group-choice">
+          <input
+            type="checkbox"
+            :checked="postGroupIds.includes(group.id)"
+            @change="togglePostGroup(group)"
+          />
+          {{ group.name }} ({{ group.itemCount }})
+        </label>
+        <div class="group-create">
+          <input
+            v-model="newGroupName"
+            maxlength="20"
+            placeholder="新分组名称"
+            aria-label="新分组名称"
+          />
+          <button type="button" @click="createPostGroup">新建</button>
+        </div>
+      </template>
+    </ElDialog>
   </Teleport>
 </template>
 
 <style scoped lang="scss">
+.group-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.group-create {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+  }
+}
 .post-view-count {
   display: inline-flex;
   align-items: center;
