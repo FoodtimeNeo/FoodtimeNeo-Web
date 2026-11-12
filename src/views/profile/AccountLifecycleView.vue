@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore.js';
 import { invalidateSession } from '@/api/http.js';
 import { fetchAccountLifecycle } from '@/api/account-lifecycle.api.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { purgeActor } from '@/utils/postDraft.js';
 import AccountEmailAction from '@/components/profile/AccountEmailAction.vue';
 import BackLink from '@/components/base/BackLink.vue';
 
@@ -67,6 +68,9 @@ async function unbound(result) {
   });
 }
 async function deleted(result) {
+  const ownerId = auth.user?.id;
+  if (ownerId)
+    await purgeActor(window.location.origin, ownerId).catch(() => {});
   auth.clear();
   invalidateSession();
   await router.replace({ name: 'login', query: { accountDeleted: '1' } });
