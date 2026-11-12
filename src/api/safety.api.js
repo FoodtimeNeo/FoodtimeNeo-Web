@@ -12,3 +12,5 @@ export const fetchReports = (page = 1, options = {}) =>
   http.get('/admin/reports', { ...options, params: { page, size: 20 } });
 export const reviewReport = (id) =>
   http.put(`/admin/reports/${encodeURIComponent(id)}/review`);
+export const decideReport = (id, body) =>
+  http.post(`/admin/reports/${encodeURIComponent(id)}/decision`, body);
