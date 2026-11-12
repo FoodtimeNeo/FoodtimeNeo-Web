@@ -1,7 +1,8 @@
 <script setup>
-import { nextTick, reactive, ref } from 'vue';
+import { computed, nextTick, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import { fetchCaptcha } from '@/api/auth.api.js';
 import AuthField from '@/components/auth/AuthField.vue';
 import InkButton from '@/components/base/InkButton.vue';
 import {
@@ -22,8 +23,28 @@ const errors = reactive({ loginId: '', password: '' });
 const submitting = ref(false);
 const serverError = ref('');
 const formElement = ref(null);
+const captcha = ref(null);
+const captchaAnswer = ref('');
+const captchaError = ref('');
+const captchaLoading = ref(false);
+const captchaImage = computed(
+  () => captcha.value && `data:image/png;base64,${captcha.value.imageBase64}`,
+);
+async function loadCaptcha() {
+  captchaLoading.value = true;
+  captchaError.value = '';
+  try {
+    captcha.value = await fetchCaptcha();
+    captchaAnswer.value = '';
+  } catch (error) {
+    captcha.value = null;
+    captchaError.value = error.message || '无法获取验证码，请重试';
+  } finally {
+    captchaLoading.value = false;
+  }
+}
 async function handleSubmit() {
-  if (submitting.value) return;
+  if (submitting.value || captchaLoading.value) return;
   errors.loginId = validateLoginId(form.loginId);
   errors.password = validatePassword(form.password);
   serverError.value = '';
@@ -34,13 +55,27 @@ async function handleSubmit() {
   }
   submitting.value = true;
   try {
-    await auth.login({ loginId: form.loginId.trim(), password: form.password });
+    const payload = {
+      loginId: form.loginId.trim(),
+      password: form.password,
+    };
+    if (captcha.value?.challengeId && captchaAnswer.value.trim()) {
+      payload.challengeId = captcha.value.challengeId;
+      payload.challengeAnswer = captchaAnswer.value.trim();
+    }
+    await auth.login(payload);
     form.password = '';
+    captcha.value = null;
+    captchaAnswer.value = '';
     await router.replace(
       safeRedirect(route.query.redirect) || { name: 'home' },
     );
   } catch (error) {
     serverError.value = error.message || '登录失败';
+    if (['CAPTCHA_REQUIRED', 'CAPTCHA_INVALID'].includes(error?.bizCode)) {
+      await loadCaptcha();
+      if (captchaError.value) serverError.value = captchaError.value;
+    }
   } finally {
     submitting.value = false;
   }
@@ -83,9 +118,34 @@ async function handleSubmit() {
         autocomplete="current-password"
         :error="errors.password"
       />
-      <InkButton variant="primary" type="submit" :disabled="submitting">{{
-        submitting ? '登录中…' : '登录'
-      }}</InkButton>
+      <p v-if="captchaLoading" role="status">正在获取验证码…</p>
+      <div v-if="captcha" class="auth-view__captcha">
+        <img :src="captchaImage" alt="登录验证码图片" width="160" height="60" />
+        <AuthField
+          v-model="captchaAnswer"
+          label="验证码答案"
+          inputmode="numeric"
+          autocomplete="off"
+          :maxlength="4"
+        />
+        <button
+          type="button"
+          class="auth-view__captcha-refresh"
+          :disabled="captchaLoading"
+          @click="loadCaptcha"
+        >
+          换一题
+        </button>
+      </div>
+      <p v-if="captchaError" role="alert" class="auth-view__error">
+        {{ captchaError }}
+      </p>
+      <InkButton
+        variant="primary"
+        type="submit"
+        :disabled="submitting || captchaLoading"
+        >{{ submitting ? '登录中…' : '登录' }}</InkButton
+      >
       <RouterLink :to="{ name: 'forgotPassword' }">忘记密码？</RouterLink>
     </form>
     <p>
@@ -157,6 +217,24 @@ form {
 .auth-view__error {
   color: var(--ft-color-danger);
   overflow-wrap: anywhere;
+}
+.auth-view__captcha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ft-space-1);
+  align-items: flex-start;
+
+  img {
+    border: 1px solid var(--ft-color-secondary);
+    background: #f8f4ec;
+  }
+}
+.auth-view__captcha-refresh {
+  border: 0;
+  background: transparent;
+  color: var(--ft-color-primary);
+  cursor: pointer;
+  text-decoration: underline;
 }
 a {
   color: var(--ft-color-primary);
