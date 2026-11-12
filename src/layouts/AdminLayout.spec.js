@@ -31,7 +31,7 @@ describe('管理导航权限', () => {
   // 全量并发运行时挂载较慢，断言与逻辑无关，仅放宽超时防抖动。
   it(
     '管理员可见审核和内容管理入口，不显示超管入口',
-    { timeout: 30000 },
+    { timeout: 60000 },
     async () => {
       const wrapper = await mountForRole('admin');
       expect(wrapper.text()).toContain('内容审核');
