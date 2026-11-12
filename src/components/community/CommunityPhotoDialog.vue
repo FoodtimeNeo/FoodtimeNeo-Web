@@ -247,6 +247,12 @@ function onWheel(event) {
 function onKeydown(event) {
   if (event.key === 'Escape') {
     event.preventDefault();
+    const menu = dialog.value.querySelector('details[open]');
+    if (menu) {
+      menu.open = false;
+      menu.querySelector('summary').focus();
+      return;
+    }
     emit('close');
   } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
     event.preventDefault();
@@ -374,9 +380,30 @@ onBeforeUnmount(() => {
             }}
           </button>
         </div>
-        <span class="photo-dialog__count" aria-live="polite"
-          >{{ index + 1 }}/{{ images.length }}</span
-        >
+        <div class="photo-dialog__tools">
+          <span class="photo-dialog__count" aria-live="polite"
+            >{{ index + 1 }}/{{ images.length }}</span
+          >
+          <details v-if="images.length > 1" class="photo-dialog__options">
+            <summary aria-label="看图选项">⋮</summary>
+            <div class="photo-dialog__menu">
+              <button
+                type="button"
+                :disabled="index === 0"
+                @click="navigate(-1)"
+              >
+                上一张图片
+              </button>
+              <button
+                type="button"
+                :disabled="index + 1 === images.length"
+                @click="navigate(1)"
+              >
+                下一张图片
+              </button>
+            </div>
+          </details>
+        </div>
       </header>
       <button
         v-if="index > 0"
@@ -499,7 +526,7 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0 0 auto;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: calc(8px + env(safe-area-inset-top))
@@ -545,12 +572,69 @@ onBeforeUnmount(() => {
   background: #313131e8;
   padding: 5px 15px;
 }
+.photo-dialog__original {
+  min-width: 0;
+  justify-self: center;
+}
+.photo-dialog__original button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
 .photo-dialog__count {
   justify-self: end;
   font-variant-numeric: tabular-nums;
 }
+.photo-dialog__tools {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: 8px;
+  min-width: 0;
+}
+.photo-dialog__options {
+  position: relative;
+  pointer-events: auto;
+}
+.photo-dialog__options summary {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: #252525db;
+  cursor: pointer;
+  list-style: none;
+  font-size: 24px;
+}
+.photo-dialog__options summary::-webkit-details-marker {
+  display: none;
+}
+.photo-dialog__options summary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.photo-dialog__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  min-width: 132px;
+  border-radius: 8px;
+  background: #252525;
+}
+.photo-dialog__menu button {
+  padding: 4px 12px;
+  background: transparent;
+  text-align: start;
+}
+.photo-dialog__menu button:disabled {
+  opacity: 0.45;
+}
 .photo-dialog__prev,
 .photo-dialog__next {
+  display: none;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -560,6 +644,21 @@ onBeforeUnmount(() => {
 }
 .photo-dialog__next {
   right: max(8px, env(safe-area-inset-right));
+}
+@media (any-hover: hover) and (any-pointer: fine) {
+  .photo-dialog__prev,
+  .photo-dialog__next {
+    display: grid;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .photo-dialog:hover .photo-dialog__prev,
+  .photo-dialog:hover .photo-dialog__next,
+  .photo-dialog__prev:focus-visible,
+  .photo-dialog__next:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 .photo-dialog__loading,
 .photo-dialog__retry {

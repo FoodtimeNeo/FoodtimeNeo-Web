@@ -284,20 +284,19 @@ function closeLightbox() {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgb(255 255 255 / 78%);
-    color: #333;
-    border: 1px solid rgb(255 255 255 / 60%);
+    width: 44px;
+    height: 44px;
+    border-radius: var(--ft-radius-sm);
+    background: var(--zine-paper-card);
+    color: var(--ft-color-text);
+    border: 1px solid var(--ft-color-secondary);
     font-size: 26px;
     line-height: 36px;
     cursor: pointer;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 4px 14px rgb(0 0 0 / 12%);
+    box-shadow: 3px 3px 0 var(--zine-paper-edge);
     transition:
       background 180ms ease,
       transform 180ms ease,
@@ -305,9 +304,7 @@ function closeLightbox() {
     z-index: 2;
 
     &:hover {
-      background: #fff;
-      transform: translateY(-50%) scale(1.08);
-      box-shadow: 0 6px 18px rgb(0 0 0 / 18%);
+      background: var(--zine-paper-card-alt);
     }
 
     &--prev {
@@ -388,6 +385,21 @@ function closeLightbox() {
         background: var(--ft-color-primary, #e60026);
       }
     }
+  }
+}
+
+/* Touch uses swipes and the page dots. Mouse and keyboard reveal equivalent controls. */
+@media (any-hover: hover) and (any-pointer: fine) {
+  .community-image-viewer__nav-btn {
+    display: flex;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .community-image-viewer__stage:hover .community-image-viewer__nav-btn,
+  .community-image-viewer__stage:focus-within .community-image-viewer__nav-btn {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
