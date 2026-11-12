@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useBrowsingHistoryStore } from '@/store/useBrowsingHistoryStore.js';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import {
@@ -22,6 +23,7 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 const route = useRoute();
+const browsingHistory = useBrowsingHistoryStore();
 const dishId = computed(() => String(route.params.dishId));
 const {
   data: dish,
@@ -68,6 +70,7 @@ watch(dishPending, (pending) => {
   if (!pending && dish.value && !error.value) {
     loadImages();
     loadRating();
+    void browsingHistory.record('dish', dishId.value);
   }
 });
 const data = computed(() =>

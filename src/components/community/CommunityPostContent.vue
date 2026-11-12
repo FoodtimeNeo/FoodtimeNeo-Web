@@ -2,6 +2,7 @@
 import { nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import { useBrowsingHistoryStore } from '@/store/useBrowsingHistoryStore.js';
 import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import {
@@ -45,6 +46,7 @@ const props = defineProps({
 const emit = defineEmits(['deleted', 'close']);
 
 const auth = useAuthStore();
+const browsingHistory = useBrowsingHistoryStore();
 const router = useRouter();
 const {
   canRemove,
@@ -80,6 +82,8 @@ async function load() {
     const result = await fetchCommunityPostDetail(props.postId);
     if (current === version) {
       post.value = result;
+      if (result.status === 'approved')
+        void browsingHistory.record('post', result.id);
       const authorId = result.author?.id;
       isFollowing.value = false;
       // 关注状态单独查询，作者是自己时按钮不展示，无需请求。
