@@ -2,7 +2,11 @@
 import { onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { fetchMyModerationDecisions, submitAppeal } from '@/api/safety.api.js';
+import {
+  fetchDecisionActions,
+  fetchMyModerationDecisions,
+  submitAppeal,
+} from '@/api/safety.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { formatTime } from '@/utils/recordLabels.js';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -14,6 +18,7 @@ const items = ref([]);
 const loading = ref(true);
 const error = ref('');
 const drafts = reactive({});
+const actionLists = reactive({});
 const labels = {
   upheld: '成立',
   not_upheld: '不成立',
@@ -67,6 +72,22 @@ function clearDraft(decision) {
     sessionStorage.removeItem(draftKey(decision.decisionId));
   } catch {
     // Ignore unavailable storage.
+  }
+}
+
+async function loadActions(decision) {
+  const key = decision.decisionId;
+  if (actionLists[key]) {
+    actionLists[key].open = !actionLists[key].open;
+    return;
+  }
+  actionLists[key] = { open: true, loading: true, items: [], error: '' };
+  try {
+    actionLists[key].items = await fetchDecisionActions(key);
+  } catch (failure) {
+    actionLists[key].error = failure.message || '无法读取处理动作';
+  } finally {
+    actionLists[key].loading = false;
   }
 }
 
@@ -152,6 +173,36 @@ onMounted(load);
         <p>公开理由：{{ item.publicReason }}</p>
         <p>入箱时间：{{ formatTime(item.deliveredAt) }}</p>
         <p>申诉截止：{{ formatTime(item.appealDeadline) }}</p>
+        <button
+          type="button"
+          class="appeal-only__toggle"
+          @click="loadActions(item)"
+        >
+          {{
+            actionLists[item.decisionId]?.open ? '收起处理动作' : '查看处理动作'
+          }}
+        </button>
+        <div
+          v-if="actionLists[item.decisionId]?.open"
+          class="appeal-only__actions"
+        >
+          <p v-if="actionLists[item.decisionId].loading">正在读取…</p>
+          <p v-else-if="actionLists[item.decisionId].error" role="alert">
+            {{ actionLists[item.decisionId].error }}
+          </p>
+          <p v-else-if="!actionLists[item.decisionId].items.length">
+            尚未记录实际处理动作。
+          </p>
+          <ul v-else>
+            <li
+              v-for="action in actionLists[item.decisionId].items"
+              :key="action.id"
+            >
+              {{ action.actionType }} · {{ action.targetType }} ·
+              {{ formatTime(action.createdAt) }}
+            </li>
+          </ul>
+        </div>
         <p v-if="item.appealStatus">
           你的申诉：{{ labels[item.appealStatus] || item.appealStatus }}
           <span v-if="item.appealOutcome">
@@ -210,6 +261,21 @@ onMounted(load);
   }
 
   &__account {
+    font-size: var(--ft-font-size-sm);
+  }
+
+  &__toggle {
+    margin-top: 10px;
+    border: 0;
+    background: transparent;
+    color: var(--ft-color-primary);
+    cursor: pointer;
+  }
+
+  &__actions {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--ft-color-secondary);
     font-size: var(--ft-font-size-sm);
   }
 

@@ -2,6 +2,7 @@
 import { reactive, ref } from 'vue';
 import {
   addReportFollowUp,
+  fetchDecisionActions,
   fetchMyModerationDecisions,
   fetchMyReports,
   fetchReportFollowUps,
@@ -21,6 +22,7 @@ const reports = usePagedData(fetchMyReports);
 const decisions = usePagedData(fetchMyModerationDecisions);
 const threads = reactive({});
 const appeals = reactive({});
+const actionLists = reactive({});
 const labels = {
   post: '食记',
   comment: '评论',
@@ -134,6 +136,22 @@ function appealFor(decision) {
       requestId: crypto.randomUUID(),
     };
   return appeals[decision.decisionId];
+}
+
+async function loadActions(decision) {
+  const key = decision.decisionId;
+  if (actionLists[key]) {
+    actionLists[key].open = !actionLists[key].open;
+    return;
+  }
+  actionLists[key] = { open: true, loading: true, items: [], error: '' };
+  try {
+    actionLists[key].items = await fetchDecisionActions(key);
+  } catch (error) {
+    actionLists[key].error = error.message || '无法读取处理动作';
+  } finally {
+    actionLists[key].loading = false;
+  }
 }
 
 function canAppeal(decision) {
@@ -317,6 +335,39 @@ async function sendAppeal(decision) {
               item.side === 'reporter' ? '举报人' : '被举报人'
             }}</small
           >
+          <button
+            type="button"
+            class="my-reports__toggle"
+            @click="loadActions(item)"
+          >
+            {{
+              actionLists[item.decisionId]?.open
+                ? '收起处理动作'
+                : '查看处理动作'
+            }}
+          </button>
+          <div
+            v-if="actionLists[item.decisionId]?.open"
+            class="my-reports__actions"
+          >
+            <p v-if="actionLists[item.decisionId].loading">正在读取…</p>
+            <p v-else-if="actionLists[item.decisionId].error" role="alert">
+              {{ actionLists[item.decisionId].error }}
+            </p>
+            <p v-else-if="!actionLists[item.decisionId].items.length">
+              尚未记录实际处理动作。
+            </p>
+            <ul v-else>
+              <li
+                v-for="action in actionLists[item.decisionId].items"
+                :key="action.id"
+              >
+                {{ action.actionType }} · {{ action.targetType }} ·
+                {{ formatTime(action.createdAt) }}
+                <span v-if="action.note"> · {{ action.note }}</span>
+              </li>
+            </ul>
+          </div>
           <p v-if="item.appealStatus">
             你的申诉：{{ labels[item.appealStatus] || item.appealStatus }}
             <span v-if="item.appealOutcome">
@@ -449,6 +500,13 @@ async function sendAppeal(decision) {
     background: transparent;
     color: var(--ft-color-primary);
     cursor: pointer;
+  }
+
+  &__actions {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--ft-color-secondary);
+    font-size: var(--ft-font-size-sm);
   }
 
   &__thread,

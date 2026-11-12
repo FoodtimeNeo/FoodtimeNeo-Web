@@ -53,3 +53,7 @@ export const startAppealReview = (id, expectedRevision) =>
   });
 export const resolveAppeal = (id, body) =>
   http.post(`/admin/appeals/${encodeURIComponent(id)}/resolve`, body);
+export const fetchDecisionActions = (decisionId) =>
+  http.get(
+    `/users/me/moderation-decisions/${encodeURIComponent(decisionId)}/actions`,
+  );
