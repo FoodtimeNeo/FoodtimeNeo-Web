@@ -9,6 +9,12 @@ import {
 } from 'vue';
 import CommunityPhotoSlide from './CommunityPhotoSlide.vue';
 import { useImageCarousel } from '@/composables/useImageCarousel.js';
+import {
+  easeOutCubic,
+  interpolateTransform,
+  ZOOM_DURATION_MS,
+  zoomTarget,
+} from '@/utils/zoomAnimation.js';
 
 const props = defineProps({
   images: { type: Array, required: true },
@@ -50,6 +56,7 @@ let tapTimer;
 let resize;
 let restoreFocus;
 let previousOverflow;
+let zoomFrame = 0;
 
 function clearTap() {
   window.clearTimeout(tapTimer);
@@ -62,9 +69,52 @@ function resetZoom() {
   y.value = 0;
 }
 
+function cancelZoomAnimation() {
+  if (zoomFrame) cancelAnimationFrame(zoomFrame);
+  zoomFrame = 0;
+}
+
+function prefersReducedMotion() {
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+function applyTransform(next) {
+  scale.value = next.scale;
+  x.value = next.x;
+  y.value = next.y;
+  moveWithinCanvas();
+}
+
+/** 双击/键盘缩放使用同一协调器；同一时刻只保留一个动画。 */
+function animateZoom(next, anchor) {
+  cancelZoomAnimation();
+  const from = { scale: scale.value, x: x.value, y: y.value };
+  const to = zoomTarget({
+    ...from,
+    rect: canvas.value.getBoundingClientRect(),
+    anchor,
+    nextScale: next,
+  });
+  if (prefersReducedMotion()) {
+    applyTransform(to);
+    return;
+  }
+  const startedAt = Date.now();
+  const step = () => {
+    const progress = Math.min(1, (Date.now() - startedAt) / ZOOM_DURATION_MS);
+    applyTransform(interpolateTransform(from, to, easeOutCubic(progress)));
+    zoomFrame = progress < 1 ? requestAnimationFrame(step) : 0;
+  };
+  zoomFrame = requestAnimationFrame(step);
+}
+
 watch(
   () => props.index,
   () => {
+    cancelZoomAnimation();
     clearTap();
     fittedAspect = 0;
     resetZoom();
@@ -125,6 +175,7 @@ function pinch() {
 
 function onPointerDown(event) {
   if (event.button !== 0 || pointers.size >= 2) return;
+  cancelZoomAnimation();
   const position = point(event);
   pointers.set(event.pointerId, position);
   canvas.value.setPointerCapture?.(event.pointerId);
@@ -146,6 +197,7 @@ function onPointerMove(event) {
   const position = point(event);
   pointers.set(event.pointerId, position);
   if (before) {
+    cancelZoomAnimation();
     const after = pinch();
     zoom(scale.value * (after.span / before.span), before.center, after.center);
     return;
@@ -172,8 +224,7 @@ function onPointerUp(event) {
   }
   if (tap && distance(tap, position) < 36) {
     clearTap();
-    if (scale.value > 1) resetZoom();
-    else zoom(2.5, position);
+    animateZoom(scale.value > 1 ? 1 : 2.5, position);
     return;
   }
   clearTap();
@@ -182,9 +233,15 @@ function onPointerUp(event) {
 }
 
 function onPointerCancel() {
+  cancelZoomAnimation();
   carousel.cancel();
   pointers.clear();
   clearTap();
+}
+
+function onWheel(event) {
+  cancelZoomAnimation();
+  zoom(scale.value * Math.exp(-event.deltaY * 0.002), point(event));
 }
 
 function onKeydown(event) {
@@ -196,7 +253,7 @@ function onKeydown(event) {
     navigate(event.key === 'ArrowLeft' ? -1 : 1);
   } else if (['+', '=', '-'].includes(event.key)) {
     const rect = canvas.value.getBoundingClientRect();
-    zoom(scale.value * (event.key === '-' ? 1 / 1.5 : 1.5), {
+    animateZoom(scale.value * (event.key === '-' ? 1 / 1.5 : 1.5), {
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
     });
@@ -215,6 +272,7 @@ onMounted(() => {
   }
 });
 onBeforeUnmount(() => {
+  cancelZoomAnimation();
   clearTap();
   resize?.disconnect();
   dialog.value?.close();
@@ -240,9 +298,7 @@ onBeforeUnmount(() => {
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
         @pointercancel="onPointerCancel"
-        @wheel.prevent="
-          zoom(scale * Math.exp(-$event.deltaY * 0.002), point($event))
-        "
+        @wheel.prevent="onWheel"
       >
         <div ref="imageArea" class="photo-dialog__image-area">
           <div
