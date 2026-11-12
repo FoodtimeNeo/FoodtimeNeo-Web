@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {
@@ -19,6 +19,12 @@ const loading = ref(true);
 const error = ref('');
 const drafts = reactive({});
 const actionLists = reactive({});
+const accountScope = computed(() =>
+  auth.isRestricted && auth.user?.id
+    ? JSON.stringify([window.location.origin, auth.user.id])
+    : '',
+);
+let scopeController = new AbortController();
 const labels = {
   upheld: '成立',
   not_upheld: '不成立',
@@ -30,10 +36,13 @@ const labels = {
 };
 
 function draftKey(decisionId) {
-  return `foodtime:appeal-draft:${decisionId}`;
+  return accountScope.value
+    ? `foodtime:appeal-draft:v2:${accountScope.value}:${decisionId}`
+    : '';
 }
 
 function readDraft(key) {
+  if (!key) return null;
   try {
     const raw = sessionStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
@@ -56,10 +65,12 @@ function draftFor(decision) {
 }
 
 function saveDraft(decision) {
+  const key = draftKey(decision.decisionId);
+  if (!key) return;
   const draft = draftFor(decision);
   try {
     sessionStorage.setItem(
-      draftKey(decision.decisionId),
+      key,
       JSON.stringify({ content: draft.content, requestId: draft.requestId }),
     );
   } catch {
@@ -67,9 +78,10 @@ function saveDraft(decision) {
   }
 }
 
-function clearDraft(decision) {
+function clearDraft(key) {
+  if (!key) return;
   try {
-    sessionStorage.removeItem(draftKey(decision.decisionId));
+    sessionStorage.removeItem(key);
   } catch {
     // Ignore unavailable storage.
   }
@@ -79,15 +91,18 @@ async function loadActions(decision) {
   const key = decision.decisionId;
   if (actionLists[key]) {
     actionLists[key].open = !actionLists[key].open;
-    return;
+    if (!actionLists[key].open || !actionLists[key].error) return;
   }
-  actionLists[key] = { open: true, loading: true, items: [], error: '' };
+  const state = reactive({ open: true, loading: true, items: [], error: '' });
+  actionLists[key] = state;
+  const signal = scopeController.signal;
   try {
-    actionLists[key].items = await fetchDecisionActions(key);
+    const data = await fetchDecisionActions(key, { signal });
+    if (!signal.aborted) state.items = data;
   } catch (failure) {
-    actionLists[key].error = failure.message || '无法读取处理动作';
+    if (!signal.aborted) state.error = failure.message || '无法读取处理动作';
   } finally {
-    actionLists[key].loading = false;
+    if (!signal.aborted) state.loading = false;
   }
 }
 
@@ -98,20 +113,29 @@ function canAppeal(decision) {
 }
 
 async function load() {
+  const signal = scopeController.signal;
+  if (!accountScope.value) {
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   error.value = '';
   try {
-    const data = await fetchMyModerationDecisions(1, {});
-    items.value = data.items;
+    const data = await fetchMyModerationDecisions(1, { signal });
+    if (!signal.aborted) items.value = data.items;
   } catch (failure) {
-    error.value = failure.message || '无法读取处理决定';
+    if (!signal.aborted) error.value = failure.message || '无法读取处理决定';
   } finally {
-    loading.value = false;
+    if (!signal.aborted) loading.value = false;
   }
 }
 
 async function submit(decision) {
+  const key = draftKey(decision.decisionId);
+  if (!key) return;
+  const signal = scopeController.signal;
   const draft = draftFor(decision);
+  if (draft.submitting) return;
   if (!draft.content.trim()) {
     draft.error = '请填写申诉内容';
     return;
@@ -120,17 +144,22 @@ async function submit(decision) {
   draft.error = '';
   saveDraft(decision);
   try {
-    const created = await submitAppeal(decision.decisionId, {
-      content: draft.content.trim(),
-      evidenceUrls: [],
-      clientRequestId: draft.requestId,
-    });
+    const created = await submitAppeal(
+      decision.decisionId,
+      {
+        content: draft.content.trim(),
+        evidenceUrls: [],
+        clientRequestId: draft.requestId,
+      },
+      { signal },
+    );
+    if (signal.aborted) return;
     decision.appealId = created.id;
     decision.appealStatus = created.status;
-    clearDraft(decision);
+    clearDraft(key);
     ElMessage.success('申诉已提交');
   } catch (failure) {
-    draft.error = failure.message || '申诉提交失败';
+    if (!signal.aborted) draft.error = failure.message || '申诉提交失败';
   } finally {
     draft.submitting = false;
   }
@@ -141,7 +170,20 @@ async function logout() {
   await router.replace({ name: 'login' });
 }
 
-onMounted(load);
+watch(
+  accountScope,
+  () => {
+    scopeController.abort();
+    scopeController = new AbortController();
+    items.value = [];
+    error.value = '';
+    for (const key of Object.keys(drafts)) delete drafts[key];
+    for (const key of Object.keys(actionLists)) delete actionLists[key];
+    load();
+  },
+  { immediate: true, flush: 'sync' },
+);
+onBeforeUnmount(() => scopeController.abort());
 </script>
 
 <template>

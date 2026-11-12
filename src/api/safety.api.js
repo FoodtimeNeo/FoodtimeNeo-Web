@@ -28,10 +28,11 @@ export const fetchReportFollowUps = (id, page = 1, options = {}) =>
   });
 export const addReportFollowUp = (id, body) =>
   http.post(`/users/me/reports/${encodeURIComponent(id)}/follow-ups`, body);
-export const submitAppeal = (decisionId, body) =>
+export const submitAppeal = (decisionId, body, options = {}) =>
   http.post(
     `/users/me/moderation-decisions/${encodeURIComponent(decisionId)}/appeals`,
     body,
+    options,
   );
 export const fetchAdminDecisions = (page = 1, options = {}) =>
   http.get('/admin/reports/decisions', {
@@ -60,7 +61,8 @@ export const startAppealReview = (id, expectedRevision) =>
   });
 export const resolveAppeal = (id, body) =>
   http.post(`/admin/appeals/${encodeURIComponent(id)}/resolve`, body);
-export const fetchDecisionActions = (decisionId) =>
+export const fetchDecisionActions = (decisionId, options = {}) =>
   http.get(
     `/users/me/moderation-decisions/${encodeURIComponent(decisionId)}/actions`,
+    options,
   );
