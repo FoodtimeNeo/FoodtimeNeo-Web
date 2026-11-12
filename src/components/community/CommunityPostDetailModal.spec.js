@@ -8,6 +8,19 @@ const fetchPostComments = vi.fn();
 const createPostComment = vi.fn();
 const recordPostView = vi.fn();
 
+vi.mock('@/api/browsingHistory.api.js', () => ({
+  fetchHistorySettings: vi.fn().mockResolvedValue({
+    enabled: false,
+    revision: 1,
+    dishEpoch: 0,
+    postEpoch: 0,
+  }),
+  recordBrowsingHistory: vi.fn(),
+  updateHistorySettings: vi.fn(),
+}));
+vi.mock('@/api/follow.api.js', () => ({
+  fetchFollowStatus: vi.fn().mockResolvedValue({ followed: false }),
+}));
 vi.mock('@/api/community.api.js', () => ({
   recordPostView: (...args) => recordPostView(...args),
   fetchCommunityPostDetail: (...args) => fetchCommunityPostDetail(...args),
