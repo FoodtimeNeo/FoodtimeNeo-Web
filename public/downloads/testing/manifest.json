@@ -6,26 +6,26 @@
   "sourceCommit": "a467df266513ed3e02c393756c290f447c1c1b3a",
   "sourceRef": "refs/heads/main",
   "apk": {
-    "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v2.0.0%CE%B1/app-release.apk",
+    "url": "https://bjtufoodtime.top/downloads/testing/FoodtimeNeo-Android.apk",
     "sha256": "ccb7d86a5cfb8e55f5b019cffe8b07a9e01814ce4c850650131a201e02431220",
     "size": 22200595
   },
   "patches": [
     {
       "baseVersionCode": 22,
-      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v2.0.0%CE%B1/app-release-22-23.patch",
+      "url": "https://bjtufoodtime.top/downloads/testing/app-release-22-23.patch",
       "sha256": "ab2cf0ba9606320fd5344480f10ffaabab57dca57b9c67293fd727cccaae8fdb",
       "size": 2104504
     },
     {
       "baseVersionCode": 21,
-      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v2.0.0%CE%B1/app-release-21-23.patch",
+      "url": "https://bjtufoodtime.top/downloads/testing/app-release-21-23.patch",
       "sha256": "bc4162aa84bae00f7ecbf6112a95f5ead5deee09dd79b8d22bbb52543d7c9b63",
       "size": 2103916
     },
     {
       "baseVersionCode": 20,
-      "url": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v2.0.0%CE%B1/app-release-20-23.patch",
+      "url": "https://bjtufoodtime.top/downloads/testing/app-release-20-23.patch",
       "sha256": "ead501a8ce9288256a50ce69c75bbb3b4e08f93320d1b10cd1e3634041e6e5bb",
       "size": 2103210
     }
