@@ -195,7 +195,7 @@ async function handleSubmit() {
       <p v-if="notice" role="status">{{ notice }}</p>
       <p class="auth-view__hint">
         支持 QQ、163、126、Gmail、Outlook
-        等主流邮箱；使用学校邮箱注册可直接发帖评论，其他邮箱注册后为只读访客，可在「我的」绑定学校邮箱解锁。
+        等主流邮箱。注册后的可用功能由平台当前权限策略决定，学校邮箱可在「我的」绑定。
       </p>
       <AuthField
         v-model="form.email"
