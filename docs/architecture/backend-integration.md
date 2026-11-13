@@ -99,3 +99,9 @@ PUT/DELETE /review-replies/{id}/like 与一级点评点赞共用按钮状态处�
 `GET /dishes/search` 的 `q` 可空；支持 `diningHallIds`（逗号分隔 UUID，可多选）、`minPrice`/`maxPrice`、`minRating`（0–5，UI 档位 3.0/3.5/4.0/4.5）、`sort`（`relevance`/`price_asc`/`price_desc`/`rating_desc`）与现有分页。搜索页把非敏感筛选写入 URL，修改条件从第一页重查；旧关键词/旧筛选的迟到响应不得覆盖当前结果。
 
 响应新增可空 `averageScore` 与非负 `reviewCount`。价格或评分未知的菜品保留并排在完整数据之后，不按 0 处理，也不自动标成称重；已知值不符合价格/评分门槛的仍被排除。页面显示“价格未填写/价格待补充”和“暂无评分”，不自行计算平均分。
+
+## 普通参与权限（2026-11-13）
+
+服务器默认 `PARTICIPATION_SCHOOL_EMAIL_REQUIRED=false`，非学校邮箱启用账号与学校邮箱普通账号同权；注册、登录、本人会话及资料的 `role` 为服务器解析的有效权限，真实学校认证以 `schoolEmailVerified` 为准。客户端继续消费角色／能力，不复制部署开关；反馈额度按有效角色提示为每日 5 条，恢复门槛后只读访客为 2 条。
+
+绑定、解绑、验证码和 1 小时冷却保留。解绑响应可返回 `user` 或 `visitor`，两者均必须移除学校邮箱认证；页面同步服务器返回的权限，不再硬编码“解绑必定变只读”。服务器设 `PARTICIPATION_SCHOOL_EMAIL_REQUIRED=true` 并重启可恢复原限制，无需数据迁移；客户端刷新会话后同步，旧页面也不能绕过后端校验。未新增客户端开关或管理权限。
