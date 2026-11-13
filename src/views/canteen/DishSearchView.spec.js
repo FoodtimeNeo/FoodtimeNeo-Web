@@ -118,3 +118,29 @@ it('价格区间非法时不发请求并显示错误', async () => {
   expect(searchDishes.mock.calls.length).toBe(before);
   expect(wrapper.text()).toContain('最低价格不能高于最高价格');
 });
+
+it('点击数字直接跨页，保留已提交的关键词和筛选', async () => {
+  searchDishes.mockImplementation(async (_q, page) => ({
+    items: [dish],
+    page,
+    size: 20,
+    total: 400,
+  }));
+  await render({
+    q: '豆腐',
+    halls: ['hall'],
+    minPrice: '10',
+    sort: 'price_asc',
+  });
+  for (const page of [3, 5, 3, 1]) {
+    await wrapper.get(`button[aria-label="第 ${page} 页"]`).trigger('click');
+    await flushPromises();
+    expect(searchDishes.mock.calls.at(-1)[1]).toBe(page);
+    expect(searchDishes.mock.calls.at(-1)[3]).toMatchObject({
+      q: '豆腐',
+      diningHallIds: ['hall'],
+      minPrice: '10',
+      sort: 'price_asc',
+    });
+  }
+});
