@@ -22,6 +22,7 @@ import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
 import DishLink from '@/components/canteen/DishLink.vue';
+import CommunityPinManager from './CommunityPinManager.vue';
 import { shareCommunityPost } from '@/composables/usePostShare.js';
 
 const props = defineProps({
@@ -483,6 +484,7 @@ function formatPostTime(isoString) {
             未通过审核：{{ post.reviewReason || '请遵守社区规范' }}
           </p>
 
+          <CommunityPinManager :post="post" />
           <h1 class="post-title">{{ post.title }}</h1>
           <p class="post-body">{{ post.content }}</p>
           <DishLink

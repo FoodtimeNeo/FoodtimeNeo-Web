@@ -14,6 +14,8 @@ import {
   fetchMyCommunityFavorites,
 } from '@/api/community.api.js';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
+import CommunityPins from '@/components/community/CommunityPins.vue';
+import CommunityPinManager from '@/components/community/CommunityPinManager.vue';
 import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
 import PostCreateModal from '@/components/community/PostCreateModal.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -120,6 +122,7 @@ const tabs = [
 const pages = reactive(
   tabs.map(() => ({
     posts: [],
+    pins: null,
     loading: false,
     error: '',
     cursor: null,
@@ -150,6 +153,8 @@ const isPublic = (section) => section === 'public' || section === 'following';
 const publicMode = computed(() => isPublic(mode.value));
 
 function emptyTitle(section) {
+  if (section === 'public' && activePage.value.pins?.items.length)
+    return '暂时没有其他食记';
   if (isPublic(section) && keyword.value) return '没有匹配的食记';
   if (section === 'following') return '关注的人还没有公开食记';
   if (section === 'mine') return '你还没有发布食记';
@@ -224,17 +229,33 @@ async function loadFeed(more = false) {
   const feed = activePage.value;
   if (feed.loading) return;
   const version = ++feed.version;
+  const owner = `${auth.user?.id}:${auth.role}`;
   const query = feed.query;
   feed.error = '';
   feed.loading = true;
   try {
     // 关键需求：新发的帖子需要审核才能展示，故默认只拉取 approved 状态的帖子
     const pageNumber = more ? feed.page + 1 : 1;
+    let append = more;
+    const readPublic = (append) =>
+      fetchCommunityPosts({
+        cursor: append ? feed.cursor : undefined,
+        ...(section === 'following' ? { following: true } : {}),
+        ...(query ? { q: query } : {}),
+        ...(append &&
+        section === 'public' &&
+        !query &&
+        Number.isSafeInteger(feed.pins?.revision)
+          ? { pinRevision: feed.pins.revision }
+          : {}),
+      });
     const res = isPublic(section)
-      ? await fetchCommunityPosts({
-          cursor: more ? feed.cursor : undefined,
-          ...(section === 'following' ? { following: true } : {}),
-          ...(query ? { q: query } : {}),
+      ? await readPublic(append).catch((error) => {
+          if (append && error.bizCode === 'PIN_SET_CHANGED') {
+            append = false;
+            return readPublic(false);
+          }
+          throw error;
         })
       : await (
           section === 'mine'
@@ -250,16 +271,21 @@ async function loadFeed(more = false) {
             ? { unfiled: true }
             : {}),
         });
-    if (version !== feed.version) return;
-    feed.page = pageNumber;
-    feed.posts = more ? [...feed.posts, ...(res.items || [])] : res.items || [];
+    if (version !== feed.version || owner !== `${auth.user?.id}:${auth.role}`)
+      return;
+    feed.page = append ? pageNumber : 1;
+    feed.posts = append
+      ? [...feed.posts, ...(res.items || [])]
+      : res.items || [];
+    feed.pins = section === 'public' && !query ? res.pins || null : null;
     feed.cursor = res.nextCursor;
     feed.hasMore = isPublic(section)
       ? !!res.hasMore
       : pageNumber * 20 < res.total;
-    if (!more) feed.loadedAt = Date.now();
+    if (!append) feed.loadedAt = Date.now();
   } catch (error) {
-    if (version !== feed.version) return;
+    if (version !== feed.version || owner !== `${auth.user?.id}:${auth.role}`)
+      return;
     feed.error = error.message || '加载社区帖子失败';
     if (mode.value === section) ElMessage.error(feed.error);
   } finally {
@@ -326,6 +352,11 @@ function changeMode(next, reload = false) {
 
 function invalidateSection(section) {
   pages[tabs.findIndex(({ id }) => id === section)].loadedAt = null;
+}
+
+function pinsChanged() {
+  invalidateSection('public');
+  if (mode.value === 'public' && !keyword.value) loadFeed();
 }
 
 function updatePost(post) {
@@ -670,6 +701,15 @@ onUnmounted(() => {
               ></span>
             </div>
             <div class="community-pager__feed">
+              <CommunityPinManager
+                v-if="tab.id === 'public' && !pages[index].query"
+                @changed="pinsChanged"
+              />
+              <CommunityPins
+                v-if="tab.id === 'public' && !pages[index].query"
+                :items="pages[index].pins?.items || []"
+                @open="handleCardClick"
+              />
               <p
                 v-if="pages[index].error && !pages[index].posts.length"
                 role="alert"
@@ -752,6 +792,7 @@ onUnmounted(() => {
       :post-id="activePostId"
       :initial-post="activePost"
       @post-updated="updatePost"
+      @pins-changed="pinsChanged"
       @follow-updated="invalidateSection('following')"
       @deleted="onPostDeleted"
     />
