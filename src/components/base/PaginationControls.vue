@@ -12,6 +12,7 @@ const pages = computed(() => Math.max(1, Math.ceil(props.total / props.size)));
 const strip = ref(null),
   windowSize = ref(5),
   fontSize = ref(16);
+const dotsWidth = ref(16);
 const items = computed(() =>
   paginationItems(props.page, pages.value, windowSize.value),
 );
@@ -31,6 +32,13 @@ function measure() {
   if (!strip.value?.clientWidth) return;
   fontSize.value =
     Number.parseFloat(getComputedStyle(strip.value).fontSize) || 16;
+  const style = getComputedStyle(strip.value);
+  const context = document.createElement('canvas').getContext('2d');
+  if (context) context.font = style.font;
+  dotsWidth.value = Math.max(
+    16,
+    Math.ceil((context?.measureText('...').width || fontSize.value * 1.2) + 4),
+  );
   const width = strip.value.clientWidth;
   for (
     let count = Math.min(pages.value, Math.max(1, Math.floor(width / 44)));
@@ -39,7 +47,10 @@ function measure() {
   ) {
     const candidate = paginationItems(props.page, pages.value, count);
     const required =
-      candidate.reduce((sum, n) => sum + (n === null ? 16 : itemWidth(n)), 0) +
+      candidate.reduce(
+        (sum, n) => sum + (n === null ? dotsWidth.value : itemWidth(n)),
+        0,
+      ) +
       (candidate.length - 1) * 4;
     if (required <= width || count === 1) {
       windowSize.value = count;
@@ -75,6 +86,7 @@ watch([pages, () => props.page], measure, { flush: 'post' });
         <span
           v-if="number === null"
           class="pagination__ellipsis"
+          :style="{ flexBasis: `${dotsWidth}px` }"
           aria-hidden="true"
           >...</span
         >
@@ -134,6 +146,7 @@ watch([pages, () => props.page], measure, { flush: 'post' });
 .pagination__ellipsis {
   flex: 0 0 16px;
   text-align: center;
+  white-space: nowrap;
 }
 button {
   flex-shrink: 0;
