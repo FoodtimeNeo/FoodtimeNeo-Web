@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import TestingApkDownload from '@/components/common/TestingApkDownload.vue';
 
 // 引入放大左上角 70% 的专属高清底图与合成真实截图的手机 Mockup
 import bgTopLeft70 from '@/assets/images/decoration02/bg-topleft-70.jpg';
@@ -14,6 +15,7 @@ import {
   APK_DOWNLOAD_URL,
   APK_FILE_NAME,
   APK_SIZE,
+  APK_VERSION,
 } from '@/constants/download.js';
 
 const router = useRouter();
@@ -135,7 +137,7 @@ function goToWeb() {
                     />
                   </svg>
                 </span>
-                <span class="btn-text">下载安卓安装包 ➔</span>
+                <span class="btn-text">下载安卓安装包 · 正式版 ➔</span>
               </a>
 
               <!-- 右侧小黑色按键：进入网页端（放大至协调比例） -->
@@ -159,6 +161,8 @@ function goToWeb() {
               查看安装说明 ➔
             </button>
           </div>
+          <p>正式版 {{ APK_VERSION }} · {{ APK_SIZE }}</p>
+          <TestingApkDownload />
         </section>
 
         <!-- ---------------- 中间与右侧：真机手机样机整体右移，配合3D悬浮呼吸浮动 ---------------- -->
