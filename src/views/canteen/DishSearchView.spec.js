@@ -72,7 +72,7 @@ it('无关键词也可浏览全部，提交关键词后从第一页搜索并显�
   expect(link.text()).toContain('学苑 · 二号档口');
   expect(link.text()).toContain('4.5 分 · 8 条');
   expect(link.text()).toContain('12.30');
-  await wrapper.findAll('.pagination button')[1].trigger('click');
+  await wrapper.get('button[aria-label="第 2 页"]').trigger('click');
   await flushPromises();
   expect(searchDishes.mock.calls.at(-1).slice(0, 2)).toEqual(['', 2]);
   await wrapper.get('#dish-keyword').setValue('豆腐');
