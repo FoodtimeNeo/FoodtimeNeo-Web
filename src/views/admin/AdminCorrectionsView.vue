@@ -1,4 +1,5 @@
 <script setup>
+import { PRICE_UNITS } from '@/utils/priceHistory.js';
 import { computed, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import {
@@ -69,7 +70,12 @@ async function decide(decision) {
   }
 }
 
-const fieldLabel = { name: '名称', description: '介绍', price: '价格' };
+const fieldLabel = {
+  name: '名称',
+  description: '介绍',
+  price: '价格',
+  priceUnit: '计价单位',
+};
 function price(value) {
   return value === null || value === undefined ? '未知' : `¥${value}`;
 }
@@ -147,6 +153,11 @@ function price(value) {
             <dd v-else-if="field === 'description'">
               {{ detail.correction.originalDescription || '（空）' }} →
               {{ detail.correction.proposedDescription || '（空）' }}
+            </dd>
+            <dd v-else-if="field === 'priceUnit'">
+              {{ PRICE_UNITS[detail.correction.originalPriceUnit] || '未注明' }}
+              →
+              {{ PRICE_UNITS[detail.correction.proposedPriceUnit] || '未注明' }}
             </dd>
             <dd v-else-if="field === 'price'">
               {{ price(detail.correction.originalPrice) }} →

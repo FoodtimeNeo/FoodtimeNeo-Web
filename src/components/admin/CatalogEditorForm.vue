@@ -1,5 +1,6 @@
 <script setup>
 import { onUnmounted, reactive, ref } from 'vue';
+import { PRICE_UNITS } from '@/utils/priceHistory.js';
 import { saveManagedItem, fetchManagedItems } from '@/api/admin-manage.api.js';
 import { uploadImage } from '@/api/submission.api.js';
 import { validatePrice } from '@/utils/submissionValidation.js';
@@ -25,6 +26,7 @@ const form = reactive({
   name: props.item?.name || '',
   description: props.item?.description || '',
   price: props.item?.price === null ? '' : String(props.item?.price ?? ''),
+  priceUnit: props.item?.priceUnit || 'unspecified',
   status: props.item?.status || 'active',
   sortOrder: String(props.item?.sortOrder ?? 0),
 });
@@ -136,7 +138,22 @@ async function submit() {
     <label v-if="type === 'dishes'"
       >价格<input v-model="form.price" inputmode="decimal" :disabled="writing"
     /></label>
-    <template v-else>
+    <label v-if="type === 'dishes'"
+      >计价单位<select
+        v-model="form.priceUnit"
+        aria-label="计价单位"
+        :disabled="writing"
+      >
+        <option
+          v-for="(label, value) in PRICE_UNITS"
+          :key="value"
+          :value="value"
+        >
+          {{ label }}
+        </option>
+      </select></label
+    >
+    <template v-if="type !== 'dishes'">
       <label
         >排序值（数值越小越靠前）<input
           v-model="form.sortOrder"
@@ -165,7 +182,11 @@ async function submit() {
       <p>目录封面可留空；选择图片后将上传本人文件。</p>
     </template>
     <label
-      >状态<select v-model="form.status" :disabled="writing">
+      >状态<select
+        v-model="form.status"
+        aria-label="目录状态"
+        :disabled="writing"
+      >
         <option value="active">启用</option>
         <option value="inactive">停用</option>
       </select></label

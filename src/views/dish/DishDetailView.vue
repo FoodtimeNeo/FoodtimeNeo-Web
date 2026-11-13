@@ -12,7 +12,7 @@ import {
 } from '@/api/dish.api.js';
 import { ApiError } from '@/api/http.js';
 import * as reviewActions from '@/api/review.api.js';
-import { formatPrice } from '@/utils/mediaUrl.js';
+import { recordedPrice } from '@/utils/priceHistory.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import DishReviewList from '@/components/dish/DishReviewList.vue';
@@ -108,6 +108,7 @@ const correctionTarget = computed(() =>
         name: dish.value.name,
         description: dish.value.description,
         price: dish.value.price,
+        priceUnit: dish.value.priceUnit,
         summary: `${dish.value.diningHallName} · ${dish.value.stallName} · ${dish.value.name}`,
       }
     : null,
@@ -158,7 +159,9 @@ const correctionTarget = computed(() =>
           <p class="dish-detail__meta">
             {{ data.dish.diningHallName }} · {{ data.dish.stallName }}
           </p>
-          <p class="dish-detail__price">{{ formatPrice(data.dish.price) }}</p>
+          <p class="dish-detail__price">
+            {{ recordedPrice(data.dish.price, data.dish.priceUnit) }}
+          </p>
           <DishFavoriteButton :key="dishId" :dish-id="dishId" />
           <CatalogQuickActions
             :id="dishId"
@@ -195,6 +198,11 @@ const correctionTarget = computed(() =>
               </p>
             </template>
           </div>
+          <RouterLink
+            class="button-ink"
+            :to="{ name: 'dishPriceHistory', params }"
+            >价格变化</RouterLink
+          >
           <div class="dish-detail__actions">
             <RouterLink
               class="dish-detail__review-link button-ink is-primary"

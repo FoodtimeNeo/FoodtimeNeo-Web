@@ -23,8 +23,10 @@ export function catalogPayload(type, input) {
     status: input.status,
   };
   if (type !== 'dining-halls') body.parentId = input.parentId;
-  if (type === 'dishes') body.price = input.price;
-  else {
+  if (type === 'dishes') {
+    body.price = input.price;
+    if (input.priceUnit !== undefined) body.priceUnit = input.priceUnit;
+  } else {
     body.coverImageUrl = input.coverImageUrl;
     body.sortOrder = input.sortOrder;
   }
