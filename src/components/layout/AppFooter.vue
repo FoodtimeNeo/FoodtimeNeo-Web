@@ -1,3 +1,7 @@
+<script setup>
+import { APP_VERSION_LABEL } from '@/constants/version.js';
+</script>
+
 <template>
   <footer class="app-footer torn-edge">
     <div class="app-footer__inner">
@@ -15,6 +19,7 @@
           进入官网 →
         </RouterLink>
         <p class="app-footer__meta">2026 · 北交干饭吧 · FoodtimeNeo</p>
+        <p class="app-footer__meta">{{ APP_VERSION_LABEL }}</p>
       </div>
     </div>
     <span
