@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { paginationItems } from '@/utils/pagination.js';
 const props = defineProps({
   page: { type: Number, required: true },
   total: { type: Number, required: true },
@@ -8,17 +9,14 @@ const props = defineProps({
 });
 const emit = defineEmits(['change']);
 const pages = computed(() => Math.max(1, Math.ceil(props.total / props.size)));
-const strip = ref(null);
-const capacity = ref(5);
-const numberWidth = ref(44);
-const numbers = computed(() => {
-  const count = Math.min(pages.value, capacity.value);
-  const start = Math.max(
-    1,
-    Math.min(props.page - Math.floor(count / 2), pages.value - count + 1),
-  );
-  return Array.from({ length: count }, (_, index) => start + index);
-});
+const strip = ref(null),
+  windowSize = ref(5),
+  fontSize = ref(16);
+const items = computed(() =>
+  paginationItems(props.page, pages.value, windowSize.value),
+);
+const itemWidth = (number) =>
+  Math.max(44, Math.ceil(String(number).length * fontSize.value * 0.7 + 20));
 function change(page) {
   if (
     !props.disabled &&
@@ -31,28 +29,20 @@ function change(page) {
 let observer;
 function measure() {
   if (!strip.value?.clientWidth) return;
-  const fontSize =
+  fontSize.value =
     Number.parseFloat(getComputedStyle(strip.value).fontSize) || 16;
   const width = strip.value.clientWidth;
   for (
-    let count = Math.min(
-      pages.value,
-      Math.max(1, Math.floor((width + 8) / 52)),
-    );
+    let count = Math.min(pages.value, Math.max(1, Math.floor(width / 44)));
     count >= 1;
     count--
   ) {
-    const start = Math.max(
-      1,
-      Math.min(props.page - Math.floor(count / 2), pages.value - count + 1),
-    );
-    const itemWidth = Math.max(
-      44,
-      Math.ceil(String(start + count - 1).length * fontSize * 0.7 + 20),
-    );
-    if (count === 1 || count * itemWidth + (count - 1) * 8 <= width) {
-      numberWidth.value = itemWidth;
-      capacity.value = count;
+    const candidate = paginationItems(props.page, pages.value, count);
+    const required =
+      candidate.reduce((sum, n) => sum + (n === null ? 16 : itemWidth(n)), 0) +
+      (candidate.length - 1) * 4;
+    if (required <= width || count === 1) {
+      windowSize.value = count;
       break;
     }
   }
@@ -69,54 +59,47 @@ watch([pages, () => props.page], measure, { flush: 'post' });
 </script>
 <template>
   <nav class="pagination" aria-label="分页">
-    <div
-      ref="strip"
-      class="pagination__numbers"
-      :style="{ '--page-width': `${numberWidth}px` }"
+    <button
+      class="pagination__previous"
+      type="button"
+      :disabled="disabled || page <= 1"
+      @click="change(page - 1)"
     >
-      <button
-        v-for="number in numbers"
-        :key="number"
-        type="button"
-        :aria-label="`第 ${number} 页`"
-        :aria-current="number === page ? 'page' : undefined"
-        :disabled="disabled"
-        @click="change(number)"
+      上一页
+    </button>
+    <div ref="strip" class="pagination__numbers">
+      <template
+        v-for="(number, index) in items"
+        :key="number === null ? 'gap:' + index : number"
       >
-        {{ number }}
-      </button>
+        <span
+          v-if="number === null"
+          class="pagination__ellipsis"
+          aria-hidden="true"
+          >...</span
+        >
+        <button
+          v-else
+          type="button"
+          :style="{ width: itemWidth(number) + 'px' }"
+          :aria-label="`第 ${number} 页`"
+          :aria-current="number === page ? 'page' : undefined"
+          :disabled="disabled"
+          @click="change(number)"
+        >
+          {{ number }}
+        </button>
+      </template>
     </div>
-    <div class="pagination__actions">
-      <button
-        type="button"
-        :disabled="disabled || page <= 1"
-        @click="change(1)"
-      >
-        首页
-      </button>
-      <button
-        type="button"
-        :disabled="disabled || page <= 1"
-        @click="change(page - 1)"
-      >
-        上一页
-      </button>
-      <button
-        type="button"
-        :disabled="disabled || page >= pages"
-        @click="change(page + 1)"
-      >
-        下一页
-      </button>
-      <button
-        type="button"
-        :disabled="disabled || page >= pages"
-        @click="change(pages)"
-      >
-        末页
-      </button>
-    </div>
-    <span aria-live="polite"
+    <button
+      class="pagination__next"
+      type="button"
+      :disabled="disabled || page >= pages"
+      @click="change(page + 1)"
+    >
+      下一页
+    </button>
+    <span class="pagination__summary" aria-live="polite"
       >第 {{ page }} / {{ pages }} 页 · {{ total }} 条</span
     >
   </nav>
@@ -124,44 +107,65 @@ watch([pages, () => props.page], measure, { flush: 'post' });
 <style scoped>
 .pagination {
   display: grid;
-  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'previous numbers next' 'summary summary summary';
+  align-items: center;
   gap: 12px;
+  min-width: 0;
   margin: 24px 0;
 }
+.pagination__previous {
+  grid-area: previous;
+}
+.pagination__next {
+  grid-area: next;
+}
+.pagination__summary {
+  grid-area: summary;
+}
+.pagination__numbers {
+  grid-area: numbers;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  min-width: 0;
+}
+.pagination__ellipsis {
+  flex: 0 0 16px;
+  text-align: center;
+}
 button {
+  flex-shrink: 0;
   min-height: 44px;
-  padding: 8px 16px;
+  padding: 8px 10px;
   border: 1px solid var(--ft-color-text);
+  border-radius: 12px;
   background: var(--zine-paper-card);
-  cursor: pointer;
   color: var(--ft-color-text);
   font: inherit;
-  border-radius: 12px;
-}
-.pagination__numbers,
-.pagination__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  cursor: pointer;
 }
 .pagination__numbers button {
-  width: var(--page-width);
   padding: 8px 4px;
 }
-.pagination__actions button {
-  padding: 8px 10px;
-}
 button[aria-current='page'] {
-  color: var(--zine-paper-card);
   background: var(--ft-color-primary);
+  color: var(--zine-paper-card);
   font-weight: 700;
-}
-button:focus-visible {
-  outline: 2px solid var(--ft-color-primary);
-  outline-offset: 3px;
 }
 button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+button:focus-visible {
+  outline: 2px solid var(--ft-color-text);
+  outline-offset: -4px;
+}
+@media (max-width: 600px) {
+  .pagination {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 'numbers numbers' 'previous next' 'summary summary';
+  }
 }
 </style>

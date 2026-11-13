@@ -28,7 +28,7 @@ describe('numbered pagination', () => {
     });
     expect(
       wrapper.findAll('.pagination__numbers button').map((b) => b.text()),
-    ).toEqual(['16', '17', '18', '19', '20']);
+    ).toEqual(['1', '14', '15', '16', '17', '18', '19', '20']);
     expect(numbered(wrapper, 19).attributes('aria-current')).toBe('page');
   });
   it('disables every jump while a request is pending', async () => {
@@ -51,11 +51,8 @@ describe('numbered pagination', () => {
     const wrapper = mount(PaginationControls, {
       props: { page: 5, total: 400 },
     });
-    for (const label of ['首页', '末页'])
-      await wrapper
-        .findAll('button')
-        .find((b) => b.text() === label)
-        .trigger('click');
+    await numbered(wrapper, 1).trigger('click');
+    await numbered(wrapper, 20).trigger('click');
     expect(wrapper.emitted('change')).toEqual([[1], [20]]);
   });
 });
