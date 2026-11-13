@@ -111,7 +111,14 @@ watch(page, () => {
     border: 2px solid var(--ft-color-text);
     box-shadow: 6px 6px 0 var(--ft-color-text);
     overflow: hidden;
-    height: clamp(220px, 70svh, 640px);
+    :deep(.media-image) {
+      height: auto;
+      min-height: 120px;
+    }
+    :deep(img) {
+      height: auto;
+      max-height: min(70svh, 640px);
+    }
   }
 
   &__thumbs {

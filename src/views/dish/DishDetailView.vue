@@ -121,7 +121,7 @@ const correctionTarget = computed(() =>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="data">
-      <article class="dish-detail__main torn-edge">
+      <article class="dish-detail__main">
         <div
           class="dish-detail__hero"
           :class="{ 'dish-detail__hero--empty': !data.images.length }"
@@ -271,12 +271,18 @@ const correctionTarget = computed(() =>
   }
 
   &__hero {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    height: clamp(280px, 65vh, 560px);
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    min-width: 0;
     overflow: hidden;
     :deep(.media-image) {
-      min-height: 0;
+      height: auto;
+      min-height: 120px;
+    }
+    :deep(img) {
+      height: auto;
+      max-height: clamp(220px, 55svh, 500px);
     }
   }
   &__photo-actions {
@@ -406,17 +412,13 @@ const correctionTarget = computed(() =>
     }
 
     &__hero {
-      height: clamp(280px, 60svh, 480px);
+      :deep(img) {
+        max-height: clamp(200px, 55svh, 420px);
+      }
     }
 
     &__hero--empty {
       aspect-ratio: auto;
-      height: 180px;
-
-      :deep(.media-image span) {
-        max-width: calc(100% - 100px);
-        margin-right: auto;
-      }
     }
 
     &__content {
