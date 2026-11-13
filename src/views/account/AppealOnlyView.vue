@@ -428,6 +428,15 @@ onBeforeUnmount(() => scopeController.abort());
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
+
+    > div {
+      flex: 1 1 200px;
+    }
+    > button {
+      flex: none;
+      margin-left: auto;
+    }
 
     h1 {
       margin: 8px 0 0;
@@ -484,6 +493,12 @@ onBeforeUnmount(() => scopeController.abort());
       width: 100%;
       margin: 6px 0;
       padding: 8px;
+    }
+
+    > li > label {
+      display: grid;
+      gap: 6px;
+      margin-top: 12px;
     }
   }
 
