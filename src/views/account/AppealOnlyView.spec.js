@@ -53,7 +53,12 @@ beforeEach(() => {
   vi.resetAllMocks();
   sessionStorage.clear();
   shared.auth = reactive({ user: { id: 'actor-a' }, isRestricted: true });
-  shared.fetch.mockImplementation(async () => ({ items: [decision()] }));
+  shared.fetch.mockImplementation(async () => ({
+    items: [decision()],
+    page: 1,
+    size: 20,
+    total: 1,
+  }));
   shared.actions.mockResolvedValue([]);
   shared.submit.mockResolvedValue({ id: 'appeal', status: 'submitted' });
 });
@@ -305,4 +310,170 @@ it('重新进入时提示未完成上传，并过滤异常本地图片引用', a
   await render();
   expect(wrapper.text()).toContain('上次有图片未完成上传');
   expect(wrapper.find('.appeal-only__evidence img').exists()).toBe(false);
+});
+
+function useDecisionPages() {
+  const rows = Array.from({ length: 23 }, (_, index) => ({
+    ...decision(`第${index + 1}条决定`),
+    decisionId: `decision-${index + 1}`,
+  }));
+  shared.fetch.mockImplementation(async (page) => ({
+    items: rows.slice((page - 1) * 20, page * 20),
+    page,
+    size: 20,
+    total: rows.length,
+  }));
+  return rows;
+}
+const pageButton = (page) => wrapper.get(`button[aria-label="第 ${page} 页"]`);
+
+it('超过20条时可直接进入第二页，对第21条决定申诉', async () => {
+  useDecisionPages();
+  await render();
+  expect(wrapper.findAll('.appeal-only__list > li')).toHaveLength(20);
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  expect(shared.fetch.mock.calls.at(-1)[0]).toBe(2);
+  expect(wrapper.text()).toContain('第21条决定');
+  expect(wrapper.findAll('.appeal-only__list > li')).toHaveLength(3);
+  await wrapper.get('textarea').setValue('第21条的申诉');
+  await button('提交申诉').trigger('click');
+  await flushPromises();
+  expect(shared.submit.mock.calls[0][0]).toBe('decision-21');
+});
+
+it('翻页失败保留原页，重试仍请求失败的页码', async () => {
+  const rows = useDecisionPages();
+  let fail = true;
+  shared.fetch.mockImplementation(async (page) => {
+    if (page === 2 && fail) {
+      fail = false;
+      throw new Error('第二页失败');
+    }
+    return {
+      items: rows.slice((page - 1) * 20, page * 20),
+      page,
+      size: 20,
+      total: 23,
+    };
+  });
+  await render();
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  expect(wrapper.text()).toContain('第二页失败');
+  expect(wrapper.text()).toContain('第1条决定');
+  expect(pageButton(1).attributes('aria-current')).toBe('page');
+  await button('重试').trigger('click');
+  await flushPromises();
+  expect(shared.fetch.mock.calls.at(-1)[0]).toBe(2);
+  expect(wrapper.text()).toContain('第21条决定');
+});
+
+it('来回分页保留每份决定的文字、已上传引用和重试编号', async () => {
+  useDecisionPages();
+  await render();
+  shared.upload.mockResolvedValue({ imageUrl: media(1) });
+  await wrapper.get('textarea').setValue('第一页私密材料');
+  await choose([image('第一页.png')]);
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  await wrapper.get('textarea').setValue('第二页材料');
+  await pageButton(1).trigger('click');
+  await flushPromises();
+  expect(wrapper.get('textarea').element.value).toBe('第一页私密材料');
+  expect(wrapper.get('.appeal-only__evidence img').attributes('src')).toBe(
+    media(1),
+  );
+  shared.submit.mockRejectedValueOnce(new Error('关联失败'));
+  await button('提交申诉').trigger('click');
+  await flushPromises();
+  const requestId = shared.submit.mock.calls[0][1].clientRequestId;
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  expect(wrapper.get('textarea').element.value).toBe('第二页材料');
+  await pageButton(1).trigger('click');
+  await flushPromises();
+  await button('提交申诉').trigger('click');
+  await flushPromises();
+  expect(shared.submit.mock.calls[1][1].clientRequestId).toBe(requestId);
+  expect(shared.upload).toHaveBeenCalledTimes(1);
+});
+
+it('切换账号取消第二页请求，新账号从第一页读取且不接受旧响应', async () => {
+  const rows = useDecisionPages();
+  let old;
+  shared.fetch.mockImplementation((page) =>
+    page === 2
+      ? new Promise((resolve) => {
+          old = resolve;
+        })
+      : Promise.resolve({
+          items:
+            shared.auth.user.id === 'actor-a'
+              ? rows.slice(0, 20)
+              : [decision('B的决定')],
+          page: 1,
+          size: 20,
+          total: shared.auth.user.id === 'actor-a' ? 23 : 1,
+        }),
+  );
+  await render();
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  const signal = shared.fetch.mock.calls.at(-1)[1].signal;
+  actor('actor-b');
+  await flushPromises();
+  expect(signal.aborted).toBe(true);
+  old({ items: rows.slice(20), page: 2, size: 20, total: 23 });
+  await flushPromises();
+  expect(wrapper.text()).toContain('B的决定');
+  expect(wrapper.text()).not.toContain('第21条决定');
+  expect(shared.fetch.mock.calls.at(-1)[0]).toBe(1);
+  expect(wrapper.find('.pagination').exists()).toBe(false);
+});
+
+it('上传期间锁定分页，完成后才允许切页', async () => {
+  useDecisionPages();
+  await render();
+  let complete;
+  shared.upload.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  await choose([image()]);
+  expect(pageButton(2).element.disabled).toBe(true);
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  expect(shared.fetch).toHaveBeenCalledTimes(1);
+  complete({ imageUrl: media(1) });
+  await flushPromises();
+  expect(pageButton(2).element.disabled).toBe(false);
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  expect(wrapper.text()).toContain('第21条决定');
+});
+
+it('总数缩减导致第二页越界时回退至有效末页', async () => {
+  const rows = useDecisionPages();
+  let reduced = false;
+  shared.fetch.mockImplementation(async (page) => {
+    if (page === 2) {
+      reduced = true;
+      return { items: [], page, size: 20, total: 20 };
+    }
+    return {
+      items: rows.slice(0, 20),
+      page,
+      size: 20,
+      total: reduced ? 20 : 23,
+    };
+  });
+  await render();
+  await pageButton(2).trigger('click');
+  await flushPromises();
+  expect(shared.fetch.mock.calls.map(([page]) => page)).toEqual([1, 2, 1]);
+  expect(wrapper.findAll('.appeal-only__list > li')).toHaveLength(20);
+  expect(wrapper.find('.pagination').exists()).toBe(false);
 });
