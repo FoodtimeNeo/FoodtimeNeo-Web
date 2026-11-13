@@ -17,6 +17,16 @@ it('上传 multipart 文件，拒绝非本站媒体引用', async () => {
   await expect(uploadImage(file)).rejects.toThrow('上传响应');
   expect(api.post.mock.calls[0][1].get('file').name).toBe('photo.png');
 });
+it('图片上传传递取消信号，供受限证据切号时停止上传', async () => {
+  const controller = new AbortController();
+  api.post.mockResolvedValueOnce({
+    imageUrl: '/api/v1/media/00000000-0000-4000-8000-000000000001',
+  });
+  await uploadImage(new File(['x'], 'evidence.png', { type: 'image/png' }), {
+    signal: controller.signal,
+  });
+  expect(api.post.mock.calls[0][2].signal).toBe(controller.signal);
+});
 it('投稿只发送数据库已有字段，保留空参考价格', async () => {
   await submitDish('stall', {
     name: '面',
