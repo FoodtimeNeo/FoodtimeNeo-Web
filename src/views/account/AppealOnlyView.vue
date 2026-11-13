@@ -9,6 +9,8 @@ import {
 } from '@/api/safety.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { uploadImage } from '@/api/submission.api.js';
+import { validateImageFile } from '@/utils/submissionValidation.js';
 import ErrorState from '@/components/base/ErrorState.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 
@@ -57,7 +59,17 @@ function draftFor(decision) {
     drafts[decision.decisionId] = {
       content: saved?.content || '',
       requestId: saved?.requestId || crypto.randomUUID(),
-      error: '',
+      evidence: Array.isArray(saved?.evidence)
+        ? saved.evidence
+            .filter((item) =>
+              /^\/api\/v1\/media\/[0-9a-f-]{36}$/i.test(item?.url || ''),
+            )
+            .slice(0, 3)
+        : [],
+      uploading: false,
+      error: saved?.pendingEvidence
+        ? '上次有图片未完成上传，请重新选择未上传的图片。'
+        : '',
       submitting: false,
     };
   }
@@ -71,7 +83,14 @@ function saveDraft(decision) {
   try {
     sessionStorage.setItem(
       key,
-      JSON.stringify({ content: draft.content, requestId: draft.requestId }),
+      JSON.stringify({
+        content: draft.content,
+        requestId: draft.requestId,
+        evidence: draft.evidence
+          .filter((item) => item.url)
+          .map(({ url, name }) => ({ url, name })),
+        pendingEvidence: draft.evidence.some((item) => !item.url),
+      }),
     );
   } catch {
     // Draft persistence is best-effort; the form still works in this page.
@@ -112,6 +131,72 @@ function canAppeal(decision) {
   );
 }
 
+async function addEvidence(decision, event) {
+  const files = Array.from(event.target.files || []);
+  event.target.value = '';
+  const draft = draftFor(decision);
+  if (
+    !files.length ||
+    draft.uploading ||
+    draft.submitting ||
+    !accountScope.value
+  )
+    return;
+  draft.error = '';
+  if (draft.evidence.length + files.length > 3) {
+    draft.error = '证据图片最多3张';
+    return;
+  }
+  const invalid = files.map(validateImageFile).find(Boolean);
+  if (invalid) {
+    draft.error = invalid;
+    return;
+  }
+  draft.evidence.push(
+    ...files.map((file) => ({ file, name: file.name, url: '', error: '' })),
+  );
+  saveDraft(decision);
+  await uploadEvidence(decision);
+}
+
+async function uploadEvidence(decision) {
+  const draft = draftFor(decision);
+  if (draft.uploading || draft.submitting || !accountScope.value) return;
+  const signal = scopeController.signal;
+  draft.uploading = true;
+  draft.error = '';
+  try {
+    for (const item of draft.evidence) {
+      if (signal.aborted) return;
+      if (item.url || !item.file) continue;
+      item.error = '';
+      try {
+        const uploaded = await uploadImage(item.file, { signal });
+        if (signal.aborted) return;
+        item.url = uploaded.imageUrl;
+        delete item.file;
+        saveDraft(decision);
+      } catch (failure) {
+        if (!signal.aborted) {
+          item.error = failure.message || '上传失败';
+          draft.error = '部分证据未上传，可重试未上传图片或移除后提交。';
+        }
+        return;
+      }
+    }
+  } finally {
+    draft.uploading = false;
+  }
+}
+
+function removeEvidence(decision, index) {
+  const draft = draftFor(decision);
+  if (draft.uploading || draft.submitting) return;
+  draft.evidence.splice(index, 1);
+  draft.error = '';
+  saveDraft(decision);
+}
+
 async function load() {
   const signal = scopeController.signal;
   if (!accountScope.value) {
@@ -135,7 +220,11 @@ async function submit(decision) {
   if (!key) return;
   const signal = scopeController.signal;
   const draft = draftFor(decision);
-  if (draft.submitting) return;
+  if (draft.submitting || draft.uploading) return;
+  if (draft.evidence.some((item) => !item.url)) {
+    draft.error = '请先完成证据上传，或移除未上传的图片';
+    return;
+  }
   if (!draft.content.trim()) {
     draft.error = '请填写申诉内容';
     return;
@@ -148,7 +237,7 @@ async function submit(decision) {
       decision.decisionId,
       {
         content: draft.content.trim(),
-        evidenceUrls: [],
+        evidenceUrls: draft.evidence.map((item) => item.url),
         clientRequestId: draft.requestId,
       },
       { signal },
@@ -156,6 +245,7 @@ async function submit(decision) {
     if (signal.aborted) return;
     decision.appealId = created.id;
     decision.appealStatus = created.status;
+    draft.evidence = [];
     clearDraft(key);
     ElMessage.success('申诉已提交');
   } catch (failure) {
@@ -197,7 +287,8 @@ onBeforeUnmount(() => scopeController.abort());
     </header>
     <p class="appeal-only__hint">
       当前账号已停用，本页面只允许查看本人的处理决定和提交一次申诉。会话在登录后
-      45 分钟到期；未提交的申诉内容会在重新登录后恢复。
+      45
+      分钟到期；申诉文字和已上传的证据会在本人重新登录后恢复，未完成上传的图片需要重新选择。
     </p>
     <p v-if="auth.user?.email" class="appeal-only__account">
       账号：{{ auth.user.email }}
@@ -258,16 +349,64 @@ onBeforeUnmount(() => scopeController.abort());
               v-model="draftFor(item).content"
               rows="6"
               maxlength="2000"
+              :disabled="draftFor(item).submitting"
               @input="saveDraft(item)"
             ></textarea>
           </label>
+          <fieldset
+            class="appeal-only__attachments"
+            :disabled="draftFor(item).submitting || draftFor(item).uploading"
+          >
+            <legend>证据图片（可选，最多3张）</legend>
+            <label>
+              选择图片
+              <input
+                type="file"
+                accept="image/jpeg,image/png"
+                multiple
+                :disabled="draftFor(item).evidence.length >= 3"
+                @change="addEvidence(item, $event)"
+              />
+            </label>
+            <ul
+              v-if="draftFor(item).evidence.length"
+              class="appeal-only__evidence"
+            >
+              <li v-for="(file, index) in draftFor(item).evidence" :key="index">
+                <img
+                  v-if="file.url"
+                  :src="file.url"
+                  :alt="file.name || '申诉证据'"
+                />
+                <span>{{ file.name }}</span>
+                <span v-if="file.error" role="alert">{{ file.error }}</span>
+                <span v-else-if="!file.url">待上传</span>
+                <button
+                  type="button"
+                  class="button-ink"
+                  @click="removeEvidence(item, index)"
+                >
+                  移除
+                </button>
+              </li>
+            </ul>
+            <button
+              v-if="draftFor(item).evidence.some((file) => !file.url)"
+              type="button"
+              class="button-ink"
+              @click="uploadEvidence(item)"
+            >
+              重试未上传图片
+            </button>
+          </fieldset>
+          <p v-if="draftFor(item).uploading" role="status">正在上传证据…</p>
           <p v-if="draftFor(item).error" role="alert">
             {{ draftFor(item).error }}
           </p>
           <button
             type="button"
             class="button-ink is-primary"
-            :disabled="draftFor(item).submitting"
+            :disabled="draftFor(item).submitting || draftFor(item).uploading"
             @click="submit(item)"
           >
             提交申诉
@@ -289,6 +428,15 @@ onBeforeUnmount(() => scopeController.abort());
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
+
+    > div {
+      flex: 1 1 200px;
+    }
+    > button {
+      flex: none;
+      margin-left: auto;
+    }
 
     h1 {
       margin: 8px 0 0;
@@ -345,6 +493,49 @@ onBeforeUnmount(() => scopeController.abort());
       width: 100%;
       margin: 6px 0;
       padding: 8px;
+    }
+
+    > li > label {
+      display: grid;
+      gap: 6px;
+      margin-top: 12px;
+    }
+  }
+
+  &__attachments {
+    min-width: 0;
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid var(--ft-color-border);
+
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      margin: 8px 0;
+    }
+    button {
+      min-height: 44px;
+    }
+  }
+
+  &__evidence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      gap: 8px;
+      width: 120px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    img {
+      width: 96px;
+      height: 96px;
+      object-fit: cover;
     }
   }
 }

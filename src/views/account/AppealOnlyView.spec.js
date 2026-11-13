@@ -9,6 +9,7 @@ const shared = vi.hoisted(() => ({
   actions: vi.fn(),
   submit: vi.fn(),
   success: vi.fn(),
+  upload: vi.fn(),
 }));
 vi.mock('@/store/useAuthStore.js', () => ({ useAuthStore: () => shared.auth }));
 vi.mock('vue-router', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
@@ -18,6 +19,7 @@ vi.mock('@/api/safety.api.js', () => ({
   fetchDecisionActions: shared.actions,
   submitAppeal: shared.submit,
 }));
+vi.mock('@/api/submission.api.js', () => ({ uploadImage: shared.upload }));
 const decision = (reason = '本人决定') => ({
   decisionId: 'shared-decision',
   outcome: 'upheld',
@@ -33,6 +35,19 @@ async function render() {
 const button = (text) =>
   wrapper.findAll('button').find((item) => item.text() === text);
 const actor = (id) => (shared.auth.user = { id, email: id + '@example.test' });
+const image = (name = '证据.png') =>
+  new File(['image'], name, { type: 'image/png' });
+const media = (number) =>
+  `/api/v1/media/00000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
+async function choose(files) {
+  const input = wrapper.get('input[type=file]');
+  Object.defineProperty(input.element, 'files', {
+    value: files,
+    configurable: true,
+  });
+  await input.trigger('change');
+  await flushPromises();
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -153,4 +168,141 @@ it('失去受限会话后立即清空界面并停止读取，卸载取消在途�
   const activeSignal = shared.fetch.mock.calls[1][1].signal;
   wrapper.unmount();
   expect(activeSignal.aborted).toBe(true);
+});
+
+it('已上传的证据随本人草稿恢复，提交失败重试不重复上传', async () => {
+  await render();
+  await wrapper.get('textarea').setValue('说明与证据');
+  shared.upload.mockResolvedValueOnce({ imageUrl: media(1) });
+  await choose([image()]);
+  wrapper.unmount();
+  await render();
+  expect(wrapper.get('.appeal-only__evidence img').attributes('src')).toBe(
+    media(1),
+  );
+  shared.submit.mockRejectedValueOnce(new Error('关联失败'));
+  await button('提交申诉').trigger('click');
+  await flushPromises();
+  expect(shared.submit.mock.calls[0][1].evidenceUrls).toEqual([media(1)]);
+  expect(wrapper.text()).toContain('关联失败');
+  await button('提交申诉').trigger('click');
+  await flushPromises();
+  expect(shared.upload).toHaveBeenCalledTimes(1);
+  expect(shared.submit.mock.calls[1][1]).toEqual(
+    shared.submit.mock.calls[0][1],
+  );
+  wrapper.unmount();
+  await render();
+  expect(wrapper.find('.appeal-only__evidence img').exists()).toBe(false);
+});
+
+it('同一决定双方的图片引用隔离，移除仅修改本人草稿', async () => {
+  await render();
+  shared.upload
+    .mockResolvedValueOnce({ imageUrl: media(1) })
+    .mockResolvedValueOnce({ imageUrl: media(2) });
+  await choose([image('A.png')]);
+  actor('actor-b');
+  await flushPromises();
+  expect(wrapper.find('.appeal-only__evidence img').exists()).toBe(false);
+  await choose([image('B.png')]);
+  actor('actor-a');
+  await flushPromises();
+  expect(wrapper.get('.appeal-only__evidence img').attributes('src')).toBe(
+    media(1),
+  );
+  await button('移除').trigger('click');
+  expect(wrapper.find('.appeal-only__evidence img').exists()).toBe(false);
+  actor('actor-b');
+  await flushPromises();
+  expect(wrapper.get('.appeal-only__evidence img').attributes('src')).toBe(
+    media(2),
+  );
+});
+
+it('超过三张或非图片不会上传', async () => {
+  await render();
+  await choose([
+    image('1.png'),
+    image('2.png'),
+    image('3.png'),
+    image('4.png'),
+  ]);
+  expect(wrapper.text()).toContain('证据图片最多3张');
+  await choose([new File(['x'], 'bad.svg', { type: 'image/svg+xml' })]);
+  expect(wrapper.text()).toContain('只支持 JPEG 或 PNG');
+  expect(shared.upload).not.toHaveBeenCalled();
+});
+
+it('部分上传失败保留成功引用，只重试未上传图片，未完成时阻止提交', async () => {
+  await render();
+  await wrapper.get('textarea').setValue('材料');
+  shared.upload
+    .mockResolvedValueOnce({ imageUrl: media(1) })
+    .mockRejectedValueOnce(new Error('第二张断网'));
+  await choose([image('1.png'), image('2.png'), image('3.png')]);
+  expect(shared.upload).toHaveBeenCalledTimes(2);
+  expect(wrapper.findAll('.appeal-only__evidence img')).toHaveLength(1);
+  await button('提交申诉').trigger('click');
+  await flushPromises();
+  expect(shared.submit).not.toHaveBeenCalled();
+  expect(wrapper.text()).toContain('请先完成证据上传');
+  shared.upload
+    .mockResolvedValueOnce({ imageUrl: media(2) })
+    .mockResolvedValueOnce({ imageUrl: media(3) });
+  await button('重试未上传图片').trigger('click');
+  await flushPromises();
+  expect(shared.upload).toHaveBeenCalledTimes(4);
+  expect(shared.upload.mock.calls.map(([file]) => file.name)).toEqual([
+    '1.png',
+    '2.png',
+    '2.png',
+    '3.png',
+  ]);
+  await button('提交申诉').trigger('click');
+  await flushPromises();
+  expect(shared.submit.mock.calls[0][1].evidenceUrls).toEqual([
+    media(1),
+    media(2),
+    media(3),
+  ]);
+});
+
+it('切号取消上传，迟到引用不保存到新账号也不继续其他文件', async () => {
+  await render();
+  let complete;
+  shared.upload.mockImplementationOnce(
+    () => new Promise((resolve) => (complete = resolve)),
+  );
+  await choose([image('A1.png'), image('A2.png')]);
+  const signal = shared.upload.mock.calls[0][1].signal;
+  expect(button('提交申诉').element.disabled).toBe(true);
+  actor('actor-b');
+  await flushPromises();
+  expect(signal.aborted).toBe(true);
+  complete({ imageUrl: media(1) });
+  await flushPromises();
+  expect(shared.upload).toHaveBeenCalledTimes(1);
+  expect(wrapper.find('.appeal-only__evidence img').exists()).toBe(false);
+  expect(wrapper.text()).not.toContain('A1.png');
+  expect(shared.submit).not.toHaveBeenCalled();
+});
+
+it('重新进入时提示未完成上传，并过滤异常本地图片引用', async () => {
+  await render();
+  shared.upload.mockRejectedValueOnce(new Error('上传失败'));
+  await choose([image()]);
+  wrapper.unmount();
+  const key = Object.keys(sessionStorage).find((item) =>
+    item.startsWith('foodtime:appeal-draft:v2:'),
+  );
+  const saved = JSON.parse(sessionStorage.getItem(key));
+  saved.evidence.push({
+    url: 'https://example.test/private-tracker',
+    name: '异常引用',
+  });
+  sessionStorage.setItem(key, JSON.stringify(saved));
+  await render();
+  expect(wrapper.text()).toContain('上次有图片未完成上传');
+  expect(wrapper.find('.appeal-only__evidence img').exists()).toBe(false);
 });
