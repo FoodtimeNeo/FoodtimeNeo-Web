@@ -1,5 +1,6 @@
 <script setup>
 import { reactive, ref, watch } from 'vue';
+import { PRICE_UNITS } from '@/utils/priceHistory.js';
 import { ElDialog, ElMessage } from 'element-plus';
 import { uploadImage } from '@/api/submission.api.js';
 import { createCatalogCorrection } from '@/api/correction.api.js';
@@ -10,8 +11,18 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:modelValue', 'submitted']);
 
-const selected = reactive({ name: false, description: false, price: false });
-const values = reactive({ name: '', description: '', price: '' });
+const selected = reactive({
+  name: false,
+  description: false,
+  price: false,
+  priceUnit: false,
+});
+const values = reactive({
+  name: '',
+  description: '',
+  price: '',
+  priceUnit: 'unspecified',
+});
 const reason = ref('');
 const requestKey = ref('');
 const evidence = ref([]);
@@ -23,6 +34,8 @@ function reset() {
   selected.name = false;
   selected.description = false;
   selected.price = false;
+  selected.priceUnit = false;
+  values.priceUnit = props.target?.priceUnit || 'unspecified';
   values.name = props.target?.name || '';
   values.description = props.target?.description || '';
   values.price =
@@ -52,6 +65,8 @@ function changedFields() {
   if (selected.name) fields.push('name');
   if (selected.description) fields.push('description');
   if (props.target?.type === 'dish' && selected.price) fields.push('price');
+  if (props.target?.type === 'dish' && selected.priceUnit)
+    fields.push('priceUnit');
   return fields;
 }
 
@@ -109,6 +124,7 @@ async function submit() {
     evidenceUrls: evidence.value.map((item) => item.url),
     idempotencyKey: requestKey.value,
   };
+  if (selected.priceUnit) payload.priceUnit = values.priceUnit;
   if (selected.name) payload.name = values.name.trim();
   if (selected.description) payload.description = values.description.trim();
   if (selected.price)
@@ -181,6 +197,30 @@ async function submit() {
           aria-label="更正后的价格"
         />
       </template>
+
+      <div v-if="target?.type === 'dish'">
+        <label
+          ><input
+            v-model="selected.priceUnit"
+            type="checkbox"
+            :disabled="submitting || uploading"
+          />更正计价单位</label
+        >
+        <select
+          v-if="selected.priceUnit"
+          v-model="values.priceUnit"
+          aria-label="建议计价单位"
+          :disabled="submitting || uploading"
+        >
+          <option
+            v-for="(label, value) in PRICE_UNITS"
+            :key="value"
+            :value="value"
+          >
+            {{ label }}
+          </option>
+        </select>
+      </div>
 
       <label class="correction-form__label" for="correction-reason">
         更正理由
