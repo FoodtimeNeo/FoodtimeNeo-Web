@@ -792,6 +792,7 @@ onUnmounted(() => {
       :post-id="activePostId"
       :initial-post="activePost"
       @post-updated="updatePost"
+      @post-edited="onPostDeleted"
       @pins-changed="pinsChanged"
       @follow-updated="invalidateSection('following')"
       @deleted="onPostDeleted"

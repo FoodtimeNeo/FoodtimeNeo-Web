@@ -23,6 +23,7 @@ import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
 import DishLink from '@/components/canteen/DishLink.vue';
 import CommunityPinManager from './CommunityPinManager.vue';
+import CommunityPostEdit from './CommunityPostEdit.vue';
 import { shareCommunityPost } from '@/composables/usePostShare.js';
 
 const props = defineProps({
@@ -384,6 +385,7 @@ function formatPostTime(isoString) {
         <CommunityImageViewer :images="post.images || []" :alt="post.title">
           <template #context="{ close }">
             <CommunityPhotoContext
+              v-if="post.status === 'approved'"
               :post="post"
               :time="formatPostTime(post.createdAt)"
               :like-busy="acting"
@@ -485,7 +487,11 @@ function formatPostTime(isoString) {
           </p>
 
           <CommunityPinManager :post="post" />
+          <CommunityPostEdit :post="post" @edited="load" />
           <h1 class="post-title">{{ post.title }}</h1>
+          <p v-if="post.editedAt" class="post-edited-at">
+            修改于 {{ formatPostTime(post.editedAt) }}
+          </p>
           <p class="post-body">{{ post.content }}</p>
           <DishLink
             v-if="post.linkedDish"

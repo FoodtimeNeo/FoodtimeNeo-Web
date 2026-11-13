@@ -69,6 +69,20 @@ export async function createCommunityPost(payload, options = {}) {
     options,
   );
 }
+export const editCommunityPost = (id, payload, options = {}) =>
+  http.put(
+    `/community/posts/${encodeURIComponent(id)}`,
+    {
+      title: payload.title,
+      content: payload.content,
+      imageUrls: payload.images || [],
+      dishId: payload.dishId || null,
+      expectedRevision: payload.expectedRevision,
+      clientRequestId: payload.clientRequestId,
+    },
+    options,
+  );
+
 export async function fetchPostComments(id, options = {}) {
   const page = await http.get(
     `/community/posts/${encodeURIComponent(id)}/comments`,
