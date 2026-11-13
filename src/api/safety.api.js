@@ -46,8 +46,12 @@ export const fetchAdminReportFollowUps = (id, page = 1, options = {}) =>
     ...options,
     params: { page, size: 20 },
   });
-export const replyReportFollowUp = (id, body) =>
-  http.post(`/admin/reports/${encodeURIComponent(id)}/follow-ups`, body);
+export const replyReportFollowUp = (id, body, options = {}) =>
+  http.post(
+    `/admin/reports/${encodeURIComponent(id)}/follow-ups`,
+    body,
+    options,
+  );
 export const fetchAdminAppeals = (status = '', page = 1, options = {}) =>
   http.get('/admin/appeals', {
     ...options,
