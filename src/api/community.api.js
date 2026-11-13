@@ -23,7 +23,7 @@ export function mapComment(comment) {
   };
 }
 export async function fetchCommunityPosts(
-  { size = 20, cursor, following, q } = {},
+  { size = 20, cursor, following, q, pinRevision } = {},
   options = {},
 ) {
   const page = await http.get('/community/feed/cursor', {
@@ -33,6 +33,7 @@ export async function fetchCommunityPosts(
       cursor,
       ...(following ? { following } : {}),
       ...(q ? { q } : {}),
+      ...(Number.isSafeInteger(pinRevision) ? { pinRevision } : {}),
     },
   });
   return { ...page, items: page.items.map(mapPost) };

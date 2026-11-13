@@ -24,6 +24,7 @@ import {
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
 import DishLink from '@/components/canteen/DishLink.vue';
+import CommunityPinManager from './CommunityPinManager.vue';
 import { shareCommunityPost } from '@/composables/usePostShare.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
@@ -55,6 +56,7 @@ const emit = defineEmits([
   'update:modelValue',
   'close',
   'postUpdated',
+  'pinsChanged',
   'followUpdated',
   'deleted',
 ]);
@@ -616,6 +618,10 @@ async function removePost() {
                   </div>
 
                   <!-- 标题 -->
+                  <CommunityPinManager
+                    :post="post"
+                    @changed="emit('pinsChanged')"
+                  />
                   <h1 class="redbook-post-title">{{ post.title }}</h1>
 
                   <!-- 话题标签 -->
