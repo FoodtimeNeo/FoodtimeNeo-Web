@@ -137,8 +137,9 @@ function upload() {
     <BackLink v-if="!admin" />
     <h1 class="section-title">{{ admin ? '建议与反馈管理' : '建议与反馈' }}</h1>
     <p v-if="!admin">
-      访客每天可提交 2 条，认证用户每天 5 条；同设备每天合计 10 条。每天 UTC+8
-      00:00 重置。
+      当前账号每天可提交
+      {{ auth.role === 'visitor' ? 2 : 5 }} 条反馈；同设备每天合计 10 条。每天
+      UTC+8 00:00 重置。
     </p>
     <form v-if="!admin" class="feedback-page__form" @submit.prevent="submit">
       <label

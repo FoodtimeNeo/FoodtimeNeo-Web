@@ -1,6 +1,13 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { ElMessage } from 'element-plus';
+import { ElDialog, ElMessage, useZIndex } from 'element-plus';
+import {
+  addFavoriteGroupMember,
+  createFavoriteGroup,
+  fetchFavoriteGroupMemberships,
+  fetchFavoriteGroups,
+  removeFavoriteGroupMember,
+} from '@/api/favoriteGroups.api.js';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import {
@@ -17,11 +24,15 @@ import {
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
 import DishLink from '@/components/canteen/DishLink.vue';
+import CommunityPinManager from './CommunityPinManager.vue';
+import CommunityPostEdit from './CommunityPostEdit.vue';
 import { shareCommunityPost } from '@/composables/usePostShare.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
+const { nextZIndex } = useZIndex();
+const modalLayer = ref(0);
 
 /**
  * 小红书风格帖子详情弹窗。
@@ -48,6 +59,8 @@ const emit = defineEmits([
   'update:modelValue',
   'close',
   'postUpdated',
+  'postEdited',
+  'pinsChanged',
   'followUpdated',
   'deleted',
 ]);
@@ -96,6 +109,61 @@ const isFollowing = ref(false);
 const followBusy = ref(false);
 const isLiked = ref(false);
 const isFavorited = ref(false);
+const groupDialogOpen = ref(false);
+const postGroups = ref([]);
+const postGroupIds = ref([]);
+const groupLoading = ref(false);
+const groupError = ref('');
+const newGroupName = ref('');
+
+async function openGroups() {
+  if (!post.value?.id) return;
+  groupDialogOpen.value = true;
+  groupLoading.value = true;
+  groupError.value = '';
+  try {
+    const [groups, membership] = await Promise.all([
+      fetchFavoriteGroups('post'),
+      fetchFavoriteGroupMemberships('post', post.value.id),
+    ]);
+    postGroups.value = groups;
+    postGroupIds.value = membership.groupIds || [];
+  } catch (error) {
+    groupError.value = error.message || '无法读取收藏分组';
+  } finally {
+    groupLoading.value = false;
+  }
+}
+
+async function togglePostGroup(group) {
+  if (!post.value?.id) return;
+  const joined = postGroupIds.value.includes(group.id);
+  try {
+    if (joined) {
+      await removeFavoriteGroupMember(group.id, post.value.id);
+      postGroupIds.value = postGroupIds.value.filter((id) => id !== group.id);
+    } else {
+      await addFavoriteGroupMember(group.id, post.value.id);
+      postGroupIds.value = [...postGroupIds.value, group.id];
+    }
+    const refreshed = await fetchFavoriteGroups('post');
+    postGroups.value = refreshed;
+  } catch (error) {
+    groupError.value = error.message || '更新分组失败';
+  }
+}
+
+async function createPostGroup() {
+  const name = newGroupName.value.trim();
+  if (!name) return;
+  try {
+    await createFavoriteGroup('post', name);
+    newGroupName.value = '';
+    postGroups.value = await fetchFavoriteGroups('post');
+  } catch (error) {
+    groupError.value = error.message || '创建分组失败';
+  }
+}
 const replyTarget = ref(null);
 
 const quickCommentText = ref('');
@@ -163,6 +231,16 @@ async function loadPostData(id) {
     if (version === epoch) loading.value = false;
   }
 }
+async function onPostEdited() {
+  post.value = null;
+  replyTarget.value = null;
+  quickCommentText.value = '';
+  loading.value = true;
+  await refreshPost();
+  loading.value = false;
+  emit('postEdited');
+  emit('pinsChanged');
+}
 async function refreshPost() {
   const id = props.postId,
     version = epoch;
@@ -174,8 +252,10 @@ async function refreshPost() {
       emit('postUpdated', result);
     }
   } catch (failure) {
-    if (version === epoch)
+    if (version === epoch) {
+      if (!post.value) error.value = failure;
       ElMessage.error(failure.message || '读取最新食记失败');
+    }
   }
 }
 function selectReply(value) {
@@ -188,6 +268,7 @@ watch(
   ([isOpen, newId]) => {
     isSubmittingComment.value = false;
     if (isOpen && newId) {
+      modalLayer.value = nextZIndex();
       loadPostData(newId);
     } else if (!isOpen) {
       ++epoch;
@@ -214,7 +295,14 @@ function handleOverlayClick(e) {
 }
 
 function handleKeydown(e) {
-  if (props.modelValue && !removing.value && e.key === 'Escape') {
+  if (
+    props.modelValue &&
+    !removing.value &&
+    e.key === 'Escape' &&
+    !Array.from(document.querySelectorAll('.el-dialog, .el-message-box')).some(
+      (dialog) => dialog.getClientRects().length > 0,
+    )
+  ) {
     close();
   }
 }
@@ -234,7 +322,7 @@ onUnmounted(() => {
 });
 
 async function toggleLike() {
-  if (!post.value || loading.value) return;
+  if (!post.value || loading.value || post.value.status !== 'approved') return;
   const next = !isLiked.value;
   isLiked.value = next;
   try {
@@ -250,7 +338,7 @@ async function toggleLike() {
 }
 
 async function toggleFavorite() {
-  if (!post.value || loading.value) return;
+  if (!post.value || loading.value || post.value.status !== 'approved') return;
   const next = !isFavorited.value;
   isFavorited.value = next;
   try {
@@ -348,6 +436,7 @@ async function removePost() {
         v-if="modelValue"
         ref="detailModalRef"
         class="redbook-modal"
+        :style="{ zIndex: modalLayer }"
         role="dialog"
         aria-modal="true"
         aria-label="帖子详情"
@@ -458,6 +547,7 @@ async function removePost() {
                 >
                   <template #context="{ close: closePhoto }">
                     <CommunityPhotoContext
+                      v-if="post.status === 'approved'"
                       :post="post"
                       :time="formatPostTime(post.createdAt)"
                       :like-busy="isLiked !== Boolean(post.likedByMe)"
@@ -554,6 +644,11 @@ async function removePost() {
                   </div>
 
                   <!-- 标题 -->
+                  <CommunityPinManager
+                    :post="post"
+                    @changed="emit('pinsChanged')"
+                  />
+                  <CommunityPostEdit :post="post" @edited="onPostEdited" />
                   <h1 class="redbook-post-title">{{ post.title }}</h1>
 
                   <!-- 话题标签 -->
@@ -584,6 +679,9 @@ async function removePost() {
                   <!-- 发布时间与食堂位置 -->
                   <div class="redbook-post-footline">
                     <time>{{ formatPostTime(post.createdAt) }}</time>
+                    <time v-if="post.editedAt"
+                      >修改于 {{ formatPostTime(post.editedAt) }}</time
+                    >
                     <span
                       class="post-view-count"
                       :aria-label="`${displayedViewCount} 次浏览`"
@@ -611,6 +709,7 @@ async function removePost() {
 
                   <!-- 评论列表部分（纯净小红书风格） -->
                   <CommunityCommentSection
+                    v-if="post.status === 'approved'"
                     :key="post.id"
                     ref="commentSection"
                     :post-id="post.id"
@@ -633,7 +732,10 @@ async function removePost() {
                   </button>
                 </div>
                 <!-- PC 端吸底操作栏（右栏底部） -->
-                <footer class="redbook-bottom-bar pc-only-bottom">
+                <footer
+                  v-if="post.status === 'approved'"
+                  class="redbook-bottom-bar pc-only-bottom"
+                >
                   <div class="redbook-input-pill">
                     <span class="pill-pen-icon" aria-hidden="true">✎</span>
                     <input
@@ -686,6 +788,15 @@ async function removePost() {
                       }}</span>
                     </button>
                     <button
+                      v-if="isFavorited"
+                      type="button"
+                      class="action-icon-btn"
+                      aria-label="设置收藏分组"
+                      @click="openGroups"
+                    >
+                      <span class="icon-emoji">🏷️</span>
+                    </button>
+                    <button
                       type="button"
                       class="action-icon-btn"
                       :aria-label="`评论 ${post.commentCount || 0}`"
@@ -710,7 +821,10 @@ async function removePost() {
             </div>
 
             <!-- 手机端固定吸底操作条（<= 768px） -->
-            <footer class="redbook-bottom-bar mobile-only-bottom">
+            <footer
+              v-if="post.status === 'approved'"
+              class="redbook-bottom-bar mobile-only-bottom"
+            >
               <div class="redbook-input-pill">
                 <span class="pill-pen-icon" aria-hidden="true">✎</span>
                 <input
@@ -755,6 +869,15 @@ async function removePost() {
                   <span class="icon-count">{{ post.favoriteCount || 0 }}</span>
                 </button>
                 <button
+                  v-if="isFavorited"
+                  type="button"
+                  class="action-icon-btn"
+                  aria-label="设置收藏分组"
+                  @click="openGroups"
+                >
+                  <span class="icon-emoji">🏷️</span>
+                </button>
+                <button
                   type="button"
                   class="action-icon-btn"
                   :aria-label="`评论 ${post.commentCount || 0}`"
@@ -777,10 +900,55 @@ async function removePost() {
         </div>
       </div>
     </Transition>
+    <ElDialog
+      v-model="groupDialogOpen"
+      title="收藏分组"
+      width="min(420px, 92vw)"
+    >
+      <p v-if="groupError" role="alert">{{ groupError }}</p>
+      <p v-if="groupLoading">正在读取分组…</p>
+      <template v-else>
+        <p v-if="!postGroups.length">还没有分组，可在下方新建。</p>
+        <label v-for="group in postGroups" :key="group.id" class="group-choice">
+          <input
+            type="checkbox"
+            :checked="postGroupIds.includes(group.id)"
+            @change="togglePostGroup(group)"
+          />
+          {{ group.name }} ({{ group.itemCount }})
+        </label>
+        <div class="group-create">
+          <input
+            v-model="newGroupName"
+            maxlength="20"
+            placeholder="新分组名称"
+            aria-label="新分组名称"
+          />
+          <button type="button" @click="createPostGroup">新建</button>
+        </div>
+      </template>
+    </ElDialog>
   </Teleport>
 </template>
 
 <style scoped lang="scss">
+.group-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.group-create {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+  }
+}
 .post-view-count {
   display: inline-flex;
   align-items: center;
@@ -804,7 +972,6 @@ async function removePost() {
 .redbook-modal {
   position: fixed;
   inset: 0;
-  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;

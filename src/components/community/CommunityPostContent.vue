@@ -2,6 +2,7 @@
 import { nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import { useBrowsingHistoryStore } from '@/store/useBrowsingHistoryStore.js';
 import { ElMessage } from 'element-plus';
 import { useCommunityRemoval } from '@/composables/useCommunityRemoval.js';
 import {
@@ -21,6 +22,8 @@ import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
 import ReportButton from '@/components/base/ReportButton.vue';
 import DishLink from '@/components/canteen/DishLink.vue';
+import CommunityPinManager from './CommunityPinManager.vue';
+import CommunityPostEdit from './CommunityPostEdit.vue';
 import { shareCommunityPost } from '@/composables/usePostShare.js';
 
 const props = defineProps({
@@ -45,6 +48,7 @@ const props = defineProps({
 const emit = defineEmits(['deleted', 'close']);
 
 const auth = useAuthStore();
+const browsingHistory = useBrowsingHistoryStore();
 const router = useRouter();
 const {
   canRemove,
@@ -80,6 +84,8 @@ async function load() {
     const result = await fetchCommunityPostDetail(props.postId);
     if (current === version) {
       post.value = result;
+      if (result.status === 'approved')
+        void browsingHistory.record('post', result.id);
       const authorId = result.author?.id;
       isFollowing.value = false;
       // 关注状态单独查询，作者是自己时按钮不展示，无需请求。
@@ -379,6 +385,7 @@ function formatPostTime(isoString) {
         <CommunityImageViewer :images="post.images || []" :alt="post.title">
           <template #context="{ close }">
             <CommunityPhotoContext
+              v-if="post.status === 'approved'"
               :post="post"
               :time="formatPostTime(post.createdAt)"
               :like-busy="acting"
@@ -479,7 +486,12 @@ function formatPostTime(isoString) {
             未通过审核：{{ post.reviewReason || '请遵守社区规范' }}
           </p>
 
+          <CommunityPinManager :post="post" />
+          <CommunityPostEdit :post="post" @edited="load" />
           <h1 class="post-title">{{ post.title }}</h1>
+          <p v-if="post.editedAt" class="post-edited-at">
+            修改于 {{ formatPostTime(post.editedAt) }}
+          </p>
           <p class="post-body">{{ post.content }}</p>
           <DishLink
             v-if="post.linkedDish"

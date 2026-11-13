@@ -4,6 +4,50 @@
  */
 export const routes = [
   {
+    path: '/canteens/:canteenId/stalls/:stallId/dishes/:dishId/price-history',
+    name: 'dishPriceHistory',
+    component: () => import('@/views/dish/DishPriceHistoryView.vue'),
+    meta: {
+      title: '价格变化',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
+  },
+  {
+    path: '/profile/reports',
+    name: 'myReports',
+    component: () => import('@/views/profile/MyReportsView.vue'),
+    meta: {
+      title: '举报与处理决定',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/history',
+    name: 'browsingHistory',
+    component: () => import('@/views/profile/BrowsingHistoryView.vue'),
+    meta: {
+      title: '浏览历史',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
+    path: '/profile/corrections',
+    name: 'myCorrections',
+    component: () => import('@/views/profile/MyCorrectionsView.vue'),
+    meta: {
+      title: '我的纠错',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'profile',
+    },
+  },
+  {
     path: '/profile/feedback',
     name: 'myFeedback',
     component: () => import('@/views/profile/FeedbackView.vue'),
@@ -429,6 +473,16 @@ export const routes = [
     },
   },
   {
+    path: '/appeal',
+    name: 'appealOnly',
+    component: () => import('@/views/account/AppealOnlyView.vue'),
+    meta: {
+      title: '处理决定与申诉',
+      layout: 'blank',
+      requiresAuth: true,
+    },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('@/views/auth/LoginView.vue'),
@@ -452,6 +506,28 @@ export const routes = [
     component: () => import('@/views/admin/AdminAuditView.vue'),
     meta: {
       title: '内容审核',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
+    path: '/admin/appeals',
+    name: 'adminAppeals',
+    component: () => import('@/views/admin/AdminAppealsView.vue'),
+    meta: {
+      title: '申诉复核',
+      layout: 'admin',
+      requiresAuth: true,
+      requiresAdmin: true,
+    },
+  },
+  {
+    path: '/admin/corrections',
+    name: 'adminCorrections',
+    component: () => import('@/views/admin/AdminCorrectionsView.vue'),
+    meta: {
+      title: '目录纠错审核',
       layout: 'admin',
       requiresAuth: true,
       requiresAdmin: true,

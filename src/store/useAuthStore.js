@@ -11,6 +11,7 @@ import {
   register as registerApi,
   fetchCurrentUser,
 } from '@/api/auth.api.js';
+import { fetchCapabilities } from '@/api/capabilities.api.js';
 const pendingRefresh = new WeakMap();
 function normalizeUser(user) {
   if (
@@ -24,16 +25,25 @@ function normalizeUser(user) {
     displayName: user.displayName || '用户',
     role: user.role,
     avatarUrl: user.avatarUrl || null,
+    sessionMode: user.sessionMode === 'appeal_only' ? 'appeal_only' : 'normal',
   };
 }
 export const useAuthStore = defineStore('auth', {
-  state: () => ({ user: null, initialized: false, revision: 0 }),
+  state: () => ({
+    user: null,
+    initialized: false,
+    revision: 0,
+    capabilities: [],
+    capabilityRevision: '',
+  }),
   getters: {
     isAuthenticated: (state) => Boolean(state.user),
     role: (state) => state.user?.role || 'guest',
     isAdmin: (state) => ['admin', 'superadmin'].includes(state.user?.role),
     isSuperadmin: (state) => state.user?.role === 'superadmin',
+    isRestricted: (state) => state.user?.sessionMode === 'appeal_only',
     displayName: (state) => state.user?.displayName || '用户',
+    can: (state) => (capability) => state.capabilities.includes(capability),
   },
   actions: {
     setSession({ user }) {
@@ -42,6 +52,8 @@ export const useAuthStore = defineStore('auth', {
         clearAsyncDataCache();
         allowMediaSession();
         invalidateMedia();
+        this.capabilities = [];
+        this.capabilityRevision = '';
       }
       this.user = normalizeUser(user);
       this.initialized = true;
@@ -53,17 +65,36 @@ export const useAuthStore = defineStore('auth', {
       clearVenueDrafts();
       invalidateMedia();
       this.user = null;
+      this.capabilities = [];
+      this.capabilityRevision = '';
       this.initialized = true;
       this.revision += 1;
       clearSession();
+    },
+    /** 只消费服务器能力；失败时保持空能力，不按角色自行推断。 */
+    async refreshCapabilities() {
+      const userId = this.user?.id;
+      if (!userId) {
+        this.capabilities = [];
+        this.capabilityRevision = '';
+        return [];
+      }
+      const data = await fetchCapabilities();
+      if (this.user?.id !== userId) return this.capabilities;
+      this.capabilities = data.capabilities;
+      this.capabilityRevision = data.revision;
+      return this.capabilities;
     },
     async refresh() {
       clearSession();
       if (!pendingRefresh.has(this)) {
         const revision = this.revision;
         const task = fetchCurrentUser()
-          .then((user) => {
-            if (revision === this.revision) this.setSession({ user });
+          .then(async (user) => {
+            if (revision === this.revision) {
+              this.setSession({ user });
+              await this.refreshCapabilities().catch(() => {});
+            }
             return this.user;
           })
           .catch((error) => {
@@ -88,6 +119,7 @@ export const useAuthStore = defineStore('auth', {
       this.revision += 1;
       const data = await loginApi(params);
       this.setSession({ user: data.user });
+      await this.refreshCapabilities().catch(() => {});
       return this.user;
     },
     async register(params) {

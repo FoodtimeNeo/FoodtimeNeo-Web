@@ -4,7 +4,7 @@
 
 2026-11-01：社区详情页及信息流弹窗接入管理员删除帖子、评论和回复；所有登录用户可在“我的 → 编辑资料”修改昵称、上传或移除头像。权限、路径和失败处理见[社区内容管理](../modules/community-management.md)。资料保存调用 `PUT /users/me/profile`，新头像先通过 `/uploads/images` 上传，不能提交他人的图片引用。公告创建与设置仍限 `superadmin`，正文使用安全 Markdown 渲染。本轮浏览器检查使用本地隔离接口样例；后端真实 HTTP、Cookie、CSRF 和数据库回归由独立 CI 环境验证，未在生产库写入测试数据。
 
-本文描述当前Web接入约定，带日期的段落保留当时验收范围。接口以现有 Backend 的 `docs/api` 和 `docs/database-design.md` 为依据，不补造后端字段或接口。按用户确认隐藏邀请码、吐槽、推荐/避雷、今日推荐及排行榜等未支持入口；不新增点赞、收藏或分类。正式邮箱投递仍暂不验证。
+本文描述当前Web接入约定，带日期的段落保留当时验收范围。接口以现有 Backend 的 `docs/api` 和 `docs/database-design.md` 为依据，不补造后端字段或接口。按当前产品范围隐藏吐槽、推荐/避雷、今日推荐及排行榜等未支持入口；不新增点赞、收藏或分类。正式邮箱投递仍暂不验证。
 
 ## 认证与请求
 
@@ -13,10 +13,16 @@
 - 2026-10-15的隔离验收复用此前联调库：Web为 `localhost:3000`，进程环境的 `VITE_API_PROXY_TARGET` 指向 `http://127.0.0.1:18080`。这段记录不表示当前仍有对应进程运行，重新联调按[本地开发说明](../ops/local-development.md)启动并验证实际目标。
 - Cookie 由浏览器和服务端管理，前端不读取 HttpOnly Cookie、不保存 Token/角色/密码。重新打开页面通过 `/auth/me` 获取当前身份，管理路由重新校验服务端角色。
 - 写请求先获取 `/auth/csrf`，令牌只在内存中保留。登录更换会话后重新获取；CSRF 失效不自动重放写请求。
-- 登录使用 `account/password`；注册仅使用 `email/password/verificationCode`。客户端角色、昵称、邀请码不参与注册授权。
+- 登录使用 `account/password`；若返回 `CAPTCHA_REQUIRED`，先 `GET /auth/captcha` 展示图片，再携带 `challengeId`/`challengeAnswer` 重试。注册先读取 `/auth/registration-policy`，按 `mode` 决定邀请码必填、可选或关闭；注册提交 `email/password/verificationCode`，`invitation` 模式下额外提交 `invitationCode`。客户端角色、昵称不能参与注册授权。
 - Backend已移除固定测试验证码：开发和生产环境均须使用邮箱收到的有效随机验证码，Web调用真实注册接口；邮件服务不可用时不能注册。
 - 响应必须是 `code: "OK"` 的统一结构。401 清除页面身份，403/429/503 保留服务端错误；错误对象不包含原始请求和凭据。
 - 不启用旧 Mock 后端或本地身份回退。旧版凭据会清理；切换账号后的迟到响应不能覆盖当前页面身份。
+- 登录或恢复会话后读取 `GET /users/me/capabilities`，页面只按服务器返回的能力名显示和启用动作；读取失败保持空能力，不按角色自行推断。写请求仍由服务器逐次校验，能力名不是客户端授权凭据。
+- 登录验证码为一次性、2 分钟、设备绑定；`CAPTCHA_INVALID` 时清空答案并换题，不将其显示为密码错误。图片只以 base64 在内存展示，不写入 localStorage，答案不进入草稿或日志。
+
+## 注册策略与邀请码（2026-11-12）
+
+注册页先调用 `GET /api/v1/auth/registration-policy`，读取 `mode`、`canSendEmailCode`、`invitationRequired`、`revision`；策略读取失败不视为开放，页面显示错误与重试。`open` 模式邀请码可选，`invitation` 模式必填，`closed` 模式停止发码与提交。邀请码只随注册请求提交，不写入草稿、URL、日志或错误信息；服务端返回 `REGISTRATION_CLOSED`、`INVITATION_REQUIRED`、`INVITATION_CODE_INVALID` 时按提示处理并刷新策略。
 
 2026-10-16：用户指定线上服务 `http://154.9.252.201`，开发代理在本机来源之外仅增加该IP的默认HTTP/HTTPS端口，用于本地优化页面访问同一套真实API。目标中的凭据、路径、参数、片段、其他外站及该服务器其他端口均拒绝。直接浏览线上站点已完成登录及食堂→档口→菜品的只读检查；完整质量门禁通过（148项单元测试、Lint、格式检查和构建）。
 
@@ -87,3 +93,15 @@ PUT/DELETE /review-replies/{id}/like 与一级点评点赞共用按钮状态处�
 ## 登录公告自动弹出（2026-11-02）
 
 登录、页面刷新恢复会话、浏览器 bfcache 恢复以及页面从后台重新可见时，Web 请求 `GET /users/me/notices/current` 检查当前公告；普通路由切换不重查。同一页面生命周期内同一公告只弹一次，关闭后不会因为切回前台反复弹出；管理员切换当前公告后，回到前台会展示新的公告。`dontShowAgain=true` 仍由后端返回 `data=null`，账号级免弹跨端生效；关闭弹窗不写数据，确认才保存已读/免弹。请求失败保留重试入口，不阻塞应用。
+
+## 跨食堂搜菜筛选（2026-11-12）
+
+`GET /dishes/search` 的 `q` 可空；支持 `diningHallIds`（逗号分隔 UUID，可多选）、`minPrice`/`maxPrice`、`minRating`（0–5，UI 档位 3.0/3.5/4.0/4.5）、`sort`（`relevance`/`price_asc`/`price_desc`/`rating_desc`）与现有分页。搜索页把非敏感筛选写入 URL，修改条件从第一页重查；旧关键词/旧筛选的迟到响应不得覆盖当前结果。
+
+响应新增可空 `averageScore` 与非负 `reviewCount`。价格或评分未知的菜品保留并排在完整数据之后，不按 0 处理，也不自动标成称重；已知值不符合价格/评分门槛的仍被排除。页面显示“价格未填写/价格待补充”和“暂无评分”，不自行计算平均分。
+
+## 普通参与权限（2026-11-13）
+
+服务器默认 `PARTICIPATION_SCHOOL_EMAIL_REQUIRED=false`，非学校邮箱启用账号与学校邮箱普通账号同权；注册、登录、本人会话及资料的 `role` 为服务器解析的有效权限，真实学校认证以 `schoolEmailVerified` 为准。客户端继续消费角色／能力，不复制部署开关；反馈额度按有效角色提示为每日 5 条，恢复门槛后只读访客为 2 条。
+
+绑定、解绑、验证码和 1 小时冷却保留。解绑响应可返回 `user` 或 `visitor`，两者均必须移除学校邮箱认证；页面同步服务器返回的权限，不再硬编码“解绑必定变只读”。服务器设 `PARTICIPATION_SCHOOL_EMAIL_REQUIRED=true` 并重启可恢复原限制，无需数据迁移；客户端刷新会话后同步，旧页面也不能绕过后端校验。未新增客户端开关或管理权限。

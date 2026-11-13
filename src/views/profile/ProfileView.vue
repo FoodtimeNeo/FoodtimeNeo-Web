@@ -144,14 +144,26 @@ async function logout() {
         ><strong>→</strong></RouterLink
       >
       <RouterLink class="paper-link" :to="{ name: 'favoriteDishes' }"
-        ><span class="stamp">想吃</span> ><span
-          >想吃清单<small>保存的菜品</small></span
-        >
-        ><strong>→</strong></RouterLink
+        ><span class="stamp">想吃</span
+        ><span>想吃清单<small>保存的菜品</small></span> ><strong
+          >→</strong
+        ></RouterLink
       >
       <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
         ><span class="stamp">02</span
         ><span>我的提交<small>投稿记录与审核结果</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'myReports' }"
+        ><span>举报与处理决定<small>举报进度、公开结果与申诉截止</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'browsingHistory' }"
+        ><span>浏览历史<small>帖子与菜品分栏最近浏览</small></span
+        ><strong>→</strong></RouterLink
+      >
+      <RouterLink class="paper-link" :to="{ name: 'myCorrections' }"
+        ><span>目录纠错<small>名称、价格与介绍的更正进度</small></span
         ><strong>→</strong></RouterLink
       >
       <RouterLink class="paper-link" :to="{ name: 'myFeedback' }"

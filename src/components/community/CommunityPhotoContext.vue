@@ -32,9 +32,29 @@ defineEmits(['post', 'comment', 'share', 'like']);
       查看帖子
     </button>
     <div v-if="post.status === 'approved'" class="photo-context__actions">
-      <button type="button" @click="$emit('share')">↗ 分享</button>
+      <button type="button" @click="$emit('share')">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path d="m7 17 10-10M7 7h10v10" />
+        </svg>
+        <span>分享</span>
+      </button>
       <button type="button" @click="$emit('comment')">
-        评论 {{ post.commentCount || 0 }}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M21 6v10a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z"
+          />
+        </svg>
+        <span>评论 {{ post.commentCount || 0 }}</span>
       </button>
       <button
         type="button"
@@ -42,7 +62,20 @@ defineEmits(['post', 'comment', 'share', 'like']);
         :aria-pressed="Boolean(post.likedByMe)"
         @click="$emit('like')"
       >
-        {{ post.likedByMe ? '♥ 已赞' : '♡ 点赞' }} {{ post.likeCount || 0 }}
+        <svg
+          viewBox="0 0 24 24"
+          :fill="post.likedByMe ? 'currentColor' : 'none'"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path
+            d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+          />
+        </svg>
+        <span
+          >{{ post.likedByMe ? '已赞' : '点赞' }}
+          {{ post.likeCount || 0 }}</span
+        >
       </button>
     </div>
   </div>
@@ -108,12 +141,33 @@ defineEmits(['post', 'comment', 'share', 'like']);
 .photo-context__actions {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
 }
-.photo-context__actions button {
-  flex: 1;
-  border-radius: 8px;
+.photo-context .photo-context__actions button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--ft-radius-lg);
   background: #242424cc;
+  font-size: max(1rem, 16px);
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.photo-context__actions svg {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 .photo-context__actions button[aria-pressed='true'] {
   color: #ff999c;

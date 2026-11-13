@@ -1,19 +1,91 @@
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { useAuthStore } from '@/store/useAuthStore.js';
+import {
+  createFavoriteGroup,
+  fetchFavoriteGroups,
+} from '@/api/favoriteGroups.api.js';
+import { deleteDraft, isBlankDraft, loadDraft } from '@/utils/postDraft.js';
 import {
   fetchCommunityPosts,
   fetchMyCommunityPosts,
   fetchMyCommunityFavorites,
 } from '@/api/community.api.js';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
+import CommunityPins from '@/components/community/CommunityPins.vue';
+import CommunityPinManager from '@/components/community/CommunityPinManager.vue';
 import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
 import PostCreateModal from '@/components/community/PostCreateModal.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 
 const route = useRoute();
+const auth = useAuthStore();
+const draftSummary = ref(null);
+const postGroups = ref([]);
+const postGroupId = ref(null);
+const postUnfiled = ref(false);
+const postGroupsError = ref('');
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+function formatDraftTime(value) {
+  if (!value) return '';
+  try {
+    return new Date(value).toLocaleString('zh-CN');
+  } catch {
+    return '';
+  }
+}
+const draftLabel = computed(() => {
+  const draft = draftSummary.value;
+  if (!draft) return '';
+  return draft.title?.trim() || draft.content?.trim() || '未命名草稿';
+});
+async function refreshDraftSummary() {
+  const user = auth.user;
+  if (!user) {
+    draftSummary.value = null;
+    return;
+  }
+  try {
+    const draft = await loadDraft(window.location.origin, user.id);
+    if (!draft || isBlankDraft(draft)) {
+      draftSummary.value = null;
+      return;
+    }
+    draftSummary.value = {
+      title: draft.title || '',
+      content: draft.content || '',
+      images: draft.images?.length || 0,
+      updatedAt: draft.updatedAt,
+      bytes: (draft.images || []).reduce(
+        (total, image) => total + (image.blob?.size || 0),
+        0,
+      ),
+    };
+  } catch {
+    draftSummary.value = null;
+  }
+}
+async function removeDraft() {
+  const user = auth.user;
+  if (!user) return;
+  if (!window.confirm('确定删除本机草稿吗？删除后无法恢复。')) return;
+  try {
+    await deleteDraft(window.location.origin, user.id);
+    draftSummary.value = null;
+    ElMessage.success('草稿已删除');
+  } catch {
+    ElMessage.warning('草稿删除失败，请稍后重试');
+  }
+}
 
 const mode = ref('public');
 const input = ref('');
@@ -50,6 +122,7 @@ const tabs = [
 const pages = reactive(
   tabs.map(() => ({
     posts: [],
+    pins: null,
     loading: false,
     error: '',
     cursor: null,
@@ -80,6 +153,8 @@ const isPublic = (section) => section === 'public' || section === 'following';
 const publicMode = computed(() => isPublic(mode.value));
 
 function emptyTitle(section) {
+  if (section === 'public' && activePage.value.pins?.items.length)
+    return '暂时没有其他食记';
   if (isPublic(section) && keyword.value) return '没有匹配的食记';
   if (section === 'following') return '关注的人还没有公开食记';
   if (section === 'mine') return '你还没有发布食记';
@@ -87,12 +162,52 @@ function emptyTitle(section) {
   return '社区暂无公开帖子';
 }
 const isCreateModalOpen = ref(false);
+watch(isCreateModalOpen, (open) => {
+  if (!open) void refreshDraftSummary();
+});
 const prefillData = ref({});
 const activePostId = ref('');
 const activePost = computed(() =>
   activePage.value.posts.find(({ id }) => id === activePostId.value),
 );
 const isDetailModalOpen = ref(false);
+watch(isDetailModalOpen, (open) => {
+  if (!open) void loadPostGroups();
+});
+
+async function loadPostGroups() {
+  if (!auth.user?.id) {
+    postGroups.value = [];
+    return;
+  }
+  postGroupsError.value = '';
+  try {
+    postGroups.value = await fetchFavoriteGroups('post');
+  } catch (error) {
+    postGroupsError.value = error.message || '无法读取收藏分组';
+  }
+}
+
+function selectPostGroup(groupId = null, onlyUnfiled = false) {
+  postGroupId.value = groupId;
+  postUnfiled.value = onlyUnfiled;
+  const feed = pages[tabs.findIndex(({ id }) => id === 'favorites')];
+  feed.version += 1;
+  feed.loadedAt = null;
+  feed.page = 1;
+  if (mode.value === 'favorites') loadFeed();
+}
+
+async function createPostGroup() {
+  const name = window.prompt('新分组名称（1–20 个字符）');
+  if (!name?.trim()) return;
+  try {
+    await createFavoriteGroup('post', name);
+    await loadPostGroups();
+  } catch (error) {
+    postGroupsError.value = error.message || '创建分组失败';
+  }
+}
 const screenWidth = ref(
   typeof window !== 'undefined' ? window.innerWidth : 1200,
 );
@@ -114,31 +229,63 @@ async function loadFeed(more = false) {
   const feed = activePage.value;
   if (feed.loading) return;
   const version = ++feed.version;
+  const owner = `${auth.user?.id}:${auth.role}`;
   const query = feed.query;
   feed.error = '';
   feed.loading = true;
   try {
     // 关键需求：新发的帖子需要审核才能展示，故默认只拉取 approved 状态的帖子
     const pageNumber = more ? feed.page + 1 : 1;
+    let append = more;
+    const readPublic = (append) =>
+      fetchCommunityPosts({
+        cursor: append ? feed.cursor : undefined,
+        ...(section === 'following' ? { following: true } : {}),
+        ...(query ? { q: query } : {}),
+        ...(append &&
+        section === 'public' &&
+        !query &&
+        Number.isSafeInteger(feed.pins?.revision)
+          ? { pinRevision: feed.pins.revision }
+          : {}),
+      });
     const res = isPublic(section)
-      ? await fetchCommunityPosts({
-          cursor: more ? feed.cursor : undefined,
-          ...(section === 'following' ? { following: true } : {}),
-          ...(query ? { q: query } : {}),
+      ? await readPublic(append).catch((error) => {
+          if (append && error.bizCode === 'PIN_SET_CHANGED') {
+            append = false;
+            return readPublic(false);
+          }
+          throw error;
         })
       : await (
-          section === 'mine' ? fetchMyCommunityPosts : fetchMyCommunityFavorites
-        )({ page: pageNumber, size: 20 });
-    if (version !== feed.version) return;
-    feed.page = pageNumber;
-    feed.posts = more ? [...feed.posts, ...(res.items || [])] : res.items || [];
+          section === 'mine'
+            ? fetchMyCommunityPosts
+            : (params) => fetchMyCommunityFavorites(params)
+        )({
+          page: pageNumber,
+          size: 20,
+          ...(section === 'favorites' && postGroupId.value
+            ? { groupId: postGroupId.value }
+            : {}),
+          ...(section === 'favorites' && postUnfiled.value
+            ? { unfiled: true }
+            : {}),
+        });
+    if (version !== feed.version || owner !== `${auth.user?.id}:${auth.role}`)
+      return;
+    feed.page = append ? pageNumber : 1;
+    feed.posts = append
+      ? [...feed.posts, ...(res.items || [])]
+      : res.items || [];
+    feed.pins = section === 'public' && !query ? res.pins || null : null;
     feed.cursor = res.nextCursor;
     feed.hasMore = isPublic(section)
       ? !!res.hasMore
       : pageNumber * 20 < res.total;
-    if (!more) feed.loadedAt = Date.now();
+    if (!append) feed.loadedAt = Date.now();
   } catch (error) {
-    if (version !== feed.version) return;
+    if (version !== feed.version || owner !== `${auth.user?.id}:${auth.role}`)
+      return;
     feed.error = error.message || '加载社区帖子失败';
     if (mode.value === section) ElMessage.error(feed.error);
   } finally {
@@ -205,6 +352,11 @@ function changeMode(next, reload = false) {
 
 function invalidateSection(section) {
   pages[tabs.findIndex(({ id }) => id === section)].loadedAt = null;
+}
+
+function pinsChanged() {
+  invalidateSection('public');
+  if (mode.value === 'public' && !keyword.value) loadFeed();
 }
 
 function updatePost(post) {
@@ -354,6 +506,8 @@ function handlePostCreated() {
 
 onMounted(() => {
   loadFeed();
+  void refreshDraftSummary();
+  void loadPostGroups();
   if (typeof window !== 'undefined') {
     window.addEventListener('resize', handleResize);
   }
@@ -380,6 +534,21 @@ onUnmounted(() => {
     :class="{ 'is-sliding': dragging }"
     :style="{ '--slide-duration': `${SETTLE_MS}ms` }"
   >
+    <div v-if="draftSummary" class="community-draft" role="status">
+      <div class="community-draft__text">
+        <strong>本机草稿：{{ draftLabel }}</strong>
+        <span>
+          {{ formatDraftTime(draftSummary.updatedAt) }} ·
+          {{ draftSummary.images }} 张图 · {{ formatBytes(draftSummary.bytes) }}
+        </span>
+      </div>
+      <div class="community-draft__actions">
+        <button type="button" @click="openCreateModal()">继续编辑</button>
+        <button type="button" class="is-danger" @click="removeDraft">
+          删除
+        </button>
+      </div>
+    </div>
     <header class="community-feed-view__header">
       <nav class="community-tabs" aria-label="食记分类">
         <button
@@ -443,6 +612,39 @@ onUnmounted(() => {
       />
       <button class="button-ink" type="submit">搜索</button>
     </form>
+    <div v-if="mode === 'favorites'" class="community-groups">
+      <button
+        type="button"
+        :class="{ 'is-active': !postGroupId && !postUnfiled }"
+        @click="selectPostGroup()"
+      >
+        全部
+      </button>
+      <button
+        type="button"
+        :class="{ 'is-active': postUnfiled }"
+        @click="selectPostGroup(null, true)"
+      >
+        未分组
+      </button>
+      <button
+        v-for="group in postGroups"
+        :key="group.id"
+        type="button"
+        :class="{ 'is-active': postGroupId === group.id }"
+        @click="selectPostGroup(group.id)"
+      >
+        {{ group.name }} ({{ group.itemCount }})
+      </button>
+      <button
+        type="button"
+        class="community-groups__create"
+        @click="createPostGroup"
+      >
+        + 新建分组
+      </button>
+      <p v-if="postGroupsError" role="alert">{{ postGroupsError }}</p>
+    </div>
     <div
       class="community-stream"
       @touchstart.passive="startGesture"
@@ -499,6 +701,15 @@ onUnmounted(() => {
               ></span>
             </div>
             <div class="community-pager__feed">
+              <CommunityPinManager
+                v-if="tab.id === 'public' && !pages[index].query"
+                @changed="pinsChanged"
+              />
+              <CommunityPins
+                v-if="tab.id === 'public' && !pages[index].query"
+                :items="pages[index].pins?.items || []"
+                @open="handleCardClick"
+              />
               <p
                 v-if="pages[index].error && !pages[index].posts.length"
                 role="alert"
@@ -581,6 +792,8 @@ onUnmounted(() => {
       :post-id="activePostId"
       :initial-post="activePost"
       @post-updated="updatePost"
+      @post-edited="onPostDeleted"
+      @pins-changed="pinsChanged"
       @follow-updated="invalidateSection('following')"
       @deleted="onPostDeleted"
     />
@@ -591,6 +804,81 @@ onUnmounted(() => {
 .community-feed-view {
   min-height: calc(100vh - 200px);
   padding: 16px var(--zine-page-padding, 32px) 80px;
+
+  .community-draft {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border: 1px dashed var(--ft-color-secondary);
+    background: var(--zine-paper-card);
+    font-size: var(--ft-font-size-sm);
+  }
+
+  .community-draft__text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      overflow-wrap: anywhere;
+    }
+
+    span {
+      color: var(--ft-color-text-muted);
+    }
+  }
+
+  .community-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    button {
+      border: 1px solid var(--ft-color-secondary);
+      background: transparent;
+      color: var(--ft-color-text);
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    button.is-active {
+      border-color: var(--ft-color-primary);
+      background: rgb(201 52 30 / 10%);
+    }
+
+    .community-groups__create {
+      border-style: dashed;
+    }
+
+    p[role='alert'] {
+      width: 100%;
+      margin: 0;
+      color: var(--ft-color-danger);
+    }
+  }
+
+  .community-draft__actions {
+    display: flex;
+    gap: 10px;
+
+    button {
+      border: 0;
+      background: transparent;
+      color: var(--ft-color-primary);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .is-danger {
+      color: var(--ft-color-danger);
+    }
+  }
 
   &__header {
     display: flex;

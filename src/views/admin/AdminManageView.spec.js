@@ -95,7 +95,10 @@ it('编辑菜品固定原归属，零价允许保存，失败保留输入', asyn
       },
     },
   });
-  expect(wrapper.find('select').element.value).toBe('active');
+  expect(wrapper.get('select[aria-label="目录状态"]').element.value).toBe(
+    'active',
+  );
+  await wrapper.get('select[aria-label="计价单位"]').setValue('kg');
   api.saveManagedItem.mockRejectedValueOnce(new Error('保存冲突'));
   await wrapper.get('input[maxlength]').setValue('新面');
   await wrapper.get('form').trigger('submit');
@@ -104,6 +107,7 @@ it('编辑菜品固定原归属，零价允许保存，失败保留输入', asyn
     parentId: 'original-stall',
     name: '新面',
     price: 0,
+    priceUnit: 'kg',
   });
   expect(wrapper.text()).toContain('保存冲突');
   expect(wrapper.get('input[maxlength]').element.value).toBe('新面');

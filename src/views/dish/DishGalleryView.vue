@@ -64,7 +64,13 @@ watch(page, () => {
             :aria-current="index === activeIndex"
             @click="activeIndex = index"
           >
-            <MediaImage :src="image.imageUrl" alt="" :retryable="false" />
+            <MediaImage
+              :src="image.imageUrl"
+              fit="contain"
+              alt=""
+              :retryable="false"
+              compact
+            />
           </button>
         </li>
       </ul>
@@ -105,11 +111,13 @@ watch(page, () => {
     border: 2px solid var(--ft-color-text);
     box-shadow: 6px 6px 0 var(--ft-color-text);
     overflow: hidden;
-
-    img {
-      width: 100%;
+    :deep(.media-image) {
       height: auto;
-      object-fit: cover;
+      min-height: 120px;
+    }
+    :deep(img) {
+      height: auto;
+      max-height: min(70svh, 640px);
     }
   }
 
@@ -123,13 +131,15 @@ watch(page, () => {
   }
 
   &__thumb {
+    width: 80px;
+    height: 64px;
     padding: 0;
     border: 2px solid var(--ft-color-text);
     background: none;
     cursor: pointer;
     line-height: 0;
 
-    &.is-active {
+    &[aria-current='true'] {
       outline: 3px solid var(--ft-color-primary);
       outline-offset: 2px;
     }

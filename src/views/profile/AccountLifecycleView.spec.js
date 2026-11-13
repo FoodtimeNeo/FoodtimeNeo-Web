@@ -73,7 +73,7 @@ it('解绑响应同步访客身份并明确学校邮箱重新可用时间', asyn
     });
   await flushPromises();
   expect(auth.setSession).toHaveBeenCalledWith({ user: profile });
-  expect(view.text()).toContain('当前为访客身份');
+  expect(view.text()).toContain('学校邮箱已解绑');
   expect(view.text()).toContain('UTC+8');
   view.unmount();
 });

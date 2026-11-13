@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/useAuthStore.js';
 import { invalidateSession } from '@/api/http.js';
 import { fetchAccountLifecycle } from '@/api/account-lifecycle.api.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { purgeActor } from '@/utils/postDraft.js';
 import AccountEmailAction from '@/components/profile/AccountEmailAction.vue';
 import BackLink from '@/components/base/BackLink.vue';
 
@@ -20,7 +21,7 @@ const summary = ref(null),
 const receipt = computed(() =>
   route.query.unboundAccount === auth.user?.id &&
   Number.isFinite(Date.parse(route.query.schoolEmailReusableAt))
-    ? `学校邮箱已解绑，当前为访客身份。学校邮箱可在 ${formatTime(route.query.schoolEmailReusableAt)}（UTC+8）后重新绑定。`
+    ? `学校邮箱已解绑。学校邮箱可在 ${formatTime(route.query.schoolEmailReusableAt)}（UTC+8）后重新绑定。`
     : '',
 );
 let sequence = 0,
@@ -57,7 +58,7 @@ watch(
 async function unbound(result) {
   const id = result.profile.id;
   auth.setSession({ user: result.profile });
-  message.value = `学校邮箱已解绑，当前为访客身份。学校邮箱可在 ${formatTime(result.schoolEmailReusableAt)}（UTC+8）后重新绑定。`;
+  message.value = `学校邮箱已解绑。学校邮箱可在 ${formatTime(result.schoolEmailReusableAt)}（UTC+8）后重新绑定。`;
   await router.replace({
     name: 'accountLifecycle',
     query: {
@@ -67,6 +68,9 @@ async function unbound(result) {
   });
 }
 async function deleted(result) {
+  const ownerId = auth.user?.id;
+  if (ownerId)
+    await purgeActor(window.location.origin, ownerId).catch(() => {});
   auth.clear();
   invalidateSession();
   await router.replace({ name: 'login', query: { accountDeleted: '1' } });

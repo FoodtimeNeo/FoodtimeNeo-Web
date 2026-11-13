@@ -5,6 +5,16 @@ import { useAuthStore } from '@/store/useAuthStore.js';
 import CommunityPostContent from './CommunityPostContent.vue';
 import CommunityPostDetailModal from './CommunityPostDetailModal.vue';
 import CommunityCommentSection from './CommunityCommentSection.vue';
+vi.mock('@/api/browsingHistory.api.js', () => ({
+  fetchHistorySettings: vi.fn().mockResolvedValue({
+    enabled: false,
+    revision: 1,
+    dishEpoch: 0,
+    postEpoch: 0,
+  }),
+  recordBrowsingHistory: vi.fn(),
+  updateHistorySettings: vi.fn(),
+}));
 
 const api = vi.hoisted(() => ({
   fetchCommunityPostDetail: vi.fn(),
@@ -20,8 +30,12 @@ const api = vi.hoisted(() => ({
   removeCommunityAsAdmin: vi.fn(),
 }));
 const dialogs = vi.hoisted(() => ({ prompt: vi.fn(), confirm: vi.fn() }));
+const follow = vi.hoisted(() => ({ fetchFollowStatus: vi.fn() }));
 vi.mock('@/api/community.api.js', () => api);
-vi.mock('element-plus', () => ({
+vi.mock('@/api/follow.api.js', () => follow);
+vi.mock('element-plus', async (original) => ({
+  ...(await original()),
+  ElDialog: { name: 'ElDialog', template: '<div><slot /></div>' },
   ElMessageBox: dialogs,
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },
 }));
@@ -55,6 +69,7 @@ beforeEach(() => {
     hasMore: false,
   });
   api.fetchCommentReplies.mockResolvedValue({ items: [], hasMore: false });
+  follow.fetchFollowStatus.mockResolvedValue({ followed: false });
   dialogs.prompt.mockResolvedValue({ value: '违反社区规范' });
   dialogs.confirm.mockImplementation(
     (message, title, options) =>
