@@ -1,8 +1,8 @@
 import { http, ApiError } from './http.js';
-export async function uploadImage(file) {
+export async function uploadImage(file, options = {}) {
   const body = new FormData();
   body.append('file', file);
-  const data = await http.post('/uploads/images', body);
+  const data = await http.post('/uploads/images', body, options);
   if (!/^\/api\/v1\/media\/[0-9a-f-]{36}$/i.test(data?.imageUrl || ''))
     throw new ApiError('上传响应不符合接口约定', { code: 'PROTOCOL' });
   return data;

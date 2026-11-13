@@ -43,6 +43,26 @@ beforeEach(() => {
   api.fetchAdminDecisions.mockResolvedValue(page([decision]));
   api.confirm.mockResolvedValue('confirm');
   api.performReportAction.mockResolvedValue({ id: 'action-1' });
+  api.fetchAdminReportFollowUps.mockResolvedValue(page([]));
+});
+
+it('已完成举报有可达的追问回复入口，使用举报编号而非决定编号', async () => {
+  api.fetchAdminReportFollowUps.mockResolvedValue(
+    page([
+      { id: 'question', authorRole: 'reporter', content: '结案后补充材料' },
+    ]),
+  );
+  await render();
+  const completed = wrapper.get('.report-decisions');
+  await completed.get('.report-thread-toggle').trigger('click');
+  await flushPromises();
+  expect(api.fetchAdminReportFollowUps).toHaveBeenCalledWith(
+    'report-1',
+    1,
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+  );
+  expect(completed.text()).toContain('结案后补充材料');
+  expect(completed.find('textarea').exists()).toBe(true);
 });
 afterEach(() => wrapper?.unmount());
 
