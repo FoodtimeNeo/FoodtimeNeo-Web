@@ -13,6 +13,7 @@ import { uploadImage } from '@/api/submission.api.js';
 import { validateImageFile } from '@/utils/submissionValidation.js';
 import ErrorState from '@/components/base/ErrorState.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
+import PaginationControls from '@/components/base/PaginationControls.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -21,12 +22,20 @@ const loading = ref(true);
 const error = ref('');
 const drafts = reactive({});
 const actionLists = reactive({});
+const page = ref(1);
+const total = ref(0);
+const size = ref(20);
+const attemptedPage = ref(1);
+const busy = computed(() =>
+  Object.values(drafts).some((draft) => draft.uploading || draft.submitting),
+);
 const accountScope = computed(() =>
   auth.isRestricted && auth.user?.id
     ? JSON.stringify([window.location.origin, auth.user.id])
     : '',
 );
 let scopeController = new AbortController();
+let pageController;
 const labels = {
   upheld: '成立',
   not_upheld: '不成立',
@@ -197,22 +206,49 @@ function removeEvidence(decision, index) {
   saveDraft(decision);
 }
 
-async function load() {
-  const signal = scopeController.signal;
+async function load(number = page.value) {
+  pageController?.abort();
+  pageController = new AbortController();
+  const signal = pageController.signal;
   if (!accountScope.value) {
     loading.value = false;
     return;
   }
   loading.value = true;
+  attemptedPage.value = number;
   error.value = '';
   try {
-    const data = await fetchMyModerationDecisions(1, { signal });
-    if (!signal.aborted) items.value = data.items;
+    const data = await fetchMyModerationDecisions(number, { signal });
+    if (signal.aborted) return;
+    if (
+      !Array.isArray(data?.items) ||
+      !Number.isInteger(data.total) ||
+      data.total < 0 ||
+      !Number.isInteger(data.size) ||
+      data.size < 1 ||
+      data.page !== number
+    )
+      throw new Error('处理决定分页响应异常，请重试');
+    const last = Math.max(1, Math.ceil(data.total / data.size));
+    if (!data.items.length && number > last) return await load(last);
+    items.value = data.items;
+    page.value = number;
+    total.value = data.total;
+    size.value = data.size;
   } catch (failure) {
     if (!signal.aborted) error.value = failure.message || '无法读取处理决定';
   } finally {
     if (!signal.aborted) loading.value = false;
   }
+}
+function changePage(number) {
+  if (
+    !loading.value &&
+    !busy.value &&
+    number >= 1 &&
+    number <= Math.max(1, Math.ceil(total.value / size.value))
+  )
+    load(number);
 }
 
 async function submit(decision) {
@@ -264,8 +300,13 @@ watch(
   accountScope,
   () => {
     scopeController.abort();
+    pageController?.abort();
     scopeController = new AbortController();
     items.value = [];
+    page.value = 1;
+    total.value = 0;
+    size.value = 20;
+    attemptedPage.value = 1;
     error.value = '';
     for (const key of Object.keys(drafts)) delete drafts[key];
     for (const key of Object.keys(actionLists)) delete actionLists[key];
@@ -273,7 +314,10 @@ watch(
   },
   { immediate: true, flush: 'sync' },
 );
-onBeforeUnmount(() => scopeController.abort());
+onBeforeUnmount(() => {
+  scopeController.abort();
+  pageController?.abort();
+});
 </script>
 
 <template>
@@ -294,10 +338,15 @@ onBeforeUnmount(() => scopeController.abort());
       账号：{{ auth.user.email }}
     </p>
 
-    <LoadingState v-if="loading" />
-    <ErrorState v-else-if="error" :description="error" @retry="load" />
-    <p v-else-if="!items.length">当前没有可查看的处理决定。</p>
-    <ul v-else class="appeal-only__list">
+    <LoadingState v-if="loading && !items.length" />
+    <p v-else-if="loading" role="status">正在读取第 {{ attemptedPage }} 页…</p>
+    <ErrorState
+      v-if="error"
+      :description="error"
+      @retry="load(attemptedPage)"
+    />
+    <p v-if="!loading && !items.length && !error">当前没有可查看的处理决定。</p>
+    <ul v-if="items.length" class="appeal-only__list">
       <li v-for="item in items" :key="item.decisionId">
         <header>
           <strong>处理结果：{{ labels[item.outcome] || item.outcome }}</strong>
@@ -309,6 +358,7 @@ onBeforeUnmount(() => scopeController.abort());
         <button
           type="button"
           class="appeal-only__toggle"
+          :disabled="loading"
           @click="loadActions(item)"
         >
           {{
@@ -349,13 +399,15 @@ onBeforeUnmount(() => scopeController.abort());
               v-model="draftFor(item).content"
               rows="6"
               maxlength="2000"
-              :disabled="draftFor(item).submitting"
+              :disabled="loading || draftFor(item).submitting"
               @input="saveDraft(item)"
             ></textarea>
           </label>
           <fieldset
             class="appeal-only__attachments"
-            :disabled="draftFor(item).submitting || draftFor(item).uploading"
+            :disabled="
+              loading || draftFor(item).submitting || draftFor(item).uploading
+            "
           >
             <legend>证据图片（可选，最多3张）</legend>
             <label>
@@ -406,7 +458,9 @@ onBeforeUnmount(() => scopeController.abort());
           <button
             type="button"
             class="button-ink is-primary"
-            :disabled="draftFor(item).submitting || draftFor(item).uploading"
+            :disabled="
+              loading || draftFor(item).submitting || draftFor(item).uploading
+            "
             @click="submit(item)"
           >
             提交申诉
@@ -415,6 +469,14 @@ onBeforeUnmount(() => scopeController.abort());
         <p v-else>申诉期限已过或已提交。</p>
       </li>
     </ul>
+    <PaginationControls
+      v-if="total > size || page > 1"
+      :page="page"
+      :total="total"
+      :size="size"
+      :disabled="loading || busy"
+      @change="changePage"
+    />
   </main>
 </template>
 
