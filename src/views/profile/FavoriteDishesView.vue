@@ -329,6 +329,7 @@ onMounted(reloadGroups);
   color: var(--ft-color-text);
   padding: 6px 10px;
   cursor: pointer;
+  min-height: 44px;
 }
 .favorite-dishes__group,
 .favorite-dishes__groups > button {
@@ -377,5 +378,20 @@ onMounted(reloadGroups);
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
+}
+.favorite-dishes__memberships button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--ft-color-secondary);
+  border-radius: 4px;
+  color: var(--ft-color-text);
+  background: var(--zine-paper-card);
+  font: inherit;
+  cursor: pointer;
+}
+.favorite-dishes__memberships button[aria-pressed='true'] {
+  color: var(--ft-color-primary);
+  border-color: var(--ft-color-primary);
 }
 </style>

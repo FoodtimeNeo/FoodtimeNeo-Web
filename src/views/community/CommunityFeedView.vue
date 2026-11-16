@@ -841,6 +841,7 @@ onUnmounted(() => {
     margin-bottom: 12px;
 
     button {
+      min-height: 44px;
       border: 1px solid var(--ft-color-secondary);
       background: transparent;
       color: var(--ft-color-text);
