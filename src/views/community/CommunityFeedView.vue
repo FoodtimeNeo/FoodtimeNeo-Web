@@ -625,7 +625,7 @@ onUnmounted(() => {
         :class="{ 'is-active': postUnfiled }"
         @click="selectPostGroup(null, true)"
       >
-        未分组
+        默认分组
       </button>
       <button
         v-for="group in postGroups"
@@ -644,6 +644,7 @@ onUnmounted(() => {
         + 新建分组
       </button>
       <p v-if="postGroupsError" role="alert">{{ postGroupsError }}</p>
+      <p>直接收藏即可存入默认分组，无需新建。帖子和菜品分别管理。</p>
     </div>
     <div
       class="community-stream"
