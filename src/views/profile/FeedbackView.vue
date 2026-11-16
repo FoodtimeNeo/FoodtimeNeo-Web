@@ -119,7 +119,7 @@ function upload() {
     const csv = await readFeedbackCsv(file);
     if (!current()) return;
     await ElMessageBox.confirm(
-      `导入“${file.name}”中的回复和处理状态？已完成记录将跳过。`,
+      `导入“${file.name}”中的处理建议和处理状态？处理建议会作为回复向用户展示；已完成记录将跳过。`,
       '批量导入',
       { confirmButtonText: '导入', cancelButtonText: '取消' },
     );
@@ -168,7 +168,7 @@ function upload() {
         导出未完成反馈（CSV）
       </button>
       <p>
-        保留“反馈编号、反馈类型、反馈内容”，新增“回复、处理状态”两列。处理状态填写待处理、处理中或已完成；空白表示不修改。处理中由导出自动设置。请保存为
+        导出的表格自带“处理状态”和“处理建议”。保留“反馈编号、反馈类型、反馈内容”，在处理建议列填写用户可见的回复，处理状态可保留“处理中”或改为“已完成”；空白表示不修改。兼容旧表的“回复”列，请勿与处理建议同时使用。请保存为
         CSV UTF-8。
       </p>
       <label
