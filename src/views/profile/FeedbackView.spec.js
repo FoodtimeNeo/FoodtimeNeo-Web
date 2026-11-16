@@ -86,13 +86,19 @@ it('切换已完成归档请求独立列表', async () => {
   view.unmount();
 });
 it('超管导出使用服务器 CSV 并重新获取处理状态', async () => {
-  const exported = { filename: '反馈.csv', csv: 'CSV', count: 1 };
+  const exported = {
+    filename: '反馈.csv',
+    csv: '\uFEFF反馈编号,反馈类型,反馈内容,处理状态,处理建议\r\nf1,功能反馈,原反馈,处理中,\r\n',
+    count: 1,
+  };
   api.exportFeedback.mockResolvedValue(exported);
   const view = mountView(true);
   await flushPromises();
   await button(view, '导出未完成反馈（CSV）').trigger('click');
   await flushPromises();
   expect(api.save).toHaveBeenCalledWith(exported);
+  expect(view.text()).toContain('自带“处理状态”和“处理建议”');
+  expect(view.text()).toContain('用户可见的回复');
   expect(view.text()).toContain('已导出 1 条');
   expect(api.fetchFeedback).toHaveBeenLastCalledWith(
     1,
