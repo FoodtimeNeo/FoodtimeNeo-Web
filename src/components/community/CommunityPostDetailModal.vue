@@ -940,6 +940,7 @@ async function removePost() {
       <template v-else-if="!groupError">
         <button
           type="button"
+          class="group-default"
           :disabled="groupBusy"
           :aria-pressed="!postGroupIds.length"
           @click="useDefaultGroup"
@@ -979,11 +980,58 @@ async function removePost() {
   align-items: center;
   gap: 8px;
   padding: 6px 0;
+  min-height: 44px;
+  cursor: pointer;
+  input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ft-color-primary);
+  }
+}
+.group-default,
+.group-create button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--ft-color-secondary);
+  border-radius: 4px;
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text);
+  font: inherit;
+  cursor: pointer;
+  &:focus-visible {
+    outline: 2px solid var(--ft-color-primary);
+    outline-offset: 3px;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+}
+.group-default[aria-pressed='true'] {
+  color: var(--ft-color-primary);
+  border-color: var(--ft-color-primary);
+  background: rgb(201 52 30 / 8%);
 }
 .group-create {
   display: flex;
   gap: 8px;
   margin-top: 10px;
+  flex-wrap: wrap;
+  input {
+    flex: 1;
+    min-width: 120px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--ft-color-secondary);
+    border-radius: 4px;
+    background: var(--zine-paper-card);
+    color: var(--ft-color-text);
+    font: inherit;
+  }
+  button {
+    color: var(--ft-color-primary);
+    border-style: dashed;
+  }
 
   input {
     flex: 1;
