@@ -1,7 +1,11 @@
 <script setup>
 import { ref, reactive, watch, onUnmounted } from 'vue';
-import { ElMessage, ElDialog } from 'element-plus';
-import { createCommunityPost } from '@/api/community.api.js';
+import { ElMessage, ElDialog, ElMessageBox } from 'element-plus';
+import {
+  createCommunityPost,
+  editCommunityPost,
+  fetchCommunityPostDetail,
+} from '@/api/community.api.js';
 import { uploadImage } from '@/api/submission.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import {
@@ -17,19 +21,27 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  editPost: { type: Object, default: null },
   initialData: {
     type: Object,
     default: () => ({}),
   },
 });
 
-const emit = defineEmits(['update:modelValue', 'created']);
+const emit = defineEmits(['update:modelValue', 'created', 'edited']);
 
 const auth = useAuthStore();
 const submitting = ref(false);
 const fileInputRef = ref(null);
 const linkedDish = ref(null);
 const requestId = ref(crypto.randomUUID());
+const editRevision = ref(null),
+  conflict = ref(false),
+  editFailure = ref('');
+let openedOwner = '',
+  operationEpoch = 0;
+const isCurrent = (epoch, owner) =>
+  epoch === operationEpoch && props.modelValue && owner === ownerId();
 let submittedPayload = null;
 const restoredDraft = ref(false);
 const draftStatus = ref('');
@@ -65,6 +77,12 @@ watch(
   () => props.modelValue,
   (val) => {
     if (val) {
+      openedOwner = ownerId();
+      operationEpoch++;
+      editRevision.value = props.editPost?.contentRevision || null;
+      conflict.value = false;
+      editFailure.value = '';
+      submitting.value = false;
       requestId.value = crypto.randomUUID();
       submittedPayload = null;
       cleanObjectUrls();
@@ -91,7 +109,7 @@ watch(
           });
         }
       }
-      void restoreDraft();
+      if (!props.editPost) void restoreDraft();
     } else {
       window.clearTimeout(saveTimer);
     }
@@ -102,7 +120,8 @@ watch(
 watch(
   [() => form.title, () => form.content, formImages, linkedDish],
   () => {
-    if (!props.modelValue || submitting.value || hydrating) return;
+    if (!props.modelValue || props.editPost || submitting.value || hydrating)
+      return;
     window.clearTimeout(saveTimer);
     saveTimer = window.setTimeout(() => {
       void saveNow();
@@ -112,13 +131,14 @@ watch(
 );
 
 onUnmounted(() => {
+  operationEpoch++;
   window.clearTimeout(saveTimer);
   cleanObjectUrls();
 });
 
 async function restoreDraft() {
   const owner = ownerId();
-  if (!owner) return;
+  if (!owner || props.editPost) return;
   if (
     props.initialData?.title ||
     props.initialData?.content ||
@@ -169,7 +189,7 @@ async function restoreDraft() {
 
 async function saveNow() {
   const owner = ownerId();
-  if (!owner) return;
+  if (!owner || props.editPost) return;
   const images = formImages.value
     .map((image, index) => {
       if (image.file)
@@ -213,6 +233,19 @@ async function saveNow() {
 async function handleBeforeClose(done) {
   if (submitting.value) {
     ElMessage.info('正在发布，请稍候');
+    return;
+  }
+  if (props.editPost) {
+    try {
+      await ElMessageBox.confirm(
+        '关闭后本次未提交修改将丢弃，原帖不会改变。',
+        '放弃本次修改？',
+        { confirmButtonText: '放弃修改', cancelButtonText: '继续编辑' },
+      );
+      done();
+    } catch {
+      /* Stay in the editor. */
+    }
     return;
   }
   window.clearTimeout(saveTimer);
@@ -315,13 +348,17 @@ function removeImage(index) {
   }
 }
 
-async function resolveImageUrls() {
+async function resolveImageUrls(epoch, owner) {
   const urls = [];
   for (const item of formImages.value) {
+    if (!isCurrent(epoch, owner))
+      throw new Error('账号或页面已变化，请重新打开编辑器');
     if (item.file && !item.uploadedUrl) {
       const uploaded = await uploadImage(item.file);
       if (!uploaded?.imageUrl)
         throw new Error('图片上传未返回有效引用，请重试');
+      if (!isCurrent(epoch, owner))
+        throw new Error('账号或页面已变化，停止关联图片');
       item.uploadedUrl = uploaded.imageUrl;
     }
     urls.push(item.uploadedUrl || item.previewUrl);
@@ -330,6 +367,7 @@ async function resolveImageUrls() {
 }
 
 async function handleSubmit() {
+  if (submitting.value || conflict.value || openedOwner !== ownerId()) return;
   if (!form.title.trim()) {
     ElMessage.warning('请填写手账标题');
     return;
@@ -338,7 +376,7 @@ async function handleSubmit() {
     ElMessage.warning('请记录你的美食心得');
     return;
   }
-  if (formImages.value.length === 0) {
+  if (formImages.value.length === 0 && !props.editPost?.repostOfId) {
     ElMessage.warning('请至少上传一张美食实拍图片');
     return;
   }
@@ -348,9 +386,13 @@ async function handleSubmit() {
     return;
   }
   submitting.value = true;
+  const epoch = operationEpoch,
+    owner = openedOwner;
+  editFailure.value = '';
   try {
     const dishId = linkedDish.value?.id;
-    const finalImageUrls = await resolveImageUrls();
+    const finalImageUrls = await resolveImageUrls(epoch, owner);
+    if (!isCurrent(epoch, owner)) return;
 
     const payloadKey = JSON.stringify([
       form.title.trim(),
@@ -358,26 +400,38 @@ async function handleSubmit() {
       finalImageUrls,
       dishId,
     ]);
-    if (submittedPayload && submittedPayload !== payloadKey)
+    if (submittedPayload && submittedPayload !== payloadKey) {
       requestId.value = crypto.randomUUID();
+    }
     submittedPayload = payloadKey;
-    const post = await createCommunityPost({
+    const payload = {
       clientRequestId: requestId.value,
       title: form.title.trim(),
       content: form.content.trim(),
       images: finalImageUrls,
       ...(dishId ? { dishId } : {}),
-    });
+    };
+    const post = props.editPost
+      ? await editCommunityPost(props.editPost.id, {
+          ...payload,
+          expectedRevision: editRevision.value,
+        })
+      : await createCommunityPost(payload);
+    if (!isCurrent(epoch, owner)) return;
 
     ElMessage.success({
-      message: '发帖成功！内容已提交审核，审核通过后将在社区公开展示。',
+      message: props.editPost
+        ? post.changed === false
+          ? '内容未变化，原帖保持当前状态。'
+          : '修改已提交，原帖暂时隐藏，审核通过后重新公开。'
+        : '发帖成功！内容已提交审核，审核通过后将在社区公开展示。',
       duration: 3500,
     });
 
     // 只有服务器确认成功后清理本机草稿；清理失败不影响发帖结果。
     window.clearTimeout(saveTimer);
-    const owner = ownerId();
-    if (owner) await deleteDraft(serviceOrigin, owner).catch(() => {});
+    if (!props.editPost && owner)
+      await deleteDraft(serviceOrigin, owner).catch(() => {});
 
     // 重置并关闭
     form.title = '';
@@ -387,14 +441,66 @@ async function handleSubmit() {
     restoredDraft.value = false;
     draftStatus.value = '';
 
-    emit('created', post);
+    emit(props.editPost ? 'edited' : 'created', post);
     emit('update:modelValue', false);
   } catch (error) {
-    ElMessage.error(error.message || '发帖失败，请稍后重试');
+    if (!isCurrent(epoch, owner)) return;
+    conflict.value = error.bizCode === 'POST_EDIT_CONFLICT';
+    editFailure.value = error.message || '提交失败，请稍后重试';
+    ElMessage.error(editFailure.value);
   } finally {
-    submitting.value = false;
+    if (isCurrent(epoch, owner)) submitting.value = false;
   }
 }
+
+async function reloadEdit() {
+  if (!props.editPost || submitting.value) return;
+  try {
+    await ElMessageBox.confirm(
+      '重新读取会替换本次未提交内容，请先复制需要保留的文字。',
+      '读取最新帖子？',
+      { confirmButtonText: '读取', cancelButtonText: '继续编辑' },
+    );
+  } catch {
+    return;
+  }
+  const epoch = operationEpoch,
+    owner = openedOwner;
+  submitting.value = true;
+  try {
+    const latest = await fetchCommunityPostDetail(props.editPost.id);
+    if (!isCurrent(epoch, owner)) return;
+    if (latest.userId !== owner) throw new Error('帖子不属于当前账号');
+    form.title = latest.title;
+    form.content = latest.content;
+    linkedDish.value = latest.linkedDish || null;
+    cleanObjectUrls();
+    formImages.value = latest.images.map((image, index) => ({
+      id: 'latest-' + index,
+      previewUrl: image.url,
+      file: null,
+      isBlob: false,
+    }));
+    editRevision.value = latest.contentRevision;
+    requestId.value = crypto.randomUUID();
+    submittedPayload = null;
+    conflict.value = false;
+    editFailure.value = '';
+  } catch (error) {
+    if (isCurrent(epoch, owner))
+      editFailure.value = error.message || '读取失败';
+  } finally {
+    if (isCurrent(epoch, owner)) submitting.value = false;
+  }
+}
+watch(
+  () => auth.user?.id,
+  () => {
+    operationEpoch++;
+    submitting.value = false;
+    if (props.modelValue) emit('update:modelValue', false);
+  },
+);
 </script>
 
 <template>
@@ -414,7 +520,9 @@ async function handleSubmit() {
         <span class="washi-tape" aria-hidden="true"></span>
         <div class="header-main">
           <span class="header-stamp">食记</span>
-          <h2 class="header-title">写一页美食手账</h2>
+          <h2 class="header-title">
+            {{ editPost ? '修改食记' : '写一页美食手账' }}
+          </h2>
           <img
             src="@/assets/images/decoration02/B/stickers/B_green-tape-strip.png"
             alt=""
@@ -426,6 +534,18 @@ async function handleSubmit() {
     </template>
 
     <form class="post-create-form" @submit.prevent="handleSubmit">
+      <p v-if="editPost" class="post-edit-warning">
+        提交修改后整帖暂时隐藏，审核通过再公开；原点赞、评论、收藏和浏览记录保留，发布时间不变。转发来源不可修改。
+      </p>
+      <p v-if="editFailure" role="alert">{{ editFailure }}</p>
+      <button
+        v-if="conflict"
+        type="button"
+        :disabled="submitting"
+        @click="reloadEdit"
+      >
+        读取最新帖子（替换本次输入）
+      </button>
       <div v-if="restoredDraft" class="post-draft-banner" role="status">
         <span>已恢复上次未发布的草稿。</span>
         <button type="button" @click="restoredDraft = false">继续编辑</button>
@@ -448,7 +568,7 @@ async function handleSubmit() {
       <DishPicker
         v-if="modelValue"
         v-model="linkedDish"
-        :disabled="submitting"
+        :disabled="submitting || conflict"
       />
       <!-- 标题 -->
       <div class="post-create-form__item">
@@ -466,7 +586,7 @@ async function handleSubmit() {
           class="post-create-form__input"
           placeholder="给这顿美食起个吸引人的手账标题吧（如：学一瓦罐汤绝绝子）"
           maxlength="50"
-          :disabled="submitting"
+          :disabled="submitting || conflict"
         />
       </div>
 
@@ -486,7 +606,7 @@ async function handleSubmit() {
           class="post-create-form__textarea"
           placeholder="分享档口位置、推荐吃法、真实口感、排队情况或踩雷提醒..."
           maxlength="2000"
-          :disabled="submitting"
+          :disabled="submitting || conflict"
         ></textarea>
       </div>
 
@@ -508,7 +628,7 @@ async function handleSubmit() {
           accept="image/jpeg,image/png"
           multiple
           class="hidden-file-input"
-          :disabled="submitting || formImages.length >= 9"
+          :disabled="submitting || conflict || formImages.length >= 9"
           @change="handleFileSelect"
         />
 
@@ -524,7 +644,7 @@ async function handleSubmit() {
               v-if="idx > 0"
               type="button"
               class="photo-card__move"
-              :disabled="submitting"
+              :disabled="submitting || conflict"
               aria-label="将此图前移"
               @click="
                 [formImages[idx - 1], formImages[idx]] = [
@@ -540,7 +660,7 @@ async function handleSubmit() {
               type="button"
               class="photo-card__remove-btn"
               title="移除此图"
-              :disabled="submitting"
+              :disabled="submitting || conflict"
               @click="removeImage(idx)"
             >
               ×
@@ -553,7 +673,7 @@ async function handleSubmit() {
             type="button"
             class="photo-upload-trigger"
             :class="{ 'is-empty': formImages.length === 0 }"
-            :disabled="submitting"
+            :disabled="submitting || conflict"
             @click="triggerFileInput"
             @dragover.prevent
             @drop.prevent="handleFileDrop"
@@ -576,7 +696,11 @@ async function handleSubmit() {
       <!-- 审核提示 -->
       <div class="post-create-form__audit-tip">
         <span class="tip-stamp">保真</span>
-        <span class="tip-text">新发布的帖子将在审核通过后展示。</span>
+        <span class="tip-text">{{
+          editPost
+            ? '修改提交后，整帖重新审核，通过后再公开。'
+            : '新发布的帖子将在审核通过后展示。'
+        }}</span>
       </div>
 
       <!-- 操作按钮 -->
@@ -585,17 +709,21 @@ async function handleSubmit() {
           type="button"
           class="post-btn post-btn--cancel"
           :disabled="submitting"
-          @click="handleClose"
+          @click="handleBeforeClose(handleClose)"
         >
           取消
         </button>
         <button
           type="submit"
           class="post-btn post-btn--submit"
-          :disabled="submitting || formImages.length === 0"
+          :disabled="
+            submitting ||
+            conflict ||
+            (formImages.length === 0 && !editPost?.repostOfId)
+          "
         >
-          <span v-if="submitting">正在发布手账...</span>
-          <span v-else>盖章发布</span>
+          <span v-if="submitting">正在提交…</span>
+          <span v-else>{{ editPost ? '提交修改并重新审核' : '盖章发布' }}</span>
         </button>
       </div>
     </form>
@@ -707,6 +835,8 @@ async function handleSubmit() {
     font-weight: 900;
     color: var(--ft-color-secondary, #3a2418);
     letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .header-subtitle {
@@ -1042,6 +1172,51 @@ async function handleSubmit() {
         transform: none;
       }
     }
+  }
+}
+</style>
+
+<style lang="scss">
+.el-dialog.post-create-dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 32px);
+  margin: 16px auto !important;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--ft-color-secondary, #3a2418);
+  border-radius: 16px;
+  background: var(--zine-paper-card, #fffaf0);
+  box-shadow: 4px 4px 0 var(--ft-color-secondary, #3a2418);
+
+  > .el-dialog__header {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+  }
+  > .el-dialog__body {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 16px;
+  }
+  > .el-dialog__header .el-dialog__headerbtn {
+    top: 2px;
+    right: 2px;
+    width: 44px;
+    height: 44px;
+  }
+}
+@media (max-width: 360px) {
+  .el-dialog.post-create-dialog .header-tape-accent {
+    display: none;
+  }
+  .el-dialog.post-create-dialog .header-stamp {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .el-dialog.post-create-dialog .post-btn--cancel {
+    min-width: 64px;
+    white-space: nowrap;
   }
 }
 </style>

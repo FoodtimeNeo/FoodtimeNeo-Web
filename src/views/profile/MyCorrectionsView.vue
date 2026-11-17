@@ -1,4 +1,5 @@
 <script setup>
+import { PRICE_UNITS } from '@/utils/priceHistory.js';
 import { fetchMyCatalogCorrections } from '@/api/correction.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime } from '@/utils/recordLabels.js';
@@ -17,7 +18,12 @@ const statusLabel = {
   approved: '已通过',
   rejected: '未通过',
 };
-const fieldLabel = { name: '名称', description: '介绍', price: '价格' };
+const fieldLabel = {
+  name: '名称',
+  description: '介绍',
+  price: '价格',
+  priceUnit: '计价单位',
+};
 
 function price(value) {
   return value === null || value === undefined ? '价格未知' : `¥${value}`;
@@ -60,6 +66,13 @@ function price(value) {
           · {{ formatTime(item.createdAt) }}
         </p>
         <dl>
+          <template v-if="item.changedFields.includes('priceUnit')"
+            ><dt>计价单位</dt>
+            <dd>
+              {{ PRICE_UNITS[item.originalPriceUnit] || '未注明' }} →
+              {{ PRICE_UNITS[item.proposedPriceUnit] || '未注明' }}
+            </dd></template
+          >
           <template v-if="item.changedFields.includes('name')">
             <dt>名称</dt>
             <dd>{{ item.originalName }} → {{ item.proposedName }}</dd>

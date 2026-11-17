@@ -4,14 +4,11 @@ import { ElMessageBox } from 'element-plus';
 import {
   decideReport,
   fetchAdminDecisions,
-  fetchAdminReportFollowUps,
   fetchReports,
   performReportAction,
-  replyReportFollowUp,
 } from '@/api/safety.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
-import { uploadImage } from '@/api/submission.api.js';
-import { formatTime } from '@/utils/recordLabels.js';
+import AdminReportThread from '@/components/admin/AdminReportThread.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
@@ -39,8 +36,6 @@ const actionLabels = {
   disable_user: '停用被举报用户',
   restore_user: '恢复被举报用户',
 };
-const threads = reactive({});
-const replies = reactive({});
 
 function draftFor(report) {
   if (!drafts[report.id])
@@ -50,91 +45,6 @@ function draftFor(report) {
       internalNote: '',
     };
   return drafts[report.id];
-}
-
-function threadFor(report) {
-  if (!threads[report.id])
-    threads[report.id] = { open: false, items: [], loading: false, error: '' };
-  return threads[report.id];
-}
-
-async function toggleThread(report) {
-  const thread = threadFor(report);
-  thread.open = !thread.open;
-  if (!thread.open || thread.items.length) return;
-  thread.loading = true;
-  thread.error = '';
-  try {
-    const data = await fetchAdminReportFollowUps(report.id);
-    thread.items = data.items;
-  } catch (failure) {
-    thread.error = failure.message || '无法读取追问记录';
-  } finally {
-    thread.loading = false;
-  }
-}
-
-function replyFor(report) {
-  if (!replies[report.id])
-    replies[report.id] = {
-      content: '',
-      internalNote: '',
-      evidence: [],
-      uploading: false,
-      error: '',
-      submitting: false,
-      requestId: crypto.randomUUID(),
-    };
-  return replies[report.id];
-}
-
-async function addReplyEvidence(state, event) {
-  const files = Array.from(event.target.files || []);
-  event.target.value = '';
-  if (!files.length) return;
-  if (state.evidence.length + files.length > 3) {
-    state.error = '证据图片最多3张';
-    return;
-  }
-  state.uploading = true;
-  state.error = '';
-  try {
-    for (const file of files) {
-      const uploaded = await uploadImage(file);
-      state.evidence.push({ url: uploaded.imageUrl, name: file.name });
-    }
-  } catch (failure) {
-    state.error = failure.message || '证据上传失败';
-  } finally {
-    state.uploading = false;
-  }
-}
-
-async function reply(report) {
-  const draft = replyFor(report);
-  if (!draft.content.trim()) {
-    draft.error = '请填写公开回复';
-    return;
-  }
-  draft.submitting = true;
-  draft.error = '';
-  try {
-    const created = await replyReportFollowUp(report.id, {
-      content: draft.content.trim(),
-      internalNote: draft.internalNote.trim() || undefined,
-      evidenceUrls: draft.evidence.map((item) => item.url),
-      clientRequestId: draft.requestId,
-    });
-    threadFor(report).items.push(created);
-    draft.content = '';
-    draft.internalNote = '';
-    draft.evidence = [];
-    draft.requestId = crypto.randomUUID();
-  } catch (failure) {
-    draft.error = failure.message || '回复失败';
-  } finally {
-    draft.submitting = false;
-  }
 }
 
 async function act(decision, actionType) {
@@ -256,73 +166,7 @@ async function decide(report) {
               {{ reviewing === row.id ? '提交中…' : '提交决定' }}
             </button>
           </div>
-          <button
-            type="button"
-            class="report-thread-toggle"
-            @click="toggleThread(row)"
-          >
-            {{ threadFor(row).open ? '收起追问' : '查看/回复追问' }}
-          </button>
-          <div v-if="threadFor(row).open" class="report-thread">
-            <p v-if="threadFor(row).loading">正在读取…</p>
-            <ul>
-              <li v-for="item in threadFor(row).items" :key="item.id">
-                <strong>{{
-                  item.authorRole === 'staff' ? '管理员' : '举报人'
-                }}</strong>
-                <p>{{ item.content }}</p>
-                <p v-if="item.internalNote">
-                  <em>内部备注：{{ item.internalNote }}</em>
-                </p>
-                <small>{{ formatTime(item.createdAt) }}</small>
-              </li>
-            </ul>
-            <p v-if="threadFor(row).error" role="alert">
-              {{ threadFor(row).error }}
-            </p>
-            <label>
-              公开回复
-              <textarea
-                v-model="replyFor(row).content"
-                rows="2"
-                maxlength="500"
-              ></textarea>
-            </label>
-            <label>
-              内部备注（不公开）
-              <input v-model="replyFor(row).internalNote" maxlength="2000" />
-            </label>
-            <input
-              type="file"
-              accept="image/jpeg,image/png"
-              multiple
-              :disabled="
-                replyFor(row).uploading || replyFor(row).evidence.length >= 3
-              "
-              @change="addReplyEvidence(replyFor(row), $event)"
-            />
-            <p v-if="replyFor(row).uploading">正在上传证据…</p>
-            <ul
-              v-if="replyFor(row).evidence.length"
-              class="report-thread-evidence"
-            >
-              <li v-for="file in replyFor(row).evidence" :key="file.url">
-                <img :src="file.url" :alt="file.name" />
-                <span>{{ file.name }}</span>
-              </li>
-            </ul>
-            <p v-if="replyFor(row).error" role="alert">
-              {{ replyFor(row).error }}
-            </p>
-            <button
-              type="button"
-              class="button-ink"
-              :disabled="replyFor(row).submitting || replyFor(row).uploading"
-              @click="reply(row)"
-            >
-              提交回复
-            </button>
-          </div>
+          <AdminReportThread :report-id="row.id" />
         </li>
       </ul>
       <section class="report-decisions">
@@ -378,6 +222,7 @@ async function decide(report) {
                 恢复被举报用户
               </button>
             </div>
+            <AdminReportThread :report-id="decision.reportId" />
           </li>
         </ul>
         <PaginationControls
@@ -446,24 +291,5 @@ async function decide(report) {
 }
 .report-decisions__actions button {
   min-height: 44px;
-}
-.report-thread-toggle {
-  margin-top: 12px;
-  min-height: 44px;
-  padding: 6px 12px;
-  font: inherit;
-  color: var(--ft-color-text);
-  background: var(--zine-paper-card);
-  border: 1px solid var(--ft-color-secondary);
-  cursor: pointer;
-}
-.report-thread {
-  display: grid;
-  gap: 12px;
-  margin-top: 12px;
-}
-.report-thread label {
-  display: grid;
-  gap: 6px;
 }
 </style>

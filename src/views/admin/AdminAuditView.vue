@@ -264,6 +264,12 @@ async function submit() {
         await submitCommunityAudit(communityType(row), row.id, {
           action: row.action,
           reason: reason.value.trim() || null,
+          ...(communityType(row) === 'posts'
+            ? {
+                contentRevision:
+                  details.value?.post?.contentRevision ?? row.contentRevision,
+              }
+            : {}),
         });
     } else if (isVenue(row) && row.action === 'remove')
       await removeVenueAsAdmin(

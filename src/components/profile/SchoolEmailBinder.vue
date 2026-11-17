@@ -5,6 +5,8 @@ import {
   bindSchoolEmail,
   sendSchoolEmailCode,
 } from '@/api/school-email.api.js';
+import { useAuthStore } from '@/store/useAuthStore.js';
+const auth = useAuthStore();
 
 const emit = defineEmits(['bound']);
 const email = ref('');
@@ -63,7 +65,7 @@ async function submit() {
       email: email.value.trim().toLowerCase(),
       verificationCode: code.value.trim(),
     });
-    ElMessage.success('绑定成功，已解锁发布权限');
+    ElMessage.success('学校邮箱绑定成功');
     emit('bound', profile);
   } catch (error) {
     failure.value = error.message || '绑定失败，请核对验证码';
@@ -77,7 +79,11 @@ async function submit() {
   <section class="school-binder" aria-label="绑定学校邮箱">
     <h2>绑定学校邮箱</h2>
     <p class="school-binder__hint">
-      当前是访客身份，只能浏览。绑定学号邮箱后即可发帖、评论、点赞与投稿。
+      {{
+        auth.role === 'visitor'
+          ? '当前为只读访客，绑定学校邮箱后可参与互动。'
+          : '当前账号已可参与互动，学校邮箱绑定为可选认证。'
+      }}
     </p>
     <p v-if="failure" role="alert">{{ failure }}</p>
     <label class="school-binder__field">
@@ -122,7 +128,7 @@ async function submit() {
       :disabled="!canSubmit"
       @click="submit"
     >
-      {{ submitting ? '绑定中…' : '绑定并解锁' }}
+      {{ submitting ? '绑定中…' : '绑定学校邮箱' }}
     </button>
   </section>
 </template>

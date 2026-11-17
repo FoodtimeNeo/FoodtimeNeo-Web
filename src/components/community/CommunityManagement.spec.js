@@ -33,7 +33,8 @@ const dialogs = vi.hoisted(() => ({ prompt: vi.fn(), confirm: vi.fn() }));
 const follow = vi.hoisted(() => ({ fetchFollowStatus: vi.fn() }));
 vi.mock('@/api/community.api.js', () => api);
 vi.mock('@/api/follow.api.js', () => follow);
-vi.mock('element-plus', () => ({
+vi.mock('element-plus', async (original) => ({
+  ...(await original()),
   ElDialog: { name: 'ElDialog', template: '<div><slot /></div>' },
   ElMessageBox: dialogs,
   ElMessage: { success: vi.fn(), error: vi.fn(), warning: vi.fn() },

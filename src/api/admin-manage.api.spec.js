@@ -64,3 +64,16 @@ it('管理员评论查询发送用户关键词和分页，空条件查询全部'
     params: { page: 1, size: 20 },
   });
 });
+
+it('计价单位只进入菜品负载，省略单位的旧调用不重置已有单位', () => {
+  expect(
+    catalogPayload('dishes', { name: '菜品', price: 15, priceUnit: 'jin' })
+      .priceUnit,
+  ).toBe('jin');
+  expect(
+    catalogPayload('dishes', { name: '旧调用', price: 15 }),
+  ).not.toHaveProperty('priceUnit');
+  expect(
+    catalogPayload('stalls', { name: '档口', priceUnit: 'kg' }),
+  ).not.toHaveProperty('priceUnit');
+});

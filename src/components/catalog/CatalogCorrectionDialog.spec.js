@@ -94,3 +94,24 @@ describe('CatalogCorrectionDialog', () => {
     );
   });
 });
+
+it('单位可单独纠错，不隐式改动金额', async () => {
+  createCatalogCorrection.mockResolvedValue({ id: 'unit-correction' });
+  const wrapper = mountDialog({ priceUnit: 'serving' });
+  const label = wrapper
+    .findAll('label')
+    .find((node) => node.text().includes('更正计价单位'));
+  await label.get('input').setValue(true);
+  await wrapper.get('select[aria-label="建议计价单位"]').setValue('jin');
+  await wrapper.get('#correction-reason').setValue('菜单按斤计费');
+  await wrapper
+    .findAll('button')
+    .find((node) => node.text().includes('提交纠错'))
+    .trigger('click');
+  await flushPromises();
+  const payload = createCatalogCorrection.mock.calls.at(-1)[0];
+  expect(payload.changedFields).toEqual(['priceUnit']);
+  expect(payload.priceUnit).toBe('jin');
+  expect(payload).not.toHaveProperty('price');
+  wrapper.unmount();
+});

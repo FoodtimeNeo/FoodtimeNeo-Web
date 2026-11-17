@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/useAuthStore.js';
 import { fetchCaptcha } from '@/api/auth.api.js';
 import AuthField from '@/components/auth/AuthField.vue';
 import InkButton from '@/components/base/InkButton.vue';
+import TestingApkDownload from '@/components/common/TestingApkDownload.vue';
 import {
   validateLoginId,
   validatePassword,
@@ -14,6 +15,7 @@ import {
   APK_DOWNLOAD_URL,
   APK_FILE_NAME,
   APK_SIZE,
+  APK_VERSION,
 } from '@/constants/download.js';
 const router = useRouter();
 const route = useRoute();
@@ -168,9 +170,10 @@ async function handleSubmit() {
         <span>下载安卓安装包</span>
       </a>
       <span class="auth-view__download-hint">
-        官方客户端 · {{ APK_SIZE }} · 免商店直装
+        正式版 {{ APK_VERSION }} · {{ APK_SIZE }} · 免商店直装
       </span>
     </div>
+    <TestingApkDownload />
   </section>
 </template>
 <style scoped lang="scss">

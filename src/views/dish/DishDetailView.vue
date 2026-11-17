@@ -12,7 +12,7 @@ import {
 } from '@/api/dish.api.js';
 import { ApiError } from '@/api/http.js';
 import * as reviewActions from '@/api/review.api.js';
-import { formatPrice } from '@/utils/mediaUrl.js';
+import { recordedPrice } from '@/utils/priceHistory.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import DishReviewList from '@/components/dish/DishReviewList.vue';
@@ -108,6 +108,7 @@ const correctionTarget = computed(() =>
         name: dish.value.name,
         description: dish.value.description,
         price: dish.value.price,
+        priceUnit: dish.value.priceUnit,
         summary: `${dish.value.diningHallName} · ${dish.value.stallName} · ${dish.value.name}`,
       }
     : null,
@@ -121,17 +122,11 @@ const correctionTarget = computed(() =>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="data">
-      <article class="dish-detail__main torn-edge">
+      <article class="dish-detail__main">
         <div
           class="dish-detail__hero"
           :class="{ 'dish-detail__hero--empty': !data.images.length }"
         >
-          <RouterLink
-            class="dish-detail__upload-link"
-            :to="{ name: 'photoSubmission', params }"
-            aria-label="上传菜品图片"
-            >＋</RouterLink
-          >
           <ErrorState
             v-if="imageError"
             :description="imageError.message"
@@ -139,16 +134,24 @@ const correctionTarget = computed(() =>
           />
           <MediaImage
             v-else
-            frame="polygon"
+            fit="contain"
             :src="data.images[0]?.imageUrl || ''"
             :alt="data.dish.name"
             :empty="imagesLoading ? '正在加载图片…' : '暂未上传菜品图片'"
           />
-          <RouterLink
-            class="dish-detail__gallery-link sticker sticker--r2"
-            :to="{ name: 'dishGallery', params }"
-            >翻看图册</RouterLink
-          >
+          <div class="dish-detail__photo-actions">
+            <RouterLink
+              class="dish-detail__upload-link"
+              :to="{ name: 'photoSubmission', params }"
+              aria-label="上传菜品图片"
+              >上传图片</RouterLink
+            >
+            <RouterLink
+              class="dish-detail__gallery-link sticker sticker--r2"
+              :to="{ name: 'dishGallery', params }"
+              >翻看图册</RouterLink
+            >
+          </div>
         </div>
         <div class="dish-detail__content">
           <span class="stamp">今日主角</span>
@@ -156,7 +159,9 @@ const correctionTarget = computed(() =>
           <p class="dish-detail__meta">
             {{ data.dish.diningHallName }} · {{ data.dish.stallName }}
           </p>
-          <p class="dish-detail__price">{{ formatPrice(data.dish.price) }}</p>
+          <p class="dish-detail__price">
+            {{ recordedPrice(data.dish.price, data.dish.priceUnit) }}
+          </p>
           <DishFavoriteButton :key="dishId" :dish-id="dishId" />
           <CatalogQuickActions
             :id="dishId"
@@ -193,6 +198,11 @@ const correctionTarget = computed(() =>
               </p>
             </template>
           </div>
+          <RouterLink
+            class="button-ink"
+            :to="{ name: 'dishPriceHistory', params }"
+            >价格变化</RouterLink
+          >
           <div class="dish-detail__actions">
             <RouterLink
               class="dish-detail__review-link button-ink is-primary"
@@ -269,28 +279,36 @@ const correctionTarget = computed(() =>
   }
 
   &__hero {
-    position: relative;
-    .dish-detail__upload-link {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      z-index: 1;
-      min-width: 44px;
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    min-width: 0;
+    overflow: hidden;
+    :deep(.media-image) {
+      height: auto;
+      min-height: 120px;
+    }
+    :deep(img) {
+      height: auto;
+      max-height: clamp(220px, 55svh, 500px);
+    }
+  }
+  &__photo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px;
+    a {
+      flex: 1;
       min-height: 44px;
+      padding: 8px 12px;
       display: grid;
       place-items: center;
+      text-align: center;
+      transform: none;
       background: var(--zine-paper-card);
       border: 1px solid var(--ft-color-text);
-      font-size: 24px;
-    }
-    overflow: hidden;
-    .dish-detail__gallery-link {
-      position: absolute;
-      right: 8px;
-      bottom: 8px;
-      padding: 12px;
-      background: var(--zine-paper-card);
-      border: 1px solid var(--ft-color-text);
+      border-radius: 12px;
     }
   }
 
@@ -314,12 +332,6 @@ const correctionTarget = computed(() =>
 
   &__meta {
     color: var(--ft-color-text-muted);
-  }
-
-  &__image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
   }
 
   &__head {
@@ -408,17 +420,13 @@ const correctionTarget = computed(() =>
     }
 
     &__hero {
-      aspect-ratio: 16 / 10;
+      :deep(img) {
+        max-height: clamp(200px, 55svh, 420px);
+      }
     }
 
     &__hero--empty {
       aspect-ratio: auto;
-      height: 120px;
-
-      :deep(.media-image span) {
-        max-width: calc(100% - 100px);
-        margin-right: auto;
-      }
     }
 
     &__content {

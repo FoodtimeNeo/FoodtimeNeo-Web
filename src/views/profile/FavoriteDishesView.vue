@@ -26,6 +26,8 @@ const unfiled = ref(false);
 const membershipDishId = ref(null);
 const membershipGroupIds = ref([]);
 const membershipLoading = ref(false);
+const membershipBusy = ref(false);
+const membershipError = ref('');
 
 const state = usePagedData((page, options) =>
   fetchFavoriteDishes(page, options, {
@@ -56,7 +58,12 @@ async function createGroup() {
     const { value } = await ElMessageBox.prompt(
       '分组名称 1–20 个字符，同类型不能重名。',
       '新建菜品分组',
-      { inputPattern: /\S/, inputErrorMessage: '请输入分组名称' },
+      {
+        inputPattern: /\S/,
+        inputErrorMessage: '请输入分组名称',
+        confirmButtonText: '新建',
+        cancelButtonText: '取消',
+      },
     );
     const group = await createFavoriteGroup('dish', value);
     await reloadGroups();
@@ -73,6 +80,8 @@ async function renameGroup(group) {
       inputValue: group.name,
       inputPattern: /\S/,
       inputErrorMessage: '请输入分组名称',
+      confirmButtonText: '保存',
+      cancelButtonText: '取消',
     });
     await updateFavoriteGroup(group.id, {
       name: value,
@@ -104,11 +113,13 @@ async function toggleMembershipPanel(dish) {
   }
   membershipDishId.value = dish.id;
   membershipLoading.value = true;
+  membershipError.value = '';
   try {
     const data = await fetchFavoriteGroupMemberships('dish', dish.id);
     membershipGroupIds.value = data.groupIds || [];
   } catch (error) {
     membershipGroupIds.value = [];
+    membershipError.value = error.message || '无法读取分组关系';
     ElMessage.error(error.message || '无法读取分组关系');
   } finally {
     membershipLoading.value = false;
@@ -116,6 +127,8 @@ async function toggleMembershipPanel(dish) {
 }
 
 async function toggleMembership(group, dish) {
+  if (membershipBusy.value) return;
+  membershipBusy.value = true;
   const joined = membershipGroupIds.value.includes(group.id);
   try {
     if (joined) {
@@ -130,6 +143,27 @@ async function toggleMembership(group, dish) {
     await reloadGroups();
   } catch (error) {
     ElMessage.error(error.message || '更新分组失败');
+  } finally {
+    membershipBusy.value = false;
+  }
+}
+
+async function useDefaultGroup(dish) {
+  if (membershipBusy.value) return;
+  membershipBusy.value = true;
+  try {
+    for (const id of [...membershipGroupIds.value]) {
+      await removeFavoriteGroupMember(id, dish.id);
+      membershipGroupIds.value = membershipGroupIds.value.filter(
+        (value) => value !== id,
+      );
+    }
+    await reloadGroups();
+    state.load();
+  } catch (error) {
+    ElMessage.error(error.message || '更新默认分组失败，请重试');
+  } finally {
+    membershipBusy.value = false;
   }
 }
 
@@ -154,7 +188,7 @@ onMounted(reloadGroups);
         :class="{ 'is-active': unfiled }"
         @click="selectGroup(null, true)"
       >
-        未分组
+        默认分组
       </button>
       <span
         v-for="group in groups"
@@ -191,6 +225,7 @@ onMounted(reloadGroups);
       </button>
     </div>
     <p v-if="groupsError" role="alert">{{ groupsError }}</p>
+    <p>直接收藏即可存入默认分组，无需新建。</p>
 
     <LoadingState v-if="state.loading.value" />
     <ErrorState
@@ -218,11 +253,29 @@ onMounted(reloadGroups);
             class="favorite-dishes__memberships"
           >
             <p v-if="membershipLoading">正在读取分组…</p>
-            <p v-else-if="!groups.length">还没有分组，先新建一个。</p>
+            <p v-else-if="membershipError" role="alert">
+              {{ membershipError }}
+            </p>
+            <template v-else>
+              <button
+                type="button"
+                :disabled="membershipBusy"
+                :aria-pressed="!membershipGroupIds.length"
+                @click="useDefaultGroup(dish)"
+              >
+                默认分组
+              </button>
+              <p v-if="!groups.length">
+                已保存在默认分组，也可以在上方新建分组。
+              </p>
+            </template>
             <label v-for="group in groups" :key="group.id">
               <input
                 type="checkbox"
                 :checked="membershipGroupIds.includes(group.id)"
+                :disabled="
+                  membershipLoading || membershipBusy || !!membershipError
+                "
                 @change="toggleMembership(group, dish)"
               />
               {{ group.name }}
@@ -276,6 +329,7 @@ onMounted(reloadGroups);
   color: var(--ft-color-text);
   padding: 6px 10px;
   cursor: pointer;
+  min-height: 44px;
 }
 .favorite-dishes__group,
 .favorite-dishes__groups > button {
@@ -324,5 +378,20 @@ onMounted(reloadGroups);
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
+}
+.favorite-dishes__memberships button {
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--ft-color-secondary);
+  border-radius: 4px;
+  color: var(--ft-color-text);
+  background: var(--zine-paper-card);
+  font: inherit;
+  cursor: pointer;
+}
+.favorite-dishes__memberships button[aria-pressed='true'] {
+  color: var(--ft-color-primary);
+  border-color: var(--ft-color-primary);
 }
 </style>

@@ -4,6 +4,17 @@
  */
 export const routes = [
   {
+    path: '/canteens/:canteenId/stalls/:stallId/dishes/:dishId/price-history',
+    name: 'dishPriceHistory',
+    component: () => import('@/views/dish/DishPriceHistoryView.vue'),
+    meta: {
+      title: '价格变化',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
+  },
+  {
     path: '/profile/reports',
     name: 'myReports',
     component: () => import('@/views/profile/MyReportsView.vue'),

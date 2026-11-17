@@ -23,7 +23,9 @@ export async function confirmAccountAction(kind, verificationCode) {
       ? row?.deleted !== true ||
         !Number.isFinite(Date.parse(row.emailsReusableAt))
       : !row?.profile?.id ||
-        row.profile.role !== 'visitor' ||
+        !['visitor', 'user'].includes(row.profile.role) ||
+        row.profile.schoolEmail !== null ||
+        row.profile.schoolEmailVerified !== false ||
         !Number.isFinite(Date.parse(row.schoolEmailReusableAt))
   )
     throw invalid();
