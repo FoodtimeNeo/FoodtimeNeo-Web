@@ -224,7 +224,7 @@ onUnmounted(() => {
           今日<span class="zine-highlight">推荐</span>
         </h2>
         <img
-          src="@/assets/images/decoration02/A/illustrations/A_food-tray-lineart.png"
+          src="@/assets/food/tray.svg"
           alt=""
           class="section-title-doodle"
           aria-hidden="true"
@@ -256,7 +256,7 @@ onUnmounted(() => {
           选择今天的<span class="zine-highlight">食堂</span>
         </h2>
         <img
-          src="@/assets/images/decoration02/A/illustrations/A_rice-bowl-lineart.png"
+          src="@/assets/food/bowl.svg"
           alt=""
           class="section-title-doodle"
           aria-hidden="true"
