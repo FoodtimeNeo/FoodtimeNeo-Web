@@ -42,10 +42,6 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
       />
     </div>
 
-    <RouterLink class="button-ink" :to="{ name: 'dishSearch' }">
-      跨食堂搜菜
-    </RouterLink>
-
     <RouterLink
       class="button-ink canteen-list__map-link"
       :to="{ name: 'campusMap' }"

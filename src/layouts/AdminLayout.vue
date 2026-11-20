@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import DefaultLayout from './DefaultLayout.vue';
@@ -7,6 +7,7 @@ import DefaultLayout from './DefaultLayout.vue';
 const route = useRoute();
 const auth = useAuthStore();
 
+const navigationOpen = ref(false);
 const links = computed(() => [
   { name: 'adminAudit', label: '内容审核' },
   { name: 'adminManage', label: '内容管理' },
@@ -40,12 +41,30 @@ const links = computed(() => [
         </div>
         <p>当前账号：{{ auth.displayName }}</p>
       </header>
-      <nav class="admin-layout__nav" aria-label="管理导航">
+      <button
+        class="admin-layout__toggle"
+        type="button"
+        :aria-expanded="navigationOpen"
+        aria-controls="admin-navigation"
+        @click="navigationOpen = !navigationOpen"
+      >
+        {{
+          links.find((link) => link.name === route.name)?.label || '管理导航'
+        }}
+        · {{ navigationOpen ? '收起目录' : '切换任务' }}
+      </button>
+      <nav
+        id="admin-navigation"
+        class="admin-layout__nav"
+        :class="{ 'is-open': navigationOpen }"
+        aria-label="管理导航"
+      >
         <RouterLink
           v-for="link in links"
           :key="link.name"
           :to="{ name: link.name }"
           :aria-current="route.name === link.name ? 'page' : undefined"
+          @click="navigationOpen = false"
         >
           {{ link.label }}
         </RouterLink>
@@ -56,6 +75,9 @@ const links = computed(() => [
 </template>
 
 <style scoped lang="scss">
+.admin-layout__toggle {
+  display: none;
+}
 .admin-layout {
   padding: var(--ft-space-2);
 
@@ -126,6 +148,25 @@ const links = computed(() => [
 }
 
 @media (max-width: 768px) {
+  .admin-layout__toggle {
+    display: block;
+    min-height: 44px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    margin: 12px 0;
+    background: var(--ft-color-bg-soft);
+    border: 1px solid var(--ft-color-border);
+    font: inherit;
+    color: var(--ft-color-text);
+  }
+  .admin-layout__nav {
+    display: none;
+  }
+  .admin-layout__nav.is-open {
+    display: flex;
+  }
+
   .admin-layout {
     padding: var(--zine-page-padding-mobile);
   }
