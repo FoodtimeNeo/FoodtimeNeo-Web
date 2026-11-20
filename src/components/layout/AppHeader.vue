@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import PageTools from './PageTools.vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   getNavigationItems,
@@ -53,6 +54,11 @@ const activeName = computed(() => resolveActiveNavigation(route));
         </RouterLink>
       </nav>
 
+      <PageTools
+        v-if="route.meta?.nav !== 'community'"
+        :home="route.name !== 'home'"
+        :search="route.name !== 'dishSearch'"
+      />
       <span class="app-header__account">
         <RouterLink
           v-if="auth.isAuthenticated"
@@ -105,7 +111,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
 .app-header__brand {
   display: grid;
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   line-height: 1.2;
 }
 
@@ -272,11 +279,15 @@ const activeName = computed(() => resolveActiveNavigation(route));
   }
 
   .app-header__inner {
+    gap: 8px;
     width: calc(100% - var(--zine-page-padding-mobile) * 2);
     justify-content: space-between;
   }
 
   .app-header__brand strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 22px;
   }
 

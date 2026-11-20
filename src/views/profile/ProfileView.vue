@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchProfile } from '@/api/auth.api.js';
@@ -23,6 +23,110 @@ const {
   auth.setSession({ user });
   return user;
 });
+const navigationGroups = computed(() =>
+  [
+    {
+      id: 'saved',
+      title: '收藏与回访',
+      links: [
+        {
+          label: '想吃清单',
+          hint: '收藏的菜品与分组',
+          to: { name: 'favoriteDishes' },
+        },
+        {
+          label: '帖子收藏',
+          hint: '收藏的食记与分组',
+          to: { name: 'community', query: { tab: 'favorites' } },
+        },
+        {
+          label: '浏览历史',
+          hint: '帖子与菜品分别查看',
+          to: { name: 'browsingHistory' },
+        },
+      ],
+    },
+    {
+      id: 'records',
+      title: '我的记录',
+      links: [
+        {
+          label: '我的食记',
+          hint: '已发布、待审核与被拒的食记',
+          to: { name: 'community', query: { tab: 'mine' } },
+        },
+        {
+          label: '发帖草稿',
+          hint: '继续编辑本机草稿',
+          to: { name: 'community', query: { action: 'new' } },
+        },
+        { label: '菜品点评', hint: '已发布的点评', to: { name: 'myReviews' } },
+        {
+          label: '餐厅与档口点评',
+          hint: '我的评价、回复与审核状态',
+          to: { name: 'myVenueReviews' },
+        },
+        {
+          label: '我的回复',
+          hint: '楼内讨论与审核状态',
+          to: { name: 'myReviewReplies' },
+        },
+        {
+          label: '我的提交',
+          hint: '投稿记录与审核结果',
+          to: { name: 'mySubmissions' },
+        },
+      ],
+    },
+    {
+      id: 'messages',
+      title: '消息与处理',
+      links: [
+        {
+          label: '消息信箱',
+          hint: '公告与系统消息',
+          to: { name: 'inboxView' },
+        },
+        {
+          label: '建议与反馈',
+          hint: '反馈记录与管理员回复',
+          to: { name: 'myFeedback' },
+        },
+        {
+          label: '目录纠错',
+          hint: '名称、价格与介绍的更正进度',
+          to: { name: 'myCorrections' },
+        },
+        {
+          label: '举报与处理决定',
+          hint: '举报进度、公开结果与申诉截止',
+          to: { name: 'myReports' },
+        },
+      ],
+    },
+    {
+      id: 'account',
+      title: '账号与隐私',
+      links: [
+        {
+          label: '黑名单',
+          hint: '管理已屏蔽的用户',
+          to: { name: 'myBlockedUsers' },
+        },
+        { label: '修改密码', hint: '', to: { name: 'changePassword' } },
+        {
+          label: '账号安全与注销',
+          hint: '',
+          to: { name: 'accountLifecycle' },
+          adminHidden: true,
+        },
+      ],
+    },
+  ].map((group) => ({
+    ...group,
+    links: group.links.filter((link) => !link.adminHidden || !auth.isAdmin),
+  })),
+);
 const exiting = ref(false);
 const exitError = ref('');
 const editing = ref(false);
@@ -36,7 +140,7 @@ function saved(user) {
 async function onSchoolEmailBound(updated) {
   auth.setSession({ user: updated });
   profile.value = updated;
-  profileStatus.value = '学校邮箱绑定成功，已解锁发布权限';
+  profileStatus.value = '学校邮箱绑定成功';
 }
 async function logout() {
   if (exiting.value) return;
@@ -77,17 +181,23 @@ async function logout() {
         <div class="profile-page__identity-copy">
           <span class="sticker sticker--r-1">个人档案</span>
           <h2>{{ profile.displayName }}</h2>
-          <p class="profile-page__id">ID：{{ profile.id }}</p>
         </div>
       </article>
       <div class="profile-page__meta">
         <span class="zine-chip">{{ profile.email }}</span>
         <span class="stamp">{{ roleLabels[profile.role] }}</span>
       </div>
-      <SchoolEmailBinder
+      <details class="profile-page__account-details">
+        <summary>账号信息</summary>
+        <p class="profile-page__id">ID：{{ profile.id }}</p>
+      </details>
+      <details
         v-if="!profile.schoolEmailVerified && !auth.isAdmin"
-        @bound="onSchoolEmailBound"
-      />
+        class="profile-page__binding"
+      >
+        <summary>学校邮箱 · 可选认证</summary>
+        <SchoolEmailBinder @bound="onSchoolEmailBound" />
+      </details>
       <div class="profile-page__follows" aria-label="关注统计">
         <RouterLink :to="{ name: 'myFollowing' }">
           <strong>{{ profile.followingCount ?? 0 }}</strong>
@@ -116,66 +226,26 @@ async function logout() {
       >
     </template>
     <nav class="profile-page__links" aria-label="个人功能">
-      <RouterLink
-        v-if="!auth.isAdmin"
-        class="paper-link"
-        :to="{ name: 'accountLifecycle' }"
-        ><span class="stamp">账号</span> 账号安全与注销
-        <strong>→</strong></RouterLink
+      <section
+        v-for="group in navigationGroups"
+        :key="group.id"
+        class="profile-page__group"
+        :aria-labelledby="`profile-${group.id}`"
       >
-      <RouterLink class="paper-link" :to="{ name: 'myVenueReviews' }"
-        ><span class="stamp">点评</span
-        ><span>餐厅与档口点评<small>我的评价、回复与审核状态</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'inboxView' }"
-        ><span class="stamp">信箱</span
-        ><span>消息信箱<small>公告与系统消息</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'myReviewReplies' }"
-        ><span class="stamp">回复</span
-        ><span>我的回复<small>楼内讨论与审核状态</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'myReviews' }"
-        ><span class="stamp">01</span
-        ><span>我的评论<small>已发布的点评</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'favoriteDishes' }"
-        ><span class="stamp">想吃</span
-        ><span>想吃清单<small>保存的菜品</small></span> ><strong
-          >→</strong
-        ></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'mySubmissions' }"
-        ><span class="stamp">02</span
-        ><span>我的提交<small>投稿记录与审核结果</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'myReports' }"
-        ><span>举报与处理决定<small>举报进度、公开结果与申诉截止</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'browsingHistory' }"
-        ><span>浏览历史<small>帖子与菜品分栏最近浏览</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'myCorrections' }"
-        ><span>目录纠错<small>名称、价格与介绍的更正进度</small></span
-        ><strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'myFeedback' }"
-        ><span class="stamp">建议</span> 建议与反馈
-        <strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'myBlockedUsers' }"
-        ><span class="stamp">屏蔽</span> 黑名单 <strong>→</strong></RouterLink
-      >
-      <RouterLink class="paper-link" :to="{ name: 'changePassword' }"
-        ><span class="stamp">03</span> 修改密码 <strong>→</strong></RouterLink
-      >
+        <h2 :id="`profile-${group.id}`">{{ group.title }}</h2>
+        <RouterLink
+          v-for="link in group.links"
+          :key="link.label"
+          class="paper-link"
+          :to="link.to"
+        >
+          <span
+            >{{ link.label
+            }}<small v-if="link.hint">{{ link.hint }}</small></span
+          >
+          <strong aria-hidden="true">→</strong>
+        </RouterLink>
+      </section>
     </nav>
     <p v-if="exitError" role="alert">{{ exitError }}</p>
     <InkButton
@@ -259,6 +329,23 @@ async function logout() {
 h2 {
   font-family: var(--ft-font-family-title);
 }
+.profile-page__account-details summary,
+.profile-page__binding summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--ft-color-text-muted);
+}
+.profile-page__account-details summary::before,
+.profile-page__binding summary::before {
+  content: '＋';
+  margin-right: 8px;
+}
+.profile-page__account-details[open] summary::before,
+.profile-page__binding[open] summary::before {
+  content: '−';
+}
 .profile-page__id {
   font-size: 14px;
 }
@@ -266,6 +353,15 @@ h2 {
   display: grid;
   gap: 12px;
   margin: 24px 0;
+}
+.profile-page__group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.profile-page__group h2 {
+  margin: 0 0 2px;
+  font-size: 20px;
 }
 .profile-page__links a.paper-link {
   display: flex;

@@ -42,10 +42,6 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
       />
     </div>
 
-    <RouterLink class="button-ink" :to="{ name: 'dishSearch' }">
-      跨食堂搜菜
-    </RouterLink>
-
     <LoadingState v-if="loading" message="正在翻开食堂手账…" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <EmptyState
