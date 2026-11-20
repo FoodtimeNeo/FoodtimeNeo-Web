@@ -48,7 +48,6 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
       >食堂地图</RouterLink
     >
 
-
     <LoadingState v-if="loading" message="正在翻开食堂手账…" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <EmptyState
