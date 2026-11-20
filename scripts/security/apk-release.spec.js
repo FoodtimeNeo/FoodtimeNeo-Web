@@ -62,7 +62,11 @@ describe('published testing APK', () => {
     expect(metadata.prerelease).toBe(true);
     expect(metadata.versionCode).toBeGreaterThan(22);
     expect(TEST_APK_VERSION).toBe(`v${metadata.versionName}`);
-    expect(TEST_APK_VERSION).toContain('α');
+    expect(TEST_APK_VERSION).toMatch(/^v\d+\.\d+\.\d+[αβ]$/);
+    expect(metadata.channel).toBe(
+      metadata.versionName.endsWith('β') ? 'beta' : 'alpha',
+    );
+    expect(manifest.channel).toBe(metadata.channel);
     expect(TEST_APK_DOWNLOAD_URL).not.toBe(APK_DOWNLOAD_URL);
     expect(
       new URL(TEST_APK_DOWNLOAD_URL, 'https://example.test').searchParams.get(
