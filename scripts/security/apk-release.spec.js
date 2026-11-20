@@ -62,7 +62,11 @@ describe('published testing APK', () => {
     expect(metadata.prerelease).toBe(true);
     expect(metadata.versionCode).toBeGreaterThan(22);
     expect(TEST_APK_VERSION).toBe(`v${metadata.versionName}`);
-    expect(TEST_APK_VERSION).toContain('α');
+    expect(TEST_APK_VERSION).toMatch(/^v\d+\.\d+\.\d+[αβ]$/);
+    expect(metadata.channel).toBe(
+      metadata.versionName.endsWith('β') ? 'beta' : 'alpha',
+    );
+    expect(manifest.channel).toBe(metadata.channel);
     expect(TEST_APK_DOWNLOAD_URL).not.toBe(APK_DOWNLOAD_URL);
     expect(
       new URL(TEST_APK_DOWNLOAD_URL, 'https://example.test').searchParams.get(
@@ -73,10 +77,18 @@ describe('published testing APK', () => {
     expect(manifest.apk.sha256).toBe(metadata.sha256);
     expect(manifest.versionName).toBe(metadata.versionName);
     expect(manifest.versionCode).toBe(metadata.versionCode);
+    expect(new URL(manifest.apk.url).pathname).toBe(
+      '/downloads/testing/FoodtimeNeo-Android.apk',
+    );
     expect(manifest.patches.some((patch) => patch.baseVersionCode === 22)).toBe(
       true,
     );
     for (const patch of manifest.patches) {
+      const patchUrl = new URL(patch.url);
+      expect(patchUrl.origin).toBe(new URL(manifest.apk.url).origin);
+      expect(patchUrl.pathname).toBe(
+        `/downloads/testing/app-release-${patch.baseVersionCode}-${metadata.versionCode}.patch`,
+      );
       const patchBytes = read(new URL(patch.url).pathname.split('/').pop());
       expect(hash(patchBytes)).toBe(patch.sha256);
       expect(patchBytes.length).toBe(patch.size);

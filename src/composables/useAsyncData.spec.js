@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { effectScope } from 'vue';
+import { effectScope, ref } from 'vue';
 import { useAsyncData, clearAsyncDataCache } from './useAsyncData.js';
 import { ApiError } from '@/api/http.js';
 
@@ -9,6 +9,40 @@ async function tick() {
 beforeEach(() => clearAsyncDataCache());
 
 describe('useAsyncData', () => {
+  it('请求按开始时的动态键写缓存，返回页面同步恢复内容并仍刷新', async () => {
+    const key = ref('search:page3');
+    let complete;
+    const state = useAsyncData(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+      { immediate: false, cacheKey: () => key.value, ttl: 0 },
+    );
+    const pending = state.load();
+    key.value = 'search:page5';
+    complete(['第三页']);
+    await pending;
+    const restored = useAsyncData(() => new Promise(() => {}), {
+      cacheKey: () => 'search:page3',
+      ttl: 0,
+    });
+    expect(restored.data.value).toEqual(['第三页']);
+    expect(restored.loading.value).toBe(true);
+    expect(restored.initialLoading.value).toBe(false);
+    const otherPage = useAsyncData(() => null, {
+      immediate: false,
+      cacheKey: () => 'search:page5',
+    });
+    expect(otherPage.data.value).toBeNull();
+    clearAsyncDataCache();
+    expect(
+      useAsyncData(() => null, {
+        immediate: false,
+        cacheKey: () => 'search:page3',
+      }).data.value,
+    ).toBeNull();
+  });
   it('immediate 时自动加载并填充 data', async () => {
     const { data, loading } = useAsyncData(() => Promise.resolve([1, 2]));
     expect(loading.value).toBe(true);

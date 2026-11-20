@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import foodBowl from '@/assets/food/bowl.svg';
 import { mediaVariant } from '@/utils/mediaUrl.js';
 import { useMediaSource } from '@/composables/useMediaSource.js';
 const props = defineProps({
@@ -70,7 +71,21 @@ onBeforeUnmount(() => observer?.disconnect());
     >
       重试
     </button>
-    <span v-else-if="!src" role="img" :aria-label="empty">{{ empty }}</span>
+    <span
+      v-else-if="!src"
+      class="media-image__empty"
+      role="img"
+      :aria-label="empty"
+    >
+      <img
+        v-if="!compact"
+        class="media-image__illustration"
+        :src="foodBowl"
+        alt=""
+        aria-hidden="true"
+      />
+      <span>{{ empty }}</span>
+    </span>
   </div>
 </template>
 <style scoped>
@@ -100,10 +115,27 @@ img {
   height: 100%;
   object-fit: cover;
 }
-span {
-  padding: 16px;
+.media-image__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 12px;
   text-align: center;
   color: var(--ft-color-text-muted);
+}
+.media-image__empty .media-image__illustration {
+  width: min(120px, 100%);
+  height: min(80px, 60%);
+  flex: 0 1 80px;
+  min-height: 0;
+  object-fit: contain;
+}
+.media-image--compact .media-image__empty {
+  padding: 4px;
 }
 .media-image__retry {
   min-width: 44px;

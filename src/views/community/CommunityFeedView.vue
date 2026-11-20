@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import {
@@ -22,6 +22,7 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 
 const route = useRoute();
+const router = useRouter();
 const auth = useAuthStore();
 const draftSummary = ref(null);
 const postGroups = ref([]);
@@ -87,7 +88,12 @@ async function removeDraft() {
   }
 }
 
-const mode = ref('public');
+const requestedTab = route?.query?.tab;
+const mode = ref(
+  ['public', 'following', 'favorites', 'mine'].includes(requestedTab)
+    ? requestedTab
+    : 'public',
+);
 const input = ref('');
 const keyword = ref('');
 const searchOpen = ref(false);
@@ -331,6 +337,12 @@ function handleCardClick(post) {
 function changeMode(next, reload = false) {
   if (next === mode.value && !reload) return;
   mode.value = next;
+  if (route.query.tab !== next) {
+    const query = { ...route.query };
+    if (next === 'public') delete query.tab;
+    else query.tab = next;
+    void router.replace({ query });
+  }
   refreshing.value = false;
   const feed = activePage.value;
   const query = publicMode.value ? keyword.value : '';
@@ -516,8 +528,23 @@ onMounted(() => {
       prefillData.value = history.state.prefill;
     }
     isCreateModalOpen.value = true;
+    if (route.query.action === 'new') {
+      const query = { ...route.query };
+      delete query.action;
+      void router.replace({ query });
+    }
   }
 });
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const next = ['public', 'following', 'favorites', 'mine'].includes(tab)
+      ? tab
+      : 'public';
+    if (next !== mode.value) changeMode(next);
+  },
+);
 
 onUnmounted(() => {
   for (const page of pages) page.version++;
@@ -625,7 +652,7 @@ onUnmounted(() => {
         :class="{ 'is-active': postUnfiled }"
         @click="selectPostGroup(null, true)"
       >
-        未分组
+        默认分组
       </button>
       <button
         v-for="group in postGroups"
@@ -644,6 +671,7 @@ onUnmounted(() => {
         + 新建分组
       </button>
       <p v-if="postGroupsError" role="alert">{{ postGroupsError }}</p>
+      <p>直接收藏即可存入默认分组，无需新建。帖子和菜品分别管理。</p>
     </div>
     <div
       class="community-stream"
@@ -840,6 +868,7 @@ onUnmounted(() => {
     margin-bottom: 12px;
 
     button {
+      min-height: 44px;
       border: 1px solid var(--ft-color-secondary);
       background: transparent;
       color: var(--ft-color-text);

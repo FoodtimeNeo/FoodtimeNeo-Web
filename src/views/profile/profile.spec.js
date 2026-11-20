@@ -36,6 +36,32 @@ describe('个人记录与改密', () => {
     expect(wrapper.text()).toContain('修改密码');
     wrapper.unmount();
   });
+  it('个人页把两类收藏和个人记录分别提供直接入口，不混为一个收藏列表', async () => {
+    api.fetchProfile.mockResolvedValue({
+      id: 'u1',
+      displayName: '同学',
+      role: 'user',
+    });
+    const wrapper = view(ProfileView);
+    await flushPromises();
+    const links = wrapper.findAllComponents(RouterLinkStub);
+    const post = links.find((link) => link.text().includes('帖子收藏'));
+    expect(post).toBeDefined();
+    expect(post.props('to')).toEqual({
+      name: 'community',
+      query: { tab: 'favorites' },
+    });
+    expect(
+      links.find((link) => link.text().includes('想吃清单')).props('to'),
+    ).toEqual({ name: 'favoriteDishes' });
+    expect(
+      links.find((link) => link.text().includes('我的食记')).props('to'),
+    ).toEqual({ name: 'community', query: { tab: 'mine' } });
+    expect(
+      wrapper.findAll('.profile-page__group h2').map((node) => node.text()),
+    ).toEqual(['收藏与回访', '我的记录', '消息与处理', '账号与隐私']);
+    wrapper.unmount();
+  });
   it('普通用户可以打开资料编辑，保存后同步名称、头像和登录状态', async () => {
     api.fetchProfile.mockResolvedValue({
       id: 'u1',
