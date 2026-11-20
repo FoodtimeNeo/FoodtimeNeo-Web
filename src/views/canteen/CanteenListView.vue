@@ -46,6 +46,12 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
       跨食堂搜菜
     </RouterLink>
 
+    <RouterLink
+      class="button-ink canteen-list__map-link"
+      :to="{ name: 'campusMap' }"
+      >食堂地图</RouterLink
+    >
+
     <LoadingState v-if="loading" message="正在翻开食堂手账…" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <EmptyState
@@ -81,6 +87,9 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
 </template>
 
 <style scoped lang="scss">
+.canteen-list__map-link {
+  margin: 8px 0 8px 12px;
+}
 .canteen-list {
   width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));
   margin: var(--ft-space-6) auto;
