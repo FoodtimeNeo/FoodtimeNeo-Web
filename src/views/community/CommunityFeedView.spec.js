@@ -7,6 +7,8 @@ const fetchMyCommunityPosts = vi.fn();
 const fetchMyCommunityFavorites = vi.fn();
 const createCommunityPost = vi.fn();
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
+const routeState = { params: {}, query: {} };
 
 vi.mock('@/api/community.api.js', () => ({
   fetchCommunityPosts: (...args) => fetchCommunityPosts(...args),
@@ -16,8 +18,8 @@ vi.mock('@/api/community.api.js', () => ({
 }));
 
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: {}, query: {} }),
-  useRouter: () => ({ push: mockPush }),
+  useRoute: () => routeState,
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
   RouterLink: RouterLinkStub,
 }));
 
@@ -47,8 +49,31 @@ describe('CommunityFeedView', () => {
     fetchMyCommunityFavorites.mockReset();
     createCommunityPost.mockReset();
     mockPush.mockReset();
+    mockReplace.mockReset();
+    routeState.query = {};
   });
 
+  it.each([
+    ['favorites', 'fetchMyCommunityFavorites'],
+    ['mine', 'fetchMyCommunityPosts'],
+  ])('从个人页直接打开 %s 分类，不先请求发现列表', async (tab, name) => {
+    routeState.query = { tab };
+    fetchCommunityPosts.mockResolvedValue({ items: [] });
+    fetchMyCommunityFavorites.mockResolvedValue({ items: [] });
+    fetchMyCommunityPosts.mockResolvedValue({ items: [] });
+    const wrapper = mountView();
+    await flushPromises();
+    expect(
+      name === 'fetchMyCommunityFavorites'
+        ? fetchMyCommunityFavorites
+        : fetchMyCommunityPosts,
+    ).toHaveBeenCalled();
+    expect(fetchCommunityPosts).not.toHaveBeenCalled();
+    expect(
+      wrapper.get('.community-tabs button[aria-pressed="true"]').text(),
+    ).toBe(tab === 'favorites' ? '收藏' : '我的食记');
+    wrapper.unmount();
+  });
   it('显示各分类自己的标题与说明，保留发现页原文', async () => {
     fetchCommunityPosts.mockResolvedValue({ items: [] });
     fetchMyCommunityFavorites.mockResolvedValue({ items: [] });

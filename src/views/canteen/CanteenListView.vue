@@ -35,16 +35,12 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
         全部<span class="zine-highlight">食堂</span>
       </h1>
       <img
-        src="@/assets/images/decoration02/A/illustrations/A_food-tray-lineart.png"
+        src="@/assets/food/tray.svg"
         alt=""
         class="canteen-list__header-doodle"
         aria-hidden="true"
       />
     </div>
-
-    <RouterLink class="button-ink" :to="{ name: 'dishSearch' }">
-      跨食堂搜菜
-    </RouterLink>
 
     <RouterLink
       class="button-ink canteen-list__map-link"
