@@ -144,3 +144,55 @@ it('点击数字直接跨页，保留已提交的关键词和筛选', async () =
     });
   }
 });
+
+it('远页进入、刷新与再次挂载沿用 URL 页码，筛选提交回第一页', async () => {
+  searchDishes.mockImplementation(async (_q, page) => ({
+    items: [dish],
+    page,
+    size: 20,
+    total: 400,
+  }));
+  await render({ q: '饭', page: '5' });
+  expect(searchDishes.mock.calls.at(-1)[1]).toBe(5);
+  expect(wrapper.get('button[aria-current="page"]').text()).toBe('5');
+  await wrapper.get('button[aria-label="第 3 页"]').trigger('click');
+  await flushPromises();
+  expect(router.currentRoute.value.query.page).toBe('3');
+  wrapper.unmount();
+  wrapper = mount(DishSearchView, { global: { plugins: [router] } });
+  await flushPromises();
+  expect(searchDishes.mock.calls.at(-1)[1]).toBe(3);
+  await wrapper.get('#dish-keyword').setValue('面');
+  await submit();
+  expect(searchDishes.mock.calls.at(-1).slice(0, 2)).toEqual(['面', 1]);
+  expect(router.currentRoute.value.query.page).toBeUndefined();
+});
+it('翻页失败保留原成功页，重试再提交显示页码', async () => {
+  searchDishes.mockImplementation(async (_q, page) => ({
+    items: [dish],
+    page,
+    size: 20,
+    total: 400,
+  }));
+  await render();
+  searchDishes.mockRejectedValueOnce(new Error('暂时离线'));
+  await wrapper.get('button[aria-label="第 3 页"]').trigger('click');
+  await flushPromises();
+  expect(wrapper.text()).toContain('暂时离线');
+  expect(wrapper.text()).toContain('鸡腿饭');
+  expect(wrapper.get('button[aria-current="page"]').text()).toBe('1');
+  await wrapper
+    .findAll('button')
+    .find((b) => b.text().includes('重试'))
+    .trigger('click');
+  await flushPromises();
+  expect(searchDishes.mock.calls.at(-1)[1]).toBe(3);
+  expect(wrapper.get('button[aria-current="page"]').text()).toBe('3');
+});
+it('数据缩减时回退有效页，无效页参数不直接传给服务器', async () => {
+  await render({ page: '999' });
+  expect(router.currentRoute.value.query.page).toBe('2');
+  await router.replace({ name: 'dishSearch', query: { page: '-5' } });
+  await flushPromises();
+  expect(searchDishes.mock.calls.at(-1)[1]).toBe(1);
+});
