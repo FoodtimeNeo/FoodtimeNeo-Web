@@ -113,6 +113,7 @@ const groupDialogOpen = ref(false);
 const postGroups = ref([]);
 const postGroupIds = ref([]);
 const groupLoading = ref(false);
+const groupBusy = ref(false);
 const groupError = ref('');
 const newGroupName = ref('');
 
@@ -136,7 +137,8 @@ async function openGroups() {
 }
 
 async function togglePostGroup(group) {
-  if (!post.value?.id) return;
+  if (!post.value?.id || groupBusy.value) return;
+  groupBusy.value = true;
   const joined = postGroupIds.value.includes(group.id);
   try {
     if (joined) {
@@ -150,18 +152,39 @@ async function togglePostGroup(group) {
     postGroups.value = refreshed;
   } catch (error) {
     groupError.value = error.message || '更新分组失败';
+  } finally {
+    groupBusy.value = false;
   }
 }
 
 async function createPostGroup() {
   const name = newGroupName.value.trim();
-  if (!name) return;
+  if (!name || groupBusy.value) return;
+  groupBusy.value = true;
   try {
     await createFavoriteGroup('post', name);
     newGroupName.value = '';
     postGroups.value = await fetchFavoriteGroups('post');
   } catch (error) {
     groupError.value = error.message || '创建分组失败';
+  } finally {
+    groupBusy.value = false;
+  }
+}
+async function useDefaultGroup() {
+  if (!post.value?.id || groupBusy.value) return;
+  groupBusy.value = true;
+  groupError.value = '';
+  try {
+    for (const id of [...postGroupIds.value]) {
+      await removeFavoriteGroupMember(id, post.value.id);
+      postGroupIds.value = postGroupIds.value.filter((value) => value !== id);
+    }
+    postGroups.value = await fetchFavoriteGroups('post');
+  } catch (error) {
+    groupError.value = error.message || '更新默认分组失败，请重试';
+  } finally {
+    groupBusy.value = false;
   }
 }
 const replyTarget = ref(null);
@@ -794,7 +817,7 @@ async function removePost() {
                       aria-label="设置收藏分组"
                       @click="openGroups"
                     >
-                      <span class="icon-emoji">🏷️</span>
+                      <span class="icon-count">分组</span>
                     </button>
                     <button
                       type="button"
@@ -875,7 +898,7 @@ async function removePost() {
                   aria-label="设置收藏分组"
                   @click="openGroups"
                 >
-                  <span class="icon-emoji">🏷️</span>
+                  <span class="icon-count">分组</span>
                 </button>
                 <button
                   type="button"
@@ -906,13 +929,31 @@ async function removePost() {
       width="min(420px, 92vw)"
     >
       <p v-if="groupError" role="alert">{{ groupError }}</p>
+      <button
+        v-if="groupError && !groupLoading"
+        type="button"
+        @click="openGroups"
+      >
+        重新读取分组
+      </button>
       <p v-if="groupLoading">正在读取分组…</p>
-      <template v-else>
-        <p v-if="!postGroups.length">还没有分组，可在下方新建。</p>
+      <template v-else-if="!groupError">
+        <button
+          type="button"
+          class="group-default"
+          :disabled="groupBusy"
+          :aria-pressed="!postGroupIds.length"
+          @click="useDefaultGroup"
+        >
+          默认分组
+        </button>
+        <p>未选择自建分组时保存在默认分组，无需新建。</p>
+        <p v-if="!postGroups.length">可在下方直接新建分组。</p>
         <label v-for="group in postGroups" :key="group.id" class="group-choice">
           <input
             type="checkbox"
             :checked="postGroupIds.includes(group.id)"
+            :disabled="groupBusy"
             @change="togglePostGroup(group)"
           />
           {{ group.name }} ({{ group.itemCount }})
@@ -924,7 +965,9 @@ async function removePost() {
             placeholder="新分组名称"
             aria-label="新分组名称"
           />
-          <button type="button" @click="createPostGroup">新建</button>
+          <button type="button" :disabled="groupBusy" @click="createPostGroup">
+            新建分组
+          </button>
         </div>
       </template>
     </ElDialog>
@@ -937,11 +980,58 @@ async function removePost() {
   align-items: center;
   gap: 8px;
   padding: 6px 0;
+  min-height: 44px;
+  cursor: pointer;
+  input {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--ft-color-primary);
+  }
+}
+.group-default,
+.group-create button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--ft-color-secondary);
+  border-radius: 4px;
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text);
+  font: inherit;
+  cursor: pointer;
+  &:focus-visible {
+    outline: 2px solid var(--ft-color-primary);
+    outline-offset: 3px;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+}
+.group-default[aria-pressed='true'] {
+  color: var(--ft-color-primary);
+  border-color: var(--ft-color-primary);
+  background: rgb(201 52 30 / 8%);
 }
 .group-create {
   display: flex;
   gap: 8px;
   margin-top: 10px;
+  flex-wrap: wrap;
+  input {
+    flex: 1;
+    min-width: 120px;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid var(--ft-color-secondary);
+    border-radius: 4px;
+    background: var(--zine-paper-card);
+    color: var(--ft-color-text);
+    font: inherit;
+  }
+  button {
+    color: var(--ft-color-primary);
+    border-style: dashed;
+  }
 
   input {
     flex: 1;

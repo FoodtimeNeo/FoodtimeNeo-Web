@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { searchDishes } from '@/api/dish.api.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
-import { usePagedData } from '@/composables/usePagedData.js';
+import { useAsyncData } from '@/composables/useAsyncData.js';
+import { ApiError } from '@/api/http.js';
 import { formatPrice } from '@/utils/mediaUrl.js';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -58,26 +59,67 @@ function syncForm() {
   form.sort = active.sort;
 }
 
-const state = usePagedData(
-  (page, options) => {
+function routePage() {
+  const value = route.query.page;
+  if (typeof value !== 'string' || !/^[1-9]\d{0,6}$/.test(value)) return 1;
+  return Number(value);
+}
+const asyncState = useAsyncData(
+  async (options) => {
     const active = activeFilters();
-    return searchDishes(active.q, page, options, active);
+    const page = routePage();
+    const result = await searchDishes(active.q, page, options, active);
+    if (
+      !Array.isArray(result?.items) ||
+      !Number.isInteger(result.total) ||
+      result.total < 0 ||
+      !Number.isInteger(result.size) ||
+      result.size < 1
+    ) {
+      throw new ApiError('分页响应不符合接口约定', { code: 'PROTOCOL' });
+    }
+    return { ...result, page };
   },
-  { immediate: false },
+  {
+    immediate: false,
+    initial: { items: [], total: 0, page: 1, size: 20 },
+    cacheKey: () =>
+      `dish-search:${JSON.stringify([activeFilters(), routePage()])}`,
+    ttl: 0,
+  },
 );
-
+const state = {
+  ...asyncState,
+  page: computed(() => asyncState.data.value.page),
+  items: computed(() => asyncState.data.value.items),
+  total: computed(() => asyncState.data.value.total),
+  size: computed(() => asyncState.data.value.size),
+};
+function changePage(page) {
+  const query = { ...route.query };
+  if (page === 1) delete query.page;
+  else query.page = String(page);
+  void router.push({ name: 'dishSearch', query });
+}
 watch(
   () => route.query,
   () => {
     syncForm();
     validation.value = '';
     state.cancel();
-    state.hasLoaded.value = false;
-    if (state.page.value !== 1) state.page.value = 1;
-    else state.load();
+    void state.load();
   },
   { immediate: true, deep: true },
 );
+watch(state.data, (result) => {
+  const last = Math.max(1, Math.ceil(result.total / result.size));
+  if (result.page > last) {
+    const query = { ...route.query };
+    if (last === 1) delete query.page;
+    else query.page = String(last);
+    void router.replace({ name: 'dishSearch', query });
+  }
+});
 
 onMounted(async () => {
   try {
@@ -122,7 +164,7 @@ function submit() {
     current.minRating === (query.minRating || null) &&
     current.sort === (query.sort || 'relevance') &&
     current.diningHallIds.join(',') === (query.halls || []).join(',');
-  if (same) state.load();
+  if (same && routePage() === 1) state.load();
   else router.replace({ name: 'dishSearch', query });
 }
 
@@ -218,14 +260,17 @@ function ratingLabel(dish) {
     </form>
 
     <template v-if="!validation">
-      <LoadingState v-if="state.loading.value" message="正在查找菜品…" />
+      <LoadingState v-if="state.initialLoading.value" message="正在查找菜品…" />
       <ErrorState
-        v-else-if="state.error.value"
+        v-if="state.error.value"
         :description="state.error.value.message"
         @retry="state.load"
       />
-      <template v-else-if="state.hasLoaded.value">
-        <p aria-live="polite">找到 {{ state.total.value }} 道菜</p>
+      <template v-if="state.hasLoaded.value">
+        <p aria-live="polite">
+          找到 {{ state.total.value }} 道菜
+          <small v-if="state.loading.value" role="status"> · 正在刷新…</small>
+        </p>
         <EmptyState
           v-if="!state.items.value.length"
           title="没有匹配的菜品"
@@ -255,9 +300,10 @@ function ratingLabel(dish) {
         <PaginationControls
           v-if="state.total.value > state.size.value || state.page.value > 1"
           :page="state.page.value"
+          :disabled="state.loading.value"
           :total="state.total.value"
           :size="state.size.value"
-          @change="state.page.value = $event"
+          @change="changePage"
         />
       </template>
     </template>
