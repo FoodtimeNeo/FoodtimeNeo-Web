@@ -80,7 +80,13 @@ const asyncState = useAsyncData(
     }
     return { ...result, page };
   },
-  { immediate: false, initial: { items: [], total: 0, page: 1, size: 20 } },
+  {
+    immediate: false,
+    initial: { items: [], total: 0, page: 1, size: 20 },
+    cacheKey: () =>
+      `dish-search:${JSON.stringify([activeFilters(), routePage()])}`,
+    ttl: 0,
+  },
 );
 const state = {
   ...asyncState,
@@ -254,14 +260,17 @@ function ratingLabel(dish) {
     </form>
 
     <template v-if="!validation">
-      <LoadingState v-if="state.loading.value" message="正在查找菜品…" />
+      <LoadingState v-if="state.initialLoading.value" message="正在查找菜品…" />
       <ErrorState
         v-if="state.error.value"
         :description="state.error.value.message"
         @retry="state.load"
       />
       <template v-if="state.hasLoaded.value">
-        <p aria-live="polite">找到 {{ state.total.value }} 道菜</p>
+        <p aria-live="polite">
+          找到 {{ state.total.value }} 道菜
+          <small v-if="state.loading.value" role="status"> · 正在刷新…</small>
+        </p>
         <EmptyState
           v-if="!state.items.value.length"
           title="没有匹配的菜品"

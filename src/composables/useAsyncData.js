@@ -4,6 +4,7 @@ import {
   onScopeDispose,
   ref,
   shallowRef,
+  toValue,
 } from 'vue';
 
 const asyncDataCache = new Map();
@@ -22,7 +23,7 @@ export function useAsyncData(
   loader,
   { immediate = true, initial = null, cacheKey = null, ttl = 180000 } = {},
 ) {
-  const cached = cacheKey ? asyncDataCache.get(cacheKey) : null;
+  const cached = cacheKey ? asyncDataCache.get(toValue(cacheKey)) : null;
   const isCacheValid = cached && ttl > 0 && Date.now() - cached.timestamp < ttl;
 
   const data = shallowRef(cached ? cached.data : initial);
@@ -38,6 +39,7 @@ export function useAsyncData(
     if (!active) return;
     const current = ++generation;
     const cacheVersion = cacheGeneration;
+    const requestCacheKey = cacheKey ? toValue(cacheKey) : null;
     controller?.abort();
     controller = new AbortController();
 
@@ -53,8 +55,8 @@ export function useAsyncData(
       ) {
         data.value = result;
         hasLoaded.value = true;
-        if (cacheKey) {
-          asyncDataCache.set(cacheKey, {
+        if (requestCacheKey) {
+          asyncDataCache.set(requestCacheKey, {
             data: result,
             timestamp: Date.now(),
           });
@@ -72,7 +74,7 @@ export function useAsyncData(
         if ([401, 403, 404].includes(failure.status)) {
           data.value = initial;
           hasLoaded.value = false;
-          if (cacheKey) asyncDataCache.delete(cacheKey);
+          if (requestCacheKey) asyncDataCache.delete(requestCacheKey);
         }
       }
     } finally {
