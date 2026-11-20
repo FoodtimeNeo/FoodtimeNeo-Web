@@ -407,6 +407,17 @@ export const routes = [
     },
   },
   {
+    path: '/canteens/map',
+    name: 'campusMap',
+    component: () => import('@/views/canteen/CampusMapView.vue'),
+    meta: {
+      title: '食堂地图',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
+  },
+  {
     path: '/canteens/search',
     name: 'dishSearch',
     component: () => import('@/views/canteen/DishSearchView.vue'),
