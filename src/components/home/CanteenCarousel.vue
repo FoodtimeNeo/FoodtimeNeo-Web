@@ -93,6 +93,9 @@ function visibleChips(canteen) {
   if (canteen.canteenName) {
     chips.push(canteen.canteenName);
   }
+  if (props.variant === 'stall' && canteen.reviewCount > 0) {
+    chips.push(`${canteen.reviewCount}条评价`);
+  }
   if (canteen.stallsCount) {
     chips.push(`${canteen.stallsCount}个档口`);
   }
