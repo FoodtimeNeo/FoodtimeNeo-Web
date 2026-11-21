@@ -60,13 +60,14 @@ describe('CanteenCarousel', () => {
   });
 
   it.each([undefined, null, 0, NaN])(
-    '食堂没有有效评分（%s）时显示无评分，不生成分数或口碑标签',
+    '食堂没有有效评分（%s）时直接隐藏评分徽章，不显示“无评分”胶囊',
     (rating) => {
       const wrapper = mount(CanteenCarousel, {
         props: { canteens: [{ id: 'empty', name: '空白食堂', rating }] },
       });
 
-      expect(wrapper.get('.zine-rating-stamp').text()).toBe('无评分');
+      expect(wrapper.find('.zine-rating-stamp').exists()).toBe(false);
+      expect(wrapper.text()).not.toContain('无评分');
       expect(wrapper.text()).not.toContain('4.5');
       expect(wrapper.text()).not.toContain('超高口碑');
       expect(wrapper.text()).not.toContain('大众推荐');
@@ -81,6 +82,38 @@ describe('CanteenCarousel', () => {
 
     expect(wrapper.get('.zine-rating-stamp').text()).toBe('4.9');
     expect(wrapper.text()).toContain('超高口碑');
+    wrapper.unmount();
+  });
+
+  it('不展示“翻开看看 →”与“校园招牌/打卡推荐”等冗余文案', () => {
+    const wrapper = mount(CanteenCarousel, {
+      props: { canteens: mockCanteens },
+    });
+
+    expect(wrapper.text()).not.toContain('翻开看看');
+    expect(wrapper.text()).not.toContain('校园招牌');
+    expect(wrapper.text()).not.toContain('打卡推荐');
+    wrapper.unmount();
+  });
+
+  it('菜品模式补充展示价格信息并清洗掉“发现更多菜品”', () => {
+    const wrapper = mount(CanteenCarousel, {
+      props: {
+        variant: 'dish',
+        items: [
+          {
+            id: 'd1',
+            name: '特色拌面',
+            price: 15,
+            intro: '发现更多菜品',
+            canteenName: '明湖食堂 · 档口1',
+          },
+        ],
+      },
+    });
+
+    expect(wrapper.text()).toContain('15.0');
+    expect(wrapper.text()).not.toContain('发现更多菜品');
     wrapper.unmount();
   });
 

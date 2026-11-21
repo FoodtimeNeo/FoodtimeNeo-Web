@@ -65,7 +65,7 @@ describe('HomeView', () => {
     mockPush.mockReset();
   });
 
-  it('展示 01 今日推荐、02 食堂手账与 03 社区动态，且社区采用紧凑瀑布流渲染', async () => {
+  it('展示 Hero 拼贴图集、01 今日推荐、02 食堂手账与 03 社区动态，且社区采用紧凑瀑布流渲染', async () => {
     fetchCanteens.mockResolvedValue([
       { id: 'c1', name: '学一餐厅', description: '老牌食堂' },
     ]);
@@ -90,17 +90,25 @@ describe('HomeView', () => {
     const wrapper = mountHome();
     await flushPromises();
 
-    // 01 今日推荐部分
+    // Hero 区域验证
+    expect(wrapper.text()).toContain('北交干饭吧');
+    expect(wrapper.text()).toContain('7所食堂全覆盖');
+    expect(wrapper.text()).toContain('130+档口收录');
+    expect(wrapper.text()).toContain('3k+实吃手账笔记');
+    expect(wrapper.text()).toContain('明湖招牌拌饭');
+    expect(wrapper.text()).toContain('东区热干面');
+
+    // 01 今日推荐部分（无有效评分时隐藏评分徽章，不显示“无评分”）
     expect(wrapper.text()).toContain('今日推荐');
     expect(wrapper.text()).toContain('真实推荐菜品');
-    expect(wrapper.text()).toContain('无评分');
-    expect(wrapper.text()).not.toContain('红烧牛肉面');
+    expect(wrapper.text()).not.toContain('无评分');
+    expect(wrapper.text()).not.toContain('翻开看看');
 
     // 02 食堂部分
     expect(wrapper.text()).toContain('选择今天的食堂');
     expect(wrapper.text()).toContain('学一餐厅');
 
-    // 02 社区动态部分
+    // 03 社区动态部分
     expect(wrapper.text()).toContain('校园食记 · 社区动态');
     expect(wrapper.text()).toContain('今日热门');
     expect(wrapper.text()).toContain('学一瓦罐汤');
