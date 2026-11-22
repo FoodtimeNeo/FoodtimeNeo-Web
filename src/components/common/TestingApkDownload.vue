@@ -1,5 +1,6 @@
 <script setup>
 import {
+  HAS_NEWER_TEST_APK,
   TEST_APK_DOWNLOAD_URL,
   TEST_APK_FILE_NAME,
   TEST_APK_SIZE,
@@ -9,7 +10,11 @@ import {
 </script>
 
 <template>
-  <aside class="testing-download" aria-label="安卓测试版下载">
+  <aside
+    v-if="HAS_NEWER_TEST_APK"
+    class="testing-download"
+    aria-label="安卓测试版下载"
+  >
     <p class="testing-download__title">
       抢先体验 · {{ TEST_APK_VERSION }} 测试版
     </p>

@@ -12,19 +12,17 @@ import {
 function valid() {
   return {
     date: '2026-11-04',
-    algorithmVersion: 'FT-HybridRec-v2',
+    algorithmVersion: 'FT-HybridRec-v3-stall',
     total: 1,
     items: [
       {
-        dishId: '00000000-0000-0000-0000-000000000001',
-        dishName: '真实菜品',
-        diningHallId: '00000000-0000-0000-0000-000000000002',
-        diningHallName: '真实食堂',
         stallId: '00000000-0000-0000-0000-000000000003',
         stallName: '真实档口',
+        diningHallId: '00000000-0000-0000-0000-000000000002',
+        diningHallName: '真实食堂',
         averageRating: null,
         reviewCount: 0,
-        imageUrl: null,
+        imageUrl: '/api/v1/media/stall-cover',
         recommendationType: 'EXPLORE',
         recommendationScore: 0.83,
         reasonCode: 'DAILY_DISCOVERY',
@@ -40,20 +38,19 @@ it('请求真实接口并保留空评分、父级路由与推荐理由，不将�
   const [card] = await fetchDailyRecommendations({ signal });
   expect(get).toHaveBeenCalledWith('/recommendations/daily', { signal });
   expect(card).toMatchObject({
-    name: '真实菜品',
+    name: '真实档口',
     rating: null,
     intro: '今日探索',
-    coverImageUrl: null,
+    coverImageUrl: '/api/v1/media/stall-cover',
     route: {
-      name: 'dishDetail',
+      name: 'stallDetail',
       params: {
         canteenId: valid().items[0].diningHallId,
         stallId: valid().items[0].stallId,
-        dishId: valid().items[0].dishId,
       },
     },
   });
-  expect(card).not.toHaveProperty('price');
+  expect(card).not.toHaveProperty('dishId');
 });
 it('接受真实空批次与实际评分', () => {
   expect(recommendationCards({ ...valid(), total: 0, items: [] })).toEqual([]);
@@ -61,7 +58,7 @@ it('接受真实空批次与实际评分', () => {
   data.items[0].averageRating = 4.5;
   expect(recommendationCards(data)[0].rating).toBe(4.5);
 });
-it('拒绝不完整响应、重复菜品、无效日期、数值和父级关系', () => {
+it('拒绝不完整响应、重复档口、无效日期、数值和父级关系', () => {
   const cases = [
     undefined,
     { ...valid(), date: '2026-02-30' },
@@ -72,10 +69,11 @@ it('拒绝不完整响应、重复菜品、无效日期、数值和父级关系'
     { averageRating: 0.83 },
     { averageRating: '4.5' },
     { reviewCount: -1 },
-    { dishId: 'missing' },
+    { stallId: 'missing' },
     { diningHallId: null },
     { recommendationScore: 2 },
-    { imageUrl: undefined },
+    { imageUrl: null },
+    { imageUrl: ' ' },
     { reasonCode: 'UNKNOWN' },
   ]) {
     const data = valid();

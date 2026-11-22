@@ -25,6 +25,7 @@
 .blank-layout::before {
   position: fixed;
   inset: 5% 8%;
+  pointer-events: none;
   border: 1px solid rgb(58 36 24 / 10%);
   background: rgb(255 250 240 / 20%);
   content: '';
