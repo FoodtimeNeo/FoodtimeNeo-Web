@@ -356,7 +356,9 @@ onUnmounted(() => {
     <!-- 保留有效引导提示语 -->
     <div class="canteen-carousel__subhead">
       <span class="canteen-carousel__hint handwrite"
-        >→ 划划看，发现心仪{{ variant === 'dish' ? '菜品' : (variant === 'stall' ? '档口' : '食堂') }}</span
+        >→ 划划看，发现心仪{{
+          variant === 'dish' ? '菜品' : variant === 'stall' ? '档口' : '食堂'
+        }}</span
       >
     </div>
 
