@@ -1,3 +1,5 @@
+import { holdPageUpdate } from './updateSafety.js';
+
 /**
  * 每账号在本机只有一份活动发帖草稿。键为 (serviceOrigin, accountUuid)，不按邮箱或昵称隔离；
  * 图片以 Blob 存入 IndexedDB，ObjectURL 只用于当前展示。
@@ -64,7 +66,7 @@ export async function loadDraft(serviceOrigin, ownerId) {
   return record;
 }
 
-export async function saveDraft(serviceOrigin, ownerId, draft) {
+async function persistDraft(serviceOrigin, ownerId, draft) {
   if (!ownerId) return null;
   const key = draftKey(serviceOrigin, ownerId);
   const existing = await loadDraft(serviceOrigin, ownerId);
@@ -82,11 +84,25 @@ export async function saveDraft(serviceOrigin, ownerId, draft) {
   return record;
 }
 
+export async function saveDraft(...args) {
+  const done = holdPageUpdate();
+  try {
+    return await persistDraft(...args);
+  } finally {
+    done();
+  }
+}
+
 export async function deleteDraft(serviceOrigin, ownerId) {
   if (!ownerId) return;
-  await run('readwrite', (store) =>
-    store.delete(draftKey(serviceOrigin, ownerId)),
-  );
+  const done = holdPageUpdate();
+  try {
+    await run('readwrite', (store) =>
+      store.delete(draftKey(serviceOrigin, ownerId)),
+    );
+  } finally {
+    done();
+  }
 }
 
 export async function draftUsage(serviceOrigin, ownerId) {

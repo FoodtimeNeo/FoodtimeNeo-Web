@@ -7,7 +7,9 @@ import {
   setUnauthorizedHandler,
   setForbiddenHandler,
   toApiError,
+  setApiFailureHandler,
 } from './http.js';
+import { isPageUpdateSafe } from '@/utils/updateSafety.js';
 let received;
 const originalAdapter = http.defaults.adapter;
 function response(config, data, status = 200) {
@@ -17,6 +19,7 @@ beforeEach(() => {
   invalidateSession();
   setUnauthorizedHandler(null);
   setForbiddenHandler(null);
+  setApiFailureHandler(null);
   received = [];
   http.defaults.adapter = vi.fn(async (config) => {
     received.push(config);
@@ -147,5 +150,121 @@ describe('真实HTTP契约', () => {
     expect(error.config).toBeUndefined();
     expect(toApiError({ code: 'ECONNABORTED' }).code).toBe('TIMEOUT');
     expect(toApiError(new Error()).code).toBe('NETWORK');
+  });
+  it('写请求从准备CSRF起阻止自动更新，失败后释放且绝不重发', async () => {
+    let finish;
+    let writes = 0;
+    http.defaults.adapter = async (config) => {
+      if (config.url === '/auth/csrf')
+        return new Promise((resolve) => {
+          finish = () =>
+            resolve(
+              response(config, {
+                code: 'OK',
+                data: { headerName: 'X-CSRF-TOKEN', token: 'token' },
+              }),
+            );
+        });
+      writes++;
+      throw {
+        config,
+        response: response(
+          config,
+          {
+            code: 'INTERNAL_ERROR',
+            message: '服务器内部错误',
+            requestId: 'req-500',
+          },
+          500,
+        ),
+      };
+    };
+    const observer = vi.fn();
+    setApiFailureHandler(observer);
+    const task = http.post('/reviews', { content: 'private' });
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'));
+    expect(isPageUpdateSafe()).toBe(false);
+    finish();
+    await expect(task).rejects.toMatchObject({
+      requestId: 'req-500',
+      code: 'SERVER',
+      message: '服务器内部错误（请求编号：req-500）',
+    });
+    expect(isPageUpdateSafe()).toBe(true);
+    expect(observer).toHaveBeenCalledOnce();
+    expect(writes).toBe(1);
+  });
+  it('CSRF准备失败也释放写入保护', async () => {
+    http.defaults.adapter = async (config) => {
+      throw {
+        config,
+        response: response(config, { code: 'INTERNAL_ERROR' }, 500),
+      };
+    };
+    await expect(http.post('/reviews', {})).rejects.toMatchObject({
+      status: 500,
+    });
+    expect(isPageUpdateSafe()).toBe(true);
+  });
+  it('短暂读取故障只重试一次，真正500和写入从不重放', async () => {
+    let attempts = 0;
+    http.defaults.adapter = async (config) => {
+      attempts++;
+      if (attempts === 1)
+        throw {
+          config,
+          response: response(config, { code: 'DATA_UNAVAILABLE' }, 503),
+        };
+      return response(config, { code: 'OK', data: ['recovered'] });
+    };
+    expect(await http.get('/dining-halls')).toEqual(['recovered']);
+    expect(attempts).toBe(2);
+    attempts = 0;
+    http.defaults.adapter = async (config) => {
+      attempts++;
+      throw {
+        config,
+        response: response(config, { code: 'INTERNAL_ERROR' }, 500),
+      };
+    };
+    await expect(http.get('/dining-halls')).rejects.toMatchObject({
+      status: 500,
+    });
+    expect(attempts).toBe(1);
+    attempts = 0;
+    http.defaults.adapter = async (config) => {
+      attempts++;
+      throw {
+        config,
+        response: response(config, { code: 'DATA_UNAVAILABLE' }, 503),
+      };
+    };
+    await expect(http.get('/dining-halls')).rejects.toMatchObject({
+      status: 503,
+    });
+    expect(attempts).toBe(2);
+  });
+  it('故障编号与构建号可关联，错误不保留敏感请求内容', () => {
+    const error = toApiError({
+      response: {
+        status: 500,
+        data: { message: '服务器内部错误', requestId: 'req-123' },
+        headers: {},
+      },
+      config: { data: { password: 'private' } },
+    });
+    expect(error.message).toContain('req-123');
+    expect(error.clientBuild).toBeTruthy();
+    expect(error.config).toBeUndefined();
+    expect(error.cause).toBeUndefined();
+    expect(
+      toApiError({
+        response: {
+          status: 500,
+          data: { requestId: 'bad\r\nvalue' },
+          headers: {},
+        },
+      }).requestId,
+    ).toBe('');
   });
 });
