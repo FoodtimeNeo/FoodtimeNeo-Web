@@ -117,6 +117,30 @@ describe('CanteenCarousel', () => {
     wrapper.unmount();
   });
 
+  it('档口模式展示评价数和食堂归属，提示语显示档口', () => {
+    const wrapper = mount(CanteenCarousel, {
+      props: {
+        variant: 'stall',
+        items: [
+          {
+            id: 's1',
+            name: '特色瓦罐汤',
+            canteenName: '学一餐厅',
+            reviewCount: 42,
+            rating: 4.8,
+            intro: '暖心鲜香瓦罐',
+          },
+        ],
+      },
+    });
+
+    expect(wrapper.text()).toContain('发现心仪档口');
+    expect(wrapper.text()).toContain('学一餐厅');
+    expect(wrapper.text()).toContain('42条评价');
+    expect(wrapper.text()).toContain('超高口碑');
+    wrapper.unmount();
+  });
+
   it('鼠标滚轮在组件范围内上下滑动时，转换为组件左右滑动并阻止页面垂直滚动', async () => {
     const wrapper = mount(CanteenCarousel, {
       props: { canteens: mockCanteens },

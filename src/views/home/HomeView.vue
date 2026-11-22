@@ -283,9 +283,9 @@ onUnmounted(() => {
       <EmptyState
         v-else-if="!recommendations.length"
         title="今日暂无推荐"
-        description="有可推荐的菜品后会在这里展示，先逛逛食堂吧。"
+        description="有带照片的档口后会在这里展示，先逛逛食堂吧。"
       />
-      <CanteenCarousel v-else :items="recommendations" variant="dish" />
+      <CanteenCarousel v-else :items="recommendations" variant="stall" />
     </section>
 
     <!-- 02 食堂档案 -->

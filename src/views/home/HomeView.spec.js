@@ -28,14 +28,16 @@ import HomeView from './HomeView.vue';
 import { useAuthStore } from '@/store/useAuthStore.js';
 
 const recommended = {
-  id: 'real-dish',
-  name: '真实推荐菜品',
+  id: 'real-stall',
+  name: '真实推荐档口',
   rating: null,
-  canteenName: '真实食堂 · 真实档口',
+  canteenName: '真实食堂',
   intro: '今日探索',
+  coverImageUrl: '/stall.jpg',
+  reviewCount: 0,
   route: {
-    name: 'dishDetail',
-    params: { canteenId: 'hall', stallId: 'stall', dishId: 'real-dish' },
+    name: 'stallDetail',
+    params: { canteenId: 'hall', stallId: 'real-stall' },
   },
 };
 
@@ -100,9 +102,10 @@ describe('HomeView', () => {
 
     // 01 今日推荐部分（无有效评分时隐藏评分徽章，不显示“无评分”）
     expect(wrapper.text()).toContain('今日推荐');
-    expect(wrapper.text()).toContain('真实推荐菜品');
+    expect(wrapper.text()).toContain('真实推荐档口');
     expect(wrapper.text()).not.toContain('无评分');
     expect(wrapper.text()).not.toContain('翻开看看');
+    expect(wrapper.text()).not.toContain('红烧牛肉面');
 
     // 02 食堂部分
     expect(wrapper.text()).toContain('选择今天的食堂');
@@ -147,7 +150,7 @@ describe('HomeView', () => {
     expect(wrapper.find('.el-dialog-stub').exists()).toBe(true);
   });
 
-  it('推荐卡进入真实菜品详情', async () => {
+  it('推荐卡进入真实档口详情', async () => {
     const wrapper = mountHome();
     await flushPromises();
     await wrapper
@@ -193,7 +196,7 @@ describe('HomeView', () => {
     await flushPromises();
     expect(
       wrapper.find('[aria-labelledby="recommendations-title"]').text(),
-    ).not.toContain('真实推荐菜品');
+    ).not.toContain('真实推荐档口');
     wrapper.unmount();
   });
 });

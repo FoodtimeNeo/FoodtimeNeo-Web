@@ -114,6 +114,19 @@ function getItemChips(item) {
     }
     return chips;
   }
+  if (props.variant === 'stall') {
+    const chips = [];
+    if (item.canteenName) {
+      chips.push(item.canteenName);
+    }
+    if (item.reviewCount > 0) {
+      chips.push(`${item.reviewCount}条评价`);
+    }
+    if (hasRating(item.rating)) {
+      chips.push(item.rating >= 4.5 ? '超高口碑' : '大众推荐');
+    }
+    return chips;
+  }
   return getCleanCanteenChips(item);
 }
 
@@ -343,7 +356,7 @@ onUnmounted(() => {
     <!-- 保留有效引导提示语 -->
     <div class="canteen-carousel__subhead">
       <span class="canteen-carousel__hint handwrite"
-        >→ 划划看，发现心仪{{ variant === 'dish' ? '菜品' : '食堂' }}</span
+        >→ 划划看，发现心仪{{ variant === 'dish' ? '菜品' : (variant === 'stall' ? '档口' : '食堂') }}</span
       >
     </div>
 

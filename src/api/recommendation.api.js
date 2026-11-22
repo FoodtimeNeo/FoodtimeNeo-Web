@@ -29,13 +29,11 @@ export function recommendationCards(data) {
   return data.items.map((item) => {
     if (
       !item ||
-      ['dishId', 'diningHallId', 'stallId'].some(
-        (key) => !uuid.test(item[key]),
-      ) ||
-      ['dishName', 'diningHallName', 'stallName', 'reason'].some(
+      ['stallId', 'diningHallId'].some((key) => !uuid.test(item[key])) ||
+      ['diningHallName', 'stallName', 'reason'].some(
         (key) => typeof item[key] !== 'string' || !item[key].trim(),
       ) ||
-      seen.has(item.dishId) ||
+      seen.has(item.stallId) ||
       !Number.isInteger(item.reviewCount) ||
       item.reviewCount < 0 ||
       !(
@@ -44,7 +42,8 @@ export function recommendationCards(data) {
           item.averageRating >= 1 &&
           item.averageRating <= 5)
       ) ||
-      !(item.imageUrl === null || typeof item.imageUrl === 'string') ||
+      typeof item.imageUrl !== 'string' ||
+      !item.imageUrl.trim() ||
       !['QUALITY', 'EXPLORE'].includes(item.recommendationType) ||
       !reasons.includes(item.reasonCode) ||
       !Number.isFinite(item.recommendationScore) ||
@@ -52,21 +51,18 @@ export function recommendationCards(data) {
       item.recommendationScore > 1
     )
       invalid();
-    seen.add(item.dishId);
+    seen.add(item.stallId);
     return {
-      id: item.dishId,
-      name: item.dishName,
-      canteenName: `${item.diningHallName} · ${item.stallName}`,
+      id: item.stallId,
+      name: item.stallName,
+      canteenName: item.diningHallName,
       intro: item.reason,
       rating: item.averageRating,
       coverImageUrl: item.imageUrl,
+      reviewCount: item.reviewCount,
       route: {
-        name: 'dishDetail',
-        params: {
-          canteenId: item.diningHallId,
-          stallId: item.stallId,
-          dishId: item.dishId,
-        },
+        name: 'stallDetail',
+        params: { canteenId: item.diningHallId, stallId: item.stallId },
       },
     };
   });
