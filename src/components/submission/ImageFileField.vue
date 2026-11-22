@@ -7,6 +7,8 @@ const props = defineProps({
   required: { type: Boolean, default: true },
   publicationHint: { type: String, default: '审核通过后公开。' },
   validationMessage: { type: String, default: '' },
+  uploadText: { type: String, default: '+ 上传实拍图' },
+  helpText: { type: String, default: '' },
 });
 const emit = defineEmits(['change', 'checking']);
 const id = useId();
@@ -71,10 +73,14 @@ function clear() {
   emit('change', null);
   input.value?.focus();
 }
+function triggerPick() {
+  if (props.disabled) return;
+  input.value?.click();
+}
 </script>
 <template>
   <div class="image-field">
-    <label :for="id"
+    <label :for="id" class="image-field__label"
       >{{ props.label }}{{ props.required ? '（必填）' : '（选填）' }}</label
     >
     <input
@@ -82,25 +88,59 @@ function clear() {
       ref="input"
       type="file"
       accept="image/jpeg,image/png"
+      class="image-field__native-input"
       :disabled="props.disabled"
       :aria-required="props.required"
       :aria-invalid="Boolean(visibleError)"
       :aria-describedby="`${id}-help${visibleError ? ` ${id}-error` : ''}`"
       @change="choose"
     />
-    <p :id="id + '-help'">
-      JPEG / PNG，最多 50MB；超过 10MB 会自动压缩，像素过高会降采样。{{
-        props.publicationHint
+    <div
+      v-if="!preview"
+      class="image-field__dropzone"
+      :class="{ 'is-disabled': props.disabled }"
+      tabindex="0"
+      role="button"
+      :aria-label="props.uploadText"
+      @click="triggerPick"
+      @keydown.enter.prevent="triggerPick"
+      @keydown.space.prevent="triggerPick"
+    >
+      <div class="image-field__dropzone-icon" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="26"
+          height="26"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="3" ry="3" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      </div>
+      <span class="image-field__dropzone-text">{{ props.uploadText }}</span>
+    </div>
+    <div v-else class="image-field__preview-card">
+      <img :src="preview" alt="所选图片预览" class="image-field__preview-img" />
+    </div>
+    <p :id="id + '-help'" class="image-field__help">
+      {{
+        props.helpText ||
+        `JPEG / PNG，最多 50MB；超过 10MB 会自动压缩，像素过高会降采样。${props.publicationHint}`
       }}
     </p>
     <p v-if="checking" role="status">正在检查图片…</p>
     <p v-if="visibleError" :id="id + '-error'" role="alert">
       {{ visibleError }}
     </p>
-    <img v-if="preview" :src="preview" alt="所选图片预览" />
     <button
       v-if="hasSelection"
       type="button"
+      class="image-field__clear-btn"
       :disabled="props.disabled"
       @click="clear"
     >
@@ -108,29 +148,156 @@ function clear() {
     </button>
   </div>
 </template>
-<style scoped>
+<style scoped lang="scss">
 .image-field {
   display: grid;
-  gap: 12px;
-}
-input {
-  min-height: 44px;
-  max-width: 100%;
-}
-button {
-  justify-self: start;
-  min-height: 44px;
-  padding: 8px 16px;
-  border: 1px solid var(--ft-color-text);
-  background: var(--zine-paper-card);
-}
-img {
-  width: 100%;
-  max-height: 360px;
-  object-fit: contain;
-  border: 1px solid var(--ft-color-text);
-}
-[role='alert'] {
-  color: var(--ft-color-danger);
+  gap: 8px;
+
+  &__label {
+    font-weight: 700;
+    color: var(--ft-color-text);
+    font-size: var(--ft-font-size-sm);
+  }
+
+  &__native-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+  }
+
+  &__dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 16px;
+    min-height: 104px;
+    border: 2px dashed var(--ft-color-secondary, #3a2418);
+    border-radius: var(--ft-radius-md, 10px);
+    background: var(--zine-paper-card-alt, #f7efd9);
+    cursor: pointer;
+    user-select: none;
+    transition:
+      border-color var(--ft-transition-fast),
+      background var(--ft-transition-fast),
+      transform var(--ft-transition-fast),
+      box-shadow var(--ft-transition-fast);
+
+    &:hover:not(.is-disabled) {
+      border-color: var(--ft-color-primary, #c9341e);
+      background: var(--ft-color-surface-ink, #f1ece2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(58, 36, 24, 0.08);
+
+      .image-field__dropzone-icon,
+      .image-field__dropzone-text {
+        color: var(--ft-color-primary, #c9341e);
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ft-color-primary);
+      outline-offset: 2px;
+    }
+
+    &.is-disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  &__dropzone-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ft-color-secondary, #3a2418);
+    transition: color var(--ft-transition-fast);
+  }
+
+  &__dropzone-text {
+    font-size: var(--ft-font-size-sm, 14px);
+    font-weight: 700;
+    color: var(--ft-color-secondary, #3a2418);
+    transition: color var(--ft-transition-fast);
+  }
+
+  &__help {
+    margin: 0;
+    font-size: var(--ft-font-size-xs, 12px);
+    color: var(--ft-color-text-muted, #6e5547);
+    line-height: 1.4;
+  }
+
+  &__preview-card {
+    display: inline-block;
+    max-width: 320px;
+    padding: 8px 8px 12px;
+    border: 2px solid var(--ft-color-text, #3a2418);
+    border-radius: var(--ft-radius-sm, 4px);
+    background: var(--zine-paper-card, #fffaf0);
+    box-shadow: 4px 4px 0 rgba(58, 36, 24, 0.15);
+    transform: rotate(-1deg);
+  }
+
+  &__preview-img {
+    display: block;
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    border: 1px solid var(--ft-color-border, #d5ccbc);
+    background: #fff;
+  }
+
+  &__clear-btn {
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    padding: 6px 14px;
+    border: 1.5px solid var(--ft-color-text, #3a2418);
+    border-radius: var(--ft-radius-sm, 4px);
+    background: var(--zine-paper-card, #fffaf0);
+    color: var(--ft-color-text, #3a2418);
+    font-size: var(--ft-font-size-sm, 14px);
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ft-color-text, #3a2418);
+    transition:
+      transform var(--ft-transition-fast),
+      box-shadow var(--ft-transition-fast);
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 3px 3px 0 var(--ft-color-text, #3a2418);
+      background: var(--ft-color-surface-ink, #f1ece2);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  [role='alert'] {
+    margin: 0;
+    color: var(--ft-color-danger, #c9341e);
+    font-size: var(--ft-font-size-sm, 14px);
+    font-weight: 700;
+  }
+
+  [role='status'] {
+    margin: 0;
+    color: var(--ft-color-text-muted, #6e5547);
+    font-size: var(--ft-font-size-sm, 14px);
+  }
 }
 </style>
