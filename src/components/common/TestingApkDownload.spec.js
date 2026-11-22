@@ -1,5 +1,12 @@
 import { mount } from '@vue/test-utils';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+const availability = vi.hoisted(() => ({ newer: true }));
+vi.mock('@/constants/testingDownload.js', async (importOriginal) => ({
+  ...(await importOriginal()),
+  get HAS_NEWER_TEST_APK() {
+    return availability.newer;
+  },
+}));
 import TestingApkDownload from './TestingApkDownload.vue';
 import {
   TEST_APK_DOWNLOAD_URL,
@@ -9,6 +16,14 @@ import {
 } from '@/constants/testingDownload.js';
 
 describe('optional Android testing download', () => {
+  beforeEach(() => (availability.newer = true));
+  it('hides the testing download after the stable release supersedes it', () => {
+    availability.newer = false;
+    const wrapper = mount(TestingApkDownload);
+    expect(wrapper.find('aside').exists()).toBe(false);
+    expect(wrapper.findAll('a')).toHaveLength(0);
+    wrapper.unmount();
+  });
   it('preserves the suffix, explains the choice and links to verified artifacts', () => {
     const wrapper = mount(TestingApkDownload);
     expect(wrapper.text()).toContain(`${TEST_APK_VERSION} 测试版`);

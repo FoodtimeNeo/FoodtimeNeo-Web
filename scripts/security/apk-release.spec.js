@@ -31,6 +31,9 @@ describe('published Android APK', () => {
     expect(hash).toBe(metadata.sha256);
     expect(bytes.length).toBe(metadata.bytes);
     expect(metadata.sourceRef).toBe('refs/heads/main');
+    expect(metadata.channel).toBe('stable');
+    expect(metadata.prerelease).toBe(false);
+    expect(metadata.versionName).toMatch(/^\d+\.\d+\.\d+$/);
     expect(metadata.sourceCommit).toMatch(/^[a-f0-9]{40}$/);
     expect(metadata.releaseTag).toBe(`v${metadata.versionName}`);
     expect(APK_VERSION).toBe(metadata.releaseTag);

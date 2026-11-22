@@ -1,4 +1,15 @@
 import metadata from '../../public/downloads/testing/FoodtimeNeo-Android.apk.json';
+import stableMetadata from '../../public/downloads/FoodtimeNeo-Android.apk.json';
+
+export function isNewerTestingApk(testing, stable) {
+  return (
+    testing.prerelease === true &&
+    Number.isInteger(testing.versionCode) &&
+    Number.isInteger(stable.versionCode) &&
+    testing.versionCode > stable.versionCode
+  );
+}
+export const HAS_NEWER_TEST_APK = isNewerTestingApk(metadata, stableMetadata);
 
 export const TEST_APK_VERSION = `v${metadata.versionName}`;
 export const TEST_APK_FILE_NAME = 'FoodtimeNeo-Android-testing.apk';
