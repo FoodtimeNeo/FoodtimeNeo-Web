@@ -64,8 +64,12 @@ describe('safe static deployment staging', () => {
     ).resolves.toMatchObject({ id: 'new-build' });
   });
   it('retains old hashed lazy assets and leaves the live site unchanged', async () => {
+    await writeFile(join(current, 'assets/手绘美食-abc12345.png'), 'old image');
     const result = await prepareWebRelease({ incoming, current, output });
-    expect(result.retained).toBe(2);
+    expect(result.retained).toBe(3);
+    expect(
+      await readFile(join(output, 'assets/手绘美食-abc12345.png'), 'utf8'),
+    ).toBe('old image');
     expect(
       await readFile(join(output, 'assets/page-old12345.js'), 'utf8'),
     ).toBe('old lazy page');

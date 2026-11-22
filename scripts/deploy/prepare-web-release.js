@@ -84,7 +84,7 @@ export async function prepareWebRelease({ incoming, current, output }) {
   let retained = 0;
   if (current)
     for (const name of await readdir(join(current, 'assets'))) {
-      if (!/^[a-zA-Z0-9._-]+-[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9.]+$/.test(name))
+      if (!/^[^/\\\r\n]+-[a-zA-Z0-9_-]{8,}\.[a-zA-Z0-9.]+$/u.test(name))
         continue;
       const old = join(current, 'assets', name),
         next = join(output, 'assets', name);
