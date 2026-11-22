@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import BlankLayout from '@/layouts/BlankLayout.vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import NoticeDialog from '@/components/NoticeDialog.vue';
+import VersionUpdateStatus from '@/components/common/VersionUpdateStatus.vue';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { useInboxStore } from '@/store/useInboxStore.js';
 import { useLoginNotice } from '@/composables/useLoginNotice.js';
@@ -72,6 +73,7 @@ function closePopup(visible) {
 </script>
 
 <template>
+  <VersionUpdateStatus />
   <RouterView v-slot="{ Component, route }">
     <component :is="layouts[route.meta.layout] ?? DefaultLayout">
       <component

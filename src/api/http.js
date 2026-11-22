@@ -1,4 +1,25 @@
 import axios from 'axios';
+import { holdPageUpdate } from '@/utils/updateSafety.js';
+const CLIENT_BUILD = import.meta.env.VITE_BUILD_ID || 'development';
+const SAFE_ID = /^[a-zA-Z0-9._-]{1,64}$/;
+let failureHandler = () => {};
+export function setApiFailureHandler(handler) {
+  failureHandler = handler || (() => {});
+}
+function observeFailure(error) {
+  if (
+    error.code === 'PROTOCOL' ||
+    error.code === 'NETWORK' ||
+    error.code === 'TIMEOUT' ||
+    error.status >= 500
+  ) {
+    try {
+      failureHandler(error);
+    } catch {
+      /* Diagnostics cannot mask an API failure. */
+    }
+  }
+}
 export class ApiError extends Error {
   constructor(
     message,
@@ -8,11 +29,25 @@ export class ApiError extends Error {
       bizCode = '',
       retryAfter = 0,
       fields = null,
+      requestId = '',
+      clientBuild = CLIENT_BUILD,
     } = {},
   ) {
-    super(message);
+    const safeId =
+      typeof requestId === 'string' && SAFE_ID.test(requestId) ? requestId : '';
+    super(
+      status >= 500 && safeId ? `${message}（请求编号：${safeId}）` : message,
+    );
     this.name = 'ApiError';
-    Object.assign(this, { status, code, bizCode, retryAfter, fields });
+    Object.assign(this, {
+      status,
+      code,
+      bizCode,
+      retryAfter,
+      fields,
+      requestId: safeId,
+      clientBuild,
+    });
   }
 }
 let unauthorizedHandler = null;
@@ -67,6 +102,7 @@ export function toApiError(error) {
     bizCode: typeof body?.code === 'string' ? body.code : '',
     retryAfter: Number(error.response.headers?.['retry-after']) || 0,
     fields: body?.data || null,
+    requestId: body?.requestId || error.response.headers?.['x-request-id'],
   });
 }
 const baseURL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
@@ -79,7 +115,7 @@ export const http = axios.create({
   timeout: 15000,
   withCredentials: true,
   // 后端按 /auth/register 等路径识别官方客户端，未知客户端在 enforce 模式下会被拒绝。
-  headers: { 'X-Foodtime-Client': 'web' },
+  headers: { 'X-Foodtime-Client': 'web', 'X-Foodtime-Web-Build': CLIENT_BUILD },
 });
 export async function getCsrf() {
   if (csrf) return csrf;
@@ -125,42 +161,57 @@ http.interceptors.request.use(async (config) => {
   }
   config.withCredentials = true;
   config.headers.delete('Authorization');
+  config.headers.set('X-Foodtime-Web-Build', CLIENT_BUILD);
   if (
     !['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())
   ) {
-    const token = await getCsrf();
-    if (requestSession !== sessionVersion)
-      throw new ApiError('会话已变化，请确认身份后重试', {
-        code: 'SESSION_CHANGED',
-      });
-    config.headers.set(token.headerName, token.token);
+    config.finishPageWrite = holdPageUpdate();
+    try {
+      const token = await getCsrf();
+      if (requestSession !== sessionVersion)
+        throw new ApiError('会话已变化，请确认身份后重试', {
+          code: 'SESSION_CHANGED',
+        });
+      config.headers.set(token.headerName, token.token);
+    } catch (error) {
+      config.finishPageWrite();
+      throw error;
+    }
   }
   config.sessionVersion = requestSession;
   return config;
 });
 http.interceptors.response.use(
   (response) => {
-    if (response.config.sessionVersion !== sessionVersion)
-      throw new ApiError('会话已变化，请刷新后查看操作结果', {
-        code: 'SESSION_CHANGED',
-      });
-    const body = response.data;
-    if (
-      !body ||
-      typeof body !== 'object' ||
-      typeof body.code !== 'string' ||
-      !('data' in body)
-    )
-      throw new ApiError('服务器响应不符合接口约定', { code: 'PROTOCOL' });
-    if (body.code !== 'OK')
-      throw new ApiError(body.message || '请求失败', {
-        status: response.status,
-        code: 'BUSINESS',
-        bizCode: body.code,
-      });
-    return body.data;
+    try {
+      if (response.config.sessionVersion !== sessionVersion)
+        throw new ApiError('会话已变化，请刷新后查看操作结果', {
+          code: 'SESSION_CHANGED',
+        });
+      const body = response.data;
+      if (
+        !body ||
+        typeof body !== 'object' ||
+        typeof body.code !== 'string' ||
+        !('data' in body)
+      )
+        throw new ApiError('服务器响应不符合接口约定', { code: 'PROTOCOL' });
+      if (body.code !== 'OK')
+        throw new ApiError(body.message || '请求失败', {
+          status: response.status,
+          code: 'BUSINESS',
+          bizCode: body.code,
+        });
+      return body.data;
+    } catch (error) {
+      observeFailure(error);
+      throw error;
+    } finally {
+      response.config.finishPageWrite?.();
+    }
   },
-  (error) => {
+  async (error) => {
+    error.config?.finishPageWrite?.();
     if (
       error.config?.sessionVersion !== undefined &&
       error.config.sessionVersion !== sessionVersion
@@ -171,6 +222,28 @@ http.interceptors.response.use(
         }),
       );
     const apiError = toApiError(error);
+    const config = error.config;
+    // Only one bounded retry for read-only transient failures. Never replay writes or genuine 500s.
+    if (
+      config &&
+      config.method?.toLowerCase() === 'get' &&
+      !config.foodtimeReadRetried &&
+      config.retryRead !== false &&
+      navigator.onLine !== false &&
+      (['NETWORK', 'TIMEOUT'].includes(apiError.code) ||
+        [502, 503, 504].includes(apiError.status))
+    ) {
+      config.foodtimeReadRetried = true;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      if (config.sessionVersion !== sessionVersion)
+        throw new ApiError('会话已变化，请刷新后查看操作结果', {
+          code: 'SESSION_CHANGED',
+        });
+      if (config.signal?.aborted)
+        throw new ApiError('请求已取消', { code: 'CANCELLED' });
+      return http.request(config);
+    }
+    observeFailure(apiError);
     if (apiError.bizCode === 'CSRF_INVALID') clearCsrf();
     if (apiError.status === 401 && !error.config?.skipUnauthorized) {
       invalidateSession();
