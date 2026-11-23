@@ -2,6 +2,7 @@
 import { formatTime } from '@/utils/recordLabels.js';
 import CommentLikeButton from './CommentLikeButton.vue';
 import ReviewReplySection from './ReviewReplySection.vue';
+import MediaImage from '@/components/base/MediaImage.vue';
 /**
  * 菜品评论列表。字段对齐后端评论序列化：
  * { id, userId, userDisplayName, rating, content, createdAt }
@@ -25,6 +26,12 @@ defineProps({
         </span>
       </div>
       <p class="dish-reviews__comment">{{ review.content }}</p>
+      <MediaImage
+        v-if="review.imageUrl"
+        :src="review.imageUrl"
+        class="dish-reviews__image"
+        alt="点评图片"
+      />
       <ReviewReplySection :review="review" :actions="actions">
         <template #actions>
           <time
@@ -80,6 +87,13 @@ defineProps({
   &__comment {
     margin: var(--ft-space-1) 0 0;
     white-space: pre-wrap;
+  }
+
+  &__image {
+    width: 160px;
+    max-width: 100%;
+    height: 120px;
+    margin-top: var(--ft-space-2);
   }
 
   &__time {
