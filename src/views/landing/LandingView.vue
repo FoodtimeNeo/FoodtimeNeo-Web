@@ -351,7 +351,7 @@ $c-tape-yellow: #f5e8b4;
   background-repeat: no-repeat;
   // Keep the illustrated paper and its foreground content in the same scroll space.
   background-attachment: scroll;
-  background-color: #f7efe4;
+  background-color: var(--ft-color-surface);
   color: $c-ink-black;
   font-family: var(
     --ft-font-family,
@@ -417,7 +417,7 @@ $c-tape-yellow: #f5e8b4;
   top: 0;
   z-index: 50;
   width: 100%;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgb(var(--ft-overlay-surface-rgb) / 0.78);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(220, 205, 185, 0.45);
   box-shadow: 0 1px 12px rgba(50, 30, 15, 0.04);
@@ -486,9 +486,9 @@ $c-tape-yellow: #f5e8b4;
   gap: 16px;
 
   .nav-web-link {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.85);
     border: 1px solid rgba(138, 108, 86, 0.35);
-    color: #4b3628;
+    color: var(--ft-color-text);
     padding: 7px 16px;
     border-radius: 20px;
     font-size: 14px;
@@ -497,7 +497,7 @@ $c-tape-yellow: #f5e8b4;
     transition: all 0.22s ease;
 
     &:hover {
-      background: #fff;
+      background: var(--zine-paper-card);
       border-color: $c-ink-red;
       color: $c-ink-red;
       transform: translateY(-1px);
@@ -580,7 +580,7 @@ $c-tape-yellow: #f5e8b4;
     border-radius: 2px;
     font-size: 17px;
     font-weight: 800;
-    color: #4b3628;
+    color: var(--ft-color-text);
     box-shadow: 0 2px 8px rgba(58, 36, 24, 0.08);
     transform: rotate(-1deg);
     margin-bottom: 28px;
@@ -613,7 +613,7 @@ $c-tape-yellow: #f5e8b4;
     }
 
     .title-ink-black {
-      color: #120803;
+      color: var(--ft-color-text);
       font-size: clamp(56px, 6vw, 82px);
       font-weight: 900;
       letter-spacing: -0.02em;
@@ -648,7 +648,7 @@ $c-tape-yellow: #f5e8b4;
     max-width: 660px;
 
     strong {
-      color: #120803;
+      color: var(--ft-color-text);
       font-weight: 900;
     }
   }
@@ -699,7 +699,7 @@ $c-tape-yellow: #f5e8b4;
       background: linear-gradient(
         90deg,
         transparent,
-        rgba(255, 255, 255, 0.38),
+        rgb(var(--ft-overlay-surface-rgb) / 0.38),
         transparent
       );
       transform: skewX(-22deg);
@@ -919,7 +919,7 @@ $c-tape-yellow: #f5e8b4;
     justify-content: space-between;
     gap: 20px;
     padding: 8px 24px;
-    background: rgba(255, 255, 255, 0.82);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.82);
     backdrop-filter: blur(8px);
     border: 1px dashed rgba(185, 41, 41, 0.35);
     border-radius: 8px;
@@ -930,7 +930,7 @@ $c-tape-yellow: #f5e8b4;
     margin: 0;
     font-size: clamp(16px, 1.7vw, 20px);
     line-height: 1.4;
-    color: #2b1c14;
+    color: var(--ft-color-text);
 
     .highlight-ink-underlined {
       color: $c-ink-red;
@@ -1059,7 +1059,7 @@ $c-tape-yellow: #f5e8b4;
   position: relative;
   max-width: 480px;
   width: 100%;
-  background: #fff;
+  background: var(--zine-paper-card);
   padding: 36px 32px 28px;
   border-radius: 12px;
   border: 1px solid #e6ded3;
@@ -1080,7 +1080,7 @@ $c-tape-yellow: #f5e8b4;
   .guide-modal-title {
     margin: 0 0 18px;
     font-size: 24px;
-    color: #2b1c14;
+    color: var(--ft-color-text);
     text-align: center;
   }
 
@@ -1092,10 +1092,10 @@ $c-tape-yellow: #f5e8b4;
     gap: 12px;
     font-size: 14.5px;
     line-height: 1.6;
-    color: #4b3628;
+    color: var(--ft-color-text);
 
     code {
-      background: #f5eee4;
+      background: var(--ft-color-surface);
       padding: 2px 6px;
       border-radius: 4px;
       font-size: 13px;
@@ -1137,14 +1137,14 @@ $c-tape-yellow: #f5e8b4;
   align-items: center;
   gap: 14px;
   padding: 14px 20px;
-  background: #fff;
+  background: var(--zine-paper-card);
   border: 1px solid #dfd3c5;
   border-left: 5px solid $c-ink-red;
   border-radius: 10px;
   box-shadow: 0 12px 30px rgba(35, 20, 10, 0.12);
 
   .toast-stamp-badge {
-    background: #faebe8;
+    background: var(--ft-color-surface);
     color: $c-ink-red;
     border: 1px solid #e8b6af;
     font-size: 12px;
@@ -1157,7 +1157,7 @@ $c-tape-yellow: #f5e8b4;
     .toast-head {
       font-size: 14.5px;
       font-weight: 700;
-      color: #21150e;
+      color: var(--ft-color-text);
     }
 
     .toast-sub {
@@ -1177,7 +1177,7 @@ $c-tape-yellow: #f5e8b4;
     line-height: 1;
 
     &:hover {
-      color: #21150e;
+      color: var(--ft-color-text);
     }
   }
 }
@@ -1296,7 +1296,7 @@ $c-tape-yellow: #f5e8b4;
     margin-left: 0;
     margin-top: 8px;
     padding: 20px 18px 22px;
-    background: rgba(255, 250, 240, 0.94);
+    background: rgb(var(--ft-overlay-paper-rgb) / 0.94);
     border: 1px solid rgba(58, 36, 24, 0.16);
     border-radius: 10px;
     box-shadow: 0 4px 18px rgba(58, 36, 24, 0.08);
@@ -1331,7 +1331,7 @@ $c-tape-yellow: #f5e8b4;
       font-size: 14.5px;
       line-height: 1.65;
       margin: 0 0 20px;
-      color: #4b3628;
+      color: var(--ft-color-text);
     }
 
     // 按钮紧凑化与大拇指舒适触达

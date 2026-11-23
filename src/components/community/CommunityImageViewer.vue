@@ -218,7 +218,11 @@ function closeLightbox() {
     height: 100%;
     min-height: 280px;
     max-height: 600px;
-    background: radial-gradient(circle at center, #faf8f5 0%, #ece7df 100%);
+    background: radial-gradient(
+      circle at center,
+      var(--ft-color-surface) 0%,
+      var(--ft-color-surface) 100%
+    );
     border-radius: var(--ft-radius-md, 14px);
     overflow: hidden;
     cursor: zoom-in;

@@ -79,7 +79,7 @@ watch(
   min-height: 44px;
   padding: 6px 14px;
   border-radius: 20px;
-  background: var(--ft-color-alt, #f5efdf);
+  background: var(--ft-color-alt, var(--ft-color-surface));
   color: var(--ft-color-text);
   overflow-wrap: anywhere;
 }

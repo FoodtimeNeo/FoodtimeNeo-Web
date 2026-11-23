@@ -675,7 +675,7 @@ function formatPostTime(isoString) {
   width: 100%;
   height: 100%;
   min-height: 0;
-  background: #fff;
+  background: var(--zine-paper-card);
   color: var(--ft-color-text, #333);
   overflow: hidden;
 
@@ -688,7 +688,11 @@ function formatPostTime(isoString) {
 .post-media {
   min-width: 0;
   height: 100%;
-  background: radial-gradient(circle at center, #faf8f5 0%, #ede8e0 100%);
+  background: radial-gradient(
+    circle at center,
+    var(--ft-color-surface) 0%,
+    var(--ft-color-surface) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
@@ -701,7 +705,7 @@ function formatPostTime(isoString) {
   flex-direction: column;
   height: 100%;
   min-width: 0;
-  background: #fff;
+  background: var(--zine-paper-card);
   border-left: 1px solid rgb(0 0 0 / 6%);
   position: relative;
   overflow: hidden;
@@ -720,7 +724,7 @@ function formatPostTime(isoString) {
   padding: 16px 20px;
   border-bottom: 1px solid rgb(0 0 0 / 6%);
   flex-shrink: 0;
-  background: #fff;
+  background: var(--zine-paper-card);
   z-index: 2;
 
   .author-avatar-wrap {
@@ -740,7 +744,7 @@ function formatPostTime(isoString) {
   .author-avatar-fallback {
     width: 100%;
     height: 100%;
-    background: #f0ece3;
+    background: var(--zine-paper-card);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -759,12 +763,12 @@ function formatPostTime(isoString) {
   .author-name {
     font-weight: 700;
     font-size: 15px;
-    color: #222;
+    color: var(--ft-color-text);
   }
 
   .author-time {
     font-size: 12px;
-    color: #999;
+    color: var(--ft-color-text-muted);
   }
 
   .author-actions {
@@ -777,8 +781,8 @@ function formatPostTime(isoString) {
     padding: 5px 16px;
     border-radius: 999px;
     border: 1px solid #ddd;
-    background: #fff;
-    color: #555;
+    background: var(--zine-paper-card);
+    color: var(--ft-color-text-muted);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -794,7 +798,7 @@ function formatPostTime(isoString) {
     padding: 5px 16px;
     border-radius: 999px;
     border: 1px solid var(--ft-color-primary, #e60026);
-    background: #fff;
+    background: var(--zine-paper-card);
     color: var(--ft-color-primary, #e60026);
     font-size: 13px;
     font-weight: 600;
@@ -806,9 +810,9 @@ function formatPostTime(isoString) {
     }
 
     &.is-following {
-      border-color: #ddd;
-      color: #999;
-      background: #fafafa;
+      border-color: var(--ft-color-border);
+      color: var(--ft-color-text-muted);
+      background: var(--zine-paper-card);
     }
   }
 
@@ -816,14 +820,14 @@ function formatPostTime(isoString) {
     padding: 5px 12px;
     border-radius: 6px;
     border: 1px solid #ffccd2;
-    background: #fff5f5;
+    background: var(--ft-color-surface);
     color: var(--ft-color-primary, #e60026);
     font-size: 12px;
     cursor: pointer;
     transition: background 160ms ease;
 
     &:hover {
-      background: #ffe3e6;
+      background: var(--ft-color-surface);
     }
   }
 }
@@ -840,7 +844,7 @@ function formatPostTime(isoString) {
     width: 6px;
   }
   &::-webkit-scrollbar-thumb {
-    background: #e2ded5;
+    background: var(--ft-color-surface);
     border-radius: 3px;
   }
 }
@@ -848,7 +852,7 @@ function formatPostTime(isoString) {
 .audit-banner {
   padding: 10px 14px;
   border-radius: 8px;
-  background: #fdf3f2;
+  background: var(--ft-color-surface);
   color: var(--ft-color-primary, #e60026);
   font-size: 13px;
   margin-bottom: 14px;
@@ -859,7 +863,7 @@ function formatPostTime(isoString) {
   font-weight: 700;
   line-height: 1.4;
   margin: 0 0 12px;
-  color: #1a1a1a;
+  color: var(--ft-color-text);
 }
 
 .post-body {
@@ -867,7 +871,7 @@ function formatPostTime(isoString) {
   overflow-wrap: anywhere;
   line-height: 1.8;
   font-size: 15px;
-  color: #333;
+  color: var(--ft-color-text);
   margin: 0 0 16px;
 }
 
@@ -878,9 +882,9 @@ function formatPostTime(isoString) {
   margin-bottom: 20px;
 
   .post-tag {
-    color: #13386c;
+    color: var(--zine-stamp-blue);
     font-size: 13px;
-    background: #f0f4fa;
+    background: var(--ft-color-surface);
     padding: 3px 8px;
     border-radius: 4px;
   }
@@ -896,7 +900,7 @@ function formatPostTime(isoString) {
   color: var(--ft-color-primary, #e60026);
   font-size: 12px;
   margin: 0;
-  background: #fff2f2;
+  background: var(--ft-color-surface);
 }
 
 // 底部吸底操作栏（PC 端固定吸在右栏底，移动端吸在屏幕底）
@@ -907,7 +911,7 @@ function formatPostTime(isoString) {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgb(var(--ft-overlay-surface-rgb) / 0.98);
   backdrop-filter: blur(12px);
   border-top: 1px solid rgb(0 0 0 / 7%);
   box-shadow: 0 -4px 16px rgb(0 0 0 / 4%);
@@ -919,7 +923,7 @@ function formatPostTime(isoString) {
   min-width: 0;
   display: flex;
   align-items: center;
-  background: #f4f3f0;
+  background: var(--zine-paper-card);
   border-radius: 999px;
   padding: 6px 14px;
   gap: 8px;
@@ -927,7 +931,7 @@ function formatPostTime(isoString) {
   transition: all 180ms ease;
 
   &:focus-within {
-    background: #fff;
+    background: var(--zine-paper-card);
     border-color: var(--ft-color-primary, #e60026);
     box-shadow: 0 2px 10px rgb(230 0 38 / 12%);
   }
@@ -948,13 +952,13 @@ function formatPostTime(isoString) {
       border: 0;
       background: none;
       cursor: pointer;
-      color: #999;
+      color: var(--ft-color-text-muted);
       font-size: 13px;
       padding: 0;
       line-height: 1;
 
       &:hover {
-        color: #333;
+        color: var(--ft-color-text);
       }
     }
   }
@@ -965,11 +969,11 @@ function formatPostTime(isoString) {
     border: 0;
     background: none;
     font-size: 13px;
-    color: #222;
+    color: var(--ft-color-text);
     outline: none;
 
     &::placeholder {
-      color: #999;
+      color: var(--ft-color-text-muted);
     }
   }
 
@@ -1005,13 +1009,13 @@ function formatPostTime(isoString) {
   background: none;
   cursor: pointer;
   padding: 6px 8px;
-  color: #444;
+  color: var(--ft-color-text);
   font-size: 13px;
   border-radius: 8px;
   transition: all 140ms ease;
 
   &:hover {
-    background: #f7f6f4;
+    background: var(--ft-color-surface);
     transform: scale(1.06);
   }
 
@@ -1054,7 +1058,7 @@ function formatPostTime(isoString) {
     padding: 0 14px;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
+    background: var(--zine-paper-card);
     border-bottom: 1px solid rgb(0 0 0 / 6%);
     z-index: 10;
 
@@ -1063,7 +1067,7 @@ function formatPostTime(isoString) {
       background: none;
       font-size: 22px;
       cursor: pointer;
-      color: #333;
+      color: var(--ft-color-text);
       padding: 4px 8px;
     }
 
@@ -1084,7 +1088,7 @@ function formatPostTime(isoString) {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #f0ece3;
+      background: var(--zine-paper-card);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1095,7 +1099,7 @@ function formatPostTime(isoString) {
     .mobile-author-name {
       font-size: 14px;
       font-weight: 700;
-      color: #333;
+      color: var(--ft-color-text);
     }
 
     .mobile-header-actions {
@@ -1108,8 +1112,8 @@ function formatPostTime(isoString) {
       padding: 4px 14px;
       border-radius: 999px;
       border: 1px solid #ddd;
-      background: #fff;
-      color: #555;
+      background: var(--zine-paper-card);
+      color: var(--ft-color-text-muted);
       font-size: 12px;
       font-weight: 600;
     }
@@ -1118,14 +1122,14 @@ function formatPostTime(isoString) {
       padding: 4px 14px;
       border-radius: 999px;
       border: 1px solid var(--ft-color-primary, #e60026);
-      background: #fff;
+      background: var(--zine-paper-card);
       color: var(--ft-color-primary, #e60026);
       font-size: 12px;
       font-weight: 600;
 
       &.is-following {
-        border-color: #ddd;
-        color: #999;
+        border-color: var(--ft-color-border);
+        color: var(--ft-color-text-muted);
       }
     }
 
@@ -1133,7 +1137,7 @@ function formatPostTime(isoString) {
       border: 0;
       background: none;
       font-size: 18px;
-      color: #444;
+      color: var(--ft-color-text);
       cursor: pointer;
     }
   }

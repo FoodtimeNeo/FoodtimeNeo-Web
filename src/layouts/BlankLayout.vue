@@ -27,7 +27,7 @@
   inset: 5% 8%;
   pointer-events: none;
   border: 1px solid rgb(58 36 24 / 10%);
-  background: rgb(255 250 240 / 20%);
+  background: rgb(var(--ft-overlay-paper-rgb) / 20%);
   content: '';
   transform: rotate(-0.6deg);
 }

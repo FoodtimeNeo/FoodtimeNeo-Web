@@ -95,7 +95,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
   top: 0;
   min-height: 82px;
   border-bottom: 1px solid var(--ft-color-secondary);
-  background: #f2efe6;
+  background: var(--zine-paper-card);
 }
 
 .app-header__inner {
@@ -170,7 +170,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
   padding: 0 12px;
   border: 1px solid var(--ft-color-text);
   border-radius: 999px;
-  background: var(--ft-color-surface, #fff);
+  background: var(--ft-color-surface, var(--ft-color-surface));
   font-weight: 700;
 }
 

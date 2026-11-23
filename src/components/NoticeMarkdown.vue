@@ -38,7 +38,7 @@ const rendered = computed(() => renderNoticeMarkdown(props.content));
 .notice-markdown :deep(pre) {
   overflow-x: auto;
   padding: 12px;
-  background: var(--zine-paper-card, #f7f2e8);
+  background: var(--zine-paper-card, var(--ft-color-surface));
   border: 1px solid var(--ft-color-text-muted);
 }
 .notice-markdown :deep(code) {

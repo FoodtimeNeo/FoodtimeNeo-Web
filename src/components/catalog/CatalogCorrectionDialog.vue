@@ -282,7 +282,7 @@ async function submit() {
   &__target {
     margin: 0;
     padding: 8px;
-    background: var(--ft-color-surface-alt, #f7f1e3);
+    background: var(--ft-color-surface-alt, var(--ft-color-surface));
     overflow-wrap: anywhere;
   }
 

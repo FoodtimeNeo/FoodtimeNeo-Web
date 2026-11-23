@@ -92,7 +92,7 @@ function handleClick() {
 .community-post-card {
   display: flex;
   flex-direction: column;
-  background: var(--zine-paper-card, #fffaf0);
+  background: var(--zine-paper-card);
   border: 1px solid var(--ft-color-secondary, #3a2418);
   border-radius: 0;
   overflow: hidden;
@@ -117,7 +117,7 @@ function handleClick() {
     width: 100%;
     min-height: 120px;
     max-height: 380px;
-    background: var(--ft-color-surface-ink, #f1ece2);
+    background: var(--ft-color-surface-ink);
     overflow: hidden;
   }
 
@@ -142,7 +142,7 @@ function handleClick() {
     justify-content: center;
     color: var(--ft-color-text-muted, #6e5547);
     font-size: var(--ft-font-size-sm, 14px);
-    background: var(--zine-paper-card-alt, #f7efd9);
+    background: var(--zine-paper-card-alt);
   }
 
   &__multi-badge {

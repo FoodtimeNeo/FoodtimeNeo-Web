@@ -48,7 +48,7 @@ defineProps({
   position: relative;
   display: block;
   border: 1px solid var(--ft-color-text);
-  background: var(--zine-paper-card, #fffaf0);
+  background: var(--zine-paper-card);
   box-shadow: 6px 8px 0 rgb(58 36 24 / 16%);
   color: inherit;
   text-decoration: none;
@@ -68,7 +68,7 @@ defineProps({
     padding: 8px 8px 18px;
     overflow: visible;
     border: 0;
-    background: #fff;
+    background: var(--zine-paper-card);
     box-shadow: 3px 3px 0 rgb(58 36 24 / 22%);
 
     img {

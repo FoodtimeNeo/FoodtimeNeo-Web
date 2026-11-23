@@ -62,7 +62,7 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
   background:
     linear-gradient(
       90deg,
-      rgb(255 255 255 / 18%),
+      rgb(var(--ft-overlay-surface-rgb) / 18%),
       transparent 10% 90%,
       rgb(58 36 24 / 5%)
     ),

@@ -11,6 +11,7 @@ import ErrorState from '@/components/base/ErrorState.vue';
 import InkButton from '@/components/base/InkButton.vue';
 import ProfileEditor from './ProfileEditor.vue';
 import AppIcon from '@/components/base/AppIcon.vue';
+import AppearancePicker from '@/components/base/AppearancePicker.vue';
 import SchoolEmailBinder from '@/components/profile/SchoolEmailBinder.vue';
 const auth = useAuthStore();
 const router = useRouter();
@@ -194,6 +195,7 @@ async function logout() {
             ></RouterLink
           >
         </div>
+        <AppearancePicker v-if="group.id === 'account'" />
       </section>
     </nav>
     <details v-if="profile" class="profile-page__account-details">

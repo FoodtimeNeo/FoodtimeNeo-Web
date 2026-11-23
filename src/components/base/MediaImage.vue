@@ -102,7 +102,7 @@ onBeforeUnmount(() => observer?.disconnect());
 
 .media-image--polaroid {
   padding: 7px 7px 24px;
-  background: #fff;
+  background: var(--zine-paper-card);
   box-shadow: 4px 5px 0 rgb(58 36 24 / 22%);
   transform: rotate(var(--zine-rotate-left));
 }
