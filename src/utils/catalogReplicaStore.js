@@ -48,7 +48,7 @@ async function transaction(action) {
 
 /** Internal sync storage. Callers must revalidate before presenting any returned replica. */
 export function createCatalogReplicaStore(limit = CATALOG_CACHE_LIMIT) {
-  return {
+  const store = {
     async get(source) {
       const key = await keyFor(source);
       if (!key) return null;
@@ -128,6 +128,19 @@ export function createCatalogReplicaStore(limit = CATALOG_CACHE_LIMIT) {
       if (key) await transaction((store) => store.delete(key));
     },
   };
+  // Browser storage/crypto/Blob implementations may fail independently of HTTP.
+  return Object.fromEntries(
+    Object.keys(store).map((method) => [
+      method,
+      async (...args) => {
+        try {
+          return await store[method](...args);
+        } catch {
+          return method === 'get' ? null : undefined;
+        }
+      },
+    ]),
+  );
 }
 
 export const catalogReplicaStore = createCatalogReplicaStore();
