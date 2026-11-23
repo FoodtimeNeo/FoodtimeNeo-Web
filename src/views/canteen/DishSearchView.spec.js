@@ -8,6 +8,9 @@ import { createPinia } from 'pinia';
 
 vi.mock('@/api/dish.api.js', () => ({ searchDishes: vi.fn() }));
 vi.mock('@/api/canteen.api.js', () => ({ fetchCanteens: vi.fn() }));
+vi.mock('@/api/recommendation.api.js', () => ({
+  fetchDailyRecommendations: vi.fn().mockResolvedValue([]),
+}));
 
 const stub = { template: '<div />' };
 const dish = {
@@ -68,6 +71,9 @@ afterEach(() => wrapper?.unmount());
 
 it('无关键词也可浏览全部，提交关键词后从第一页搜索并显示评分与价格', async () => {
   await render();
+  expect(searchDishes).not.toHaveBeenCalled();
+  expect(wrapper.find('.search-discovery').exists()).toBe(true);
+  await submit();
   expect(searchDishes).toHaveBeenCalledTimes(1);
   expect(searchDishes.mock.calls[0][0]).toBe('');
   expect(searchDishes.mock.calls[0][1]).toBe(1);
@@ -179,7 +185,7 @@ it('翻页失败保留原成功页，重试再提交显示页码', async () => {
     size: 20,
     total: 400,
   }));
-  await render();
+  await render({ browse: '1' });
   searchDishes.mockRejectedValueOnce(new Error('暂时离线'));
   await wrapper.get('button[aria-label="第 3 页"]').trigger('click');
   await flushPromises();
