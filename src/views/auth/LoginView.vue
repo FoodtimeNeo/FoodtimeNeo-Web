@@ -231,7 +231,7 @@ form {
 
   img {
     border: 1px solid var(--ft-color-secondary);
-    background: #f8f4ec;
+    background: var(--ft-color-surface);
   }
 }
 .auth-view__captcha-refresh {

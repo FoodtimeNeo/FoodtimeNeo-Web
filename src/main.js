@@ -20,6 +20,8 @@ import {
 } from '@/utils/versionRefresh.js';
 import { installPageEditGuard } from '@/utils/updateSafety.js';
 import { setApiFailureHandler } from '@/api/http.js';
+import { installAppearance } from '@/composables/useAppearance.js';
+installAppearance();
 const app = createApp(App);
 installPageEditGuard();
 setMediaGate(ensureMediaWorkerMigration);

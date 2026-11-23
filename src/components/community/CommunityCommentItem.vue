@@ -133,7 +133,7 @@ async function like() {
 .avatar-fallback {
   display: grid;
   place-items: center;
-  background: var(--ft-color-surface-ink, #ece5d8);
+  background: var(--ft-color-surface-ink, var(--ft-color-surface));
   color: var(--ft-color-text-secondary, #706458);
   font-weight: 600;
   font-size: 13px;

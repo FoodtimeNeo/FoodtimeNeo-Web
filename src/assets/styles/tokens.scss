@@ -1,4 +1,8 @@
 :root {
+  --ft-overlay-bar-rgb: 242 239 230;
+  --ft-overlay-surface-rgb: 255 255 255;
+  --ft-overlay-paper-rgb: 255 250 240;
+  --ft-color-warning-text: #b05a10;
   --ft-color-bg: #f2efe6;
   --ft-color-bg-soft: #faf7f0;
   --ft-color-surface: #f8f5ee;
@@ -124,4 +128,58 @@
   --el-font-family: var(--ft-font-family);
   --el-text-color-primary: var(--ft-color-text);
   --el-text-color-regular: var(--ft-color-secondary-soft);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ft-color-warning-text: #edbd72;
+  --ft-color-bg: #141414;
+  --ft-color-bg-soft: #1c1c1c;
+  --ft-color-surface: #202020;
+  --ft-color-surface-ink: #303030;
+  --ft-color-secondary: #f5f2ed;
+  --ft-color-secondary-soft: #d1c7bc;
+  --ft-color-text: #f5f2ed;
+  --ft-color-text-muted: #c3bcb3;
+  --ft-color-border: #605c56;
+  --ft-color-accent: #a0bd7e;
+  --zine-paper-bg: #181818;
+  --zine-paper-bg-soft: #222;
+  --zine-paper-card: #141414;
+  --zine-paper-card-alt: #242424;
+  --zine-paper-shadow: rgb(0 0 0 / 35%);
+  --zine-paper-edge: #736c63;
+  --zine-stamp-blue: #8cbdda;
+  --zine-foil-gold: #d4b560;
+  --zine-foil-gold-soft: #4c4021;
+  --zine-foil-silver: #b7c0c7;
+  --zine-foil-silver-soft: #353a3e;
+  --zine-foil-bronze: #d6a47c;
+  --zine-foil-bronze-soft: #463322;
+  --ft-overlay-bar-rgb: 25 25 25;
+  --ft-overlay-surface-rgb: 28 28 28;
+  --ft-overlay-paper-rgb: 24 24 24;
+  --zine-texture-kraft: none;
+  --ft-shadow-sm: 0 6px 0 rgb(0 0 0 / 25%);
+  --ft-shadow-md: 0 10px 0 rgb(0 0 0 / 35%);
+  --ft-shadow-lg: 0 14px 0 rgb(0 0 0 / 45%);
+  --app-mobile-shadow: 0 4px 0 rgb(0 0 0 / 25%);
+  --el-bg-color: #202020;
+  --el-bg-color-page: #141414;
+  --el-bg-color-overlay: #242424;
+  --el-fill-color: #303030;
+  --el-fill-color-light: #282828;
+  --el-fill-color-lighter: #242424;
+  --el-fill-color-extra-light: #202020;
+  --el-fill-color-blank: #202020;
+  --el-border-color-light: #514e48;
+  --el-border-color-lighter: #44413c;
+  --el-border-color-extra-light: #383531;
+  --el-text-color-secondary: #c3bcb3;
+  --el-text-color-placeholder: #b0a79d;
+  --el-text-color-disabled: #9a928a;
+  --el-mask-color: rgb(0 0 0 / 70%);
+  --el-disabled-bg-color: #282828;
+  --el-disabled-text-color: #9a928a;
+  --el-disabled-border-color: #514e48;
 }

@@ -42,7 +42,7 @@ import { APP_VERSION_LABEL } from '@/constants/version.js';
   position: relative;
   overflow: hidden;
   border-top: 1px solid var(--ft-color-secondary);
-  background: rgb(242 239 230 / 94%);
+  background: rgb(var(--ft-overlay-bar-rgb) / 94%);
 }
 
 .app-footer__inner {

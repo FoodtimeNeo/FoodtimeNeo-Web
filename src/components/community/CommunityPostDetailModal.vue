@@ -1077,8 +1077,8 @@ async function removePost() {
     height: 44px;
     border-radius: 50%;
     border: 0;
-    background: rgb(255 255 255 / 85%);
-    color: #333;
+    background: rgb(var(--ft-overlay-surface-rgb) / 85%);
+    color: var(--ft-color-text);
     font-size: 28px;
     line-height: 1;
     display: flex;
@@ -1091,7 +1091,7 @@ async function removePost() {
       transform var(--ft-transition-fast);
 
     &:hover {
-      background: #fff;
+      background: var(--zine-paper-card);
       transform: scale(1.08);
     }
   }
@@ -1100,7 +1100,7 @@ async function removePost() {
     position: relative;
     width: min(94vw, 1040px);
     height: min(88vh, 840px);
-    background: #fff;
+    background: var(--zine-paper-card);
     border-radius: 16px;
     box-shadow: 0 20px 50px rgb(0 0 0 / 35%);
     overflow: hidden;
@@ -1142,7 +1142,7 @@ async function removePost() {
   flex: 1;
   min-width: 0;
   height: 100%;
-  background: #f7f6f9;
+  background: var(--ft-color-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1165,7 +1165,7 @@ async function removePost() {
   width: 420px;
   flex: none;
   height: 100%;
-  background: #fff;
+  background: var(--zine-paper-card);
   display: flex;
   flex-direction: column;
   border-left: 1px solid #f0eee8;
@@ -1185,7 +1185,7 @@ async function removePost() {
     height: 42px;
     border-radius: 50%;
     overflow: hidden;
-    background: #f0ece1;
+    background: var(--zine-paper-card);
     border: 1px solid #e5dfd3;
     flex: none;
   }
@@ -1214,7 +1214,7 @@ async function removePost() {
   .redbook-author-name {
     font-size: 15px;
     font-weight: 700;
-    color: #333;
+    color: var(--ft-color-text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1224,7 +1224,7 @@ async function removePost() {
     padding: 6px 16px;
     border-radius: 999px;
     border: 1px solid var(--ft-color-primary, #e60026);
-    background: #fff;
+    background: var(--zine-paper-card);
     color: var(--ft-color-primary, #e60026);
     font-size: 13px;
     font-weight: 600;
@@ -1236,9 +1236,9 @@ async function removePost() {
     }
 
     &.is-following {
-      border-color: #ccc;
-      color: #888;
-      background: #fafafa;
+      border-color: var(--ft-color-border);
+      color: var(--ft-color-text-muted);
+      background: var(--zine-paper-card);
     }
   }
 
@@ -1246,14 +1246,14 @@ async function removePost() {
     padding: 5px 12px;
     border-radius: 6px;
     border: 1px solid #ffccd2;
-    background: #fff5f5;
+    background: var(--ft-color-surface);
     color: var(--ft-color-primary, #e60026);
     font-size: 12px;
     cursor: pointer;
     transition: background 160ms ease;
 
     &:hover {
-      background: #ffe3e6;
+      background: var(--ft-color-surface);
     }
   }
 }
@@ -1269,7 +1269,7 @@ async function removePost() {
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #ddd;
+    background: var(--ft-color-surface-ink);
     border-radius: 3px;
   }
 }
@@ -1277,14 +1277,14 @@ async function removePost() {
 .redbook-audit-badge {
   padding: 6px 12px;
   margin-bottom: 14px;
-  background: #fdf6ec;
+  background: var(--ft-color-surface);
   border: 1px solid #faecd8;
   color: #e6a23c;
   font-size: 12px;
   border-radius: 4px;
 
   &--rejected {
-    background: #fef0f0;
+    background: var(--ft-color-surface);
     border-color: #fde2e2;
     color: #f56c6c;
   }
@@ -1295,7 +1295,7 @@ async function removePost() {
   font-size: 20px;
   font-weight: 800;
   line-height: 1.35;
-  color: #222;
+  color: var(--ft-color-text);
 }
 
 .redbook-post-tags {
@@ -1305,7 +1305,7 @@ async function removePost() {
   margin-bottom: 12px;
 
   .redbook-tag {
-    color: #13386c;
+    color: var(--zine-stamp-blue);
     font-size: 14px;
     font-weight: 600;
   }
@@ -1315,14 +1315,14 @@ async function removePost() {
   margin: 0 0 16px;
   font-size: 15px;
   line-height: 1.68;
-  color: #333;
+  color: var(--ft-color-text);
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .redbook-post-footline {
   font-size: 12px;
-  color: #999;
+  color: var(--ft-color-text-muted);
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid #f2eee9;
@@ -1332,14 +1332,14 @@ async function removePost() {
   .redbook-comments-header {
     font-size: 14px;
     font-weight: 700;
-    color: #666;
+    color: var(--ft-color-text-muted);
     margin-bottom: 16px;
   }
 
   .redbook-comments-loading,
   .redbook-comments-empty {
     font-size: 13px;
-    color: #999;
+    color: var(--ft-color-text-muted);
     text-align: center;
     padding: 20px 0;
   }
@@ -1355,7 +1355,7 @@ async function removePost() {
     height: 32px;
     border-radius: 50%;
     overflow: hidden;
-    background: #f0ece1;
+    background: var(--zine-paper-card);
     flex: none;
   }
 
@@ -1373,7 +1373,7 @@ async function removePost() {
     justify-content: center;
     font-size: 12px;
     font-weight: 700;
-    color: #666;
+    color: var(--ft-color-text-muted);
   }
 
   .cmt-content-wrap {
@@ -1391,14 +1391,14 @@ async function removePost() {
   .cmt-author-name {
     font-size: 13px;
     font-weight: 600;
-    color: #555;
+    color: var(--ft-color-text-muted);
   }
 
   .cmt-author-tag {
     font-size: 10px;
     padding: 1px 4px;
     border-radius: 2px;
-    background: #fdf6ec;
+    background: var(--ft-color-surface);
     color: #e6a23c;
   }
 
@@ -1406,7 +1406,7 @@ async function removePost() {
     margin: 0 0 6px;
     font-size: 14px;
     line-height: 1.45;
-    color: #222;
+    color: var(--ft-color-text);
     word-break: break-word;
 
     .cmt-reply-target {
@@ -1420,26 +1420,26 @@ async function removePost() {
     align-items: center;
     gap: 12px;
     font-size: 12px;
-    color: #999;
+    color: var(--ft-color-text-muted);
   }
 
   .cmt-reply-btn {
     border: 0;
     background: none;
-    color: #666;
+    color: var(--ft-color-text-muted);
     font-size: 12px;
     cursor: pointer;
     padding: 0;
 
     &:hover {
-      color: #222;
+      color: var(--ft-color-text);
     }
   }
 
   .cmt-like-btn {
     border: 0;
     background: none;
-    color: #888;
+    color: var(--ft-color-text-muted);
     font-size: 12px;
     cursor: pointer;
     margin-left: auto;
@@ -1458,7 +1458,7 @@ async function removePost() {
   flex: none;
   padding: 12px 18px;
   border-top: 1px solid #f0eee8;
-  background: #fff;
+  background: var(--zine-paper-card);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1468,14 +1468,14 @@ async function removePost() {
     min-width: 0;
     height: 38px;
     border-radius: 999px;
-    background: #f4f3f0;
+    background: var(--zine-paper-card);
     display: flex;
     align-items: center;
     padding: 0 14px;
     gap: 8px;
 
     .pill-pen-icon {
-      color: #999;
+      color: var(--ft-color-text-muted);
       font-size: 14px;
     }
 
@@ -1484,11 +1484,11 @@ async function removePost() {
       border: 0;
       background: none;
       font-size: 13px;
-      color: #333;
+      color: var(--ft-color-text);
       outline: none;
 
       &::placeholder {
-        color: #999;
+        color: var(--ft-color-text-muted);
       }
     }
 
@@ -1517,7 +1517,7 @@ async function removePost() {
     background: none;
     cursor: pointer;
     padding: 4px;
-    color: #444;
+    color: var(--ft-color-text);
     font-size: 13px;
     transition: transform 140ms ease;
 
@@ -1545,7 +1545,7 @@ async function removePost() {
     height: 100vh;
     padding: 0;
     margin: 0;
-    background: #fff;
+    background: var(--zine-paper-card);
     backdrop-filter: none;
     display: block;
 
@@ -1581,7 +1581,7 @@ async function removePost() {
     padding: 0 12px;
     align-items: center;
     justify-content: space-between;
-    background: #fff;
+    background: var(--zine-paper-card);
     border-bottom: 1px solid #f0eee8;
     z-index: 10;
 
@@ -1590,7 +1590,7 @@ async function removePost() {
       background: none;
       font-size: 24px;
       cursor: pointer;
-      color: #333;
+      color: var(--ft-color-text);
       padding: 4px 8px;
     }
 
@@ -1611,7 +1611,7 @@ async function removePost() {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #eee;
+      background: var(--ft-color-surface-ink);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1622,7 +1622,7 @@ async function removePost() {
     .mobile-author-name {
       font-size: 14px;
       font-weight: 700;
-      color: #333;
+      color: var(--ft-color-text);
     }
 
     .mobile-header-actions {
@@ -1635,14 +1635,14 @@ async function removePost() {
       padding: 4px 14px;
       border-radius: 999px;
       border: 1px solid var(--ft-color-primary, #e60026);
-      background: #fff;
+      background: var(--zine-paper-card);
       color: var(--ft-color-primary, #e60026);
       font-size: 12px;
       font-weight: 600;
 
       &.is-following {
-        border-color: #ddd;
-        color: #999;
+        border-color: var(--ft-color-border);
+        color: var(--ft-color-text-muted);
       }
     }
 
@@ -1650,7 +1650,7 @@ async function removePost() {
       padding: 4px 10px;
       border-radius: 6px;
       border: 1px solid #ffccd2;
-      background: #fff5f5;
+      background: var(--ft-color-surface);
       color: var(--ft-color-primary, #e60026);
       font-size: 12px;
     }
@@ -1659,7 +1659,7 @@ async function removePost() {
       border: 0;
       background: none;
       font-size: 18px;
-      color: #444;
+      color: var(--ft-color-text);
       cursor: pointer;
     }
   }
@@ -1716,7 +1716,7 @@ async function removePost() {
     left: 0;
     right: 0;
     z-index: 100;
-    background: rgba(255, 255, 255, 0.98);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.98);
     backdrop-filter: blur(8px);
     border-top: 1px solid #f0eee8;
     padding: 8px 14px max(10px, env(safe-area-inset-bottom));

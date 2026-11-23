@@ -435,7 +435,7 @@ async function openMessage(row) {
 }
 .inbox-page__item.is-unread {
   border-color: var(--zine-stamp-red);
-  background: rgb(255 244 238 / 92%);
+  background: rgb(var(--ft-overlay-paper-rgb) / 92%);
 }
 .inbox-page__item.is-community {
   cursor: pointer;
@@ -579,7 +579,7 @@ async function openMessage(row) {
   margin-top: 8px;
   padding: 8px 16px;
   border: 1px solid var(--ft-color-text);
-  background: rgb(255 250 240 / 72%);
+  background: rgb(var(--ft-overlay-paper-rgb) / 72%);
   cursor: pointer;
 }
 .inbox-page__item button:disabled {

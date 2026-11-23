@@ -810,6 +810,17 @@ watch(
   button {
     min-height: 44px;
     padding: 8px 14px;
+    border: 1px solid var(--ft-color-border);
+    border-radius: 12px;
+    background: var(--zine-paper-card);
+    color: var(--ft-color-text);
+    font: inherit;
+    cursor: pointer;
+  }
+  button:last-child {
+    background: var(--ft-color-primary);
+    border-color: var(--ft-color-primary);
+    color: #fff5f2;
   }
 }
 .photo-card__move {
@@ -826,7 +837,7 @@ watch(
 
   max-width: 560px;
   border-radius: var(--ft-radius-lg, 16px);
-  background: var(--zine-paper-card, #fffaf0);
+  background: var(--zine-paper-card);
   border: 2px solid var(--ft-color-secondary, #3a2418);
   box-shadow: 8px 8px 0 var(--ft-color-secondary, #3a2418);
   overflow: hidden;
@@ -839,7 +850,7 @@ watch(
 
   .el-dialog__body {
     padding: 20px 24px 24px;
-    background: var(--zine-paper-card, #fffaf0);
+    background: var(--zine-paper-card);
   }
 
   .el-dialog__headerbtn {
@@ -859,7 +870,7 @@ watch(
 .post-dialog-header {
   position: relative;
   padding: 22px 24px 14px;
-  background: var(--zine-paper-card-alt, #f7efd9);
+  background: var(--zine-paper-card-alt);
   border-bottom: 2px dashed var(--ft-color-border, #d5ccbc);
 
   .washi-tape {
@@ -1012,7 +1023,7 @@ watch(
     padding: 10px 12px;
     border: 1.5px solid var(--ft-color-border, #d5ccbc);
     border-radius: var(--ft-radius-sm, 6px);
-    background: #fff;
+    background: var(--zine-paper-card);
     color: var(--ft-color-text, #3a2418);
     font-family: inherit;
     font-size: 14px;
@@ -1054,7 +1065,7 @@ watch(
     border-radius: 8px;
     overflow: hidden;
     border: 1.5px solid var(--ft-color-border, #d5ccbc);
-    background: #f0ebe1;
+    background: var(--ft-color-surface);
     box-shadow: 2px 2px 0 rgb(58 36 24 / 10%);
 
     img {
@@ -1106,7 +1117,7 @@ watch(
     aspect-ratio: 1;
     border: 2px dashed var(--ft-color-border, #d5ccbc);
     border-radius: 8px;
-    background: var(--zine-paper-card-alt, #f7efd9);
+    background: var(--zine-paper-card-alt);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1116,7 +1127,7 @@ watch(
 
     &:hover:not(:disabled) {
       border-color: var(--ft-color-primary, #c9341e);
-      background: #fff;
+      background: var(--zine-paper-card);
       transform: translateY(-2px);
       box-shadow: 2px 2px 0 var(--ft-color-primary, #c9341e);
     }
@@ -1181,8 +1192,8 @@ watch(
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: #b05a10;
-    background: #fdf5e8;
+    color: var(--ft-color-warning-text);
+    background: var(--ft-color-surface);
     border: 1px dashed #e6a23c;
     padding: 8px 12px;
     border-radius: 6px;
@@ -1219,12 +1230,12 @@ watch(
     transition: all var(--ft-transition-fast, 180ms ease);
 
     &--cancel {
-      background: var(--ft-color-surface-ink, #f1ece2);
+      background: var(--ft-color-surface-ink);
       border: 1.5px solid var(--ft-color-border, #d5ccbc);
       color: var(--ft-color-text-muted, #6e5547);
 
       &:hover:not(:disabled) {
-        background: #fff;
+        background: var(--zine-paper-card);
         color: var(--ft-color-secondary, #3a2418);
       }
     }
@@ -1267,7 +1278,7 @@ watch(
   overflow: hidden;
   border: 2px solid var(--ft-color-secondary, #3a2418);
   border-radius: 16px;
-  background: var(--zine-paper-card, #fffaf0);
+  background: var(--zine-paper-card);
   box-shadow: 4px 4px 0 var(--ft-color-secondary, #3a2418);
 
   > .el-dialog__header {
