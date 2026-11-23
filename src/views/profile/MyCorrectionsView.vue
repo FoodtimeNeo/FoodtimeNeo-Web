@@ -69,8 +69,8 @@ function price(value) {
           <template v-if="item.changedFields.includes('priceUnit')"
             ><dt>计价单位</dt>
             <dd>
-              {{ PRICE_UNITS[item.originalPriceUnit] || '未注明' }} →
-              {{ PRICE_UNITS[item.proposedPriceUnit] || '未注明' }}
+              {{ PRICE_UNITS[item.originalPriceUnit] || '元' }} →
+              {{ PRICE_UNITS[item.proposedPriceUnit] || '元' }}
             </dd></template
           >
           <template v-if="item.changedFields.includes('name')">
