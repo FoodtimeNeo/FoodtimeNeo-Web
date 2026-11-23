@@ -148,9 +148,7 @@ onBeforeUnmount(() => pointers.clear());
         >
       </div>
     </header>
-    <p class="campus-map__hint">
-      双指缩放、拖动地图，点选食堂查看详情。也可使用下方名称选择。
-    </p>
+    <p class="campus-map__hint">双指缩放 · 点选食堂</p>
     <div class="campus-map__viewport">
       <svg
         ref="svg"
@@ -242,10 +240,7 @@ onBeforeUnmount(() => pointers.clear());
       </div>
       <p v-else>此区域暂无可用的食堂详情入口。</p>
     </article>
-    <p class="campus-map__hint">
-      校园手绘示意图，原图更新于 2023
-      年。暂未标注教工、学苑及东区清真；本页暂不提供定位和路线导航。
-    </p>
+    <p class="campus-map__hint">校园示意图 · 2023 年版</p>
   </section>
 </template>
 

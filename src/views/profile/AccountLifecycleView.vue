@@ -1,4 +1,5 @@
 <script setup>
+import { purgeSearchHistory } from '@/utils/searchHistory.js';
 import { computed, ref, watch, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
@@ -69,6 +70,7 @@ async function unbound(result) {
 }
 async function deleted(result) {
   const ownerId = auth.user?.id;
+  purgeSearchHistory(ownerId);
   if (ownerId)
     await purgeActor(window.location.origin, ownerId).catch(() => {});
   auth.clear();
@@ -83,7 +85,6 @@ async function deleted(result) {
   <section class="account-lifecycle">
     <BackLink />
     <h1 class="section-title">账号安全与注销</h1>
-    <p>管理员和超级管理员不能注销、绑定或解绑学校邮箱。</p>
     <p v-if="loading" role="status">读取账号状态中…</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <p v-if="message || receipt" role="status">{{ message || receipt }}</p>

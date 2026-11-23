@@ -1,265 +1,171 @@
 <script setup>
-import VenueRatingSummary from '@/components/venue/VenueRatingSummary.vue';
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteen, fetchStalls } from '@/api/canteen.api.js';
-import { useCatalogSearch } from '@/composables/useCatalogSearch.js';
-import CatalogSearch from '@/components/canteen/CatalogSearch.vue';
-import StallEntryCard from '@/components/canteen/StallEntryCard.vue';
+import CanteenMenu from '@/components/canteen/CanteenMenu.vue';
+import VenueRatingSummary from '@/components/venue/VenueRatingSummary.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import MediaImage from '@/components/base/MediaImage.vue';
 import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue';
-
+import { useAuthStore } from '@/store/useAuthStore.js';
+const auth = useAuthStore();
 const route = useRoute();
 const canteenId = computed(() => String(route.params.canteenId));
-
-const {
-  data: canteen,
-  error: canteenError,
-  initialLoading: canteenLoading,
-  load: loadCanteen,
-} = useAsyncData((options) => fetchCanteen(canteenId.value, options), {
-  cacheKey: `canteen:${canteenId.value}`,
+const hall = useAsyncData((options) => fetchCanteen(canteenId.value, options), {
+  cacheKey: () => `canteen:${canteenId.value}`,
   ttl: 0,
 });
-
-const {
-  data: stalls,
-  error: stallsError,
-  initialLoading: stallsLoading,
-  load: loadStalls,
-} = useAsyncData((options) => fetchStalls(canteenId.value, options), {
+const list = useAsyncData((options) => fetchStalls(canteenId.value, options), {
   initial: [],
-  cacheKey: `stalls:${canteenId.value}`,
+  cacheKey: () => `stalls:${canteenId.value}`,
   ttl: 0,
 });
-const { query, matches: filteredStalls } = useCatalogSearch(
-  stalls,
-  () => `stalls:${canteenId.value}`,
-);
+watch(canteenId, () => {
+  hall.cancel();
+  list.cancel();
+  hall.data.value = null;
+  list.data.value = [];
+  void hall.load();
+  void list.load();
+});
 </script>
-
 <template>
   <main class="canteen-detail">
-    <nav class="canteen-detail__back">
-      <RouterLink :to="{ name: 'canteenList' }">← 返回食堂列表</RouterLink>
-    </nav>
-
-    <LoadingState v-if="canteenLoading" message="正在打开食堂…" />
+    <LoadingState v-if="hall.initialLoading.value" message="正在打开食堂…" />
     <ErrorState
-      v-else-if="canteenError"
-      :title="canteenError.code === 'NOT_FOUND' ? '食堂不存在' : '暂时无法加载'"
-      :description="canteenError.message"
-      @retry="loadCanteen"
+      v-else-if="hall.error.value"
+      :title="
+        hall.error.value.code === 'NOT_FOUND' ? '食堂不存在' : '暂时无法加载'
+      "
+      :description="hall.error.value.message"
+      @retry="hall.load"
     />
-    <template v-else-if="canteen">
-      <header
-        class="canteen-detail__hero torn-edge"
-        :class="{ 'canteen-detail__hero--text': !canteen.coverImageUrl }"
-      >
+    <template v-else-if="hall.data.value">
+      <header class="canteen-detail__hero">
         <MediaImage
-          v-if="canteen.coverImageUrl"
+          v-if="hall.data.value.coverImageUrl"
           class="canteen-detail__hero-image"
-          frame="polygon"
-          :src="canteen.coverImageUrl || ''"
-          :alt="canteen.name"
-          empty="暂未上传食堂图片"
+          compact
+          :src="hall.data.value.coverImageUrl"
+          alt=""
         />
-        <div class="canteen-detail__hero-content">
-          <span class="sticker sticker--r-1">食堂档案</span>
-          <h1 class="section-title">{{ canteen.name }}</h1>
-          <CatalogQuickActions
-            :id="canteenId"
-            type="dining-halls"
-            :back-to="{ name: 'canteenList' }"
-            @updated="loadCanteen"
-            @images-changed="loadCanteen"
-          />
-          <img
-            src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
-            alt=""
-            class="canteen-detail__stamp-decor"
-            aria-hidden="true"
-          />
-          <div
-            v-if="!stallsLoading && !stallsError"
-            class="canteen-detail__hero-meta"
-          >
-            <span class="stamp">{{ stalls.length }} 个档口</span>
-          </div>
-          <VenueRatingSummary type="hall" :target-id="canteenId" />
-          <RouterLink
-            class="button-ink"
-            :to="{ name: 'stallSubmission', params: { canteenId } }"
-            >投稿档口</RouterLink
-          >
+        <div>
+          <h1>{{ hall.data.value.name }}</h1>
+          <p v-if="!list.loading.value && !list.error.value">
+            {{ list.data.value.length }} 个档口
+          </p>
         </div>
+        <RouterLink
+          class="canteen-detail__review"
+          :to="{
+            name: 'venueReviews',
+            params: { type: 'hall', targetId: canteenId },
+          }"
+          >评价 ›</RouterLink
+        >
       </header>
-    </template>
-    <section v-if="!canteenError" aria-labelledby="stalls-title">
-      <div class="section-rule">
-        <span class="section-rule__index">03</span>
-        <span class="section-rule__line"></span>
-      </div>
-      <h2 id="stalls-title" class="canteen-detail__subtitle">档口</h2>
-
-      <LoadingState v-if="stallsLoading" message="正在清点档口…" />
+      <details class="canteen-detail__info">
+        <summary>食堂信息</summary>
+        <VenueRatingSummary
+          :key="canteenId"
+          type="hall"
+          :target-id="canteenId"
+        />
+        <CatalogQuickActions
+          :id="canteenId"
+          type="dining-halls"
+          :back-to="{ name: 'canteenList' }"
+          @updated="hall.load"
+          @images-changed="hall.load"
+        />
+        <RouterLink
+          class="canteen-detail__submission"
+          :to="{ name: 'stallSubmission', params: { canteenId } }"
+          >投稿档口</RouterLink
+        >
+      </details>
+      <LoadingState v-if="list.initialLoading.value" message="正在读取档口…" />
       <ErrorState
-        v-else-if="stallsError"
-        :description="stallsError.message"
-        @retry="loadStalls"
+        v-else-if="list.error.value"
+        :description="list.error.value.message"
+        @retry="list.load"
       />
       <EmptyState
-        v-else-if="!stalls.length"
+        v-else-if="!list.data.value.length"
         title="这个食堂还没有档口"
-        description="管理员添加后会显示在这里。"
       />
-      <template v-else>
-        <CatalogSearch
-          v-model="query"
-          label="搜索档口"
-          placeholder="输入当前食堂的档口名称"
-          :count="filteredStalls.length"
-          :total="stalls.length"
-          unit="个档口"
-        />
-        <EmptyState
-          v-if="!filteredStalls.length"
-          title="没有匹配的档口"
-          description="只搜索当前食堂的档口名称，试试其他关键词。"
-        >
-          <button class="button-ink" type="button" @click="query = ''">
-            查看全部档口
-          </button>
-        </EmptyState>
-        <ul v-else class="canteen-detail__grid">
-          <li v-for="stall in filteredStalls" :key="stall.id">
-            <StallEntryCard :stall="stall" :canteen-id="canteenId" />
-          </li>
-        </ul>
-      </template>
-    </section>
+      <CanteenMenu
+        v-else
+        :key="canteenId"
+        :canteen-id="canteenId"
+        :stalls="list.data.value"
+        :owner-id="auth.user?.id || ''"
+      />
+    </template>
   </main>
 </template>
-
-<style scoped lang="scss">
+<style scoped>
 .canteen-detail {
-  width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));
-  margin: var(--ft-space-5) auto;
-
-  &__back {
-    margin-bottom: var(--ft-space-3);
-
-    a {
-      color: var(--ft-color-primary);
-      font-weight: 700;
-      text-decoration: none;
-    }
-  }
-
-  &__summary {
-    margin: var(--ft-space-2) 0 0;
-    color: var(--ft-color-text-muted);
-  }
-
-  &__hero {
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    overflow: hidden;
-    border: 1px solid var(--ft-color-secondary);
-    background: var(--ft-color-surface);
-  }
-
-  &__hero-image {
-    min-height: 360px;
-  }
-
-  &__hero--text {
-    grid-template-columns: 1fr;
-  }
-
-  &__hero-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    padding: var(--ft-space-3);
-
-    h1 {
-      margin-top: 12px;
-      font-size: clamp(44px, 6vw, 68px);
-      line-height: 0.95;
-    }
-  }
-
-  &__stamp-decor {
-    position: absolute;
-    top: 18px;
-    right: 24px;
-    width: 82px;
-    height: auto;
-    opacity: 0.88;
-    transform: rotate(-6deg);
-    pointer-events: none;
-    filter: drop-shadow(2px 3px 0 rgba(58, 36, 24, 0.08));
-  }
-
-  &__hero-meta {
-    display: flex;
-    gap: var(--ft-space-1);
-    margin: var(--ft-space-1) 0 var(--ft-space-2);
-  }
-
-  &__subtitle {
-    margin: var(--ft-space-4) 0 0;
-    font-family: var(--ft-font-family-title);
-    font-size: var(--ft-font-size-xl);
-  }
-
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: var(--ft-space-3);
-    margin: var(--ft-space-3) 0 0;
-    padding: 0;
-    list-style: none;
-  }
+  width: min(100%, 1080px);
+  margin: 0 auto;
 }
-
-@media (max-width: 768px) {
-  .canteen-detail {
-    width: calc(100% - var(--zine-page-padding-mobile) * 2);
-
-    &__grid {
-      grid-template-columns: 1fr;
-      gap: var(--ft-space-2);
-    }
-
-    &__hero {
-      grid-template-columns: 1fr;
-    }
-
-    &__hero-image {
-      min-height: 0;
-      aspect-ratio: 16 / 10;
-    }
-
-    &__hero-content {
-      padding: var(--app-mobile-card-padding);
-
-      h1 {
-        font-size: clamp(30px, 8vw, 40px);
-        line-height: 1.2;
-      }
-    }
-
-    &__subtitle {
-      margin-top: var(--ft-space-1);
-    }
-  }
+.canteen-detail__hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px 8px;
+}
+.canteen-detail__hero > div:not(.media-image) {
+  flex: 1;
+  min-width: 0;
+}
+.canteen-detail h1 {
+  margin: 0;
+  font: clamp(24px, 5vw, 36px) var(--ft-font-family-title);
+  overflow-wrap: anywhere;
+}
+.canteen-detail__hero p {
+  margin: 8px 0 0;
+  color: var(--ft-color-text-muted);
+  font-size: 13px;
+}
+.canteen-detail__hero-image {
+  width: 68px;
+  height: 68px;
+  min-height: 0;
+  flex: none;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.canteen-detail__review {
+  flex: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+}
+.canteen-detail__info {
+  padding: 0 16px 8px;
+}
+.canteen-detail__info summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--ft-color-text-muted);
+  font-size: 14px;
+}
+.canteen-detail__info summary::after {
+  content: '⌄';
+  margin-left: 6px;
+}
+.canteen-detail__submission {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--ft-color-primary);
 }
 </style>

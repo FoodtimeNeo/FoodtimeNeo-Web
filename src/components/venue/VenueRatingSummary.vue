@@ -16,11 +16,7 @@ const { data, error, load } = useAsyncData((options) =>
         Number(data.averageScore).toFixed(1)
       }}</span>
       <span v-else>暂无评分</span>
-      <span
-        >{{ data.reviewCount }} 条评价<small
-          >{{ type === 'hall' ? '餐厅' : '档口' }}整体体验 · 满分 5 分</small
-        ></span
-      >
+      <span>{{ data.reviewCount }} 条评价</span>
     </template>
     <p v-else-if="error" role="alert">
       评分暂时无法加载

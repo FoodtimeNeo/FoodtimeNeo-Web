@@ -193,10 +193,7 @@ async function handleSubmit() {
         {{ serverError }}
       </p>
       <p v-if="notice" role="status">{{ notice }}</p>
-      <p class="auth-view__hint">
-        支持 QQ、163、126、Gmail、Outlook
-        等主流邮箱。注册后的可用功能由平台当前权限策略决定，学校邮箱可在「我的」绑定。
-      </p>
+      <p class="auth-view__hint">QQ、163、Gmail 等常用邮箱均可注册</p>
       <AuthField
         v-model="form.email"
         label="邮箱"
