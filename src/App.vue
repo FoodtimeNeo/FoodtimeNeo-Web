@@ -1,6 +1,7 @@
 <script setup>
 import { computed, provide, watch, onMounted, onUnmounted } from 'vue';
 import { RouterView } from 'vue-router';
+import { pageIdentity } from '@/utils/pageIdentity.js';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import BlankLayout from '@/layouts/BlankLayout.vue';
 import AdminLayout from '@/layouts/AdminLayout.vue';
@@ -79,7 +80,11 @@ function closePopup(visible) {
       <component
         :is="Component"
         :key="
-          route.fullPath + ':' + (auth.user?.id || 'guest') + ':' + auth.role
+          pageIdentity(route) +
+          ':' +
+          (auth.user?.id || 'guest') +
+          ':' +
+          auth.role
         "
       />
     </component>
