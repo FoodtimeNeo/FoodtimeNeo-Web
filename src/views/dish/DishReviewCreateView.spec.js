@@ -34,6 +34,7 @@ beforeEach(() => {
     diningHallId: 'c1',
     diningHallName: '第一食堂',
   });
+  api.createReview.mockResolvedValue({ id: 'review-1' });
 });
 const view = () =>
   mount(DishReviewCreateView, {
@@ -188,11 +189,37 @@ describe('菜品附属点评', () => {
     expect(api.uploadImage).toHaveBeenCalledWith(dummyFile);
     expect(api.submitPhoto).toHaveBeenCalledWith('d1', {
       imageUrl: '/api/v1/media/img-uuid-1',
+      reviewSubmissionId: 'review-1',
     });
     expect(api.push).toHaveBeenCalledWith({
       name: 'dishDetail',
       params: { canteenId: 'c1', stallId: 's1', dishId: 'd1' },
     });
+  });
+
+  it('图片投稿失败后保留点评并使用同一图片引用重试', async () => {
+    api.uploadImage.mockResolvedValue({ imageUrl: '/api/v1/media/img-uuid-1' });
+    api.submitPhoto
+      .mockRejectedValueOnce(new Error('网络错误'))
+      .mockResolvedValueOnce({});
+    const wrapper = view();
+    await flushPromises();
+    await wrapper.get('[aria-label="5 星"]').trigger('click');
+    await wrapper.get('textarea').setValue('好吃有图');
+    wrapper
+      .findComponent({ name: 'ImageFileField' })
+      .vm.$emit('change', new File(['x'], 'photo.png', { type: 'image/png' }));
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(wrapper.text()).toContain('点评已提交；图片未提交成功，请重试');
+    expect(api.push).not.toHaveBeenCalled();
+    expect(wrapper.get('textarea').attributes('disabled')).toBeDefined();
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+    expect(api.createReview).toHaveBeenCalledOnce();
+    expect(api.uploadImage).toHaveBeenCalledOnce();
+    expect(api.submitPhoto).toHaveBeenCalledTimes(2);
+    expect(api.push).toHaveBeenCalled();
   });
 
   it('勾选发表至社区帖子选项时，提交后跳转至社区并发帖预填', async () => {
@@ -251,7 +278,8 @@ describe('菜品附属点评', () => {
     expect(dropzone.text()).toContain('+ 上传菜品实拍');
 
     // 5. 提示说明精简为一句话，消除长篇防御性技术说明
-    expect(wrapper.text()).toContain('支持 JPG/PNG，审核通过后将入选菜品图册');
+    expect(wrapper.text()).toContain('支持 JPG/PNG');
+    expect(wrapper.text()).not.toContain('审核通过后将入选菜品图册');
     expect(wrapper.text()).not.toContain('超过 10MB 会自动压缩');
     expect(wrapper.text()).not.toContain('像素过高会降采样');
   });
