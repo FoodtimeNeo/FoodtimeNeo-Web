@@ -44,11 +44,15 @@ const formElement = ref(null);
 const photoFile = ref(null);
 const checkingImage = ref(false);
 const syncToCommunity = ref(false);
+const reviewSubmitted = ref(false);
+let reviewSubmissionId = '';
+let uploadedImageUrl = '';
 let previewUrl = '';
 let active = true;
 
 function handlePhotoChange(file) {
   photoFile.value = file;
+  uploadedImageUrl = '';
   if (previewUrl) {
     URL.revokeObjectURL(previewUrl);
     previewUrl = '';
@@ -94,23 +98,30 @@ async function submitReview() {
   }
   submitting.value = true;
   try {
-    await createReview({
-      dishId: dish.value.id,
-      rating: form.rating,
-      content: form.content.trim(),
-    });
+    if (!reviewSubmitted.value) {
+      const submitted = await createReview({
+        dishId: dish.value.id,
+        rating: form.rating,
+        content: form.content.trim(),
+      });
+      reviewSubmitted.value = true;
+      reviewSubmissionId = submitted?.id || '';
+    }
 
-    let uploadedImageUrl = '';
     // 选填图片：上传并提交菜品实拍图加入图册（与菜品页点击加号作用一致）
     if (photoFile.value) {
       try {
-        const uploadRes = await uploadImage(photoFile.value);
-        if (uploadRes?.imageUrl) {
-          uploadedImageUrl = uploadRes.imageUrl;
-          await submitPhoto(dish.value.id, { imageUrl: uploadedImageUrl });
-        }
-      } catch (err) {
-        console.warn('菜品图片上传加入图册失败', err);
+        if (!reviewSubmissionId) throw new Error('缺少点评编号');
+        if (!uploadedImageUrl)
+          uploadedImageUrl = (await uploadImage(photoFile.value)).imageUrl;
+        await submitPhoto(dish.value.id, {
+          imageUrl: uploadedImageUrl,
+          reviewSubmissionId,
+        });
+      } catch {
+        if (active)
+          validationMessage.value = '点评已提交；图片未提交成功，请重试';
+        return;
       }
     }
 
@@ -191,7 +202,7 @@ async function submitReview() {
         <StarRatingInput
           v-model="form.rating"
           label="总体评分"
-          :disabled="submitting"
+          :disabled="submitting || reviewSubmitted"
         />
       </div>
       <label class="review-create__comment"
@@ -201,14 +212,14 @@ async function submitReview() {
           rows="6"
           maxlength="500"
           placeholder="分享你的口味感受、分量、价格等真实用餐体验…"
-          :disabled="submitting"
+          :disabled="submitting || reviewSubmitted"
         />
       </label>
       <div class="review-create__photo-upload">
         <ImageFileField
           label="上传实拍图"
           upload-text="+ 上传菜品实拍"
-          help-text="支持 JPG/PNG，审核通过后将入选菜品图册"
+          help-text="支持 JPG/PNG"
           :required="false"
           :disabled="submitting"
           @change="handlePhotoChange"
@@ -221,7 +232,7 @@ async function submitReview() {
           type="checkbox"
           :disabled="submitting"
         />
-        <span>将本评论发表至社区帖子</span>
+        <span>提交后前往社区发帖</span>
       </label>
       <p
         v-if="validationMessage"

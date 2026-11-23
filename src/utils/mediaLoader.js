@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { safeMediaUrl } from './mediaUrl.js';
+import { isCatalogMedia, fetchCatalogImage } from './publicCatalogCache.js';
 
 // Only live display references are retained here; persistent bytes belong to HTTP caching.
 export const mediaRevision = ref(0);
@@ -78,6 +79,7 @@ function remember(source, url, bytes, headers) {
 export function peekMedia(value) {
   const source = safeMediaUrl(value);
   if (!source || !source.startsWith('/api/v1/media/') || blocked) return '';
+  if (isCatalogMedia(source)) return '';
   const entry = displayCache.get(source);
   if (!entry) return '';
   if (Date.now() >= (entry.freshUntil ?? entry.storedAt + DISPLAY_TTL)) {
@@ -159,12 +161,18 @@ export function acquireMedia(value) {
           task.controller.signal.aborted
         )
           throw new Error('图片请求已失效');
-        const response = await fetch(source, {
+        const options = {
           credentials: 'same-origin',
           redirect: 'error',
           cache: 'default',
           signal: task.controller.signal,
-        });
+        };
+        const response = isCatalogMedia(source)
+          ? await fetchCatalogImage(source, {
+              ...options,
+              valid: () => generation === mediaRevision.value,
+            })
+          : await fetch(source, options);
         if (
           generation !== mediaRevision.value ||
           task.controller.signal.aborted

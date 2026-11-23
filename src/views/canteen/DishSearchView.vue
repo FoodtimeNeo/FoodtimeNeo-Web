@@ -11,6 +11,7 @@ import ErrorState from '@/components/base/ErrorState.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 import AppIcon from '@/components/base/AppIcon.vue';
+import SearchDiscovery from '@/components/canteen/SearchDiscovery.vue';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import {
   readSearchHistory,
@@ -47,6 +48,19 @@ function clearHistory() {
 
 const route = useRoute();
 const router = useRouter();
+const hasSearch = computed(() =>
+  [
+    'q',
+    'halls',
+    'minPrice',
+    'maxPrice',
+    'minRating',
+    'sort',
+    'page',
+    'browse',
+  ].some((key) => Object.hasOwn(route.query, key)),
+);
+
 const halls = ref([]);
 const hallsError = ref('');
 const validation = ref('');
@@ -141,7 +155,7 @@ watch(
     syncForm();
     validation.value = '';
     state.cancel();
-    void state.load();
+    if (hasSearch.value) void state.load();
   },
   { immediate: true, deep: true },
 );
@@ -182,7 +196,7 @@ function validate() {
 function submit() {
   validation.value = validate();
   if (validation.value) return;
-  const query = {};
+  const query = { browse: '1' };
   const q = form.q.trim();
   if (q) {
     query.q = q;
@@ -201,8 +215,8 @@ function submit() {
     current.minRating === (query.minRating || null) &&
     current.sort === (query.sort || 'relevance') &&
     current.diningHallIds.join(',') === (query.halls || []).join(',');
-  if (same && routePage() === 1) state.load();
-  else router.replace({ name: 'dishSearch', query });
+  if (hasSearch.value && same && routePage() === 1) state.load();
+  else router.push({ name: 'dishSearch', query });
 }
 
 function reset() {
@@ -213,7 +227,7 @@ function reset() {
   form.minRating = '';
   form.sort = 'relevance';
   validation.value = '';
-  router.replace({ name: 'dishSearch' });
+  router.replace({ name: 'dishSearch', query: { browse: '1' } });
 }
 
 function ratingLabel(dish) {
@@ -235,14 +249,14 @@ function ratingLabel(dish) {
           v-model="form.q"
           aria-label="搜索菜品"
           type="search"
-          placeholder="搜索菜品，如牛肉面"
+          placeholder="牛肉面"
           maxlength="50"
           enterkeyhint="search"
         />
         <button class="dish-search__submit" type="submit">搜索</button>
       </div>
       <section
-        v-if="history.length"
+        v-if="!hasSearch && history.length"
         class="dish-search__history"
         aria-label="历史搜索"
       >
@@ -283,7 +297,7 @@ function ratingLabel(dish) {
           >
         </div>
       </section>
-      <details class="dish-search__filter-panel">
+      <details v-show="hasSearch" class="dish-search__filter-panel">
         <summary>筛选与排序</summary>
         <div class="dish-search__grid">
           <fieldset class="dish-search__halls">
@@ -348,7 +362,14 @@ function ratingLabel(dish) {
       <p v-if="hallsError" role="alert">{{ hallsError }}</p>
     </form>
 
-    <template v-if="!validation">
+    <SearchDiscovery v-if="!hasSearch" :owner-id="auth.user?.id || ''" />
+    <RouterLink
+      v-if="hasSearch"
+      class="dish-search__discovery-link"
+      :to="{ name: 'dishSearch' }"
+      >搜索发现</RouterLink
+    >
+    <template v-if="hasSearch && !validation">
       <LoadingState v-if="state.initialLoading.value" message="正在查找菜品…" />
       <ErrorState
         v-if="state.error.value"
@@ -429,7 +450,10 @@ function ratingLabel(dish) {
     input {
       min-width: 0;
       flex: 1;
-      height: 44px;
+      min-height: 48px;
+      height: auto;
+      line-height: 1.5;
+      padding: 8px 0;
       border: 0;
       background: transparent;
       font: inherit;
@@ -439,6 +463,12 @@ function ratingLabel(dish) {
     input::placeholder {
       color: var(--ft-color-text-muted);
     }
+  }
+  &__discovery-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--ft-color-text-muted);
   }
   &__submit {
     flex: none;

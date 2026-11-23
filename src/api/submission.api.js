@@ -7,9 +7,10 @@ export async function uploadImage(file, options = {}) {
     throw new ApiError('上传响应不符合接口约定', { code: 'PROTOCOL' });
   return data;
 }
-export const submitPhoto = (id, { imageUrl }) =>
+export const submitPhoto = (id, { imageUrl, reviewSubmissionId }) =>
   http.post('/dishes/' + encodeURIComponent(id) + '/image-submissions', {
     imageUrl,
+    ...(reviewSubmissionId ? { reviewSubmissionId } : {}),
   });
 export const submitDish = (id, { name, description, price, imageUrl }) =>
   http.post('/stalls/' + encodeURIComponent(id) + '/submissions', {
