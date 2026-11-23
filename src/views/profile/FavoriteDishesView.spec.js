@@ -45,7 +45,7 @@ describe('dish favorite default group and creation entry', () => {
   it('offers default and create entries even with zero custom groups', async () => {
     const wrapper = mountView();
     await flushPromises();
-    expect(wrapper.text()).toContain('直接收藏即可存入默认分组');
+    expect(wrapper.text()).not.toContain('无需新建');
     const buttons = wrapper.findAll('.favorite-dishes__groups > button');
     await buttons
       .find((button) => button.text() === '默认分组')

@@ -6,6 +6,10 @@ import { defineConfig, loadEnv } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { developmentProxyTarget } from './scripts/dev/proxy-target.js';
 import { productionCsp } from './scripts/security/policy.js';
+import {
+  createBuildMetadata,
+  writeBuildMetadata,
+} from './scripts/deploy/build-metadata.js';
 
 function currentBuildId() {
   try {
@@ -30,12 +34,15 @@ function versionAsset(id) {
   return {
     name: 'foodtime-version-asset',
     apply: 'build',
-    generateBundle() {
+    generateBundle(_options, bundle) {
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: JSON.stringify({ id }),
+        source: JSON.stringify(createBuildMetadata(id, bundle)),
       });
+    },
+    async writeBundle(options, bundle) {
+      await writeBuildMetadata(id, options.dir, bundle);
     },
   };
 }

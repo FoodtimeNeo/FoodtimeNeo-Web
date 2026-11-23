@@ -947,8 +947,6 @@ async function removePost() {
         >
           默认分组
         </button>
-        <p>未选择自建分组时保存在默认分组，无需新建。</p>
-        <p v-if="!postGroups.length">可在下方直接新建分组。</p>
         <label v-for="group in postGroups" :key="group.id" class="group-choice">
           <input
             type="checkbox"

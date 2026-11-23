@@ -39,11 +39,7 @@ async function remove() {
     <h1 class="section-title">我的<span class="zine-highlight">回复</span></h1>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
-    <EmptyState
-      v-else-if="!items.length"
-      title="暂无回复记录"
-      description="这里汇总你在菜品点评下的楼内回复，社区动态的评论不在此列。"
-    >
+    <EmptyState v-else-if="!items.length" title="暂无回复记录">
       <RouterLink class="button-ink" :to="{ name: 'canteenList' }"
         >去逛逛食堂</RouterLink
       >

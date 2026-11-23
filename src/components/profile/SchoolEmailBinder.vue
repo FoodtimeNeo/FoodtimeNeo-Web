@@ -5,8 +5,6 @@ import {
   bindSchoolEmail,
   sendSchoolEmailCode,
 } from '@/api/school-email.api.js';
-import { useAuthStore } from '@/store/useAuthStore.js';
-const auth = useAuthStore();
 
 const emit = defineEmits(['bound']);
 const email = ref('');
@@ -78,13 +76,6 @@ async function submit() {
 <template>
   <section class="school-binder" aria-label="绑定学校邮箱">
     <h2>绑定学校邮箱</h2>
-    <p class="school-binder__hint">
-      {{
-        auth.role === 'visitor'
-          ? '当前为只读访客，绑定学校邮箱后可参与互动。'
-          : '当前账号已可参与互动，学校邮箱绑定为可选认证。'
-      }}
-    </p>
     <p v-if="failure" role="alert">{{ failure }}</p>
     <label class="school-binder__field">
       <span>学校邮箱</span>

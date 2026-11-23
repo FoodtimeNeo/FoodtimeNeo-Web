@@ -34,9 +34,6 @@ function price(value) {
   <main class="my-corrections">
     <BackLink />
     <h1 class="section-title">我的纠错</h1>
-    <p class="my-corrections__hint">
-      认证用户每天最多提交 5 单；通过后目录会立即更新，未通过会保留理由。
-    </p>
 
     <LoadingState v-if="state.loading.value" />
     <ErrorState
