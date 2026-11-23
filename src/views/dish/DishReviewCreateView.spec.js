@@ -225,4 +225,34 @@ describe('菜品附属点评', () => {
       },
     });
   });
+
+  it('精简表单文案：仅保留总体评分、上传实拍图（选填）、精简格式说明及手账风格上传卡片', async () => {
+    const wrapper = view();
+    await flushPromises();
+
+    // 1. 返回链接带有当前菜品名
+    const backLink = wrapper.find('.review-create__back');
+    expect(backLink.exists()).toBe(true);
+    expect(backLink.text()).toContain('返回牛肉面');
+
+    // 2. 评分标题只保留“总体评分”，消除“你的评分”与“星级评分”
+    expect(wrapper.text()).toContain('总体评分');
+    expect(wrapper.text()).not.toContain('你的评分');
+    expect(wrapper.text()).not.toContain('星级评分');
+
+    // 3. 上传区域只保留“上传实拍图（选填）”，消除“菜品配图（选填）”与“图片（选填）”
+    expect(wrapper.text()).toContain('上传实拍图（选填）');
+    expect(wrapper.text()).not.toContain('菜品配图（选填）');
+    expect(wrapper.text()).not.toContain('图片（选填）');
+
+    // 4. 手账风格虚线卡片内含“+ 上传菜品实拍”
+    const dropzone = wrapper.find('.image-field__dropzone');
+    expect(dropzone.exists()).toBe(true);
+    expect(dropzone.text()).toContain('+ 上传菜品实拍');
+
+    // 5. 提示说明精简为一句话，消除长篇防御性技术说明
+    expect(wrapper.text()).toContain('支持 JPG/PNG，审核通过后将入选菜品图册');
+    expect(wrapper.text()).not.toContain('超过 10MB 会自动压缩');
+    expect(wrapper.text()).not.toContain('像素过高会降采样');
+  });
 });

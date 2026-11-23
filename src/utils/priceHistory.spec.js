@@ -33,6 +33,10 @@ it('未知价格留空，零元是有效价格', () => {
   expect(runs[1].points[0].price).toBe(0);
   expect(recordedPrice(null, 'kg')).toBe('价格未知');
   expect(recordedPrice(0, 'kg')).toContain('/公斤');
+  expect(recordedPrice(6, 'unspecified')).toBe('¥6.00 元');
+  expect(recordedPrice(6, null)).toBe('¥6.00 元');
+  expect(recordedPrice(6)).toBe('¥6.00 元');
+  expect(recordedPrice(6, 'serving')).toBe('¥6.00/份');
 });
 it('区间起点沿用旧价，原记录时间不改写', () => {
   const record = { ...entry(1, 12), carriedForward: true };

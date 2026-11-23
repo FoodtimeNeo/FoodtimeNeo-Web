@@ -155,9 +155,9 @@ function price(value) {
               {{ detail.correction.proposedDescription || '（空）' }}
             </dd>
             <dd v-else-if="field === 'priceUnit'">
-              {{ PRICE_UNITS[detail.correction.originalPriceUnit] || '未注明' }}
+              {{ PRICE_UNITS[detail.correction.originalPriceUnit] || '元' }}
               →
-              {{ PRICE_UNITS[detail.correction.proposedPriceUnit] || '未注明' }}
+              {{ PRICE_UNITS[detail.correction.proposedPriceUnit] || '元' }}
             </dd>
             <dd v-else-if="field === 'price'">
               {{ price(detail.correction.originalPrice) }} →

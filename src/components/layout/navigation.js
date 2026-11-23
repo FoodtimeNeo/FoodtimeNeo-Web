@@ -32,19 +32,7 @@ export function navigationTarget(item, route) {
 
 export function resolveBreadcrumbs(route) {
   if (route.name === 'dishReviewCreate') {
-    const { canteenId, stallId, dishId } = route.params;
-    return [
-      { name: 'home', title: '首页' },
-      { name: 'canteenList', title: '食堂' },
-      { name: 'canteenDetail', title: '食堂详情', params: { canteenId } },
-      { name: 'stallDetail', title: '档口', params: { canteenId, stallId } },
-      {
-        name: 'dishDetail',
-        title: '菜品',
-        params: { canteenId, stallId, dishId },
-      },
-      { name: 'dishReviewCreate', title: '写点评' },
-    ];
+    return [];
   }
   if (route.name === 'communityDetail') {
     return [

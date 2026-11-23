@@ -63,9 +63,7 @@ const date = (time) =>
   <section ref="host" class="price-chart">
     <h2>
       价格（元{{
-        run.unit === 'unspecified'
-          ? '，单位未注明'
-          : '/' + PRICE_UNITS[run.unit]
+        run.unit === 'unspecified' ? '' : '/' + (PRICE_UNITS[run.unit] || '元')
       }}）
     </h2>
     <svg

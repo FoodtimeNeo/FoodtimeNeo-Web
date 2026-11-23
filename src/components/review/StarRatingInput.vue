@@ -4,6 +4,7 @@ import { computed, nextTick, ref } from 'vue';
 const props = defineProps({
   modelValue: { type: Number, default: 0 },
   disabled: { type: Boolean, default: false },
+  label: { type: String, default: '星级评分' },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -54,7 +55,7 @@ async function onKeydown(event) {
 
 <template>
   <fieldset class="star-rating" :disabled="disabled">
-    <legend>星级评分</legend>
+    <legend v-if="label">{{ label }}</legend>
     <div
       ref="options"
       class="star-rating__options"
