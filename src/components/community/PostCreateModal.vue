@@ -1,6 +1,11 @@
 <script setup>
 import { ref, reactive, watch, onUnmounted, onMounted, inject } from 'vue';
-import { onBeforeRouteLeave, matchedRouteKey } from 'vue-router';
+import {
+  onBeforeRouteLeave,
+  onBeforeRouteUpdate,
+  matchedRouteKey,
+} from 'vue-router';
+import { pageIdentity } from '@/utils/pageIdentity.js';
 import { ElMessage, ElDialog, ElMessageBox } from 'element-plus';
 import {
   createCommunityPost,
@@ -278,7 +283,12 @@ async function requestExit() {
   });
 }
 // The component also appears inside route-less previews/tests.
-if (inject(matchedRouteKey, null)) onBeforeRouteLeave(requestExit);
+if (inject(matchedRouteKey, null)) {
+  onBeforeRouteLeave(requestExit);
+  onBeforeRouteUpdate(
+    (to, from) => pageIdentity(to) === pageIdentity(from) || requestExit(),
+  );
+}
 function beforeUnload(event) {
   if (!props.modelValue || exitApproved || props.editPost || !hasDraftContent())
     return;

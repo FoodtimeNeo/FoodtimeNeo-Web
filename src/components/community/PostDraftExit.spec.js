@@ -2,6 +2,7 @@ import { beforeEach, afterEach, it, expect, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createMemoryHistory, createRouter } from 'vue-router';
+import { pageIdentity } from '@/utils/pageIdentity.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 
 const storage = vi.hoisted(() => ({
@@ -187,4 +188,43 @@ it('route navigation uses the same three choices and continues only after the de
   await leaving;
   expect(router.currentRoute.value.path).toBe('/elsewhere');
   expect(storage.save).not.toHaveBeenCalled();
+});
+
+it('consuming the draft command retains its editor; query navigation still asks before remounting', async () => {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      {
+        path: '/community',
+        name: 'community',
+        component: {
+          components: { PostCreateModal },
+          template: '<PostCreateModal :model-value="true" />',
+        },
+      },
+    ],
+  });
+  await router.push('/community?action=new');
+  const wrapper = mount(
+    {
+      setup: () => ({ pageIdentity }),
+      template:
+        '<router-view v-slot="{ Component, route }"><component :is="Component" :key="pageIdentity(route)" /></router-view>',
+    },
+    { global: { plugins: [router], stubs } },
+  );
+  wrappers.push(wrapper);
+  await flushPromises();
+  await wrapper.get('#post-title').setValue('入口草稿');
+  const input = wrapper.get('#post-title').element;
+  await router.replace('/community');
+  expect(wrapper.get('#post-title').element).toBe(input);
+  expect(input.value).toBe('入口草稿');
+  const changing = router.push('/community?tab=favorites');
+  await flushPromises();
+  expect(router.currentRoute.value.query.tab).toBeUndefined();
+  expect(button(wrapper, '保存草稿')).toBeDefined();
+  await button(wrapper, '不保存').trigger('click');
+  await changing;
+  expect(router.currentRoute.value.query.tab).toBe('favorites');
 });
