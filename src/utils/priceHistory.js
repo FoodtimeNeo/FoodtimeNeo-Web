@@ -1,7 +1,7 @@
 import { formatPrice } from './mediaUrl.js';
 
 export const PRICE_UNITS = Object.freeze({
-  unspecified: '未注明',
+  unspecified: '元',
   serving: '份',
   piece: '个',
   bowl: '碗',
@@ -11,7 +11,8 @@ export const PRICE_UNITS = Object.freeze({
 });
 export function recordedPrice(price, unit) {
   if (price === null || price === undefined) return '价格未知';
-  return `${formatPrice(price)}${unit && unit !== 'unspecified' ? '/' + (PRICE_UNITS[unit] || '未注明') : ' · 单位未注明'}`;
+  if (!unit || unit === 'unspecified') return `${formatPrice(price)} 元`;
+  return `${formatPrice(price)}/${PRICE_UNITS[unit] || '元'}`;
 }
 
 export function axisAmount(value) {

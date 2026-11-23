@@ -153,9 +153,14 @@ async function submitReview() {
 </script>
 <template>
   <div class="review-create">
-    <RouterLink class="review-create__back" :to="{ name: 'dishDetail', params }"
-      >← 返回菜品</RouterLink
+    <RouterLink
+      class="review-create__back"
+      :to="{ name: 'dishDetail', params }"
+      :title="`返回${dish?.name || '菜品'}`"
     >
+      <span class="review-create__back-arrow" aria-hidden="true">←</span>
+      <span>返回{{ dish?.name || '菜品' }}</span>
+    </RouterLink>
     <header class="review-create__header">
       <h1 class="section-title">写点评</h1>
       <img
@@ -183,8 +188,11 @@ async function submitReview() {
         ><span>{{ dish.diningHallName }} · {{ dish.stallName }}</span>
       </div>
       <div class="review-create__rating">
-        <span>你的评分</span>
-        <StarRatingInput v-model="form.rating" :disabled="submitting" />
+        <StarRatingInput
+          v-model="form.rating"
+          label="总体评分"
+          :disabled="submitting"
+        />
       </div>
       <label class="review-create__comment"
         ><span>文字点评</span
@@ -192,15 +200,17 @@ async function submitReview() {
           v-model="form.content"
           rows="6"
           maxlength="500"
+          placeholder="分享你的口味感受、分量、价格等真实用餐体验…"
           :disabled="submitting"
         />
       </label>
       <div class="review-create__photo-upload">
-        <span class="photo-upload-label">菜品配图（选填）</span>
         <ImageFileField
+          label="上传实拍图"
+          upload-text="+ 上传菜品实拍"
+          help-text="支持 JPG/PNG，审核通过后将入选菜品图册"
           :required="false"
           :disabled="submitting"
-          publication-hint="选填。上传后将作为实拍图加入菜品图册（审核通过后展示）。"
           @change="handlePhotoChange"
           @checking="checkingImage = $event"
         />
@@ -226,7 +236,7 @@ async function submitReview() {
           submitting ? '提交中…' : '提交点评'
         }}</InkButton>
         <RouterLink :to="{ name: 'dishDetail', params }"
-          >取消并返回菜品</RouterLink
+          >取消并返回{{ dish?.name || '菜品' }}</RouterLink
         >
       </div>
     </form>
@@ -241,9 +251,27 @@ async function submitReview() {
   &__back {
     display: inline-flex;
     align-items: center;
+    gap: 6px;
     min-height: 44px;
     color: var(--ft-color-primary);
     font-weight: 700;
+    text-decoration: none;
+    transition:
+      transform var(--ft-transition-fast),
+      color var(--ft-transition-fast);
+
+    &-arrow {
+      display: inline-block;
+      transition: transform var(--ft-transition-fast);
+    }
+
+    &:hover {
+      color: var(--ft-color-primary-strong);
+
+      .review-create__back-arrow {
+        transform: translateX(-4px);
+      }
+    }
   }
 
   &__header {
@@ -267,6 +295,7 @@ async function submitReview() {
   }
 
   &__paper {
+    position: relative;
     display: grid;
     gap: var(--ft-space-3);
     margin-top: var(--ft-space-3);
@@ -331,12 +360,6 @@ async function submitReview() {
   &__photo-upload {
     display: grid;
     gap: var(--ft-space-1);
-
-    .photo-upload-label {
-      font-weight: 700;
-      color: var(--ft-color-text);
-      font-size: var(--ft-font-size-sm);
-    }
   }
 
   &__sync {

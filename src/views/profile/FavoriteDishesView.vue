@@ -225,7 +225,6 @@ onMounted(reloadGroups);
       </button>
     </div>
     <p v-if="groupsError" role="alert">{{ groupsError }}</p>
-    <p>直接收藏即可存入默认分组，无需新建。</p>
 
     <LoadingState v-if="state.loading.value" />
     <ErrorState
@@ -265,9 +264,7 @@ onMounted(reloadGroups);
               >
                 默认分组
               </button>
-              <p v-if="!groups.length">
-                已保存在默认分组，也可以在上方新建分组。
-              </p>
+              <p v-if="!groups.length">暂无自建分组</p>
             </template>
             <label v-for="group in groups" :key="group.id">
               <input

@@ -219,7 +219,7 @@ async function accept() {
         >旋转90°</InkButton
       ><InkButton :disabled="!ready || encoding" @click="reset">重置</InkButton>
     </div>
-    <p>导出512×512方形头像，最终文件不超过10MB。使用后仍需保存资料。</p>
+    <p>拖动或缩放照片，完成后保存资料。</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <template #footer
       ><InkButton :disabled="encoding" @click="cancel">取消</InkButton

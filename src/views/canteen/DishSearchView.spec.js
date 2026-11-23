@@ -4,6 +4,7 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import DishSearchView from './DishSearchView.vue';
 import { searchDishes } from '@/api/dish.api.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
+import { createPinia } from 'pinia';
 
 vi.mock('@/api/dish.api.js', () => ({ searchDishes: vi.fn() }));
 vi.mock('@/api/canteen.api.js', () => ({ fetchCanteens: vi.fn() }));
@@ -41,7 +42,9 @@ async function render(query = {}) {
     ],
   });
   await router.push({ name: 'dishSearch', query });
-  wrapper = mount(DishSearchView, { global: { plugins: [router] } });
+  wrapper = mount(DishSearchView, {
+    global: { plugins: [router, createPinia()] },
+  });
   await flushPromises();
 }
 
@@ -88,9 +91,9 @@ it('食堂、价格、评分与排序进入 URL 并传给接口', async () => {
   await numbers[0].setValue('10');
   await numbers[1].setValue('30');
   const selects = wrapper.findAll('select');
-  await selects[0].setValue(['hall']);
-  await selects[1].setValue('4.0');
-  await selects[2].setValue('price_desc');
+  await wrapper.get('input[type="checkbox"]').setValue(true);
+  await selects[0].setValue('4.0');
+  await selects[1].setValue('price_desc');
   await submit();
   expect(searchDishes.mock.calls.at(-1)[3]).toMatchObject({
     q: '',
@@ -159,7 +162,9 @@ it('远页进入、刷新与再次挂载沿用 URL 页码，筛选提交回第�
   await flushPromises();
   expect(router.currentRoute.value.query.page).toBe('3');
   wrapper.unmount();
-  wrapper = mount(DishSearchView, { global: { plugins: [router] } });
+  wrapper = mount(DishSearchView, {
+    global: { plugins: [router, createPinia()] },
+  });
   await flushPromises();
   expect(searchDishes.mock.calls.at(-1)[1]).toBe(3);
   await wrapper.get('#dish-keyword').setValue('面');

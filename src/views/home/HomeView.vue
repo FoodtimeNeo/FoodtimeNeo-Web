@@ -12,6 +12,7 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import { fetchDailyRecommendations } from '@/api/recommendation.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import AppIcon from '@/components/base/AppIcon.vue';
 
 const auth = useAuthStore();
 const {
@@ -137,7 +138,13 @@ onUnmounted(() => {
 
 <template>
   <div class="home-page">
+    <RouterLink class="home-search" :to="{ name: 'dishSearch' }"
+      ><AppIcon class="home-search__icon" name="search" /><span
+        >搜索菜品，如牛肉面</span
+      ><strong>搜索</strong></RouterLink
+    >
     <header class="home-page__hero hero-appear">
+      <!-- 左侧 Hero 主体 -->
       <div class="home-page__hero-main">
         <div class="hero-stagger-1">
           <span class="sticker sticker--r-2">食堂日志 · 2026</span>
@@ -150,12 +157,12 @@ onUnmounted(() => {
         <div class="home-page__proof-ribbon hero-stagger-3">
           <div class="proof-item">
             <span class="proof-num">7</span>
-            <span class="proof-label">所食堂全收录</span>
+            <span class="proof-label">所食堂全覆盖</span>
           </div>
           <span class="proof-divider" aria-hidden="true">/</span>
           <div class="proof-item">
             <span class="proof-num">130+</span>
-            <span class="proof-label">档口避雷</span>
+            <span class="proof-label">档口收录</span>
           </div>
           <span class="proof-divider" aria-hidden="true">/</span>
           <div class="proof-item">
@@ -179,36 +186,78 @@ onUnmounted(() => {
           </RouterLink>
         </div>
       </div>
+
+      <!-- 右侧：手账拼贴图集（Collage），解决大面积留白问题，保持左右视觉重量平衡 -->
       <aside
         class="home-page__hero-note hero-stagger-3"
-        aria-label="今日食堂档案"
+        aria-label="今日食堂档案图集"
       >
         <RouterLink
-          class="hero-polaroid-link"
+          class="hero-collage"
           :to="{ name: 'canteenList' }"
-          aria-label="进入01食堂页"
+          aria-label="浏览食堂美食手账"
         >
-          <div class="hero-polaroid-card">
+          <!-- 拍立得 1：明湖招牌拌饭 -->
+          <div class="hero-polaroid hero-polaroid--top">
             <img
-              src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
+              src="@/assets/images/decoration/纸胶带02.png"
               alt=""
-              class="hero-tape-decor"
+              class="hero-tape-top"
               aria-hidden="true"
             />
             <img
-              src="@/assets/images/decoration02/A/stickers/A_polaroid-noodle.png"
-              alt="校园食堂风味手账"
-              class="hero-polaroid-media"
+              src="@/assets/images/dishs/番茄肥牛饭.jpg"
+              alt="明湖招牌拌饭"
+              class="hero-polaroid-photo"
             />
+            <span class="hero-polaroid-caption handwrite">明湖招牌拌饭</span>
+          </div>
+
+          <!-- 拍立得 2：东区热干面（居中主视点，层级最高） -->
+          <div class="hero-polaroid hero-polaroid--center">
+            <img
+              src="@/assets/images/decoration02/B/stickers/B_red-tape-strip.png"
+              alt=""
+              class="hero-tape-center"
+              aria-hidden="true"
+            />
+            <img
+              src="@/assets/images/dishs/红烧牛肉面.jpg"
+              alt="东区热干面"
+              class="hero-polaroid-photo"
+            />
+            <span class="hero-polaroid-caption handwrite">东区热干面</span>
+            <img
+              src="@/assets/images/decoration/方形印章“推荐”.png"
+              alt=""
+              class="hero-stamp-corner"
+              aria-hidden="true"
+            />
+          </div>
+
+          <!-- 拍立得 3：一食堂金牌煲仔饭 -->
+          <div class="hero-polaroid hero-polaroid--bottom">
+            <img
+              src="@/assets/images/decoration/回形针.png"
+              alt=""
+              class="hero-clip-bottom"
+              aria-hidden="true"
+            />
+            <img
+              src="@/assets/images/dishs/煲仔饭.webp"
+              alt="一食堂金牌煲仔饭"
+              class="hero-polaroid-photo"
+            />
+            <span class="hero-polaroid-caption handwrite">一食堂煲仔饭</span>
             <img
               src="@/assets/images/decoration02/B/stickers/B_better-campus-food-stamp.png"
               alt=""
-              class="hero-stamp-decor"
+              class="hero-stamp-sub"
               aria-hidden="true"
             />
           </div>
         </RouterLink>
-        <span class="sticker sticker--r2">今日食堂档案</span>
+        <span class="sticker sticker--r2">今日食堂手账档案</span>
       </aside>
       <span class="home-page__hero-sketch" aria-hidden="true"></span>
     </header>
@@ -365,6 +414,33 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+.home-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px var(--zine-page-padding-mobile, 16px);
+  padding: 4px 4px 4px 16px;
+  border: 1px solid var(--ft-color-primary);
+  border-radius: 28px;
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text-muted);
+  font-size: 16px;
+  min-height: 52px;
+}
+.home-search__icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.home-search strong {
+  margin-left: auto;
+  padding: 10px 18px;
+  border-radius: 24px;
+  background: var(--ft-color-primary);
+  color: white;
+  font-weight: normal;
+}
+
 @keyframes heroElemAppear {
   0% {
     opacity: 0;
@@ -414,7 +490,8 @@ onUnmounted(() => {
   .hero-appear [class*='hero-stagger-'],
   .home-page__section,
   .home-page__hero-sketch,
-  .community-hot-badge::before {
+  .community-hot-badge::before,
+  .hero-polaroid {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -456,8 +533,8 @@ onUnmounted(() => {
   &__hero {
     position: relative;
     display: grid;
-    grid-template-columns: 1.25fr 0.75fr;
-    min-height: 420px;
+    grid-template-columns: 1.15fr 0.85fr;
+    min-height: 440px;
     margin-bottom: var(--ft-space-5);
     overflow: hidden;
     border: 1.5px solid var(--ft-color-secondary);
@@ -467,20 +544,31 @@ onUnmounted(() => {
   }
 
   &__hero-main {
-    padding: clamp(32px, 6vw, 62px);
+    padding: clamp(32px, 5vw, 56px);
   }
 
+  /* 右侧手账拼贴图集（Collage） */
   &__hero-note {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 28px 20px 20px;
+    padding: 30px 24px 20px;
     border-left: 1px dashed rgb(58 36 24 / 35%);
-    background: rgb(241 236 226 / 64%);
+    background:
+      radial-gradient(
+        circle at 50% 50%,
+        rgba(255, 255, 255, 0.45) 0%,
+        transparent 80%
+      ),
+      rgb(241 236 226 / 75%);
 
-    .hero-polaroid-link {
+    .hero-collage {
+      position: relative;
+      width: 100%;
+      max-width: 340px;
+      height: 290px;
       display: block;
       color: inherit;
       text-decoration: none;
@@ -491,55 +579,132 @@ onUnmounted(() => {
       }
     }
 
-    .hero-polaroid-card {
-      position: relative;
+    /* 拍立得卡片共有样式 */
+    .hero-polaroid {
+      position: absolute;
+      background: #fff;
+      padding: 8px 8px 24px;
+      border: 1px solid rgba(58, 36, 24, 0.2);
+      box-shadow: 3px 5px 10px rgba(58, 36, 24, 0.16);
+      transition: all 260ms cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-bottom: var(--ft-space-2);
-      transform: rotate(2deg);
-      transition: transform var(--ft-transition-normal);
 
       &:hover {
-        transform: rotate(0deg) scale(1.03);
+        z-index: 10 !important;
+        transform: scale(1.06) rotate(0deg) !important;
+        box-shadow: 6px 12px 20px rgba(58, 36, 24, 0.24);
+      }
+
+      .hero-polaroid-photo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 1px;
+      }
+
+      .hero-polaroid-caption {
+        position: absolute;
+        bottom: 4px;
+        font-size: 13px;
+        color: var(--ft-color-secondary, #3a2418);
+        user-select: none;
+        white-space: nowrap;
       }
     }
 
-    .hero-tape-decor {
-      position: absolute;
-      top: -14px;
-      left: 50%;
-      transform: translateX(-50%) rotate(-3deg);
-      width: 100px;
-      height: auto;
+    /* 拍立得 1：明湖招牌拌饭（左上） */
+    .hero-polaroid--top {
+      top: 10px;
+      left: 12px;
+      width: 155px;
+      height: 175px;
+      transform: rotate(-6deg);
       z-index: 2;
-      pointer-events: none;
-      filter: drop-shadow(0 2px 2px rgba(58, 36, 24, 0.15));
+
+      .hero-tape-top {
+        position: absolute;
+        top: -14px;
+        left: 20%;
+        width: 68px;
+        height: auto;
+        transform: rotate(-4deg);
+        z-index: 3;
+        pointer-events: none;
+      }
     }
 
-    .hero-polaroid-media {
-      max-width: 168px;
-      width: 100%;
-      height: auto;
-      border-radius: 2px;
-      filter: drop-shadow(2px 4px 6px rgba(58, 36, 24, 0.16));
+    /* 拍立得 2：东区热干面（视觉中心，层级最高） */
+    .hero-polaroid--center {
+      top: 45px;
+      right: 18px;
+      width: 175px;
+      height: 195px;
+      transform: rotate(4deg);
+      z-index: 4;
+
+      .hero-tape-center {
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%) rotate(2deg);
+        width: 80px;
+        height: auto;
+        z-index: 5;
+        pointer-events: none;
+      }
+
+      .hero-stamp-corner {
+        position: absolute;
+        right: -10px;
+        bottom: -10px;
+        width: 52px;
+        height: auto;
+        transform: rotate(-8deg);
+        z-index: 6;
+        pointer-events: none;
+        filter: drop-shadow(1px 2px 2px rgba(58, 36, 24, 0.2));
+      }
     }
 
-    .hero-stamp-decor {
-      position: absolute;
-      right: -12px;
-      bottom: -10px;
-      width: 68px;
-      height: auto;
-      z-index: 3;
-      transform: rotate(-10deg);
-      pointer-events: none;
-      filter: drop-shadow(1px 2px 2px rgba(58, 36, 24, 0.18));
+    /* 拍立得 3：一食堂煲仔饭（底部垫底，错落平衡） */
+    .hero-polaroid--bottom {
+      bottom: 6px;
+      left: 45px;
+      width: 145px;
+      height: 155px;
+      transform: rotate(2deg);
+      z-index: 1;
+
+      .hero-clip-bottom {
+        position: absolute;
+        top: -14px;
+        right: 18px;
+        width: 22px;
+        height: auto;
+        transform: rotate(14deg);
+        z-index: 3;
+        pointer-events: none;
+      }
+
+      .hero-stamp-sub {
+        position: absolute;
+        left: -14px;
+        bottom: 12px;
+        width: 48px;
+        height: auto;
+        transform: rotate(12deg);
+        z-index: 3;
+        pointer-events: none;
+        opacity: 0.9;
+      }
     }
 
     .sticker {
       align-self: center;
-      margin-top: var(--ft-space-1);
+      margin-top: var(--ft-space-2, 12px);
     }
   }
 
@@ -550,7 +715,7 @@ onUnmounted(() => {
     width: 110px;
     height: 82px;
     background: var(--zine-decor-food-sketch-4) center / contain no-repeat;
-    opacity: 0.34;
+    opacity: 0.28;
     mix-blend-mode: multiply;
     pointer-events: none;
     animation: heroSketchFloat 4.2s ease-in-out infinite;
@@ -759,7 +924,7 @@ onUnmounted(() => {
 
     &:active {
       transform: translate(1px, 1px);
-      box-shadow: 1px 1px 0 var(--ft-color-primary-strong, #ab1f0b);
+      box-shadow: 1px 1px 0 var(--ft-color-primary-primary, #ab1f0b);
     }
   }
 
@@ -855,9 +1020,29 @@ onUnmounted(() => {
     }
 
     &__hero-note {
-      padding: 20px;
+      padding: 20px 16px;
       border-top: 1px dashed rgb(58 36 24 / 35%);
       border-left: 0;
+
+      .hero-collage {
+        max-width: 290px;
+        height: 230px;
+      }
+
+      .hero-polaroid--top {
+        width: 125px;
+        height: 145px;
+      }
+
+      .hero-polaroid--center {
+        width: 145px;
+        height: 165px;
+      }
+
+      .hero-polaroid--bottom {
+        width: 120px;
+        height: 135px;
+      }
     }
 
     &__hero-sketch {

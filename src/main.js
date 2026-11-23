@@ -13,8 +13,15 @@ import {
   setMediaGate,
 } from '@/utils/mediaLoader.js';
 import { ensureMediaWorkerMigration } from '@/utils/mediaWorker.js';
-import { ensureLatestVersion } from '@/utils/versionRefresh.js';
+import {
+  ensureLatestVersion,
+  startVersionUpdates,
+  restoreUpdatePosition,
+} from '@/utils/versionRefresh.js';
+import { installPageEditGuard } from '@/utils/updateSafety.js';
+import { setApiFailureHandler } from '@/api/http.js';
 const app = createApp(App);
+installPageEditGuard();
 setMediaGate(ensureMediaWorkerMigration);
 app.use(createPinia());
 app.use(router);
@@ -40,11 +47,22 @@ installApi({
   clearAuth: () => useAuthStore().clear(),
   notifyForbidden: (message) => ElMessage.error(message),
 });
-router.onError((error) =>
-  ElMessage.error(error.message || '无法验证登录状态，请稍后重试'),
-);
+router.onError((error) => {
+  void ensureLatestVersion({ force: true });
+  ElMessage.error({
+    message: error.message || '无法验证登录状态，请稍后重试',
+    grouping: true,
+  });
+});
+setApiFailureHandler(() => {
+  void ensureLatestVersion({ force: true });
+});
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', invalidateMedia);
 }
-ensureLatestVersion();
 app.mount('#app');
+startVersionUpdates();
+router
+  .isReady()
+  .then(restoreUpdatePosition)
+  .catch(() => {});

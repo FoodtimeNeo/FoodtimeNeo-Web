@@ -24,7 +24,7 @@ describe('布局导航', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     expect(router.resolve('/reviews/new').name).toBe('notFound');
   });
-  it('点评地址必须保留菜品上下文，并使用食堂栏目及完整父级面包屑', () => {
+  it('点评地址必须保留菜品上下文并使用食堂栏目，精简顶部面包屑由页面返回按钮引导', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     const route = router.resolve({
       name: 'dishReviewCreate',
@@ -34,17 +34,7 @@ describe('布局导航', () => {
     expect(route.meta.requiresAuth).toBe(true);
     expect(resolveActiveNavigation(route)).toBe('canteenList');
     const crumbs = resolveBreadcrumbs(route);
-    expect(crumbs.map((crumb) => crumb.name)).toEqual([
-      'home',
-      'canteenList',
-      'canteenDetail',
-      'stallDetail',
-      'dishDetail',
-      'dishReviewCreate',
-    ]);
-    expect(
-      router.resolve({ name: crumbs[4].name, params: crumbs[4].params }).path,
-    ).toBe('/canteens/c1/stalls/s1/dishes/d1');
+    expect(crumbs).toEqual([]);
   });
   it('社区与帖子详情页能正确解析高亮与面包屑', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });

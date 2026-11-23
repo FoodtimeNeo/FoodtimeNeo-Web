@@ -422,7 +422,7 @@ export const routes = [
     name: 'dishSearch',
     component: () => import('@/views/canteen/DishSearchView.vue'),
     meta: {
-      title: '跨食堂搜菜',
+      title: '搜索',
       layout: 'default',
       requiresAuth: true,
       nav: 'canteenList',
