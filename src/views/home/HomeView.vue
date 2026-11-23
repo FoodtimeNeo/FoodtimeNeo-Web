@@ -12,6 +12,7 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import { fetchDailyRecommendations } from '@/api/recommendation.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import AppIcon from '@/components/base/AppIcon.vue';
 
 const auth = useAuthStore();
 const {
@@ -138,7 +139,8 @@ onUnmounted(() => {
 <template>
   <div class="home-page">
     <RouterLink class="home-search" :to="{ name: 'dishSearch' }"
-      ><span aria-hidden="true">⌕</span><span>搜索菜品，如牛肉面</span
+      ><AppIcon class="home-search__icon" name="search" /><span
+        >搜索菜品，如牛肉面</span
       ><strong>搜索</strong></RouterLink
     >
     <header class="home-page__hero hero-appear">
@@ -381,6 +383,11 @@ onUnmounted(() => {
   color: var(--ft-color-text-muted);
   font-size: 16px;
   min-height: 52px;
+}
+.home-search__icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
 }
 .home-search strong {
   margin-left: auto;
