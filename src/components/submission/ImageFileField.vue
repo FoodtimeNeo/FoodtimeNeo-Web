@@ -182,7 +182,7 @@ function triggerPick() {
     min-height: 104px;
     border: 2px dashed var(--ft-color-secondary, #3a2418);
     border-radius: var(--ft-radius-md, 10px);
-    background: var(--zine-paper-card-alt, #f7efd9);
+    background: var(--zine-paper-card-alt);
     cursor: pointer;
     user-select: none;
     transition:
@@ -193,7 +193,7 @@ function triggerPick() {
 
     &:hover:not(.is-disabled) {
       border-color: var(--ft-color-primary, #c9341e);
-      background: var(--ft-color-surface-ink, #f1ece2);
+      background: var(--ft-color-surface-ink);
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(58, 36, 24, 0.08);
 
@@ -242,7 +242,7 @@ function triggerPick() {
     padding: 8px 8px 12px;
     border: 2px solid var(--ft-color-text, #3a2418);
     border-radius: var(--ft-radius-sm, 4px);
-    background: var(--zine-paper-card, #fffaf0);
+    background: var(--zine-paper-card);
     box-shadow: 4px 4px 0 rgba(58, 36, 24, 0.15);
     transform: rotate(-1deg);
   }
@@ -253,7 +253,7 @@ function triggerPick() {
     max-height: 240px;
     object-fit: cover;
     border: 1px solid var(--ft-color-border, #d5ccbc);
-    background: #fff;
+    background: var(--zine-paper-card);
   }
 
   &__clear-btn {
@@ -265,7 +265,7 @@ function triggerPick() {
     padding: 6px 14px;
     border: 1.5px solid var(--ft-color-text, #3a2418);
     border-radius: var(--ft-radius-sm, 4px);
-    background: var(--zine-paper-card, #fffaf0);
+    background: var(--zine-paper-card);
     color: var(--ft-color-text, #3a2418);
     font-size: var(--ft-font-size-sm, 14px);
     font-weight: 700;
@@ -278,7 +278,7 @@ function triggerPick() {
     &:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: 3px 3px 0 var(--ft-color-text, #3a2418);
-      background: var(--ft-color-surface-ink, #f1ece2);
+      background: var(--ft-color-surface-ink);
     }
 
     &:disabled {

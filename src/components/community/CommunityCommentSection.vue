@@ -438,10 +438,10 @@ defineExpose({
 .is-embedded h2 {
   font-size: 13px;
   font-weight: 400;
-  color: #999;
+  color: var(--ft-color-text-muted);
 }
 .is-embedded :deep(.compact-replies) {
-  background: #fafafa;
+  background: var(--zine-paper-card);
 }
 
 .community-comments {
@@ -478,7 +478,7 @@ button:disabled {
   margin-left: 42px;
   padding: 4px 14px;
   border-radius: 10px;
-  background: var(--ft-color-bg, #f7f6f5);
+  background: var(--ft-color-bg, var(--ft-color-surface));
   margin-bottom: 8px;
 }
 .comment-thread {
@@ -495,7 +495,7 @@ button:disabled {
   margin-top: 18px;
   display: grid;
   gap: 8px;
-  background: #fff;
+  background: var(--zine-paper-card);
   padding: 12px;
   border-radius: 12px;
   border: 1px solid rgb(0 0 0 / 6%);
@@ -507,7 +507,7 @@ textarea {
   padding: 10px 12px;
   border: 1px solid var(--ft-color-border, #e5e5e5);
   border-radius: 8px;
-  background: #faf9f7;
+  background: var(--ft-color-surface);
   color: inherit;
   font: inherit;
   font-size: 14px;
@@ -516,7 +516,7 @@ textarea {
   &:focus {
     outline: none;
     border-color: var(--ft-color-primary, #e60026);
-    background: #fff;
+    background: var(--zine-paper-card);
   }
 }
 .composer-footer {
@@ -552,10 +552,10 @@ textarea {
   button {
     min-height: auto;
     padding: 0;
-    color: #888;
+    color: var(--ft-color-text-muted);
     font-size: 12px;
     &:hover {
-      color: #333;
+      color: var(--ft-color-text);
     }
   }
 }

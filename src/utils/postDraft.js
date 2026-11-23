@@ -27,7 +27,8 @@ function run(mode, action) {
     (db) =>
       new Promise((resolve, reject) => {
         if (!db) {
-          resolve(null);
+          if (mode === 'readwrite') reject(new Error('浏览器存储不可用'));
+          else resolve(null);
           return;
         }
         const transaction = db.transaction(STORE, mode);

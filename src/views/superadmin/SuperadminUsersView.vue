@@ -221,7 +221,7 @@ button {
   padding: 10px;
   border: 1px solid var(--ft-color-secondary);
   border-radius: 0;
-  background: #fffaf0;
+  background: var(--zine-paper-card);
 }
 button {
   margin: 8px 12px 0 0;

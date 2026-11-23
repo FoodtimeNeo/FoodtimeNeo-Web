@@ -17,7 +17,8 @@ vi.mock('@/api/community.api.js', () => ({
   createCommunityPost: (...args) => createCommunityPost(...args),
 }));
 
-vi.mock('vue-router', () => ({
+vi.mock('vue-router', async (importOriginal) => ({
+  ...(await importOriginal()),
   useRoute: () => routeState,
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
   RouterLink: RouterLinkStub,

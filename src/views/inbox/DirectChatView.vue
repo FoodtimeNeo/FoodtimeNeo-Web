@@ -445,13 +445,13 @@ onUnmounted(() => {
   padding: 9px 12px;
   border: 1px solid var(--ft-color-secondary);
   border-radius: 4px 14px 14px 14px;
-  background: #fff;
+  background: var(--zine-paper-card);
 }
 .chat-page__message.is-mine {
   align-self: flex-end;
   border-color: rgb(201 52 30 / 35%);
   border-radius: 14px 4px 14px 14px;
-  background: rgb(255 244 238 / 92%);
+  background: rgb(var(--ft-overlay-paper-rgb) / 92%);
 }
 .chat-page__message p {
   margin: 0;

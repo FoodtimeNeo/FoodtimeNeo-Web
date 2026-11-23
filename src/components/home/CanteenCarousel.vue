@@ -561,7 +561,11 @@ onUnmounted(() => {
   border: 1px solid var(--ft-color-secondary);
   background:
     radial-gradient(circle at 80% 10%, rgb(63 114 145 / 8%) 0, transparent 24%),
-    linear-gradient(180deg, var(--zine-paper-card) 0%, #f8efd9 100%);
+    linear-gradient(
+      180deg,
+      var(--zine-paper-card) 0%,
+      var(--ft-color-surface) 100%
+    );
   box-shadow: 5px 6px 0 rgb(58 36 24 / 15%);
   display: grid;
   grid-template-rows: minmax(0, 57%) minmax(0, 43%);
@@ -625,7 +629,7 @@ onUnmounted(() => {
   &__media {
     position: relative;
     min-height: 0;
-    background: #fff;
+    background: var(--zine-paper-card);
     padding: 7px 7px 12px;
     box-shadow: 2px 2px 0 rgb(58 36 24 / 16%);
     transform-origin: center;
@@ -665,7 +669,7 @@ onUnmounted(() => {
     transform: translateX(-50%) rotate(var(--tape-rot, -1deg));
     width: 68px;
     height: 20px;
-    background: rgba(255, 255, 255, 0.76);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.76);
     border: 1px solid rgba(58, 36, 24, 0.16);
     box-shadow: 0 1px 3px rgba(58, 36, 24, 0.08);
     z-index: 2;
@@ -681,7 +685,7 @@ onUnmounted(() => {
       background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.65) 50%,
+        rgb(var(--ft-overlay-surface-rgb) / 0.65) 50%,
         transparent 100%
       );
       transform: translateX(-150%) skewX(-20deg);
@@ -752,7 +756,7 @@ onUnmounted(() => {
     padding: 1px 6px;
     font-size: 11px;
     border: 1px solid var(--ft-color-secondary);
-    background: #fff;
+    background: var(--zine-paper-card);
     border-radius: 2px;
     color: var(--ft-color-text-muted);
     line-height: 1.3;

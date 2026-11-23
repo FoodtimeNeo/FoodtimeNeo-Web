@@ -414,7 +414,7 @@ const defaultIllustration = computed(() => {
     width: 100%;
     aspect-ratio: 4 / 3;
     overflow: hidden;
-    background: var(--zine-paper-card-alt, #f7efd9);
+    background: var(--zine-paper-card-alt);
     border-right: 1.5px solid var(--ft-color-secondary);
     display: flex;
     align-items: center;
@@ -441,7 +441,7 @@ const defaultIllustration = computed(() => {
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.92);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.92);
     border: 1px solid var(--ft-color-secondary);
     border-radius: var(--ft-radius-sm, 3px);
     font-size: 13px;
@@ -454,7 +454,7 @@ const defaultIllustration = computed(() => {
     z-index: 2;
 
     &:hover {
-      background: #fff;
+      background: var(--zine-paper-card);
       transform: translateY(-1px);
       box-shadow: 3px 3px 0 rgba(58, 36, 24, 0.25);
       color: var(--ft-color-primary);
@@ -467,7 +467,7 @@ const defaultIllustration = computed(() => {
     top: 12px;
     right: 12px;
     padding: 4px 10px;
-    background: rgba(255, 255, 255, 0.88);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.88);
     border: 1px solid var(--ft-color-secondary);
     border-radius: var(--ft-radius-sm, 2px);
     font-size: 12px;
@@ -478,7 +478,7 @@ const defaultIllustration = computed(() => {
     transition: all var(--ft-transition-fast);
 
     &:hover {
-      background: #fff;
+      background: var(--zine-paper-card);
       color: var(--ft-color-primary);
     }
   }
@@ -508,7 +508,7 @@ const defaultIllustration = computed(() => {
     inset: 0;
     background: radial-gradient(
       circle at center,
-      rgba(255, 250, 240, 0.72) 0%,
+      rgb(var(--ft-overlay-paper-rgb) / 0.72) 0%,
       rgba(247, 239, 217, 0.88) 100%
     );
     display: flex;
@@ -523,7 +523,7 @@ const defaultIllustration = computed(() => {
     font-size: 13px;
     font-family: var(--ft-font-family-note);
     color: var(--ft-color-text-muted);
-    background: rgba(255, 255, 255, 0.8);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.8);
     padding: 2px 10px;
     border-radius: 999px;
     border: 1px dashed rgba(58, 36, 24, 0.25);
@@ -637,7 +637,7 @@ const defaultIllustration = computed(() => {
     align-items: center;
     gap: 14px;
     padding: 10px 14px;
-    background: var(--zine-paper-card-alt, #f7efd9);
+    background: var(--zine-paper-card-alt);
     border: 1px dashed rgba(58, 36, 24, 0.28);
     border-radius: var(--ft-radius-sm, 2px);
     margin: 4px 0 8px;
@@ -704,7 +704,7 @@ const defaultIllustration = computed(() => {
       font-size: 15px;
       padding: 10px 22px;
       font-weight: 700;
-      background: var(--zine-paper-card, #fffaf0);
+      background: var(--zine-paper-card);
     }
   }
 
@@ -735,7 +735,7 @@ const defaultIllustration = computed(() => {
       font-size: 12px;
       color: var(--ft-color-text-muted);
       font-weight: 700;
-      background: var(--zine-paper-card-alt, #f7efd9);
+      background: var(--zine-paper-card-alt);
       padding: 2px 8px;
       border-radius: var(--ft-radius-sm, 2px);
       border: 1px solid rgba(58, 36, 24, 0.15);
@@ -775,7 +775,7 @@ const defaultIllustration = computed(() => {
     justify-content: center;
     gap: 28px;
     padding: 36px 24px;
-    background: var(--zine-paper-card, #fffaf0);
+    background: var(--zine-paper-card);
     border: 1.5px dashed var(--ft-color-secondary);
     border-radius: var(--ft-radius-sm, 3px);
     box-shadow: 4px 4px 0 rgba(58, 36, 24, 0.08);

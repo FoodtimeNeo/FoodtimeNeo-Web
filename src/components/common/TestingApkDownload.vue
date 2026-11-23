@@ -38,7 +38,7 @@ import {
   padding: 14px 16px;
   border: 1px dashed var(--ft-color-secondary, #765d4b);
   border-radius: 8px;
-  background: var(--zine-paper-card, #fffaf0);
+  background: var(--zine-paper-card);
   color: var(--ft-color-text, #39261c);
   text-align: left;
   overflow-wrap: anywhere;

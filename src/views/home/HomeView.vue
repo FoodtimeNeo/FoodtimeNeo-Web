@@ -559,7 +559,7 @@ onUnmounted(() => {
     background:
       radial-gradient(
         circle at 50% 50%,
-        rgba(255, 255, 255, 0.45) 0%,
+        rgb(var(--ft-overlay-surface-rgb) / 0.45) 0%,
         transparent 80%
       ),
       rgb(241 236 226 / 75%);
@@ -582,7 +582,7 @@ onUnmounted(() => {
     /* 拍立得卡片共有样式 */
     .hero-polaroid {
       position: absolute;
-      background: #fff;
+      background: var(--zine-paper-card);
       padding: 8px 8px 24px;
       border: 1px solid rgba(58, 36, 24, 0.2);
       box-shadow: 3px 5px 10px rgba(58, 36, 24, 0.16);
@@ -752,7 +752,7 @@ onUnmounted(() => {
     gap: var(--ft-space-2);
     margin: var(--ft-space-2) 0 var(--ft-space-3);
     padding: 6px 14px;
-    background: var(--zine-paper-card-alt, #f7efd9);
+    background: var(--zine-paper-card-alt);
     border: 1px dashed rgb(58 36 24 / 32%);
     border-radius: var(--ft-radius-sm, 2px);
     transform: rotate(-0.5deg);
@@ -964,7 +964,7 @@ onUnmounted(() => {
     align-items: center;
     gap: 8px;
     padding: 12px 28px;
-    background: var(--zine-paper-card, #fffaf0);
+    background: var(--zine-paper-card);
     border: 2px solid var(--ft-color-secondary, #3a2418);
     border-radius: var(--ft-radius-sm, 4px);
     box-shadow: 4px 4px 0 var(--ft-color-secondary, #3a2418);
@@ -975,7 +975,7 @@ onUnmounted(() => {
     transition: all var(--ft-transition-fast, 180ms ease);
 
     &:hover {
-      background: #fff;
+      background: var(--zine-paper-card);
       transform: translate(-1px, -1px);
       box-shadow: 5px 5px 0 var(--ft-color-secondary, #3a2418);
       color: var(--ft-color-primary, #c9341e);

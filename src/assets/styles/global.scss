@@ -40,7 +40,7 @@ body {
       138deg,
       var(--zine-paper-bg-soft) 0%,
       var(--zine-paper-bg) 54%,
-      #cbb07a 100%
+      var(--zine-paper-bg) 100%
     );
   background-size:
     600px 600px,
@@ -414,7 +414,7 @@ samp {
   padding: 2px 9px;
   border: 1px solid var(--zine-paper-edge);
   border-radius: var(--ft-radius-pill);
-  background: rgb(255 250 240 / 58%);
+  background: rgb(var(--ft-overlay-paper-rgb) / 58%);
   color: var(--ft-color-secondary-soft);
   font-size: 12px;
   line-height: 1.2;
@@ -516,5 +516,29 @@ samp {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  body {
+    background: var(--ft-color-bg);
+  }
+  body::before {
+    opacity: 0.08;
+  }
+  body::after {
+    opacity: 0.12;
+  }
+  input,
+  textarea,
+  select {
+    color: var(--ft-color-text);
+    caret-color: var(--ft-color-text);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ft-color-text-muted);
+    opacity: 1;
   }
 }
