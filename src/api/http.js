@@ -1,5 +1,12 @@
 import axios from 'axios';
 import { holdPageUpdate } from '@/utils/updateSafety.js';
+import {
+  prepareCatalogRequest,
+  restoreCatalogResponse,
+  saveCatalogResponse,
+  discardCatalogRequest,
+  clearCatalogMediaRegistry,
+} from '@/utils/publicCatalogCache.js';
 const CLIENT_BUILD = import.meta.env.VITE_BUILD_ID || 'development';
 const SAFE_ID = /^[a-zA-Z0-9._-]{1,64}$/;
 let failureHandler = () => {};
@@ -71,6 +78,7 @@ export function clearCsrf() {
 export function invalidateSession() {
   sessionVersion += 1;
   clearCsrf();
+  clearCatalogMediaRegistry();
 }
 export function toApiError(error) {
   if (error instanceof ApiError) return error;
@@ -178,16 +186,32 @@ http.interceptors.request.use(async (config) => {
       throw error;
     }
   }
+  await prepareCatalogRequest(config, http.getUri(config));
+  if (requestSession !== sessionVersion)
+    throw new ApiError('会话已变化，请刷新后重试', { code: 'SESSION_CHANGED' });
   config.sessionVersion = requestSession;
   return config;
 });
 http.interceptors.response.use(
-  (response) => {
+  async (response) => {
     try {
       if (response.config.sessionVersion !== sessionVersion)
         throw new ApiError('会话已变化，请刷新后查看操作结果', {
           code: 'SESSION_CHANGED',
         });
+      if (response.status === 304 && response.config.catalogKey) {
+        const restored = restoreCatalogResponse(response);
+        if (restored) response.data = restored;
+        else {
+          await discardCatalogRequest(response.config);
+          if (response.config.catalogUnconditional)
+            throw new ApiError('服务器缓存响应异常', { code: 'PROTOCOL' });
+          return http.request({
+            ...response.config,
+            catalogUnconditional: true,
+          });
+        }
+      }
       const body = response.data;
       if (
         !body ||
@@ -201,6 +225,11 @@ http.interceptors.response.use(
           status: response.status,
           code: 'BUSINESS',
           bizCode: body.code,
+        });
+      await saveCatalogResponse(response);
+      if (response.config.sessionVersion !== sessionVersion)
+        throw new ApiError('会话已变化，请刷新后重试', {
+          code: 'SESSION_CHANGED',
         });
       return body.data;
     } catch (error) {
@@ -223,6 +252,8 @@ http.interceptors.response.use(
       );
     const apiError = toApiError(error);
     const config = error.config;
+    if ([401, 403, 404].includes(apiError.status))
+      await discardCatalogRequest(config);
     // Only one bounded retry for read-only transient failures. Never replay writes or genuine 500s.
     if (
       config &&
