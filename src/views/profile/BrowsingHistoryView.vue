@@ -143,9 +143,7 @@ onMounted(() => {
       />
       记录浏览历史
     </label>
-    <p class="browsing-history__hint">
-      关闭只停止新增，已有记录保留；帖子和菜品分别保存最近 50 条。
-    </p>
+    <p class="browsing-history__hint">各保留最近 50 条</p>
     <p v-if="settingsError" role="alert">{{ settingsError }}</p>
 
     <div class="browsing-history__tabs" role="tablist">

@@ -10,6 +10,7 @@ import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import InkButton from '@/components/base/InkButton.vue';
 import ProfileEditor from './ProfileEditor.vue';
+import AppIcon from '@/components/base/AppIcon.vue';
 import SchoolEmailBinder from '@/components/profile/SchoolEmailBinder.vue';
 const auth = useAuthStore();
 const router = useRouter();
@@ -23,110 +24,68 @@ const {
   auth.setSession({ user });
   return user;
 });
-const navigationGroups = computed(() =>
-  [
-    {
-      id: 'saved',
-      title: '收藏与回访',
-      links: [
-        {
-          label: '想吃清单',
-          hint: '收藏的菜品与分组',
-          to: { name: 'favoriteDishes' },
-        },
-        {
-          label: '帖子收藏',
-          hint: '收藏的食记与分组',
-          to: { name: 'community', query: { tab: 'favorites' } },
-        },
-        {
-          label: '浏览历史',
-          hint: '帖子与菜品分别查看',
-          to: { name: 'browsingHistory' },
-        },
-      ],
-    },
-    {
-      id: 'records',
-      title: '我的记录',
-      links: [
-        {
-          label: '我的食记',
-          hint: '已发布、待审核与被拒的食记',
-          to: { name: 'community', query: { tab: 'mine' } },
-        },
-        {
-          label: '发帖草稿',
-          hint: '继续编辑本机草稿',
-          to: { name: 'community', query: { action: 'new' } },
-        },
-        { label: '菜品点评', hint: '已发布的点评', to: { name: 'myReviews' } },
-        {
-          label: '餐厅与档口点评',
-          hint: '我的评价、回复与审核状态',
-          to: { name: 'myVenueReviews' },
-        },
-        {
-          label: '我的回复',
-          hint: '楼内讨论与审核状态',
-          to: { name: 'myReviewReplies' },
-        },
-        {
-          label: '我的提交',
-          hint: '投稿记录与审核结果',
-          to: { name: 'mySubmissions' },
-        },
-      ],
-    },
-    {
-      id: 'messages',
-      title: '消息与处理',
-      links: [
-        {
-          label: '消息信箱',
-          hint: '公告与系统消息',
-          to: { name: 'inboxView' },
-        },
-        {
-          label: '建议与反馈',
-          hint: '反馈记录与管理员回复',
-          to: { name: 'myFeedback' },
-        },
-        {
-          label: '目录纠错',
-          hint: '名称、价格与介绍的更正进度',
-          to: { name: 'myCorrections' },
-        },
-        {
-          label: '举报与处理决定',
-          hint: '举报进度、公开结果与申诉截止',
-          to: { name: 'myReports' },
-        },
-      ],
-    },
-    {
-      id: 'account',
-      title: '账号与隐私',
-      links: [
-        {
-          label: '黑名单',
-          hint: '管理已屏蔽的用户',
-          to: { name: 'myBlockedUsers' },
-        },
-        { label: '修改密码', hint: '', to: { name: 'changePassword' } },
-        {
-          label: '账号安全与注销',
-          hint: '',
-          to: { name: 'accountLifecycle' },
-          adminHidden: true,
-        },
-      ],
-    },
-  ].map((group) => ({
-    ...group,
-    links: group.links.filter((link) => !link.adminHidden || !auth.isAdmin),
-  })),
-);
+const navigationGroups = computed(() => [
+  {
+    id: 'saved',
+    title: '常用',
+    links: [
+      { label: '想吃清单', icon: 'dish', to: { name: 'favoriteDishes' } },
+      {
+        label: '帖子收藏',
+        icon: 'star',
+        to: { name: 'community', query: { tab: 'favorites' } },
+      },
+      { label: '浏览历史', icon: 'clock', to: { name: 'browsingHistory' } },
+      {
+        label: '发帖草稿',
+        icon: 'edit',
+        to: { name: 'community', query: { action: 'new' } },
+      },
+    ],
+  },
+  {
+    id: 'records',
+    title: '我的记录',
+    links: [
+      {
+        label: '我的食记',
+        icon: 'note',
+        to: { name: 'community', query: { tab: 'mine' } },
+      },
+      { label: '菜品点评', icon: 'comment', to: { name: 'myReviews' } },
+      { label: '餐厅点评', icon: 'dish', to: { name: 'myVenueReviews' } },
+      { label: '我的回复', icon: 'reply', to: { name: 'myReviewReplies' } },
+      { label: '我的提交', icon: 'upload', to: { name: 'mySubmissions' } },
+    ],
+  },
+  {
+    id: 'messages',
+    title: '服务',
+    links: [
+      { label: '消息信箱', icon: 'inbox', to: { name: 'inboxView' } },
+      { label: '建议与反馈', icon: 'feedback', to: { name: 'myFeedback' } },
+      { label: '我的纠错', icon: 'correct', to: { name: 'myCorrections' } },
+      { label: '举报与申诉', icon: 'shield', to: { name: 'myReports' } },
+    ],
+  },
+  {
+    id: 'account',
+    title: '账号与隐私',
+    links: [
+      { label: '黑名单', icon: 'block', to: { name: 'myBlockedUsers' } },
+      { label: '修改密码', icon: 'lock', to: { name: 'changePassword' } },
+      ...(!auth.isAdmin
+        ? [
+            {
+              label: '账号安全',
+              icon: 'shield',
+              to: { name: 'accountLifecycle' },
+            },
+          ]
+        : []),
+    ],
+  },
+]);
 const exiting = ref(false);
 const exitError = ref('');
 const editing = ref(false);
@@ -158,17 +117,16 @@ async function logout() {
 </script>
 <template>
   <div class="profile-page">
-    <div class="section-rule">
-      <span class="section-rule__index">06</span>
-      <span class="section-rule__line"></span>
-    </div>
-    <h1 class="section-title">
-      我的<span class="zine-highlight">食堂档案</span>
-    </h1>
+    <header class="profile-page__top">
+      <h1>我的</h1>
+      <RouterLink :to="{ name: 'inboxView' }" aria-label="消息信箱"
+        ><AppIcon name="inbox"
+      /></RouterLink>
+    </header>
     <LoadingState v-if="loading" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
     <template v-else-if="profile">
-      <article class="profile-page__identity torn-edge">
+      <article class="profile-page__identity">
         <div class="profile-page__avatar" role="img" aria-label="个人头像">
           <MediaImage
             compact
@@ -179,34 +137,31 @@ async function logout() {
           />
         </div>
         <div class="profile-page__identity-copy">
-          <span class="sticker sticker--r-1">个人档案</span>
           <h2>{{ profile.displayName }}</h2>
+          <span class="profile-page__role">{{ roleLabels[profile.role] }}</span>
+          <p>认真吃饭，也认真生活</p>
         </div>
+        <button
+          class="profile-page__edit"
+          type="button"
+          aria-label="编辑资料"
+          @click="
+            editing = !editing;
+            profileStatus = '';
+          "
+        >
+          <AppIcon name="edit" />
+        </button>
       </article>
-      <div class="profile-page__meta">
-        <span class="zine-chip">{{ profile.email }}</span>
-        <span class="stamp">{{ roleLabels[profile.role] }}</span>
-      </div>
-      <details class="profile-page__account-details">
-        <summary>账号信息</summary>
-        <p class="profile-page__id">ID：{{ profile.id }}</p>
-      </details>
-      <details
-        v-if="!profile.schoolEmailVerified && !auth.isAdmin"
-        class="profile-page__binding"
-      >
-        <summary>学校邮箱 · 可选认证</summary>
-        <SchoolEmailBinder @bound="onSchoolEmailBound" />
-      </details>
       <div class="profile-page__follows" aria-label="关注统计">
-        <RouterLink :to="{ name: 'myFollowing' }">
-          <strong>{{ profile.followingCount ?? 0 }}</strong>
-          <span>关注</span>
-        </RouterLink>
-        <RouterLink :to="{ name: 'myFollowers' }">
-          <strong>{{ profile.followerCount ?? 0 }}</strong>
-          <span>粉丝</span>
-        </RouterLink>
+        <RouterLink :to="{ name: 'myFollowing' }"
+          ><strong>{{ profile.followingCount ?? 0 }}</strong
+          ><span>关注</span></RouterLink
+        >
+        <RouterLink :to="{ name: 'myFollowers' }"
+          ><strong>{{ profile.followerCount ?? 0 }}</strong
+          ><span>粉丝</span></RouterLink
+        >
       </div>
       <p v-if="profileStatus" role="status">{{ profileStatus }}</p>
       <ProfileEditor
@@ -215,38 +170,44 @@ async function logout() {
         @saved="saved"
         @cancel="editing = false"
       />
-      <InkButton
-        v-else
-        type="button"
-        @click="
-          editing = true;
-          profileStatus = '';
-        "
-        >编辑资料</InkButton
-      >
     </template>
     <nav class="profile-page__links" aria-label="个人功能">
       <section
         v-for="group in navigationGroups"
         :key="group.id"
         class="profile-page__group"
+        :class="{ 'profile-page__group--list': group.id === 'account' }"
         :aria-labelledby="`profile-${group.id}`"
       >
         <h2 :id="`profile-${group.id}`">{{ group.title }}</h2>
-        <RouterLink
-          v-for="link in group.links"
-          :key="link.label"
-          class="paper-link"
-          :to="link.to"
-        >
-          <span
-            >{{ link.label
-            }}<small v-if="link.hint">{{ link.hint }}</small></span
+        <div class="profile-page__entries">
+          <RouterLink
+            v-for="link in group.links"
+            :key="link.label"
+            :to="link.to"
+            ><AppIcon :name="link.icon" /><span>{{ link.label }}</span
+            ><span
+              v-if="group.id === 'account'"
+              class="profile-page__chevron"
+              aria-hidden="true"
+              >›</span
+            ></RouterLink
           >
-          <strong aria-hidden="true">→</strong>
-        </RouterLink>
+        </div>
       </section>
     </nav>
+    <details v-if="profile" class="profile-page__account-details">
+      <summary>账号信息</summary>
+      <p>{{ profile.email }}</p>
+      <p>ID：{{ profile.id }}</p>
+    </details>
+    <details
+      v-if="profile && !profile.schoolEmailVerified && !auth.isAdmin"
+      class="profile-page__account-details"
+    >
+      <summary>学校邮箱认证</summary>
+      <SchoolEmailBinder @bound="onSchoolEmailBound" />
+    </details>
     <p v-if="exitError" role="alert">{{ exitError }}</p>
     <InkButton
       class="profile-page__logout"
@@ -258,150 +219,176 @@ async function logout() {
 </template>
 <style scoped>
 .profile-page {
-  padding: var(--ft-space-3);
-  max-width: 760px;
+  padding: 16px;
+  max-width: 880px;
   margin: auto;
   overflow-wrap: anywhere;
 }
-.profile-page__follows {
+.profile-page__top {
   display: flex;
-  gap: 12px;
-  margin: 12px 0 20px;
+  align-items: center;
+  justify-content: space-between;
 }
-
-.profile-page__follows a {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid var(--ft-color-text);
-  border-radius: 999px;
-  font-weight: 700;
+.profile-page__top h1 {
+  font: 28px var(--ft-font-family-title);
+  margin: 0;
 }
-
-.profile-page__follows strong {
-  font-size: 20px;
-  color: var(--zine-stamp-red);
+.profile-page__top a,
+.profile-page__edit {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: var(--ft-color-text);
+  cursor: pointer;
 }
-
+.profile-page__top svg,
+.profile-page__edit svg {
+  width: 24px;
+  height: 24px;
+}
 .profile-page__identity {
   display: flex;
-  position: relative;
   align-items: center;
   gap: 16px;
-  margin-top: var(--ft-space-3);
-  padding: var(--ft-space-3);
-  border: 1px solid var(--ft-color-secondary);
-  background: var(--zine-paper-card);
-  box-shadow: 5px 6px 0 rgb(58 36 24 / 16%);
+  padding: 24px 0 16px;
 }
 .profile-page__avatar {
-  flex: 0 0 88px;
-  width: 88px;
-  height: 88px;
-  border: 7px solid #fff;
-  box-shadow: 3px 3px 0 rgb(58 36 24 / 20%);
-  transform: rotate(-2deg);
+  flex: 0 0 76px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--ft-color-secondary);
 }
 .profile-page__avatar :deep(.media-image) {
   min-height: 0;
+  height: 100%;
 }
 .profile-page__avatar :deep(span) {
   padding: 0;
-  font-family: var(--ft-font-family-title);
-  font-size: 32px;
+  font: 32px var(--ft-font-family-title);
 }
 .profile-page__identity-copy {
+  flex: 1;
   min-width: 0;
 }
-.profile-page__identity-copy h2 {
-  margin: 10px 0 0;
+.profile-page__identity h2 {
+  margin: 0 0 8px;
+  font-size: 24px;
 }
-.profile-page__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: var(--ft-space-3) 0;
-}
-.profile-page__identity > div {
-  min-width: 0;
-}
-h2 {
-  font-family: var(--ft-font-family-title);
-}
-.profile-page__account-details summary,
-.profile-page__binding summary {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  cursor: pointer;
-  color: var(--ft-color-text-muted);
-}
-.profile-page__account-details summary::before,
-.profile-page__binding summary::before {
-  content: '＋';
-  margin-right: 8px;
-}
-.profile-page__account-details[open] summary::before,
-.profile-page__binding[open] summary::before {
-  content: '−';
-}
-.profile-page__id {
-  font-size: 14px;
-}
-.profile-page__links {
-  display: grid;
-  gap: 12px;
-  margin: 24px 0;
-}
-.profile-page__group {
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-}
-.profile-page__group h2 {
-  margin: 0 0 2px;
-  font-size: 20px;
-}
-.profile-page__links a.paper-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  min-height: 44px;
-  border: 1px dashed rgb(58 36 24 / 34%);
-  background: rgb(255 250 240 / 72%);
-  font-family: var(--ft-font-family-title);
-  font-size: 20px;
-  transition:
-    transform var(--ft-transition-fast),
-    box-shadow var(--ft-transition-fast);
-}
-.profile-page__links a.paper-link:hover {
-  box-shadow: 4px 4px 0 rgb(58 36 24 / 18%);
-  transform: translate(-2px, -2px);
-}
-.profile-page__links strong {
-  margin-left: auto;
+.profile-page__role {
+  border: 1px solid var(--ft-color-primary);
+  padding: 1px 6px;
+  font-size: 12px;
   color: var(--ft-color-primary);
 }
-.profile-page__links small {
-  display: block;
+.profile-page__identity p {
+  margin: 8px 0 0;
   color: var(--ft-color-text-muted);
-  font-family: inherit;
+  font: 16px var(--ft-font-family-note);
+}
+.profile-page__follows {
+  display: flex;
+  padding: 12px 0 24px;
+}
+.profile-page__follows a {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 48px;
+}
+.profile-page__follows a + a {
+  border-left: 1px solid var(--ft-color-border);
+}
+.profile-page__follows strong {
+  font-size: 24px;
+}
+.profile-page__follows span {
+  color: var(--ft-color-text-muted);
   font-size: 14px;
-  font-weight: normal;
+}
+.profile-page__group {
+  padding: 18px 0;
+  border-top: 1px dashed var(--ft-color-border);
+}
+.profile-page__group h2 {
+  font: 20px var(--ft-font-family-title);
+  margin: 0 0 14px;
+}
+.profile-page__entries {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.profile-page__entries a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 2px;
+  min-height: 76px;
+  font-size: 14px;
+  text-align: center;
+  border-radius: 12px;
+}
+.profile-page__entries svg {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  color: var(--ft-color-primary);
+}
+.profile-page__entries a:hover {
+  background: var(--ft-color-bg-soft);
+}
+.profile-page__group--list .profile-page__entries {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+.profile-page__group--list a {
+  flex-direction: row;
+  gap: 14px;
+  min-height: 52px;
+  padding: 8px;
+  text-align: left;
+}
+.profile-page__group--list svg {
+  width: 22px;
+  height: 22px;
+}
+.profile-page__chevron {
+  margin-left: auto;
+  color: var(--ft-color-text-muted);
+}
+.profile-page__account-details summary {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  cursor: pointer;
+}
+.profile-page__account-details p {
+  font-size: 14px;
 }
 .profile-page__logout {
+  margin-top: 20px;
+  width: 100%;
   color: var(--ft-color-danger);
-  border-color: var(--ft-color-danger);
+  border-color: var(--ft-color-border);
 }
-
-@media (prefers-reduced-motion: reduce) {
-  .profile-page__links a.paper-link,
-  .profile-page__links a.paper-link:hover {
-    transform: none;
-    transition: none;
+@media (max-width: 360px) {
+  .profile-page__entries {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .profile-page__avatar {
+    flex-basis: 64px;
+    width: 64px;
+    height: 64px;
   }
 }
 </style>

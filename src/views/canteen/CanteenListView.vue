@@ -50,11 +50,7 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
 
     <LoadingState v-if="loading" message="正在翻开食堂手账…" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
-    <EmptyState
-      v-else-if="!canteens.length"
-      title="还没有食堂"
-      description="管理员添加后会显示在这里。"
-    />
+    <EmptyState v-else-if="!canteens.length" title="还没有食堂" />
     <template v-else>
       <CatalogSearch
         v-model="query"

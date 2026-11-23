@@ -59,7 +59,7 @@ describe('个人记录与改密', () => {
     ).toEqual({ name: 'community', query: { tab: 'mine' } });
     expect(
       wrapper.findAll('.profile-page__group h2').map((node) => node.text()),
-    ).toEqual(['收藏与回访', '我的记录', '消息与处理', '账号与隐私']);
+    ).toEqual(['常用', '我的记录', '服务', '账号与隐私']);
     wrapper.unmount();
   });
   it('普通用户可以打开资料编辑，保存后同步名称、头像和登录状态', async () => {
@@ -73,10 +73,7 @@ describe('个人记录与改密', () => {
       global: { stubs: { RouterLink: RouterLinkStub, ProfileEditor: true } },
     });
     await flushPromises();
-    await wrapper
-      .findAll('button')
-      .find((b) => b.text() === '编辑资料')
-      .trigger('click');
+    await wrapper.get('button[aria-label="编辑资料"]').trigger('click');
     const updated = {
       id: 'u1',
       displayName: '新昵称',
@@ -91,7 +88,7 @@ describe('个人记录与改密', () => {
     expect(wrapper.text()).toContain('个人资料已更新');
     wrapper.unmount();
   });
-  it('空头像用一个完整字符占位，并说明评论与投稿记录的区别', async () => {
+  it('空头像用一个完整字符占位，点评和提交记录各有入口', async () => {
     api.fetchProfile.mockResolvedValue({
       id: 'u1',
       displayName: '🍜同学',
@@ -103,8 +100,8 @@ describe('个人记录与改密', () => {
       '🍜',
     );
     expect(wrapper.text()).not.toContain('未设置头像');
-    expect(wrapper.text()).toContain('已发布的点评');
-    expect(wrapper.text()).toContain('投稿记录与审核结果');
+    expect(wrapper.text()).toContain('菜品点评');
+    expect(wrapper.text()).toContain('我的提交');
     wrapper.unmount();
   });
   it('没有已发布评论时可直接查看点评审核记录', async () => {

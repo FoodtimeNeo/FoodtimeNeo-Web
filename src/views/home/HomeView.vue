@@ -12,6 +12,7 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import { fetchDailyRecommendations } from '@/api/recommendation.api.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import AppIcon from '@/components/base/AppIcon.vue';
 
 const auth = useAuthStore();
 const {
@@ -137,6 +138,11 @@ onUnmounted(() => {
 
 <template>
   <div class="home-page">
+    <RouterLink class="home-search" :to="{ name: 'dishSearch' }"
+      ><AppIcon class="home-search__icon" name="search" /><span
+        >搜索菜品，如牛肉面</span
+      ><strong>搜索</strong></RouterLink
+    >
     <header class="home-page__hero hero-appear">
       <div class="home-page__hero-main">
         <div class="hero-stagger-1">
@@ -365,6 +371,33 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+.home-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px var(--zine-page-padding-mobile, 16px);
+  padding: 4px 4px 4px 16px;
+  border: 1px solid var(--ft-color-primary);
+  border-radius: 28px;
+  background: var(--zine-paper-card);
+  color: var(--ft-color-text-muted);
+  font-size: 16px;
+  min-height: 52px;
+}
+.home-search__icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.home-search strong {
+  margin-left: auto;
+  padding: 10px 18px;
+  border-radius: 24px;
+  background: var(--ft-color-primary);
+  color: white;
+  font-weight: normal;
+}
+
 @keyframes heroElemAppear {
   0% {
     opacity: 0;

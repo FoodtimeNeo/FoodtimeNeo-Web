@@ -10,6 +10,40 @@ import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
+import AppIcon from '@/components/base/AppIcon.vue';
+import { useAuthStore } from '@/store/useAuthStore.js';
+import {
+  readSearchHistory,
+  rememberSearch,
+  removeSearch,
+  purgeSearchHistory,
+} from '@/utils/searchHistory.js';
+const auth = useAuthStore();
+const history = ref([]);
+const editingHistory = ref(false);
+const clearingHistory = ref(false);
+watch(
+  () => auth.user?.id,
+  (owner) => {
+    history.value = readSearchHistory(owner);
+    editingHistory.value = false;
+    clearingHistory.value = false;
+  },
+  { immediate: true },
+);
+function useHistory(term) {
+  form.q = term;
+  submit();
+}
+function removeHistory(term) {
+  history.value = removeSearch(auth.user?.id, term);
+}
+function clearHistory() {
+  purgeSearchHistory(auth.user?.id);
+  history.value = [];
+  clearingHistory.value = false;
+  editingHistory.value = false;
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -150,7 +184,10 @@ function submit() {
   if (validation.value) return;
   const query = {};
   const q = form.q.trim();
-  if (q) query.q = q;
+  if (q) {
+    query.q = q;
+    history.value = rememberSearch(auth.user?.id, q);
+  }
   if (form.hallIds.length) query.halls = [...form.hallIds];
   if (form.minPrice !== '') query.minPrice = String(form.minPrice);
   if (form.maxPrice !== '') query.maxPrice = String(form.maxPrice);
@@ -189,72 +226,124 @@ function ratingLabel(dish) {
 <template>
   <main class="dish-search">
     <RouterLink :to="{ name: 'canteenList' }">← 返回食堂</RouterLink>
-    <h1 class="section-title">
-      跨食堂<span class="zine-highlight">搜菜</span>
-    </h1>
+    <h1 class="dish-search__title">搜索</h1>
     <form class="dish-search__filters" role="search" @submit.prevent="submit">
       <div class="dish-search__field">
-        <label for="dish-keyword">菜名</label>
+        <AppIcon name="search" />
         <input
           id="dish-keyword"
           v-model="form.q"
+          aria-label="搜索菜品"
           type="search"
-          placeholder="可留空浏览全部菜品"
+          placeholder="搜索菜品，如牛肉面"
           maxlength="50"
+          enterkeyhint="search"
         />
+        <button class="dish-search__submit" type="submit">搜索</button>
       </div>
-      <div class="dish-search__grid">
-        <label>
-          食堂
-          <select v-model="form.hallIds" multiple size="4">
-            <option v-for="hall in halls" :key="hall.id" :value="hall.id">
-              {{ hall.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          最低价
-          <input
-            v-model="form.minPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            inputmode="decimal"
-          />
-        </label>
-        <label>
-          最高价
-          <input
-            v-model="form.maxPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            inputmode="decimal"
-          />
-        </label>
-        <label>
-          最低评分
-          <select v-model="form.minRating">
-            <option v-for="rating in RATINGS" :key="rating" :value="rating">
-              {{ rating ? rating + ' 分' : '不限' }}
-            </option>
-          </select>
-        </label>
-        <label>
-          排序
-          <select v-model="form.sort">
-            <option v-for="[value, label] in SORTS" :key="value" :value="value">
-              {{ label }}
-            </option>
-          </select>
-        </label>
-      </div>
-      <div class="dish-search__actions">
-        <button class="button-ink" type="submit">应用筛选</button>
-        <button class="dish-search__reset" type="button" @click="reset">
-          重置
-        </button>
-      </div>
+      <section
+        v-if="history.length"
+        class="dish-search__history"
+        aria-label="历史搜索"
+      >
+        <header>
+          <h2>历史搜索</h2>
+          <button
+            type="button"
+            @click="
+              editingHistory = !editingHistory;
+              clearingHistory = false;
+            "
+          >
+            {{ editingHistory ? '完成' : '编辑' }}</button
+          ><button
+            v-if="editingHistory"
+            type="button"
+            @click="clearingHistory = true"
+          >
+            清空
+          </button>
+        </header>
+        <div v-if="clearingHistory" class="dish-search__clear">
+          <span>清空搜索历史？</span
+          ><button type="button" @click="clearHistory">清空</button
+          ><button type="button" @click="clearingHistory = false">取消</button>
+        </div>
+        <div class="dish-search__chips">
+          <span v-for="term in history" :key="term"
+            ><button type="button" @click="useHistory(term)">{{ term }}</button
+            ><button
+              v-if="editingHistory"
+              type="button"
+              :aria-label="`删除搜索历史：${term}`"
+              @click="removeHistory(term)"
+            >
+              ×
+            </button></span
+          >
+        </div>
+      </section>
+      <details class="dish-search__filter-panel">
+        <summary>筛选与排序</summary>
+        <div class="dish-search__grid">
+          <fieldset class="dish-search__halls">
+            <legend>食堂</legend>
+            <label v-for="hall in halls" :key="hall.id"
+              ><input
+                v-model="form.hallIds"
+                type="checkbox"
+                :value="hall.id"
+              />{{ hall.name }}</label
+            >
+          </fieldset>
+          <label>
+            最低价
+            <input
+              v-model="form.minPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+            />
+          </label>
+          <label>
+            最高价
+            <input
+              v-model="form.maxPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+            />
+          </label>
+          <label>
+            最低评分
+            <select v-model="form.minRating">
+              <option v-for="rating in RATINGS" :key="rating" :value="rating">
+                {{ rating ? rating + ' 分' : '不限' }}
+              </option>
+            </select>
+          </label>
+          <label>
+            排序
+            <select v-model="form.sort">
+              <option
+                v-for="[value, label] in SORTS"
+                :key="value"
+                :value="value"
+              >
+                {{ label }}
+              </option>
+            </select>
+          </label>
+        </div>
+        <div class="dish-search__actions">
+          <button class="button-ink" type="submit">应用筛选</button>
+          <button class="dish-search__reset" type="button" @click="reset">
+            重置
+          </button>
+        </div>
+      </details>
       <p v-if="validation" role="alert">{{ validation }}</p>
       <p v-if="hallsError" role="alert">{{ hallsError }}</p>
     </form>
@@ -313,27 +402,140 @@ function ratingLabel(dish) {
 <style scoped lang="scss">
 .dish-search {
   width: min(calc(100% - 2 * var(--zine-page-padding)), 760px);
-  margin: var(--ft-space-6) auto;
+  margin: 16px auto;
 
   &__filters {
     margin-bottom: var(--ft-space-3);
   }
 
+  &__title {
+    font: 28px var(--ft-font-family-title);
+    margin: 12px 0;
+  }
   &__field {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin: 8px 0 12px;
-
+    align-items: center;
+    gap: 8px;
+    padding: 4px 4px 4px 12px;
+    border: 1px solid var(--ft-color-primary);
+    border-radius: 28px;
+    background: var(--zine-paper-card);
+    svg {
+      width: 20px;
+      height: 20px;
+      flex: none;
+      color: var(--ft-color-text-muted);
+    }
     input {
-      min-height: 44px;
-      padding: 8px 12px;
-      border: 1px solid var(--ft-color-text);
-      background: var(--zine-paper-card);
+      min-width: 0;
+      flex: 1;
+      height: 44px;
+      border: 0;
+      background: transparent;
+      font: inherit;
       font-size: 16px;
+      color: var(--ft-color-text);
+    }
+    input::placeholder {
+      color: var(--ft-color-text-muted);
     }
   }
-
+  &__submit {
+    flex: none;
+    min-height: 44px;
+    padding: 8px 20px;
+    border: 0;
+    border-radius: 24px;
+    background: var(--ft-color-primary);
+    color: white;
+    font: inherit;
+    cursor: pointer;
+  }
+  &__filter-panel {
+    margin: 12px 0;
+    summary {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      cursor: pointer;
+      color: var(--ft-color-text-muted);
+    }
+    summary::after {
+      content: '⌄';
+      margin-left: 6px;
+    }
+  }
+  &__history {
+    margin: 16px 0;
+    header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h2 {
+      flex: 1;
+      margin: 0;
+      font-size: 16px;
+    }
+    button {
+      min-height: 44px;
+      border: 0;
+      background: transparent;
+      font: inherit;
+      color: var(--ft-color-text-muted);
+      cursor: pointer;
+    }
+  }
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    span {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      background: var(--ft-color-bg-soft);
+      border-radius: 18px;
+      padding: 0 10px;
+    }
+    button {
+      color: var(--ft-color-text);
+      font-size: 14px;
+      overflow-wrap: anywhere;
+      text-align: left;
+    }
+  }
+  &__clear {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  &__halls {
+    grid-column: 1/-1;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    legend {
+      margin-bottom: 8px;
+    }
+    label {
+      flex-direction: row !important;
+      align-items: center;
+      padding: 4px 8px;
+      min-height: 44px;
+      border: 1px solid var(--ft-color-border);
+      border-radius: 8px;
+    }
+    input {
+      min-height: 0 !important;
+      width: 18px;
+      height: 18px;
+    }
+  }
   &__grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
