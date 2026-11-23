@@ -1,5 +1,6 @@
 <script setup>
-import { ref, reactive, watch, onUnmounted } from 'vue';
+import { ref, reactive, watch, onUnmounted, onMounted, inject } from 'vue';
+import { onBeforeRouteLeave, matchedRouteKey } from 'vue-router';
 import { ElMessage, ElDialog, ElMessageBox } from 'element-plus';
 import {
   createCommunityPost,
@@ -46,9 +47,11 @@ let submittedPayload = null;
 const restoredDraft = ref(false);
 const draftStatus = ref('');
 const draftMessage = ref('');
-let saveTimer;
-let lastSavedRevision = 0;
-let hydrating = false;
+const hydrating = ref(false);
+const exitOpen = ref(false);
+const savingExit = ref(false);
+let pendingExit = null;
+let exitApproved = false;
 const serviceOrigin =
   typeof window !== 'undefined' ? window.location.origin : 'foodtime';
 const ownerId = () => auth.user?.id || null;
@@ -85,6 +88,7 @@ watch(
       submitting.value = false;
       requestId.value = crypto.randomUUID();
       submittedPayload = null;
+      exitApproved = false;
       cleanObjectUrls();
       formImages.value = [];
       restoredDraft.value = false;
@@ -110,34 +114,20 @@ watch(
         }
       }
       if (!props.editPost) void restoreDraft();
-    } else {
-      window.clearTimeout(saveTimer);
-    }
+    } else cancelExit();
   },
   { immediate: true },
 );
 
-watch(
-  [() => form.title, () => form.content, formImages, linkedDish],
-  () => {
-    if (!props.modelValue || props.editPost || submitting.value || hydrating)
-      return;
-    window.clearTimeout(saveTimer);
-    saveTimer = window.setTimeout(() => {
-      void saveNow();
-    }, 500);
-  },
-  { deep: true },
-);
-
 onUnmounted(() => {
   operationEpoch++;
-  window.clearTimeout(saveTimer);
+  cancelExit();
   cleanObjectUrls();
 });
 
 async function restoreDraft() {
   const owner = ownerId();
+  const epoch = operationEpoch;
   if (!owner || props.editPost) return;
   if (
     props.initialData?.title ||
@@ -145,9 +135,10 @@ async function restoreDraft() {
     props.initialData?.images?.length
   )
     return;
-  hydrating = true;
+  hydrating.value = true;
   try {
     const draft = await loadDraft(serviceOrigin, owner);
+    if (!isCurrent(epoch, owner)) return;
     if (!draft || isBlankDraft(draft)) return;
     form.title = draft.title || '';
     form.content = draft.content || '';
@@ -175,21 +166,22 @@ async function restoreDraft() {
         isBlob: false,
       };
     });
-    lastSavedRevision = draft.localRevision || 0;
     restoredDraft.value = true;
     draftStatus.value = 'saved';
     draftMessage.value = '已恢复上次草稿';
   } catch {
+    if (!isCurrent(epoch, owner)) return;
     draftStatus.value = 'error';
     draftMessage.value = '本机草稿读取失败，请检查浏览器存储';
   } finally {
-    hydrating = false;
+    if (isCurrent(epoch, owner)) hydrating.value = false;
   }
 }
 
 async function saveNow() {
-  const owner = ownerId();
-  if (!owner || props.editPost) return;
+  const owner = openedOwner;
+  const epoch = operationEpoch;
+  if (!owner || props.editPost || !isCurrent(epoch, owner)) return false;
   const images = formImages.value
     .map((image, index) => {
       if (image.file)
@@ -205,14 +197,12 @@ async function saveNow() {
       return null;
     })
     .filter(Boolean);
-  if (isBlankDraft({ title: form.title, content: form.content, images })) {
-    await deleteDraft(serviceOrigin, owner);
-    draftStatus.value = '';
-    lastSavedRevision = 0;
-    return;
-  }
   draftStatus.value = 'saving';
   try {
+    if (isBlankDraft({ title: form.title, content: form.content, images })) {
+      await deleteDraft(serviceOrigin, owner);
+      return isCurrent(epoch, owner);
+    }
     const saved = await saveDraft(serviceOrigin, owner, {
       title: form.title,
       content: form.content,
@@ -221,38 +211,85 @@ async function saveNow() {
         : null,
       images,
     });
-    lastSavedRevision = saved?.localRevision || lastSavedRevision;
+    if (!isCurrent(epoch, owner)) return false;
+    if (!saved) throw new Error('草稿未保存');
     draftStatus.value = 'saved';
     draftMessage.value = '草稿已保存到本机';
+    return true;
   } catch {
+    if (!isCurrent(epoch, owner)) return false;
     draftStatus.value = 'error';
     draftMessage.value = '草稿保存失败，请检查存储空间';
+    return false;
   }
 }
 
-async function handleBeforeClose(done) {
-  if (submitting.value) {
-    ElMessage.info('正在发布，请稍候');
-    return;
+function hasDraftContent() {
+  return (
+    !isBlankDraft({ ...form, images: formImages.value }) ||
+    Boolean(linkedDish.value)
+  );
+}
+function cancelExit() {
+  exitOpen.value = false;
+  const resolve = pendingExit;
+  pendingExit = null;
+  resolve?.(false);
+}
+async function chooseExit(save) {
+  if (savingExit.value || !pendingExit) return;
+  savingExit.value = true;
+  try {
+    if (save && !(await saveNow())) return;
+    if (openedOwner !== ownerId() || !props.modelValue) return;
+    // No autosave occurs during editing: discard leaves the committed draft untouched.
+    const resolve = pendingExit;
+    pendingExit = null;
+    exitApproved = true;
+    exitOpen.value = false;
+    resolve?.(true);
+  } finally {
+    savingExit.value = false;
   }
+}
+async function requestExit() {
+  if (!props.modelValue || exitApproved) return true;
+  if (submitting.value || hydrating.value || savingExit.value) return false;
   if (props.editPost) {
     try {
       await ElMessageBox.confirm(
         '关闭后本次未提交修改将丢弃，原帖不会改变。',
         '放弃本次修改？',
-        { confirmButtonText: '放弃修改', cancelButtonText: '继续编辑' },
+        {
+          confirmButtonText: '放弃修改',
+          cancelButtonText: '继续编辑',
+        },
       );
-      done();
+      return true;
     } catch {
-      /* Stay in the editor. */
+      return false;
     }
-    return;
   }
-  window.clearTimeout(saveTimer);
-  await saveNow();
-  if (draftStatus.value === 'saved') ElMessage.success('草稿已保存');
-  else if (draftStatus.value === 'error') ElMessage.warning(draftMessage.value);
-  done();
+  if (!hasDraftContent() && !restoredDraft.value) return true;
+  if (pendingExit) return false;
+  exitOpen.value = true;
+  return new Promise((resolve) => {
+    pendingExit = resolve;
+  });
+}
+// The component also appears inside route-less previews/tests.
+if (inject(matchedRouteKey, null)) onBeforeRouteLeave(requestExit);
+function beforeUnload(event) {
+  if (!props.modelValue || exitApproved || props.editPost || !hasDraftContent())
+    return;
+  event.preventDefault();
+  event.returnValue = '';
+}
+onMounted(() => window.addEventListener('beforeunload', beforeUnload));
+onUnmounted(() => window.removeEventListener('beforeunload', beforeUnload));
+
+async function handleBeforeClose(done) {
+  if (await requestExit()) done();
 }
 
 async function discardDraft() {
@@ -273,7 +310,6 @@ async function discardDraft() {
   restoredDraft.value = false;
   draftStatus.value = '';
   draftMessage.value = '';
-  lastSavedRevision = 0;
 }
 
 function handleClose() {
@@ -429,7 +465,7 @@ async function handleSubmit() {
     });
 
     // 只有服务器确认成功后清理本机草稿；清理失败不影响发帖结果。
-    window.clearTimeout(saveTimer);
+    exitApproved = true;
     if (!props.editPost && owner)
       await deleteDraft(serviceOrigin, owner).catch(() => {});
 
@@ -497,6 +533,7 @@ watch(
   () => auth.user?.id,
   () => {
     operationEpoch++;
+    cancelExit();
     submitting.value = false;
     if (props.modelValue) emit('update:modelValue', false);
   },
@@ -568,7 +605,7 @@ watch(
       <DishPicker
         v-if="modelValue"
         v-model="linkedDish"
-        :disabled="submitting || conflict"
+        :disabled="hydrating || savingExit || submitting || conflict"
       />
       <!-- 标题 -->
       <div class="post-create-form__item">
@@ -586,7 +623,7 @@ watch(
           class="post-create-form__input"
           placeholder="给这顿美食起个吸引人的手账标题吧（如：学一瓦罐汤绝绝子）"
           maxlength="50"
-          :disabled="submitting || conflict"
+          :disabled="hydrating || savingExit || submitting || conflict"
         />
       </div>
 
@@ -606,7 +643,7 @@ watch(
           class="post-create-form__textarea"
           placeholder="分享档口位置、推荐吃法、真实口感、排队情况或踩雷提醒..."
           maxlength="2000"
-          :disabled="submitting || conflict"
+          :disabled="hydrating || savingExit || submitting || conflict"
         ></textarea>
       </div>
 
@@ -628,7 +665,13 @@ watch(
           accept="image/jpeg,image/png"
           multiple
           class="hidden-file-input"
-          :disabled="submitting || conflict || formImages.length >= 9"
+          :disabled="
+            hydrating ||
+            savingExit ||
+            submitting ||
+            conflict ||
+            formImages.length >= 9
+          "
           @change="handleFileSelect"
         />
 
@@ -644,7 +687,7 @@ watch(
               v-if="idx > 0"
               type="button"
               class="photo-card__move"
-              :disabled="submitting || conflict"
+              :disabled="hydrating || savingExit || submitting || conflict"
               aria-label="将此图前移"
               @click="
                 [formImages[idx - 1], formImages[idx]] = [
@@ -660,7 +703,7 @@ watch(
               type="button"
               class="photo-card__remove-btn"
               title="移除此图"
-              :disabled="submitting || conflict"
+              :disabled="hydrating || savingExit || submitting || conflict"
               @click="removeImage(idx)"
             >
               ×
@@ -673,7 +716,7 @@ watch(
             type="button"
             class="photo-upload-trigger"
             :class="{ 'is-empty': formImages.length === 0 }"
-            :disabled="submitting || conflict"
+            :disabled="hydrating || savingExit || submitting || conflict"
             @click="triggerFileInput"
             @dragover.prevent
             @drop.prevent="handleFileDrop"
@@ -728,9 +771,47 @@ watch(
       </div>
     </form>
   </ElDialog>
+  <ElDialog
+    v-if="exitOpen"
+    :model-value="exitOpen"
+    title="保存草稿？"
+    append-to-body
+    width="min(420px, 94vw)"
+    :close-on-click-modal="false"
+    :close-on-press-escape="!savingExit"
+    :show-close="!savingExit"
+    :before-close="
+      () => {
+        if (!savingExit) cancelExit();
+      }
+    "
+  >
+    <p>不保存只放弃本次修改，原草稿仍保留。</p>
+    <p v-if="draftStatus === 'error'" role="alert">{{ draftMessage }}</p>
+    <div class="draft-exit-actions">
+      <button type="button" :disabled="savingExit" @click="cancelExit">
+        继续编辑
+      </button>
+      <button type="button" :disabled="savingExit" @click="chooseExit(false)">
+        不保存
+      </button>
+      <button type="button" :disabled="savingExit" @click="chooseExit(true)">
+        {{ savingExit ? '正在保存…' : '保存草稿' }}
+      </button>
+    </div>
+  </ElDialog>
 </template>
 
 <style scoped lang="scss">
+.draft-exit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  button {
+    min-height: 44px;
+    padding: 8px 14px;
+  }
+}
 .photo-card__move {
   position: absolute;
   bottom: 4px;
