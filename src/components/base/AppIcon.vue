@@ -1,6 +1,7 @@
 <script setup>
 defineProps({ name: { type: String, default: 'note' } });
 const paths = {
+  folder: 'M3 7V5h6l2 2h10v13H3ZM3 10h18',
   chevronDown: 'm6 9 6 6 6-6',
   home: 'm3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7',
   filter: 'M3 4h18l-7 8v7l-4 2V12Z',
