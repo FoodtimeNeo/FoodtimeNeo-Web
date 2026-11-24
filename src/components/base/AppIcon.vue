@@ -1,6 +1,8 @@
 <script setup>
 defineProps({ name: { type: String, default: 'note' } });
 const paths = {
+  home: 'm3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7',
+  filter: 'M3 4h18l-7 8v7l-4 2V12Z',
   dish: 'M4 12h16M5 12a7 7 0 0 0 14 0M8 8V5m4 3V3m4 5V5M8 21h8',
   star: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z',
   clock: 'M4 6v5h5M4.5 10a8 8 0 1 1 0 5M12 7v5l3 2',
