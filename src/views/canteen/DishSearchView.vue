@@ -23,6 +23,7 @@ import {
   purgeSearchHistory,
 } from '@/utils/searchHistory.js';
 import AppIcon from '@/components/base/AppIcon.vue';
+import SearchHighlight from '@/components/base/SearchHighlight.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
@@ -51,6 +52,74 @@ const hasSearch = computed(() =>
   ].some((key) => Object.hasOwn(route.query, key)),
 );
 const keyword = ref('');
+const editing = ref(false);
+const composing = ref(false);
+const suggestions = ref([]);
+const suggestionLoading = ref(false);
+const suggestionError = ref('');
+let suggestionTimer,
+  suggestionController,
+  suggestionRevision = 0;
+let restoringDiscoveryRoute = false;
+const showSuggestions = computed(() => editing.value && !!keyword.value.trim());
+const showDiscovery = computed(
+  () => !keyword.value.trim() && (!hasSearch.value || editing.value),
+);
+function cancelSuggestions() {
+  clearTimeout(suggestionTimer);
+  suggestionController?.abort();
+  suggestionRevision++;
+  suggestionLoading.value = false;
+}
+function editKeyword() {
+  editing.value = true;
+  panel.value = '';
+  cancelSuggestions();
+  suggestions.value = [];
+  suggestionError.value = '';
+  if (composing.value || !keyword.value.trim()) {
+    state.cancel();
+    if (!keyword.value.trim() && hasSearch.value) {
+      restoringDiscoveryRoute = true;
+      void router
+        .replace({ name: 'dishSearch', query: { tab: tab.value } })
+        .finally(() => {
+          restoringDiscoveryRoute = false;
+        });
+    }
+    return;
+  }
+  const request = suggestionRevision,
+    q = keyword.value.trim(),
+    selected = tab.value;
+  suggestionLoading.value = true;
+  suggestionTimer = setTimeout(async () => {
+    suggestionController = new AbortController();
+    try {
+      const page = await (selected === 'notes' ? searchNotes : searchStalls)(
+        { q, sort: 'relevance', page: 1, size: 8, previewSize: 2, type: 'all' },
+        { signal: suggestionController.signal },
+      );
+      if (request !== suggestionRevision) return;
+      const values =
+        selected === 'notes'
+          ? page.items.map((item) => item.post.title)
+          : page.items.flatMap((stall) =>
+              stall.dishes.map((dish) => dish.name),
+            );
+      suggestions.value = [...new Set([q, ...values])].slice(0, 10);
+    } catch (error) {
+      if (
+        request === suggestionRevision &&
+        error.name !== 'AbortError' &&
+        error.code !== 'CANCELLED'
+      )
+        suggestionError.value = '匹配内容加载失败，可直接搜索';
+    } finally {
+      if (request === suggestionRevision) suggestionLoading.value = false;
+    }
+  }, 250);
+}
 const history = ref([]);
 const editingHistory = ref(false);
 const clearingHistory = ref(false);
@@ -170,6 +239,13 @@ function submit(term = keyword.value) {
     return;
   }
   validation.value = '';
+  cancelSuggestions();
+  editing.value = false;
+  keyword.value = q;
+  if (!q) {
+    void router.replace({ name: 'dishSearch', query: { tab: tab.value } });
+    return;
+  }
   history.value = rememberSearch(auth.user?.id, q);
   const query = { ...route.query, browse: '1' };
   delete query.page;
@@ -258,8 +334,19 @@ function clearHistory() {
 watch(
   () => [route.query, auth.user?.id],
   ([query, owner], old) => {
+    if (
+      restoringDiscoveryRoute &&
+      editing.value &&
+      keyword.value.trim() &&
+      old?.[1] === owner
+    ) {
+      state.cancel();
+      return;
+    }
     if (old && old[1] !== owner) location.clear();
     keyword.value = typeof query.q === 'string' ? query.q : '';
+    cancelSuggestions();
+    editing.value = false;
     history.value = readSearchHistory(owner);
     editingHistory.value = false;
     panel.value = '';
@@ -315,6 +402,7 @@ onMounted(async () => {
   }
 });
 onUnmounted(() => {
+  cancelSuggestions();
   observer?.disconnect();
   location.clear();
 });
@@ -340,6 +428,16 @@ onUnmounted(() => {
             placeholder="菜品、笔记"
             maxlength="50"
             enterkeyhint="search"
+            @input="editKeyword"
+            @focus="keyword.trim() && editKeyword()"
+            @compositionstart="
+              composing = true;
+              cancelSuggestions();
+            "
+            @compositionend="
+              composing = false;
+              editKeyword();
+            "
           /><button type="submit">搜索</button>
         </div>
         <RouterLink :to="{ name: 'home' }" aria-label="回到首页"
@@ -360,7 +458,10 @@ onUnmounted(() => {
           {{ label }}
         </button>
       </nav>
-      <div class="unified-search__tools">
+      <div
+        v-show="!showSuggestions && !showDiscovery"
+        class="unified-search__tools"
+      >
         <button
           type="button"
           :class="{ 'is-active': route.query.sort !== 'distance' }"
@@ -394,7 +495,26 @@ onUnmounted(() => {
       {{ location.error.value }}
     </p>
     <p v-if="validation && !panel" role="alert">{{ validation }}</p>
-    <template v-if="!hasSearch">
+    <section
+      v-if="showSuggestions"
+      class="unified-search__suggestions"
+      aria-label="搜索建议"
+    >
+      <p v-if="suggestionLoading" role="status">正在匹配…</p>
+      <p v-if="suggestionError" role="status">{{ suggestionError }}</p>
+      <button
+        v-for="term in suggestions"
+        :key="term"
+        type="button"
+        @click="submit(term)"
+      >
+        <AppIcon name="search" /><SearchHighlight
+          :text="term"
+          :keyword="keyword"
+        />
+      </button>
+    </section>
+    <template v-else-if="showDiscovery">
       <section
         v-if="history.length"
         class="unified-search__history"
@@ -466,7 +586,11 @@ onUnmounted(() => {
         </div>
         <div v-else class="unified-search__notes">
           <article v-for="item in state.data.value.items" :key="item.post.id">
-            <CommunityPostCard :post="item.post" @click="showPost" />
+            <CommunityPostCard
+              :post="item.post"
+              :keyword="state.data.value.query.q"
+              @click="showPost"
+            />
             <p v-if="item.diningHallName">
               {{ item.diningHallName }}
               <span>{{ distanceLabel(item.distanceMeters) }}</span>
@@ -613,7 +737,7 @@ onUnmounted(() => {
     position: sticky;
     top: 0;
     z-index: 8;
-    background: var(--zine-paper-card);
+    background: var(--ft-color-bg);
     padding: 6px 0 0;
   }
   &__bar {
@@ -762,6 +886,25 @@ onUnmounted(() => {
       border: 0;
       background: none;
       min-height: 36px;
+    }
+  }
+  &__suggestions {
+    button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      background: none;
+      padding: 8px 4px;
+      text-align: left;
+    }
+    svg {
+      width: 18px;
+      height: 18px;
+      color: var(--ft-color-text-muted);
+      flex: none;
     }
   }
   &__chips {

@@ -109,6 +109,33 @@ afterEach(() => {
   wrapper?.unmount();
   vi.unstubAllGlobals();
 });
+it('清空即回到发现且迟到响应不重新展示旧结果', async () => {
+  await render({ q: '鸡腿' });
+  expect(
+    wrapper.findAll('.search-stall h3 mark').map((mark) => mark.text()),
+  ).toContain('鸡腿');
+  await wrapper.get('#dish-keyword').setValue('');
+  await flushPromises();
+  expect(wrapper.find('.search-discovery').exists()).toBe(true);
+  expect(wrapper.find('.search-stall').exists()).toBe(false);
+  expect(router.currentRoute.value.query.q).toBeUndefined();
+});
+it('输入展示真实匹配建议，点选后提交搜索', async () => {
+  await render();
+  await wrapper.get('#dish-keyword').setValue('鸡');
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  await flushPromises();
+  const panel = wrapper.get('[aria-label="搜索建议"]');
+  expect(panel.text()).toContain('鸡腿饭');
+  expect(panel.findAll('mark').map((mark) => mark.text())).toContain('鸡');
+  await panel
+    .findAll('button')
+    .find((button) => button.text() === '鸡腿饭')
+    .trigger('click');
+  await flushPromises();
+  expect(router.currentRoute.value.query.q).toBe('鸡腿饭');
+  expect(wrapper.find('[aria-label="搜索建议"]').exists()).toBe(false);
+});
 it('统一入口先展示搜索发现，结果按档口分页并保留真实菜品入口', async () => {
   await render();
   expect(searchStalls).not.toHaveBeenCalled();

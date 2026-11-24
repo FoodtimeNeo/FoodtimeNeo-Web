@@ -13,6 +13,7 @@ import {
   fetchMyCommunityPosts,
   fetchMyCommunityFavorites,
 } from '@/api/community.api.js';
+import AppIcon from '@/components/base/AppIcon.vue';
 import CommunityPostCard from '@/components/community/CommunityPostCard.vue';
 import CommunityPins from '@/components/community/CommunityPins.vue';
 import CommunityPinManager from '@/components/community/CommunityPinManager.vue';
@@ -26,8 +27,24 @@ const router = useRouter();
 const auth = useAuthStore();
 const draftSummary = ref(null);
 const postGroups = ref([]);
-const postGroupId = ref(null);
-const postUnfiled = ref(false);
+const favoriteFolder = ref(
+  typeof route.query.folder === 'string' ? route.query.folder : null,
+);
+const postGroupId = ref(
+  favoriteFolder.value && !['all', 'unfiled'].includes(favoriteFolder.value)
+    ? favoriteFolder.value
+    : null,
+);
+const postUnfiled = ref(favoriteFolder.value === 'unfiled');
+const favoriteFolderTitle = computed(() =>
+  favoriteFolder.value === 'all'
+    ? '全部收藏'
+    : favoriteFolder.value === 'unfiled'
+      ? '默认分组'
+      : postGroups.value.find((group) => group.id === favoriteFolder.value)
+          ?.name || '收藏夹',
+);
+let groupRequest = 0;
 const postGroupsError = ref('');
 
 function formatBytes(bytes) {
@@ -180,27 +197,71 @@ watch(isDetailModalOpen, (open) => {
 });
 
 async function loadPostGroups() {
+  const ticket = ++groupRequest,
+    owner = auth.user?.id;
   if (!auth.user?.id) {
     postGroups.value = [];
     return;
   }
   postGroupsError.value = '';
   try {
-    postGroups.value = await fetchFavoriteGroups('post');
+    const groups = await fetchFavoriteGroups('post');
+    if (ticket === groupRequest && auth.user?.id === owner)
+      postGroups.value = groups;
   } catch (error) {
-    postGroupsError.value = error.message || '无法读取收藏分组';
+    if (ticket === groupRequest && auth.user?.id === owner)
+      postGroupsError.value = error.message || '无法读取收藏分组';
   }
 }
 
-function selectPostGroup(groupId = null, onlyUnfiled = false) {
-  postGroupId.value = groupId;
-  postUnfiled.value = onlyUnfiled;
+function openFavoriteFolder(folder, navigate = true) {
+  favoriteFolder.value = folder;
+  postGroupId.value =
+    folder && !['all', 'unfiled'].includes(folder) ? folder : null;
+  postUnfiled.value = folder === 'unfiled';
   const feed = pages[tabs.findIndex(({ id }) => id === 'favorites')];
-  feed.version += 1;
-  feed.loadedAt = null;
-  feed.page = 1;
-  if (mode.value === 'favorites') loadFeed();
+  Object.assign(feed, {
+    version: feed.version + 1,
+    loadedAt: null,
+    page: 1,
+    loading: false,
+    posts: [],
+    hasMore: false,
+    error: '',
+  });
+  if (navigate) {
+    const query = { ...route.query, tab: 'favorites' };
+    if (folder) query.folder = folder;
+    else delete query.folder;
+    void router.push({ query });
+  }
+  if (mode.value === 'favorites') void loadFeed();
 }
+watch(
+  () => route.query.folder,
+  (folder) => {
+    const next = typeof folder === 'string' ? folder : null;
+    if (next !== favoriteFolder.value) openFavoriteFolder(next, false);
+  },
+);
+watch(
+  () => auth.user?.id,
+  () => {
+    groupRequest++;
+    postGroups.value = [];
+    postGroupsError.value = '';
+    const feed = pages[tabs.findIndex(({ id }) => id === 'favorites')];
+    Object.assign(feed, {
+      version: feed.version + 1,
+      loadedAt: null,
+      loading: false,
+      posts: [],
+      hasMore: false,
+    });
+    void loadPostGroups();
+    if (mode.value === 'favorites') void loadFeed();
+  },
+);
 
 async function createPostGroup() {
   const name = window.prompt('新分组名称（1–20 个字符）');
@@ -230,6 +291,10 @@ function openCreateModal(prefill = null) {
 
 async function loadFeed(more = false) {
   const section = mode.value;
+  if (section === 'favorites' && !favoriteFolder.value) {
+    await loadPostGroups();
+    return;
+  }
   const feed = activePage.value;
   if (feed.loading) return;
   const version = ++feed.version;
@@ -337,6 +402,12 @@ function changeMode(next, reload = false) {
   mode.value = next;
   if (route.query.tab !== next) {
     const query = { ...route.query };
+    if (next !== 'favorites') {
+      delete query.folder;
+      favoriteFolder.value = null;
+      postGroupId.value = null;
+      postUnfiled.value = false;
+    }
     if (next === 'public') delete query.tab;
     else query.tab = next;
     void router.replace({ query });
@@ -492,6 +563,7 @@ async function endGesture(event) {
     const section = mode.value;
     refreshing.value = true;
     await loadFeed();
+    if (section === 'favorites' && favoriteFolder.value) await loadPostGroups();
     if (section === mode.value) refreshing.value = false;
   }
 }
@@ -532,6 +604,7 @@ watch(
 );
 
 onUnmounted(() => {
+  groupRequest++;
   for (const page of pages) page.version++;
   clearTimeout(settleTimer);
   if (typeof window !== 'undefined') {
@@ -607,39 +680,7 @@ onUnmounted(() => {
         </RouterLink>
       </div>
     </header>
-    <div v-if="mode === 'favorites'" class="community-groups">
-      <button
-        type="button"
-        :class="{ 'is-active': !postGroupId && !postUnfiled }"
-        @click="selectPostGroup()"
-      >
-        全部
-      </button>
-      <button
-        type="button"
-        :class="{ 'is-active': postUnfiled }"
-        @click="selectPostGroup(null, true)"
-      >
-        默认分组
-      </button>
-      <button
-        v-for="group in postGroups"
-        :key="group.id"
-        type="button"
-        :class="{ 'is-active': postGroupId === group.id }"
-        @click="selectPostGroup(group.id)"
-      >
-        {{ group.name }} ({{ group.itemCount }})
-      </button>
-      <button
-        type="button"
-        class="community-groups__create"
-        @click="createPostGroup"
-      >
-        + 新建分组
-      </button>
-      <p v-if="postGroupsError" role="alert">{{ postGroupsError }}</p>
-    </div>
+
     <div
       class="community-stream"
       @touchstart.passive="startGesture"
@@ -695,7 +736,51 @@ onUnmounted(() => {
                 aria-hidden="true"
               ></span>
             </div>
-            <div class="community-pager__feed">
+            <section
+              v-if="tab.id === 'favorites' && !favoriteFolder"
+              class="favorite-folders"
+              aria-label="收藏夹"
+            >
+              <button
+                type="button"
+                class="favorite-folders__create"
+                @click="createPostGroup"
+              >
+                + 新建收藏夹
+              </button>
+              <p v-if="postGroupsError" role="alert">
+                {{ postGroupsError }}
+                <button type="button" @click="loadPostGroups">重试</button>
+              </p>
+              <button
+                v-for="folder in [
+                  { id: 'all', name: '全部' },
+                  { id: 'unfiled', name: '默认分组' },
+                  ...postGroups,
+                ]"
+                :key="folder.id"
+                type="button"
+                class="favorite-folders__item"
+                @click="openFavoriteFolder(folder.id)"
+              >
+                <AppIcon name="folder" /><span
+                  ><strong>{{ folder.name }}</strong
+                  ><small v-if="folder.itemCount !== undefined"
+                    >{{ folder.itemCount }} 篇</small
+                  ></span
+                ><span aria-hidden="true">›</span>
+              </button>
+            </section>
+            <div v-else class="community-pager__feed">
+              <header
+                v-if="tab.id === 'favorites'"
+                class="favorite-folders__heading"
+              >
+                <button type="button" @click="openFavoriteFolder(null)">
+                  ‹ 收藏夹
+                </button>
+                <h2>{{ favoriteFolderTitle }}</h2>
+              </header>
               <CommunityPinManager
                 v-if="tab.id === 'public' && !pages[index].query"
                 @changed="pinsChanged"
@@ -796,6 +881,76 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+.favorite-folders {
+  display: grid;
+  gap: 12px;
+  button {
+    font: inherit;
+    color: var(--ft-color-text);
+    cursor: pointer;
+  }
+  &__create {
+    justify-self: start;
+    min-height: 44px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--ft-color-border);
+    border-radius: 12px;
+  }
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 84px;
+    padding: 16px;
+    background: var(--zine-paper-card);
+    border: 1px solid var(--ft-color-border);
+    border-radius: 14px;
+    text-align: left;
+  }
+  &__item > svg {
+    width: 30px;
+    height: 30px;
+    color: var(--ft-color-primary);
+    flex: none;
+  }
+  &__item > span:first-of-type {
+    flex: 1;
+    min-width: 0;
+  }
+  strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  small {
+    display: block;
+    color: var(--ft-color-text-muted);
+    margin-top: 4px;
+  }
+  &__heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  &__heading button {
+    min-height: 44px;
+    padding: 4px;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: var(--ft-color-text);
+    cursor: pointer;
+  }
+  &__heading h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+}
+
 .community-feed-view {
   min-height: calc(100vh - 200px);
   padding: 16px var(--zine-page-padding, 32px) 80px;

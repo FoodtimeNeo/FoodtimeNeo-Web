@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount, RouterLinkStub, flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { useAuthStore } from '@/store/useAuthStore.js';
+const fetchFavoriteGroups = vi.fn();
+vi.mock('@/api/favoriteGroups.api.js', () => ({
+  fetchFavoriteGroups: (...args) => fetchFavoriteGroups(...args),
+  createFavoriteGroup: vi.fn(),
+}));
 
 const fetchCommunityPosts = vi.fn();
 const fetchMyCommunityPosts = vi.fn();
@@ -52,13 +58,20 @@ describe('CommunityFeedView', () => {
     mockPush.mockReset();
     mockReplace.mockReset();
     routeState.query = {};
+    fetchFavoriteGroups.mockReset();
+    fetchFavoriteGroups.mockResolvedValue([
+      { id: 'group-one', name: '晚饭', itemCount: 2 },
+    ]);
   });
 
   it.each([
     ['favorites', 'fetchMyCommunityFavorites'],
     ['mine', 'fetchMyCommunityPosts'],
   ])('从个人页直接打开 %s 分类，不先请求发现列表', async (tab, name) => {
-    routeState.query = { tab };
+    routeState.query = {
+      tab,
+      ...(tab === 'favorites' ? { folder: 'all' } : {}),
+    };
     fetchCommunityPosts.mockResolvedValue({ items: [] });
     fetchMyCommunityFavorites.mockResolvedValue({ items: [] });
     fetchMyCommunityPosts.mockResolvedValue({ items: [] });
@@ -73,6 +86,53 @@ describe('CommunityFeedView', () => {
     expect(
       wrapper.get('.community-tabs button[aria-pressed="true"]').text(),
     ).toBe(tab === 'favorites' ? '收藏' : '我的食记');
+    wrapper.unmount();
+  });
+  it('收藏入口只列出收藏夹，点入后读取对应内容，全部和默认分组独立', async () => {
+    useAuthStore().user = { id: 'owner', role: 'user' };
+    routeState.query = { tab: 'favorites' };
+    fetchMyCommunityFavorites.mockResolvedValue({ items: [], total: 0 });
+    const wrapper = mountView();
+    await flushPromises();
+    expect(fetchMyCommunityFavorites).not.toHaveBeenCalled();
+    const folders = wrapper.get('[aria-label="收藏夹"]');
+    expect(folders.text()).toContain('默认分组');
+    expect(folders.text()).toContain('晚饭');
+    await folders
+      .findAll('button')
+      .find((button) => button.text().startsWith('晚饭'))
+      .trigger('click');
+    await flushPromises();
+    expect(fetchMyCommunityFavorites.mock.calls.at(-1)[0]).toMatchObject({
+      groupId: 'group-one',
+      page: 1,
+    });
+    await wrapper.get('.favorite-folders__heading button').trigger('click');
+    await flushPromises();
+    expect(wrapper.find('[aria-label="收藏夹"]').exists()).toBe(true);
+    await wrapper
+      .get('[aria-label="收藏夹"]')
+      .findAll('button')
+      .find((button) => button.text().startsWith('全部'))
+      .trigger('click');
+    await flushPromises();
+    expect(fetchMyCommunityFavorites.mock.calls.at(-1)[0]).not.toHaveProperty(
+      'groupId',
+    );
+    expect(fetchMyCommunityFavorites.mock.calls.at(-1)[0]).not.toHaveProperty(
+      'unfiled',
+    );
+    await wrapper.get('.favorite-folders__heading button').trigger('click');
+    await flushPromises();
+    await wrapper
+      .get('[aria-label="收藏夹"]')
+      .findAll('button')
+      .find((button) => button.text().startsWith('默认分组'))
+      .trigger('click');
+    await flushPromises();
+    expect(fetchMyCommunityFavorites.mock.calls.at(-1)[0]).toMatchObject({
+      unfiled: true,
+    });
     wrapper.unmount();
   });
   it('显示各分类自己的标题与说明，保留发现页原文', async () => {

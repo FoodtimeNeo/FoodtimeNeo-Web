@@ -4,6 +4,7 @@ import { searchStallDishes } from '@/api/search.api.js';
 import { recordedPrice } from '@/utils/priceHistory.js';
 import { distanceLabel } from '@/utils/searchPresentation.js';
 import MediaImage from '@/components/base/MediaImage.vue';
+import SearchHighlight from '@/components/base/SearchHighlight.vue';
 const props = defineProps({
   stall: { type: Object, required: true },
   columns: { type: Number, default: 4 },
@@ -96,7 +97,10 @@ const dishRoute = (stall, dish) => ({
         <MediaImage :src="stall.imageUrl" :alt="stall.name" compact />
         <div>
           <h2>
-            {{ stall.name }}<span>（{{ stall.diningHallName }}）</span>
+            <SearchHighlight
+              :text="`${stall.name}（${stall.diningHallName}）`"
+              :keyword="query.q"
+            />
           </h2>
           <p>
             <strong v-if="stall.averageScore != null"
@@ -124,7 +128,9 @@ const dishRoute = (stall, dish) => ({
             compact
             fit="contain"
           />
-          <h3>{{ dish.name }}</h3>
+          <h3 :title="dish.name">
+            <SearchHighlight :text="dish.name" :keyword="query.q" />
+          </h3>
           <p class="search-stall__metrics">
             <span class="search-stall__price">{{
               recordedPrice(dish.price, dish.priceUnit)
@@ -171,7 +177,9 @@ const dishRoute = (stall, dish) => ({
   h2 {
     font: 600 15px/1.4 var(--ft-font-family-body);
     margin: 0;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     span {
       font-weight: 400;
     }
@@ -222,9 +230,8 @@ const dishRoute = (stall, dish) => ({
   h3 {
     margin: 3px 0 1px;
     font: 500 13px/1.3 var(--ft-font-family-body);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     overflow: hidden;
   }
   &__metrics {
