@@ -94,9 +94,7 @@ const mode = ref(
     ? requestedTab
     : 'public',
 );
-const input = ref('');
 const keyword = ref('');
-const searchOpen = ref(false);
 const refreshing = ref(false);
 const pull = ref(0);
 const tabs = [
@@ -391,21 +389,8 @@ function selectTab(section) {
   if (dragging.value || settleTimer) return;
   changeMode(section);
 }
-function search() {
-  const query = input.value.trim();
-  if (query === keyword.value) return;
-  keyword.value = query;
-  changeMode(mode.value, true);
-}
-
 function toggleSearch() {
-  const wasOpen = searchOpen.value && publicMode.value;
-  if (!publicMode.value) changeMode('public');
-  searchOpen.value = !wasOpen;
-  if (!searchOpen.value) {
-    input.value = '';
-    search();
-  }
+  void router.push({ name: 'dishSearch', query: { tab: 'notes' } });
 }
 
 function startGesture(event) {
@@ -598,7 +583,6 @@ onUnmounted(() => {
           class="community-tools__search"
           type="button"
           aria-label="搜索食记"
-          :aria-expanded="searchOpen && publicMode"
           @click="toggleSearch"
         >
           <svg
@@ -623,22 +607,6 @@ onUnmounted(() => {
         </RouterLink>
       </div>
     </header>
-    <form
-      v-if="searchOpen && publicMode"
-      class="community-search"
-      role="search"
-      @submit.prevent="search"
-    >
-      <label for="community-keyword">搜索食记</label>
-      <input
-        id="community-keyword"
-        v-model="input"
-        type="search"
-        maxlength="50"
-        placeholder="菜名、档口或关键词"
-      />
-      <button class="button-ink" type="submit">搜索</button>
-    </form>
     <div v-if="mode === 'favorites'" class="community-groups">
       <button
         type="button"

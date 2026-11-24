@@ -111,7 +111,7 @@ describe('CommunityFeedView', () => {
     wrapper.unmount();
   });
 
-  it('只看关注可以搜索食记，翻页保留查询范围', async () => {
+  it('社区搜索进入统一搜索的笔记页，保持关注信息流独立', async () => {
     fetchCommunityPosts.mockResolvedValue({
       items: [],
       hasMore: true,
@@ -119,31 +119,21 @@ describe('CommunityFeedView', () => {
     });
     const wrapper = mountView();
     await flushPromises();
-    const tab = wrapper
+    await wrapper
       .findAll('.community-tabs button')
-      .find((item) => item.text() === '关注');
-    await tab.trigger('click');
+      .find((item) => item.text() === '关注')
+      .trigger('click');
     await flushPromises();
     expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
       cursor: undefined,
       following: true,
     });
     await wrapper.get('.community-tools__search').trigger('click');
-    await wrapper.get('#community-keyword').setValue('  鸡腿饭  ');
-    await wrapper.get('.community-search').trigger('submit');
-    await flushPromises();
-    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
-      cursor: undefined,
-      following: true,
-      q: '鸡腿饭',
+    expect(mockPush).toHaveBeenCalledWith({
+      name: 'dishSearch',
+      query: { tab: 'notes' },
     });
-    await wrapper.get('.community-more').trigger('click');
-    await flushPromises();
-    expect(fetchCommunityPosts).toHaveBeenLastCalledWith({
-      cursor: 'next',
-      following: true,
-      q: '鸡腿饭',
-    });
+    expect(wrapper.find('#community-keyword').exists()).toBe(false);
     wrapper.unmount();
   });
 
