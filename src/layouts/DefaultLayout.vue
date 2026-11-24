@@ -12,16 +12,26 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 </script>
 
 <template>
-  <div class="default-layout" :class="{ 'default-layout--compact': compact }">
+  <div
+    class="default-layout"
+    :class="{
+      'default-layout--compact': compact,
+      'default-layout--search': route.name === 'dishSearch',
+    }"
+  >
     <div class="desk-decor desk-decor--torn-left" aria-hidden="true"></div>
     <div class="desk-decor desk-decor--note-left" aria-hidden="true"></div>
     <div class="desk-decor desk-decor--stamp-left" aria-hidden="true"></div>
     <div class="desk-decor desk-decor--stamp-right" aria-hidden="true"></div>
     <div class="desk-decor desk-decor--sketch-right" aria-hidden="true"></div>
     <div class="desk-decor desk-decor--tape-bottom" aria-hidden="true"></div>
-    <AppHeader />
+    <AppHeader v-if="route.name !== 'dishSearch'" />
     <div class="default-layout__paper">
-      <nav class="breadcrumbs" aria-label="面包屑">
+      <nav
+        v-if="route.name !== 'dishSearch'"
+        class="breadcrumbs"
+        aria-label="面包屑"
+      >
         <template v-for="(crumb, index) in breadcrumbs" :key="crumb.name">
           <span v-if="index" class="breadcrumbs__separator" aria-hidden="true"
             >/</span
@@ -44,6 +54,15 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 </template>
 
 <style scoped>
+.default-layout--search .default-layout__paper {
+  margin-top: 0;
+  mask: none;
+  -webkit-mask: none;
+  min-height: 100dvh;
+}
+.default-layout--search .default-layout__main {
+  padding: 0;
+}
 .default-layout {
   position: relative;
   min-height: 100vh;

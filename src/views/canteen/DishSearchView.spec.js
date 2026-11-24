@@ -1,44 +1,60 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
-import DishSearchView from './DishSearchView.vue';
-import { searchDishes } from '@/api/dish.api.js';
-import { fetchCanteens } from '@/api/canteen.api.js';
 import { createPinia } from 'pinia';
-
-vi.mock('@/api/dish.api.js', () => ({ searchDishes: vi.fn() }));
+import DishSearchView from './DishSearchView.vue';
+import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
+import {
+  searchStalls,
+  searchNotes,
+  searchStallDishes,
+  fetchSearchCapabilities,
+} from '@/api/search.api.js';
+import { fetchCanteens } from '@/api/canteen.api.js';
+vi.mock('@/api/search.api.js', () => ({
+  searchStalls: vi.fn(),
+  searchNotes: vi.fn(),
+  searchStallDishes: vi.fn(),
+  fetchSearchCapabilities: vi.fn(),
+}));
 vi.mock('@/api/canteen.api.js', () => ({ fetchCanteens: vi.fn() }));
 vi.mock('@/api/recommendation.api.js', () => ({
   fetchDailyRecommendations: vi.fn().mockResolvedValue([]),
 }));
-
-const stub = { template: '<div />' };
 const dish = {
   id: 'dish',
   name: '鸡腿饭',
   price: 12.3,
-  stallId: 'stall',
-  stallName: '二号档口',
-  diningHallId: 'hall',
-  diningHallName: '学苑',
+  priceUnit: 'serving',
+  imageUrl: '/uploads/dish.webp',
   averageScore: 4.5,
   reviewCount: 8,
 };
-let wrapper;
-let router;
-
+const stall = {
+  id: 'stall',
+  name: '二号档口',
+  diningHallId: 'hall',
+  diningHallName: '明湖',
+  averageScore: 4.5,
+  reviewCount: 8,
+  matchCount: 8,
+  dishes: [dish],
+};
+let wrapper, router;
 async function render(query = {}) {
+  const stub = { template: '<div/>' };
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
-      { path: '/canteens', name: 'canteenList', component: stub },
+      { path: '/', name: 'home', component: stub },
+      { path: '/search', name: 'dishSearch', component: DishSearchView },
       {
-        path: '/canteens/search',
-        name: 'dishSearch',
-        component: DishSearchView,
+        path: '/h/:canteenId/s/:stallId',
+        name: 'stallDetail',
+        component: stub,
       },
       {
-        path: '/canteens/:canteenId/:stallId/:dishId',
+        path: '/h/:canteenId/s/:stallId/d/:dishId',
         name: 'dishDetail',
         component: stub,
       },
@@ -46,164 +62,218 @@ async function render(query = {}) {
   });
   await router.push({ name: 'dishSearch', query });
   wrapper = mount(DishSearchView, {
-    global: { plugins: [router, createPinia()] },
+    global: {
+      plugins: [router, createPinia()],
+      stubs: {
+        ElDialog: {
+          props: ['modelValue'],
+          template:
+            '<section v-if="modelValue" class="dialog-stub"><slot/></section>',
+        },
+        CommunityPostDetailModal: true,
+      },
+    },
   });
   await flushPromises();
 }
-
-async function submit() {
+async function click(text) {
+  await wrapper
+    .findAll('button')
+    .find((button) => button.text() === text)
+    .trigger('click');
+  await flushPromises();
+}
+beforeEach(() => {
+  vi.clearAllMocks();
+  localStorage.clear();
+  searchStalls.mockImplementation(async (query) => ({
+    items: [stall],
+    total: 11,
+    page: query.page,
+    size: 10,
+  }));
+  searchNotes.mockResolvedValue({ items: [], total: 0, page: 1, size: 20 });
+  searchStallDishes.mockResolvedValue({
+    items: [dish],
+    total: 21,
+    page: 1,
+    size: 20,
+  });
+  fetchCanteens.mockResolvedValue([
+    { id: 'hall', name: '明湖' },
+    { id: 'east', name: '东区' },
+  ]);
+  fetchSearchCapabilities.mockResolvedValue({ distanceHallIds: [] });
+});
+afterEach(() => {
+  wrapper?.unmount();
+  vi.unstubAllGlobals();
+});
+it('统一入口先展示搜索发现，结果按档口分页并保留真实菜品入口', async () => {
+  await render();
+  expect(searchStalls).not.toHaveBeenCalled();
+  expect(wrapper.find('.search-discovery').exists()).toBe(true);
+  await wrapper.get('#dish-keyword').setValue('鸡腿');
   await wrapper.get('form').trigger('submit');
   await flushPromises();
-}
-
-beforeEach(() => {
-  searchDishes.mockReset();
-  searchDishes.mockImplementation(async (_q, page) => ({
-    items: [dish],
-    page,
-    size: 20,
-    total: 21,
-  }));
-  fetchCanteens.mockReset();
-  fetchCanteens.mockResolvedValue([{ id: 'hall', name: '学苑' }]);
-});
-afterEach(() => wrapper?.unmount());
-
-it('无关键词也可浏览全部，提交关键词后从第一页搜索并显示评分与价格', async () => {
-  await render();
-  expect(searchDishes).not.toHaveBeenCalled();
-  expect(wrapper.find('.search-discovery').exists()).toBe(true);
-  await submit();
-  expect(searchDishes).toHaveBeenCalledTimes(1);
-  expect(searchDishes.mock.calls[0][0]).toBe('');
-  expect(searchDishes.mock.calls[0][1]).toBe(1);
-  const link = wrapper.get('li a');
-  expect(link.text()).toContain('学苑 · 二号档口');
-  expect(link.text()).toContain('4.5 分 · 8 条');
-  expect(link.text()).toContain('12.30');
+  expect(searchStalls.mock.calls[0][0]).toMatchObject({
+    q: '鸡腿',
+    page: 1,
+    size: 10,
+    previewSize: 8,
+  });
+  expect(wrapper.get('.search-stall h2').text()).toBe('二号档口（明湖）');
+  expect(wrapper.findAll('.search-stall li')).toHaveLength(1);
+  expect(wrapper.get('.search-stall li a').attributes('href')).toContain(
+    '/d/dish',
+  );
   await wrapper.get('button[aria-label="第 2 页"]').trigger('click');
   await flushPromises();
-  expect(searchDishes.mock.calls.at(-1).slice(0, 2)).toEqual(['', 2]);
-  await wrapper.get('#dish-keyword').setValue('豆腐');
-  await submit();
-  expect(searchDishes.mock.calls.at(-1)[0]).toBe('豆腐');
-  expect(searchDishes.mock.calls.at(-1)[1]).toBe(1);
-  expect(router.currentRoute.value.query.q).toBe('豆腐');
+  expect(searchStalls.mock.calls.at(-1)[0].page).toBe(2);
 });
-
-it('食堂、价格、评分与排序进入 URL 并传给接口', async () => {
-  await render();
-  const numbers = wrapper.findAll('input[type="number"]');
-  await numbers[0].setValue('10');
-  await numbers[1].setValue('30');
-  const selects = wrapper.findAll('select');
-  await wrapper.get('input[type="checkbox"]').setValue(true);
-  await selects[0].setValue('4.0');
-  await selects[1].setValue('price_desc');
-  await submit();
-  expect(searchDishes.mock.calls.at(-1)[3]).toMatchObject({
-    q: '',
-    diningHallIds: ['hall'],
+it('筛选在完成时提交，多选食堂与价格评分进入查询，关闭不自动应用', async () => {
+  await render({ q: '鸡腿', browse: '1' });
+  await wrapper.get('button[aria-label="筛选"]').trigger('click');
+  await flushPromises();
+  const checks = wrapper.findAll('input[type=checkbox]');
+  await checks[0].setValue(true);
+  await checks[1].setValue(true);
+  await click('价格');
+  const amounts = wrapper.findAll('input[type=number]');
+  await amounts[0].setValue(10);
+  await amounts[1].setValue(20);
+  await click('评分');
+  await wrapper.findAll('input[type=radio]')[3].setValue(true);
+  await click('完成');
+  expect(searchStalls.mock.calls.at(-1)[0]).toMatchObject({
+    diningHallIds: ['hall', 'east'],
     minPrice: '10',
-    maxPrice: '30',
+    maxPrice: '20',
     minRating: '4.0',
-    sort: 'price_desc',
-  });
-  expect(router.currentRoute.value.query).toMatchObject({
-    halls: ['hall'],
-    minPrice: '10',
-    maxPrice: '30',
-    minRating: '4.0',
-    sort: 'price_desc',
   });
 });
-
-it('价格区间非法时不发请求并显示错误', async () => {
-  await render();
-  await wrapper.findAll('input[type="number"]')[0].setValue('30');
-  await wrapper.findAll('input[type="number"]')[1].setValue('10');
-  const before = searchDishes.mock.calls.length;
-  await submit();
-  expect(searchDishes.mock.calls.length).toBe(before);
+it('价格错误不提交且保留筛选面板', async () => {
+  await render({ browse: '1' });
+  await wrapper.get('button[aria-label="筛选"]').trigger('click');
+  await flushPromises();
+  await click('价格');
+  const values = wrapper.findAll('input[type=number]');
+  await values[0].setValue(30);
+  await values[1].setValue(10);
+  const before = searchStalls.mock.calls.length;
+  await click('完成');
+  expect(searchStalls).toHaveBeenCalledTimes(before);
   expect(wrapper.text()).toContain('最低价格不能高于最高价格');
 });
-
-it('点击数字直接跨页，保留已提交的关键词和筛选', async () => {
-  searchDishes.mockImplementation(async (_q, page) => ({
-    items: [dish],
-    page,
-    size: 20,
-    total: 400,
-  }));
+it('切换笔记保留关键词与食堂，笔记类型、排序独立，不继承菜品价格', async () => {
   await render({
-    q: '豆腐',
+    q: '牛肉',
     halls: ['hall'],
     minPrice: '10',
     sort: 'price_asc',
+    browse: '1',
   });
-  for (const page of [3, 5, 3, 1]) {
-    await wrapper.get(`button[aria-label="第 ${page} 页"]`).trigger('click');
-    await flushPromises();
-    expect(searchDishes.mock.calls.at(-1)[1]).toBe(page);
-    expect(searchDishes.mock.calls.at(-1)[3]).toMatchObject({
-      q: '豆腐',
-      diningHallIds: ['hall'],
-      minPrice: '10',
-      sort: 'price_asc',
-    });
-  }
+  await click('笔记');
+  expect(searchNotes.mock.calls.at(-1)[0]).toMatchObject({
+    q: '牛肉',
+    diningHallIds: ['hall'],
+    sort: 'relevance',
+    type: 'all',
+  });
+  expect(searchNotes.mock.calls.at(-1)[0]).not.toHaveProperty('minPrice');
+  await wrapper.get('button[aria-label="筛选"]').trigger('click');
+  await flushPromises();
+  await click('笔记类型');
+  await wrapper.findAll('input[type=radio]')[2].setValue(true);
+  await click('完成');
+  expect(searchNotes.mock.calls.at(-1)[0].type).toBe('repost');
 });
-
-it('远页进入、刷新与再次挂载沿用 URL 页码，筛选提交回第一页', async () => {
-  searchDishes.mockImplementation(async (_q, page) => ({
-    items: [dish],
-    page,
-    size: 20,
-    total: 400,
-  }));
-  await render({ q: '饭', page: '5' });
-  expect(searchDishes.mock.calls.at(-1)[1]).toBe(5);
-  expect(wrapper.get('button[aria-current="page"]').text()).toBe('5');
-  await wrapper.get('button[aria-label="第 3 页"]').trigger('click');
-  await flushPromises();
-  expect(router.currentRoute.value.query.page).toBe('3');
-  wrapper.unmount();
-  wrapper = mount(DishSearchView, {
-    global: { plugins: [router, createPinia()] },
+it('横滑加载后续匹配菜品，继承筛选且不增加额外查看入口', async () => {
+  searchStallDishes.mockResolvedValue({
+    items: [{ ...dish, id: 'next-dish', name: '后续菜品' }],
+    total: 21,
+    page: 2,
+    size: 8,
   });
+  await render({ q: '鸡腿', minPrice: '10', browse: '1' });
+  const strip = wrapper.get('.search-stall ul');
+  Object.defineProperties(strip.element, {
+    clientWidth: { value: 300 },
+    scrollWidth: { value: 800 },
+    scrollLeft: { value: 500 },
+  });
+  await strip.trigger('scroll');
   await flushPromises();
-  expect(searchDishes.mock.calls.at(-1)[1]).toBe(3);
-  await wrapper.get('#dish-keyword').setValue('面');
-  await submit();
-  expect(searchDishes.mock.calls.at(-1).slice(0, 2)).toEqual(['面', 1]);
+  expect(searchStallDishes.mock.calls[0][0]).toMatchObject({
+    q: '鸡腿',
+    minPrice: '10',
+    stallId: 'stall',
+    page: 2,
+    size: 8,
+  });
+  expect(wrapper.get('.search-stall').text()).toContain('后续菜品');
+  expect(wrapper.text()).not.toContain('全部 8 道匹配菜品');
   expect(router.currentRoute.value.query.page).toBeUndefined();
 });
-it('翻页失败保留原成功页，重试再提交显示页码', async () => {
-  searchDishes.mockImplementation(async (_q, page) => ({
-    items: [dish],
-    page,
-    size: 20,
-    total: 400,
-  }));
+it('没有可用食堂坐标时距离操作不改变排序，也不伪造定位', async () => {
   await render({ browse: '1' });
-  searchDishes.mockRejectedValueOnce(new Error('暂时离线'));
-  await wrapper.get('button[aria-label="第 3 页"]').trigger('click');
-  await flushPromises();
-  expect(wrapper.text()).toContain('暂时离线');
-  expect(wrapper.text()).toContain('鸡腿饭');
-  expect(wrapper.get('button[aria-current="page"]').text()).toBe('1');
-  await wrapper
-    .findAll('button')
-    .find((b) => b.text().includes('重试'))
-    .trigger('click');
-  await flushPromises();
-  expect(searchDishes.mock.calls.at(-1)[1]).toBe(3);
-  expect(wrapper.get('button[aria-current="page"]').text()).toBe('3');
+  const count = searchStalls.mock.calls.length;
+  await click('距离最近');
+  expect(wrapper.text()).toContain('食堂位置待补充');
+  expect(searchStalls).toHaveBeenCalledTimes(count);
+  expect(router.currentRoute.value.query.sort).toBeUndefined();
 });
-it('数据缩减时回退有效页，无效页参数不直接传给服务器', async () => {
-  await render({ page: '999' });
-  expect(router.currentRoute.value.query.page).toBe('2');
-  await router.replace({ name: 'dishSearch', query: { page: '-5' } });
+it('旧请求晚返回不会覆盖新关键词的分组结果', async () => {
+  let resolve;
+  searchStalls.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  await render({ q: '旧', browse: '1' });
+  await wrapper.get('#dish-keyword').setValue('新');
+  await wrapper.get('form').trigger('submit');
   await flushPromises();
-  expect(searchDishes.mock.calls.at(-1)[1]).toBe(1);
+  resolve({
+    items: [{ ...stall, name: '旧结果' }],
+    total: 1,
+    page: 1,
+    size: 10,
+  });
+  await flushPromises();
+  expect(wrapper.text()).not.toContain('旧结果');
+  expect(wrapper.text()).toContain('二号档口');
 });
+it('异常分页显示可重试错误，不当作空结果', async () => {
+  searchStalls.mockResolvedValue({ items: [], total: -1, size: 10, page: 1 });
+  await render({ browse: '1' });
+  expect(wrapper.text()).toContain('搜索分页响应异常');
+});
+
+it.each(['deleted', 'postEdited'])(
+  '笔记详情 %s 不传 ID 时，也移除结果并更新总数',
+  async (event) => {
+    const note = {
+      id: 'note',
+      title: '牛肉笔记',
+      status: 'approved',
+      images: [],
+      author: { id: 'author', name: '同学' },
+      likeCount: 0,
+    };
+    searchNotes.mockResolvedValue({
+      items: [{ post: note, diningHallName: '明湖', distanceMeters: null }],
+      total: 1,
+      size: 20,
+      page: 1,
+    });
+    await render({ tab: 'notes', browse: '1' });
+    await wrapper.get('.community-post-card').trigger('click');
+    await flushPromises();
+    wrapper.getComponent(CommunityPostDetailModal).vm.$emit(event);
+    await flushPromises();
+    expect(wrapper.find('.community-post-card').exists()).toBe(false);
+    expect(wrapper.get('.unified-search__count').text()).toContain('0 篇笔记');
+  },
+);
