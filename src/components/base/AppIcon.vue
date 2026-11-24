@@ -1,6 +1,7 @@
 <script setup>
 defineProps({ name: { type: String, default: 'note' } });
 const paths = {
+  chevronDown: 'm6 9 6 6 6-6',
   home: 'm3 10 9-7 9 7M5 9v12h14V9M9 21v-7h6v7',
   filter: 'M3 4h18l-7 8v7l-4 2V12Z',
   dish: 'M4 12h16M5 12a7 7 0 0 0 14 0M8 8V5m4 3V3m4 5V5M8 21h8',
