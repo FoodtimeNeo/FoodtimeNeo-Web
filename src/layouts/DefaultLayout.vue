@@ -214,8 +214,9 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
   .default-layout--compact .default-layout__paper {
     margin-top: 0;
   }
-  .default-layout--compact .breadcrumbs {
-    padding: 8px var(--zine-page-padding-mobile);
+  .default-layout--compact .breadcrumbs,
+  .breadcrumbs {
+    display: none;
   }
   .default-layout__paper {
     width: 100%;
@@ -236,10 +237,6 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
     padding-bottom: calc(
       var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom)
     );
-  }
-
-  .breadcrumbs {
-    padding: var(--ft-space-1) var(--zine-page-padding-mobile);
   }
 
   .desk-decor {

@@ -54,7 +54,7 @@ const navigationGroups = computed(() => [
         to: { name: 'community', query: { tab: 'mine' } },
       },
       { label: '菜品点评', icon: 'comment', to: { name: 'myReviews' } },
-      { label: '餐厅点评', icon: 'dish', to: { name: 'myVenueReviews' } },
+      { label: '餐厅点评', icon: 'store', to: { name: 'myVenueReviews' } },
       { label: '我的回复', icon: 'reply', to: { name: 'myReviewReplies' } },
       { label: '我的提交', icon: 'upload', to: { name: 'mySubmissions' } },
     ],
@@ -79,7 +79,7 @@ const navigationGroups = computed(() => [
         ? [
             {
               label: '账号安全',
-              icon: 'shield',
+              icon: 'key',
               to: { name: 'accountLifecycle' },
             },
           ]

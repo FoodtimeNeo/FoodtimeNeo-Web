@@ -7,6 +7,7 @@ import {
   resolveActiveNavigation,
 } from './navigation.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import AppIcon from '@/components/base/AppIcon.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -17,7 +18,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
 <template>
   <nav class="mobile-tab-bar" aria-label="底部导航">
-    <template v-for="(item, index) in navigationItems" :key="item.name">
+    <template v-for="item in navigationItems" :key="item.name">
       <RouterLink
         v-if="router.hasRoute(item.name)"
         class="mobile-tab-bar__item"
@@ -25,10 +26,10 @@ const activeName = computed(() => resolveActiveNavigation(route));
         :class="{ 'is-active': activeName === item.name }"
         :aria-current="activeName === item.name ? 'location' : undefined"
       >
-        <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          item.code || String(index).padStart(2, '0')
-        }}</span>
-        <span>{{ item.label }}</span>
+        <span class="mobile-tab-bar__icon" aria-hidden="true">
+          <AppIcon :name="item.iconName || 'home'" />
+        </span>
+        <span class="mobile-tab-bar__label">{{ item.label }}</span>
       </RouterLink>
       <span
         v-else
@@ -36,10 +37,10 @@ const activeName = computed(() => resolveActiveNavigation(route));
         aria-disabled="true"
         :title="`${item.label}将在后续阶段开放`"
       >
-        <span class="mobile-tab-bar__icon" aria-hidden="true">{{
-          item.code || String(index).padStart(2, '0')
-        }}</span>
-        <span>{{ item.label }}</span>
+        <span class="mobile-tab-bar__icon" aria-hidden="true">
+          <AppIcon :name="item.iconName || 'home'" />
+        </span>
+        <span class="mobile-tab-bar__label">{{ item.label }}</span>
       </span>
     </template>
   </nav>
@@ -60,41 +61,45 @@ const activeName = computed(() => resolveActiveNavigation(route));
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
-    min-height: calc(
-      var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom)
-    );
-    padding: 4px max(4px, env(safe-area-inset-right))
-      var(--app-mobile-safe-bottom) max(4px, env(safe-area-inset-left));
-    border-top: 1px solid var(--ft-color-secondary);
-    background: linear-gradient(
-      180deg,
-      var(--zine-paper-card),
-      var(--ft-color-bg)
-    );
+    min-height: calc(62px + var(--app-mobile-safe-bottom));
+    padding: 6px max(8px, env(safe-area-inset-right))
+      calc(6px + var(--app-mobile-safe-bottom))
+      max(8px, env(safe-area-inset-left));
+    border-top: 1px solid var(--ft-border-subtle);
+    background: rgb(var(--ft-overlay-paper-rgb) / 92%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 -2px 12px rgb(58 36 24 / 6%);
   }
 
   .mobile-tab-bar__item {
     display: flex;
     min-width: 0;
-    min-height: 54px;
+    min-height: 48px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1px;
+    gap: 2px;
     color: var(--ft-color-text-muted);
-    font-size: var(--ft-font-size-xs);
+    font-size: 11px;
+    font-weight: 500;
     line-height: 1.2;
     text-align: center;
+    transition: color var(--ft-transition-fast);
   }
 
   .mobile-tab-bar__item.is-active {
-    color: var(--zine-stamp-red);
+    color: var(--ft-color-primary);
     font-weight: 700;
   }
 
   .mobile-tab-bar__item.is-active .mobile-tab-bar__icon {
     background: var(--zine-stamp-red-soft);
-    box-shadow: 2px 2px 0 rgb(58 36 24 / 14%);
+    color: var(--ft-color-primary);
+  }
+
+  .mobile-tab-bar__item.is-active .mobile-tab-bar__icon svg {
+    stroke-width: 2.1;
   }
 
   .mobile-tab-bar__item.is-pending {
@@ -103,15 +108,22 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
   .mobile-tab-bar__icon {
     display: grid;
-    min-width: 26px;
-    height: 22px;
+    width: 44px;
+    height: 28px;
     place-items: center;
-    border: 1px solid currentColor;
-    border-radius: 50%;
-    font-family: var(--zine-title-font);
-    font-size: 10px;
-    font-weight: 900;
-    line-height: 1;
+    border-radius: var(--ft-radius-pill);
+    transition:
+      background var(--ft-transition-fast),
+      color var(--ft-transition-fast);
+  }
+
+  .mobile-tab-bar__icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mobile-tab-bar__label {
+    white-space: nowrap;
   }
 }
 </style>

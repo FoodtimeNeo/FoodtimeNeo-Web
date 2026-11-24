@@ -9,6 +9,7 @@ import {
 } from './navigation.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { useInboxStore } from '@/store/useInboxStore.js';
+import AppIcon from '@/components/base/AppIcon.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -20,18 +21,6 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
 <template>
   <header class="app-header">
-    <span
-      class="app-header__decor app-header__decor--stamp"
-      aria-hidden="true"
-    ></span>
-    <span
-      class="app-header__decor app-header__decor--food"
-      aria-hidden="true"
-    ></span>
-    <span
-      class="app-header__decor app-header__decor--tape"
-      aria-hidden="true"
-    ></span>
     <div class="app-header__inner">
       <RouterLink class="app-header__brand" :to="{ name: 'home' }">
         <strong>北交干饭吧</strong>
@@ -39,7 +28,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
       <nav class="app-header__nav" aria-label="主导航">
         <RouterLink
-          v-for="(item, index) in navigationItems.filter((entry) =>
+          v-for="item in navigationItems.filter((entry) =>
             router.hasRoute(entry.name),
           )"
           :key="item.name"
@@ -47,10 +36,11 @@ const activeName = computed(() => resolveActiveNavigation(route));
           :class="{ 'is-active': activeName === item.name }"
           :aria-current="activeName === item.name ? 'location' : undefined"
         >
-          <span aria-hidden="true">{{
-            item.code || String(index).padStart(2, '0')
-          }}</span>
-          {{ item.label }}
+          <AppIcon
+            class="app-header__nav-icon"
+            :name="item.iconName || 'home'"
+          />
+          <span>{{ item.label }}</span>
         </RouterLink>
       </nav>
 
@@ -66,7 +56,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
           :to="{ name: 'inboxView' }"
           :class="{ 'is-active': route.name === 'inboxView' }"
         >
-          信箱
+          <AppIcon class="app-header__inbox-icon" name="inbox" />
+          <span>信箱</span>
           <span
             v-if="inbox.hasUnread"
             class="app-header__dot"
@@ -78,7 +69,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
         <RouterLink
           class="app-header__user"
           :to="{ name: 'profile' }"
-          aria-label="进入04我的页"
+          aria-label="进入我的页"
           >{{
             auth.isAuthenticated ? auth.displayName : '访客模式'
           }}</RouterLink
@@ -93,9 +84,11 @@ const activeName = computed(() => resolveActiveNavigation(route));
   position: sticky;
   z-index: 20;
   top: 0;
-  min-height: 82px;
-  border-bottom: 1px solid var(--ft-color-secondary);
-  background: var(--zine-paper-card);
+  min-height: 68px;
+  border-bottom: 1px solid var(--ft-border-subtle);
+  background: rgb(var(--ft-overlay-paper-rgb) / 92%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .app-header__inner {
@@ -103,9 +96,9 @@ const activeName = computed(() => resolveActiveNavigation(route));
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: var(--ft-space-4);
+  gap: var(--ft-space-3);
   width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));
-  min-height: 82px;
+  min-height: 68px;
   margin: auto;
 }
 
@@ -118,164 +111,134 @@ const activeName = computed(() => resolveActiveNavigation(route));
 
 .app-header__brand strong {
   font-family: var(--ft-font-family-title);
-  font-size: 34px;
+  font-size: 28px;
   font-weight: 900;
-}
-
-.app-header__brand span {
-  color: var(--zine-stamp-red);
-  font-family: var(--ft-font-family-note);
-  font-size: 18px;
+  letter-spacing: 0.02em;
 }
 
 .app-header__nav {
   display: flex;
   align-items: center;
   flex: 1;
-  gap: var(--ft-space-2);
+  gap: 6px;
 }
 
 .app-header__nav a {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 48px;
-  padding: 0 var(--ft-space-1);
-  border: 1px solid transparent;
-  font-weight: 700;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--ft-radius-pill);
+  color: var(--ft-color-text-muted);
+  font-size: 15px;
+  font-weight: 600;
+  transition:
+    background var(--ft-transition-fast),
+    color var(--ft-transition-fast);
+}
+
+.app-header__nav a:hover,
+.app-header__nav a:focus-visible {
+  background: var(--ft-color-surface-ink);
+  color: var(--ft-color-text);
 }
 
 .app-header__nav a.is-active {
-  border-color: var(--zine-stamp-red);
-  color: var(--zine-stamp-red);
-  box-shadow: 3px 3px 0 rgb(58 36 24 / 40%);
-  transform: rotate(-1deg);
+  background: var(--zine-stamp-red-soft);
+  color: var(--ft-color-primary);
+  font-weight: 700;
+}
+
+.app-header__nav-icon {
+  width: 17px;
+  height: 17px;
+  flex: none;
 }
 
 .app-header__account {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex: none;
   color: var(--ft-color-text-muted);
   font-size: var(--ft-font-size-sm);
-  font-family: var(--ft-font-family-note);
 }
 
 .app-header__inbox {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--ft-color-text);
+  gap: 5px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid var(--ft-border-control);
   border-radius: 999px;
-  background: var(--ft-color-surface, var(--ft-color-surface));
-  font-weight: 700;
+  background: var(--ft-color-surface);
+  color: var(--ft-color-text);
+  font-weight: 600;
+  transition:
+    border-color var(--ft-transition-fast),
+    color var(--ft-transition-fast),
+    background var(--ft-transition-fast);
+}
+
+.app-header__inbox-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 .app-header__inbox:hover,
-.app-header__inbox:focus-visible {
-  border-color: var(--zine-stamp-red);
-  color: var(--zine-stamp-red);
-}
-
+.app-header__inbox:focus-visible,
 .app-header__inbox.is-active {
-  border-color: var(--zine-stamp-red);
-  color: var(--zine-stamp-red);
+  border-color: var(--ft-color-primary);
+  background: var(--zine-stamp-red-soft);
+  color: var(--ft-color-primary);
 }
 
 .app-header__user {
   display: inline-flex;
-  margin-left: 10px;
-  color: inherit;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: var(--ft-radius-pill);
+  color: var(--ft-color-text);
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  transition:
+    background var(--ft-transition-fast),
+    color var(--ft-transition-fast);
 }
 
 .app-header__user:hover,
 .app-header__user:focus-visible {
-  color: var(--zine-stamp-red);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  background: var(--ft-color-surface-ink);
+  color: var(--ft-color-primary);
 }
 
 .app-header__dot {
   position: absolute;
-  top: 2px;
+  top: -4px;
   right: -6px;
-  min-width: 20px;
-  height: 20px;
+  min-width: 19px;
+  height: 19px;
   padding: 0 5px;
   border-radius: 999px;
   color: #fff;
-  background: var(--zine-stamp-red);
-  font-size: 12px;
-  line-height: 20px;
-  text-align: center;
-}
-
-.app-header__admin {
-  flex: none;
-  min-height: 44px;
-  padding: 10px 12px;
-  border: 1px solid var(--ft-color-text);
-  color: var(--ft-color-text);
+  background: var(--ft-color-primary);
+  font-size: 11px;
   font-weight: 700;
-  text-decoration: none;
-  box-shadow: 2px 2px 0 var(--ft-color-text);
-  transform: rotate(1deg);
-}
-
-.app-header__decor {
-  position: absolute;
-  z-index: 1;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  pointer-events: none;
-}
-
-.app-header__decor--stamp {
-  top: -14px;
-  left: max(430px, calc((100vw - var(--page-max-width)) / 2 + 374px));
-  width: 98px;
-  height: 98px;
-  background-image: var(--zine-decor-stamp-recommend);
-  opacity: 0.26;
-  transform: rotate(-9deg);
-}
-
-.app-header__decor--food {
-  right: max(18px, calc((100vw - var(--page-max-width)) / 2 + 8px));
-  bottom: -22px;
-  width: 78px;
-  height: 78px;
-  background-image: var(--zine-decor-food-sketch-4);
-  opacity: 0.24;
-  transform: rotate(7deg);
-}
-
-.app-header__decor--tape {
-  bottom: 7px;
-  left: max(310px, calc((100vw - var(--page-max-width)) / 2 + 278px));
-  width: 130px;
-  height: 34px;
-  background-image: var(--zine-decor-tape-blue);
-  opacity: 0.36;
-  transform: rotate(3deg);
-}
-
-@media (max-width: 1180px) {
-  .app-header__decor {
-    display: none;
-  }
+  line-height: 19px;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
   .app-header,
   .app-header__inner {
-    min-height: 64px;
+    min-height: 54px;
   }
 
   .app-header__inner {
@@ -288,10 +251,9 @@ const activeName = computed(() => resolveActiveNavigation(route));
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 22px;
+    font-size: 20px;
   }
 
-  .app-header__brand span,
   .app-header__nav,
   .app-header__user {
     display: none;
@@ -301,6 +263,12 @@ const activeName = computed(() => resolveActiveNavigation(route));
   .app-header__account {
     display: inline-flex;
     align-items: center;
+  }
+
+  .app-header__inbox {
+    min-height: 36px;
+    padding: 0 11px;
+    font-size: 13px;
   }
 }
 </style>

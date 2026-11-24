@@ -38,6 +38,8 @@ it.each(['user', 'admin', 'superadmin'])(
     const links = wrapper.findAll('a');
     expect(links).toHaveLength(role === 'user' ? 2 : 3);
     expect(links[0].attributes('href')).toBe('/catalog/dish');
+    expect(links[0].find('svg').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain('04');
     if (role !== 'user') {
       expect(links[1].text()).toContain('管理');
       await links[1].trigger('click');
