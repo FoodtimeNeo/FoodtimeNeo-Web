@@ -3,7 +3,7 @@ import { safeMediaUrl } from './mediaUrl.js';
 
 const ID = '[0-9a-f-]{36}';
 const RESOURCE = new RegExp(
-  `^/(?:dining-halls|dining-halls/${ID}/stalls|stalls/${ID}(?:/dishes)?|dishes/search|dishes/${ID}(?:/images)?)$`,
+  `^/(?:dining-halls|dining-halls/${ID}/stalls|stalls/${ID}(?:/dishes)?|dishes/search|dishes/${ID}(?:/images)?|search/(?:stalls|dishes))$`,
   'i',
 );
 const media = new Map();
@@ -12,6 +12,12 @@ export function catalogRequestKey(config, uri) {
   const url = new URL(uri, window.location.origin);
   if (url.origin !== window.location.origin || url.hash) return '';
   if (!RESOURCE.test(url.pathname.replace(/^\/api\/v1/, ''))) return '';
+  if (
+    url.searchParams.has('latitude') ||
+    url.searchParams.has('longitude') ||
+    url.searchParams.get('sort') === 'distance'
+  )
+    return '';
   url.searchParams.sort();
   return url.origin + url.pathname + url.search;
 }

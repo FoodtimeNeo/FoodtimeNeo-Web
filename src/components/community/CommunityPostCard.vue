@@ -1,8 +1,10 @@
 <script setup>
 import { computed } from 'vue';
 import MediaImage from '@/components/base/MediaImage.vue';
+import SearchHighlight from '@/components/base/SearchHighlight.vue';
 
 const props = defineProps({
+  keyword: { type: String, default: '' },
   post: {
     type: Object,
     required: true,
@@ -78,7 +80,9 @@ function handleClick() {
     </div>
 
     <div class="community-post-card__body">
-      <h2 class="community-post-card__title">{{ post.title }}</h2>
+      <h2 class="community-post-card__title">
+        <SearchHighlight :text="post.title" :keyword="keyword" />
+      </h2>
       <div v-if="post.author" class="community-post-card__author-info">
         <span class="community-post-card__author-name">
           @{{ post.author.name || '校园干饭人' }}

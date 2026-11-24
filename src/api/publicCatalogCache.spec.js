@@ -9,6 +9,30 @@ import {
   fetchCatalogImage,
   isCatalogMedia,
 } from '@/utils/publicCatalogCache.js';
+import { searchStalls } from './search.api.js';
+
+it('reuses a revalidated public search and excludes coordinates and notes', async () => {
+  const conditions = [];
+  http.defaults.adapter = async (config) => {
+    conditions.push(config.headers.get('If-None-Match'));
+    expect(config.method).toBe('get');
+    return conditions.length === 1
+      ? reply(config, { code: 'OK', data: { items: [], total: 0, size: 10 } })
+      : reply(config, '', 304);
+  };
+  await searchStalls({ q: '牛肉', size: 10 });
+  expect((await searchStalls({ q: '牛肉', size: 10 })).total).toBe(0);
+  expect(conditions).toEqual([undefined, tag]);
+  expect(
+    catalogRequestKey(
+      { method: 'get' },
+      '/api/v1/search/stalls?latitude=39&longitude=116',
+    ),
+  ).toBe('');
+  expect(
+    catalogRequestKey({ method: 'get' }, '/api/v1/search/notes?q=面'),
+  ).toBe('');
+});
 
 const original = http.defaults.adapter;
 const tag = '"catalog-v1-' + 'a'.repeat(64) + '"';
