@@ -367,7 +367,8 @@ onUnmounted(() => {
           :aria-expanded="panel === 'sort'"
           @click="panel = 'sort'"
         >
-          {{ sortLabel }}⌄
+          <span>{{ sortLabel }}</span>
+          <AppIcon name="chevronDown" class="unified-search__chevron" />
         </button>
         <button
           type="button"
@@ -682,8 +683,9 @@ onUnmounted(() => {
   }
   &__tabs {
     display: flex;
+    justify-content: flex-start;
     gap: 28px;
-    padding-left: 44px;
+    padding-left: 0;
     button {
       position: relative;
       background: none;
@@ -728,6 +730,11 @@ onUnmounted(() => {
     svg {
       width: 21px;
       height: 21px;
+    }
+    .unified-search__chevron {
+      width: 14px;
+      height: 14px;
+      flex: none;
     }
     .is-active {
       color: var(--ft-color-primary);
