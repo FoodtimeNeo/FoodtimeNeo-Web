@@ -1,6 +1,6 @@
 # 🍱 FoodtimeNeo-Web
 
-当前版本 **2.1.2（正式版）**。发布范围与下载制品来源见 [2.1.2 正式版发布说明](docs/releases/release-2.1.2.md)，管理与资料功能见 [社区内容管理](docs/modules/community-management.md)。
+当前版本 **2.1.3（正式版）**。发布范围与下载制品来源见 [2.1.3 正式版发布说明](docs/releases/release-2.1.3.md)，管理与资料功能见 [社区内容管理](docs/modules/community-management.md)。
 
 <div align="center">
 
@@ -303,4 +303,4 @@ FoodtimeNeo-Web/
   <small>FoodTime Neo Team · Dedicated to Delivering Better Campus Dining Experiences</small>
 </div>
 
-统一搜索：菜品按档口分组，笔记支持关联食堂筛选；紧凑布局、横滑续载及距离配置见 [统一搜索](docs/modules/unified-search.md)。真实食堂坐标待采集，本功能不改变当前正式版本号。
+统一搜索：菜品按档口分组，笔记支持关联食堂筛选；紧凑布局、横滑续载及距离配置见 [统一搜索](docs/modules/unified-search.md)。真实食堂坐标待采集，本版包含上述统一搜索功能。
