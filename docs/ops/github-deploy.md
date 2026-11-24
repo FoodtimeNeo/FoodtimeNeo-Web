@@ -9,12 +9,12 @@
 
 ## 仓库 Secrets
 
-| Secret | 说明 |
-| --- | --- |
-| `DEPLOY_HOST` | 生产服务器地址 |
-| `DEPLOY_PORT` | SSH 端口 |
-| `DEPLOY_USER` | 受限部署用户 |
-| `DEPLOY_SSH_KEY` | CI 专用私钥 |
+| Secret               | 说明           |
+| -------------------- | -------------- |
+| `DEPLOY_HOST`        | 生产服务器地址 |
+| `DEPLOY_PORT`        | SSH 端口       |
+| `DEPLOY_USER`        | 受限部署用户   |
+| `DEPLOY_SSH_KEY`     | CI 专用私钥    |
 | `DEPLOY_KNOWN_HOSTS` | 服务器主机公钥 |
 
 ## 服务器侧行为
