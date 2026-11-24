@@ -59,6 +59,12 @@ jobs:
           mkdir -p deploy-artifact/scripts/deploy
           cp -a dist deploy-artifact/dist
           cp scripts/deploy/prepare-web-release.js deploy-artifact/scripts/deploy/
+          VERSION=$(python3 -c "import json;print(json.load(open('package.json'))['version'])")
+          if [ -f "docs/releases/release-v${VERSION}.env.example" ]; then
+            cp "docs/releases/release-v${VERSION}.env.example" deploy-artifact/release.env
+          else
+            : > deploy-artifact/release.env
+          fi
 
       - name: Upload artifact
         if: steps.version.outputs.changed == 'true'
