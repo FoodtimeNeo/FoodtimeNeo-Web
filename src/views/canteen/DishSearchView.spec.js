@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { createPinia } from 'pinia';
 import DishSearchView from './DishSearchView.vue';
+import CommunityPostDetailModal from '@/components/community/CommunityPostDetailModal.vue';
 import {
   searchStalls,
   searchNotes,
@@ -249,3 +250,30 @@ it('异常分页显示可重试错误，不当作空结果', async () => {
   await render({ browse: '1' });
   expect(wrapper.text()).toContain('搜索分页响应异常');
 });
+
+it.each(['deleted', 'postEdited'])(
+  '笔记详情 %s 不传 ID 时，也移除结果并更新总数',
+  async (event) => {
+    const note = {
+      id: 'note',
+      title: '牛肉笔记',
+      status: 'approved',
+      images: [],
+      author: { id: 'author', name: '同学' },
+      likeCount: 0,
+    };
+    searchNotes.mockResolvedValue({
+      items: [{ post: note, diningHallName: '明湖', distanceMeters: null }],
+      total: 1,
+      size: 20,
+      page: 1,
+    });
+    await render({ tab: 'notes', browse: '1' });
+    await wrapper.get('.community-post-card').trigger('click');
+    await flushPromises();
+    wrapper.getComponent(CommunityPostDetailModal).vm.$emit(event);
+    await flushPromises();
+    expect(wrapper.find('.community-post-card').exists()).toBe(false);
+    expect(wrapper.get('.unified-search__count').text()).toContain('0 篇笔记');
+  },
+);

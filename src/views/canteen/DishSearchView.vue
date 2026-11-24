@@ -286,10 +286,13 @@ function showPost(value) {
   post.value = value;
   detailOpen.value = true;
 }
-function removePost(id) {
+function removePost(id = post.value?.id) {
+  const before = state.data.value.items.length;
+  const items = state.data.value.items.filter((item) => item.post?.id !== id);
   state.data.value = {
     ...state.data.value,
-    items: state.data.value.items.filter((item) => item.post.id !== id),
+    items,
+    total: Math.max(0, state.data.value.total - (before - items.length)),
   };
 }
 let observer;
