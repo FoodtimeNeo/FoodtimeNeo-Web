@@ -111,12 +111,17 @@ watch(canteenId, () => {
 .canteen-detail {
   width: min(100%, 1080px);
   margin: 0 auto;
+  padding: 12px 16px 24px;
 }
 .canteen-detail__hero {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 18px 16px 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-card);
+  background: var(--zine-paper-card-alt);
+  box-shadow: var(--ft-shadow-card);
 }
 .canteen-detail__hero > div:not(.media-image) {
   flex: 1;
@@ -124,17 +129,19 @@ watch(canteenId, () => {
 }
 .canteen-detail h1 {
   margin: 0;
-  font: clamp(24px, 5vw, 36px) var(--ft-font-family-title);
+  font: clamp(20px, 4.2vw, 28px) var(--ft-font-family-title);
+  font-weight: 900;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 .canteen-detail__hero p {
-  margin: 8px 0 0;
+  margin: 5px 0 0;
   color: var(--ft-color-text-muted);
   font-size: 13px;
 }
 .canteen-detail__hero-image {
-  width: 68px;
-  height: 68px;
+  width: 64px;
+  height: 64px;
   min-height: 0;
   flex: none;
   border-radius: 12px;
@@ -142,21 +149,44 @@ watch(canteenId, () => {
 }
 .canteen-detail__review {
   flex: none;
-  min-height: 44px;
-  display: flex;
+  min-height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
   align-items: center;
-  font-size: 14px;
+  border-radius: var(--ft-radius-pill);
+  background: var(--zine-stamp-red-soft);
+  color: var(--ft-color-primary);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    background var(--ft-transition-fast),
+    transform var(--ft-transition-fast);
+}
+.canteen-detail__review:hover {
+  transform: translateY(-1px);
 }
 .canteen-detail__info {
-  padding: 0 16px 8px;
+  padding: 4px 4px 10px;
 }
 .canteen-detail__info summary {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 38px;
   cursor: pointer;
   color: var(--ft-color-text-muted);
-  font-size: 14px;
+  font-size: 13px;
+}
+@media (max-width: 768px) {
+  .canteen-detail {
+    padding: 10px 0 16px;
+  }
+  .canteen-detail__hero {
+    margin: 0 12px;
+    padding: 12px;
+  }
+  .canteen-detail__info {
+    padding: 4px 14px 8px;
+  }
 }
 .canteen-detail__info summary::after {
   content: '⌄';
