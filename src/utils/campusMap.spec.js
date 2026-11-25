@@ -31,20 +31,27 @@ describe('校园图的显示与目录边界', () => {
       [],
     );
   });
-  it('图层坐标属于同一高清底图，暂不标注的区域不作为可点击对象', () => {
+  it('图层坐标属于同一高清底图，包含 7 个规范食堂区域（含学苑与益民）', () => {
     expect([model.width, model.height]).toEqual([5032, 3579]);
-    expect(new Set(model.regions.map((r) => r.id)).size).toBe(6);
-    for (const region of model.regions)
+    expect(new Set(model.regions.map((r) => r.id)).size).toBe(7);
+    for (const region of model.regions) {
+      expect(region.shortName).toBeTruthy();
+      expect(region.entryNodeId).toBeTruthy();
+      expect(Array.isArray(region.pin) && region.pin.length === 2).toBe(true);
+      expect(Number.isFinite(region.lat) && Number.isFinite(region.lng)).toBe(
+        true,
+      );
       for (const [x, y] of region.polygon) {
         expect(x).toBeGreaterThanOrEqual(0);
         expect(x).toBeLessThanOrEqual(model.width);
         expect(y).toBeGreaterThanOrEqual(0);
         expect(y).toBeLessThanOrEqual(model.height);
       }
+    }
+    expect(model.regions.some((r) => r.id === 'xueyuan')).toBe(true);
+    expect(model.regions.some((r) => r.id === 'yimin')).toBe(true);
     expect(
-      model.regions.some((r) =>
-        ['staff-canteen', 'xueyuan', 'east-halal'].includes(r.id),
-      ),
+      model.regions.some((r) => ['staff-canteen', 'east-halal'].includes(r.id)),
     ).toBe(false);
   });
 });

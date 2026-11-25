@@ -93,11 +93,21 @@ const sortedDishes = computed(() =>
           >{{ data.dishes.length }} 道菜品</span
         >
         <VenueRatingSummary type="stall" :target-id="stallId" />
-        <RouterLink
-          class="button-ink"
-          :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"
-          >投稿菜品</RouterLink
-        >
+        <div class="stall-detail__hero-actions">
+          <RouterLink
+            class="button-ink is-primary"
+            :to="{
+              name: 'campusMap',
+              query: { hall: canteenId, navigate: '1' },
+            }"
+            >去这里 ›</RouterLink
+          >
+          <RouterLink
+            class="button-ink"
+            :to="{ name: 'dishSubmission', params: { canteenId, stallId } }"
+            >投稿菜品</RouterLink
+          >
+        </div>
       </header>
       <div class="section-rule">
         <span class="section-rule__index">04</span>
@@ -191,6 +201,14 @@ const sortedDishes = computed(() =>
       pointer-events: none;
       filter: drop-shadow(1px 2px 0 rgba(58, 36, 24, 0.08));
     }
+  }
+
+  &__hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: var(--ft-space-2);
   }
 
   &__list {
