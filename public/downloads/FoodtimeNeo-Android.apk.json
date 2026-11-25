@@ -1,17 +1,17 @@
 {
-  "versionName": "2.1.5",
-  "versionCode": 31,
+  "versionName": "2.1.6",
+  "versionCode": 32,
   "channel": "stable",
   "prerelease": false,
-  "bytes": 26165338,
-  "sha256": "ef0894d1c8a4cabac26fcc7c925843b44f46fe43f9a4dc816d5ba6073f117190",
+  "bytes": 26165350,
+  "sha256": "1b3b2d0603dcd42b9fa1bf229069d12c4bb1f8f6ad464380ff42d6102f454dbc",
   "signerCertificateSha256": "94e7db3a30937a0cd8bc8596f80666122e3bd3f3323e55bfef14f72e9c454b92",
   "sourceRepository": "FoodtimeNeo/FoodtimeNeo-Android",
   "sourceRef": "refs/heads/main",
-  "sourceCommit": "dd669589060743bb2474f43d98a31331fa907fc4",
-  "releaseTag": "v2.1.5",
-  "releaseUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/tag/v2.1.5",
-  "artifactUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v2.1.5/app-release.apk",
-  "releaseAssetId": 789867785,
-  "buildRunUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/actions/runs/45538845827"
+  "sourceCommit": "1e829b61956bfd9ee63749e1dba5f75d3af7564a",
+  "releaseTag": "v2.1.6",
+  "releaseUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/tag/v2.1.6",
+  "artifactUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/releases/download/v2.1.6/app-release.apk",
+  "releaseAssetId": 790091420,
+  "buildRunUrl": "https://github.com/FoodtimeNeo/FoodtimeNeo-Android/actions/runs/45548938630"
 }
