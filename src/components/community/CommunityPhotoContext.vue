@@ -7,6 +7,11 @@ defineProps({
   likeBusy: Boolean,
 });
 defineEmits(['post', 'comment', 'share', 'like']);
+
+function formatCount(value) {
+  const n = Number(value) || 0;
+  return n > 99 ? '99+' : String(Math.max(0, n));
+}
 </script>
 
 <template>
@@ -54,7 +59,7 @@ defineEmits(['post', 'comment', 'share', 'like']);
             d="M21 6v10a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z"
           />
         </svg>
-        <span>评论 {{ post.commentCount || 0 }}</span>
+        <span>评论 {{ formatCount(post.commentCount) }}</span>
       </button>
       <button
         type="button"
@@ -74,7 +79,7 @@ defineEmits(['post', 'comment', 'share', 'like']);
         </svg>
         <span
           >{{ post.likedByMe ? '已赞' : '点赞' }}
-          {{ post.likeCount || 0 }}</span
+          {{ formatCount(post.likeCount) }}</span
         >
       </button>
     </div>

@@ -40,6 +40,15 @@ it('点赞的选中、计数和忙碌状态保留，禁用期间不重复触发'
   expect(wrapper.emitted('like')).toHaveLength(1);
 });
 
+it('超过99条评论或点赞时显示 99+ 防止按钮溢出', () => {
+  wrapper = mount(CommunityPhotoContext, {
+    props: { post: { ...post, commentCount: 128, likeCount: 100 } },
+  });
+  const actions = wrapper.findAll('.photo-context__actions button');
+  expect(actions[1].text()).toBe('评论 99+');
+  expect(actions[2].text()).toBe('点赞 99+');
+});
+
 it('待审核预览不新增互动入口，仍可返回帖子', async () => {
   wrapper = mount(CommunityPhotoContext, {
     props: { post: { ...post, status: 'pending' } },
