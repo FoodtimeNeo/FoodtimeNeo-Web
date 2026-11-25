@@ -1,6 +1,6 @@
 # 🍱 FoodtimeNeo-Web
 
-当前版本 **2.1.7（正式版）**。历史发布说明见 [2.1.5 正式版发布说明](docs/releases/release-2.1.5.md)，管理与资料功能见 [社区内容管理](docs/modules/community-management.md)。
+当前版本 **2.1.8（正式版）**。历史发布说明见 [2.1.5 正式版发布说明](docs/releases/release-2.1.5.md)，管理与资料功能见 [社区内容管理](docs/modules/community-management.md)。
 
 <div align="center">
 
