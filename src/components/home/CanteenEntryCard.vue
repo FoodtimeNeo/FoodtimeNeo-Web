@@ -46,82 +46,93 @@ defineProps({
 <style scoped lang="scss">
 .canteen-entry {
   position: relative;
-  display: block;
-  border: 1px solid var(--ft-color-text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-lg);
   background: var(--zine-paper-card);
-  box-shadow: 6px 8px 0 rgb(58 36 24 / 16%);
+  box-shadow: var(--ft-shadow-card);
   color: inherit;
   text-decoration: none;
   transition:
     transform var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1)),
-    box-shadow var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1));
+    box-shadow var(--ft-transition-fast, 180ms cubic-bezier(0.16, 1, 0.3, 1)),
+    border-color var(--ft-transition-fast, 180ms ease);
 
   &:hover {
-    transform: translate(-3px, -4px) rotate(-0.5deg);
-    box-shadow: 9px 12px 0 rgb(58 36 24 / 20%);
+    transform: translateY(-3px);
+    border-color: var(--ft-border-control);
+    box-shadow: var(--ft-shadow-card-hover);
   }
 
   &__cover {
     position: relative;
     aspect-ratio: 3 / 2;
-    margin: 10px 10px 0;
-    padding: 8px 8px 18px;
-    overflow: visible;
-    border: 0;
-    background: var(--zine-paper-card);
-    box-shadow: 3px 3px 0 rgb(58 36 24 / 22%);
+    overflow: hidden;
+    background: var(--zine-paper-card-alt);
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform var(--ft-transition-base, 320ms ease);
     }
   }
 
+  &:hover &__cover img {
+    transform: scale(1.03);
+  }
+
   &__body {
-    padding: var(--ft-space-2);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px 16px 16px;
+
+    p {
+      margin: 0;
+      color: var(--ft-color-text-muted);
+      font-size: var(--ft-font-size-sm);
+    }
+
+    .sticker {
+      align-self: flex-start;
+      padding: 2px 9px;
+      border-color: var(--ft-border-subtle);
+      border-radius: var(--ft-radius-pill);
+      background: var(--zine-paper-card-alt);
+      box-shadow: none;
+      color: var(--ft-color-text-muted);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      transform: none;
+    }
   }
 
-  &__postage {
-    position: absolute;
-    z-index: 1;
-    inset: 0;
-    background: var(--zine-decor-postage) center / 100% 100% no-repeat;
-    opacity: 0.72;
-    mix-blend-mode: multiply;
-    pointer-events: none;
-  }
-
+  &__postage,
   &__tape {
-    position: absolute;
-    z-index: 2;
-    top: -16px;
-    left: 50%;
-    width: 96px;
-    height: 30px;
-    background: var(--zine-decor-tape-blue) center / contain no-repeat;
-    opacity: 0.8;
-    transform: translateX(-50%) rotate(-5deg);
-    mix-blend-mode: multiply;
-    pointer-events: none;
-    transition: transform var(--ft-transition-fast, 180ms ease);
-  }
-
-  &:hover &__tape {
-    transform: translateX(-50%) rotate(-3deg) translateY(-1px);
+    display: none;
   }
 
   &__name {
-    margin: 12px 0 0;
+    margin: 2px 0 0;
+    color: var(--ft-color-text);
     font-family: var(--ft-font-family-title);
     font-size: var(--ft-font-size-lg);
+    line-height: 1.3;
   }
 
   &__link {
-    display: block;
-    margin-top: var(--ft-space-1);
-    color: var(--zine-stamp-red);
-    font-size: 20px;
+    display: inline-flex;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 4px;
+    color: var(--ft-color-primary);
+    font-family: var(--ft-font-family);
+    font-size: var(--ft-font-size-sm);
+    font-weight: 700;
   }
 
   &__summary {
@@ -138,30 +149,30 @@ defineProps({
 @media (max-width: 768px) {
   .canteen-entry:hover {
     transform: none;
-    box-shadow: var(--app-mobile-shadow);
+    box-shadow: var(--ft-shadow-card);
   }
 
-  .canteen-entry__tape {
-    width: 72px;
+  .canteen-entry:hover .canteen-entry__cover img {
+    transform: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .canteen-entry,
   .canteen-entry:hover,
-  .canteen-entry:hover .canteen-entry__tape {
+  .canteen-entry__cover img {
     transform: none !important;
     transition: none !important;
   }
 }
 @media (prefers-reduced-motion: no-preference) {
   .canteen-entry {
-    animation: catalogCardIn 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: catalogCardIn 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   @for $i from 1 through 8 {
     .canteen-entry:nth-child(#{$i}) {
-      animation-delay: #{($i - 1) * 55}ms;
+      animation-delay: #{($i - 1) * 45}ms;
     }
   }
 }
@@ -169,13 +180,11 @@ defineProps({
 @keyframes catalogCardIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
-    filter: blur(4px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 </style>

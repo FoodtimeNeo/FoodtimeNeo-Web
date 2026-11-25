@@ -53,113 +53,145 @@ defineProps({
 
 <style scoped lang="scss">
 .stall-entry__score {
-  color: var(--ft-color-primary);
-  font-size: 14px;
-  margin: 8px 0;
+  color: var(--ft-color-text-muted);
+  font-size: 13px;
+  margin: 6px 0 8px;
 }
 .stall-entry {
   position: relative;
-  display: block;
-  border: 1px solid var(--ft-color-text);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-lg);
   background: var(--zine-paper-card);
-  box-shadow: 5px 7px 0 rgb(58 36 24 / 18%);
+  box-shadow: var(--ft-shadow-card);
   color: inherit;
   text-decoration: none;
   transition:
     transform var(--ft-transition-fast),
-    box-shadow var(--ft-transition-fast);
+    box-shadow var(--ft-transition-fast),
+    border-color var(--ft-transition-fast);
 
   &:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 7px 7px 0 var(--ft-color-text);
+    transform: translateY(-2px);
+    border-color: var(--ft-border-control);
+    box-shadow: var(--ft-shadow-card-hover);
   }
 
   &__cover {
     position: relative;
     aspect-ratio: 16 / 10;
     overflow: hidden;
-    border-bottom: 2px solid var(--ft-color-text);
+    background: var(--zine-paper-card-alt);
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform var(--ft-transition-base);
     }
   }
 
+  &:hover &__cover img {
+    transform: scale(1.03);
+  }
+
   &__tape {
-    position: absolute;
-    z-index: 2;
-    top: -13px;
-    left: 18px;
-    width: 90px;
-    height: 28px;
-    background: var(--zine-decor-tape-red) center / contain no-repeat;
-    opacity: 0.76;
-    transform: rotate(-7deg);
-    mix-blend-mode: multiply;
+    display: none;
   }
 
   &__content {
-    padding: var(--ft-space-2);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 14px 16px 16px;
+
+    .stamp {
+      align-self: flex-start;
+      min-width: auto;
+      min-height: auto;
+      padding: 2px 9px;
+      border: 1px solid var(--ft-border-subtle);
+      border-radius: var(--ft-radius-pill);
+      background: var(--zine-paper-card-alt);
+      color: var(--ft-color-text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      transform: none;
+
+      &::after {
+        display: none;
+      }
+    }
   }
 
   &__name {
-    margin: 12px 0 0;
+    margin: 8px 0 0;
     padding: 0;
+    color: var(--ft-color-text);
     font-family: var(--ft-font-family-title);
     font-size: var(--ft-font-size-lg);
+    line-height: 1.3;
   }
 
   &__link {
-    display: block;
-    margin-top: var(--ft-space-1);
-    color: var(--zine-stamp-red);
-    font-size: 19px;
+    display: inline-flex;
+    align-items: center;
+    margin-top: auto;
+    color: var(--ft-color-primary);
+    font-family: var(--ft-font-family);
+    font-size: var(--ft-font-size-sm);
+    font-weight: 700;
   }
 }
 
 @media (max-width: 768px) {
   .stall-entry {
-    display: flex;
+    flex-direction: row;
     align-items: center;
     min-height: 88px;
-    box-shadow: var(--app-mobile-shadow);
+    padding: 10px;
+    gap: 12px;
+    box-shadow: var(--ft-shadow-card);
 
     &:hover {
       transform: none;
-      box-shadow: var(--app-mobile-shadow);
+      box-shadow: var(--ft-shadow-card);
+    }
+    &:hover &__cover img {
+      transform: none;
     }
     &__cover {
-      flex: 0 0 80px;
-      height: 88px;
-      aspect-ratio: auto;
-      border: 0;
+      flex: 0 0 76px;
+      height: 76px;
+      aspect-ratio: 1;
+      border-radius: var(--ft-radius-md);
     }
     &__cover :deep(.media-image) {
       min-height: 0;
     }
-    &__tape {
-      display: none;
-    }
     &__content {
       flex: 1;
       min-width: 0;
-      padding: 12px;
+      padding: 2px 4px;
     }
     &__content .stamp {
       display: none;
     }
     &__name {
       margin: 0;
-      font-size: 18px;
-      line-height: 1.5;
+      font-size: 17px;
+      line-height: 1.4;
       overflow-wrap: anywhere;
     }
+    &__score {
+      margin: 4px 0 2px;
+    }
     &__link {
-      font-family: var(--ft-font-family);
-      font-size: 14px;
-      margin-top: 4px;
+      font-size: 13px;
+      margin-top: 2px;
     }
   }
 }

@@ -298,22 +298,28 @@ samp {
   gap: var(--ft-space-1);
   min-height: 44px;
   padding: 10px var(--ft-space-2);
-  border: 1px solid var(--ft-color-secondary);
-  border-radius: 0;
+  border: 1px solid var(--ft-border-control);
+  border-radius: var(--ft-radius-control);
   background: var(--ft-color-surface);
-  box-shadow: 2px 2px 0 var(--ft-color-secondary);
-  color: var(--ft-color-secondary);
+  box-shadow: 0 1px 2px rgb(58 36 24 / 8%);
+  color: var(--ft-color-text);
   font-weight: 700;
   cursor: pointer;
   transition:
     transform var(--ft-transition-fast),
     box-shadow var(--ft-transition-fast),
+    border-color var(--ft-transition-fast),
     background var(--ft-transition-fast);
 }
 
 .button-ink:hover:not(:disabled) {
-  box-shadow: 4px 4px 0 var(--ft-color-secondary);
-  transform: translate(-2px, -2px);
+  border-color: var(--ft-color-secondary-soft);
+  box-shadow: 0 4px 12px rgb(58 36 24 / 12%);
+  transform: translateY(-1px);
+}
+
+.button-ink:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .button-ink:disabled {
@@ -324,7 +330,14 @@ samp {
 .button-ink.is-primary {
   border-color: var(--ft-color-primary);
   background: var(--ft-color-primary);
-  color: var(--zine-paper-card);
+  box-shadow: 0 2px 8px rgb(201 52 30 / 22%);
+  color: #fff8f5;
+}
+
+.button-ink.is-primary:hover:not(:disabled) {
+  border-color: var(--ft-color-primary-strong);
+  background: var(--ft-color-primary-strong);
+  box-shadow: 0 5px 14px rgb(201 52 30 / 28%);
 }
 
 .button-ink.is-danger {
@@ -463,6 +476,25 @@ samp {
   white-space: nowrap;
 }
 
+.el-dialog,
+.el-message-box {
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-lg);
+  background: var(--zine-paper-card);
+  box-shadow: 0 18px 46px rgb(24 14 8 / 20%);
+}
+
+.el-dialog__title,
+.el-message-box__title {
+  color: var(--ft-color-text);
+  font-family: var(--ft-font-family-title);
+  font-weight: 800;
+}
+
+.el-overlay {
+  backdrop-filter: blur(3px);
+}
+
 @media (max-width: 768px) {
   html,
   body {
@@ -525,10 +557,24 @@ html[data-theme='dark'] {
     background: var(--ft-color-bg);
   }
   body::before {
-    opacity: 0.08;
+    opacity: 0.05;
   }
   body::after {
-    opacity: 0.12;
+    opacity: 0.06;
+  }
+  .zine-rating-stamp,
+  .zine-date-stamp {
+    mix-blend-mode: normal;
+  }
+  .button-ink {
+    box-shadow: 0 1px 3px rgb(0 0 0 / 28%);
+  }
+  .button-ink:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgb(0 0 0 / 38%);
+  }
+  .el-dialog,
+  .el-message-box {
+    box-shadow: 0 20px 52px rgb(0 0 0 / 56%);
   }
   input,
   textarea,
@@ -540,5 +586,14 @@ html[data-theme='dark'] {
   textarea::placeholder {
     color: var(--ft-color-text-muted);
     opacity: 1;
+  }
+}
+
+@media (forced-colors: active) {
+  .button-ink,
+  .sticker,
+  .stamp {
+    border: 1px solid ButtonText;
+    box-shadow: none;
   }
 }

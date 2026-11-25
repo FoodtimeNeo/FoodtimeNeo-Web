@@ -54,7 +54,7 @@ const navigationGroups = computed(() => [
         to: { name: 'community', query: { tab: 'mine' } },
       },
       { label: '菜品点评', icon: 'comment', to: { name: 'myReviews' } },
-      { label: '餐厅点评', icon: 'dish', to: { name: 'myVenueReviews' } },
+      { label: '餐厅点评', icon: 'store', to: { name: 'myVenueReviews' } },
       { label: '我的回复', icon: 'reply', to: { name: 'myReviewReplies' } },
       { label: '我的提交', icon: 'upload', to: { name: 'mySubmissions' } },
     ],
@@ -79,7 +79,7 @@ const navigationGroups = computed(() => [
         ? [
             {
               label: '账号安全',
-              icon: 'shield',
+              icon: 'key',
               to: { name: 'accountLifecycle' },
             },
           ]
@@ -256,15 +256,20 @@ async function logout() {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 24px 0 16px;
+  margin-top: 14px;
+  padding: 18px 18px 14px;
+  border: 1px solid var(--ft-border-subtle);
+  border-bottom: 0;
+  border-radius: var(--ft-radius-card) var(--ft-radius-card) 0 0;
+  background: var(--zine-paper-card-alt);
 }
 .profile-page__avatar {
-  flex: 0 0 76px;
-  width: 76px;
-  height: 76px;
+  flex: 0 0 68px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid var(--ft-color-secondary);
+  border: 2px solid var(--ft-color-primary);
 }
 .profile-page__avatar :deep(.media-image) {
   min-height: 0;
@@ -272,82 +277,97 @@ async function logout() {
 }
 .profile-page__avatar :deep(span) {
   padding: 0;
-  font: 32px var(--ft-font-family-title);
+  font: 28px var(--ft-font-family-title);
 }
 .profile-page__identity-copy {
   flex: 1;
   min-width: 0;
 }
 .profile-page__identity h2 {
-  margin: 0 0 8px;
-  font-size: 24px;
+  margin: 0 0 6px;
+  font-size: 22px;
 }
 .profile-page__role {
-  border: 1px solid var(--ft-color-primary);
-  padding: 1px 6px;
-  font-size: 12px;
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: var(--ft-radius-pill);
+  background: var(--zine-stamp-red-soft);
+  font-size: 11px;
+  font-weight: 700;
   color: var(--ft-color-primary);
 }
 .profile-page__identity p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--ft-color-text-muted);
-  font: 16px var(--ft-font-family-note);
+  font-size: 13px;
 }
 .profile-page__follows {
   display: flex;
-  padding: 12px 0 24px;
+  margin-bottom: 14px;
+  padding: 10px 0 14px;
+  border: 1px solid var(--ft-border-subtle);
+  border-top: 1px solid var(--ft-border-subtle);
+  border-radius: 0 0 var(--ft-radius-card) var(--ft-radius-card);
+  background: var(--zine-paper-card-alt);
+  box-shadow: var(--ft-shadow-card);
 }
 .profile-page__follows a {
   display: flex;
   flex: 1;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-height: 48px;
+  gap: 3px;
+  min-height: 44px;
 }
 .profile-page__follows a + a {
-  border-left: 1px solid var(--ft-color-border);
+  border-left: 1px solid var(--ft-border-subtle);
 }
 .profile-page__follows strong {
-  font-size: 24px;
+  font-size: 20px;
 }
 .profile-page__follows span {
   color: var(--ft-color-text-muted);
-  font-size: 14px;
+  font-size: 12px;
 }
 .profile-page__group {
-  padding: 18px 0;
-  border-top: 1px dashed var(--ft-color-border);
+  margin-bottom: 12px;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-card);
+  background: var(--zine-paper-card-alt);
+  box-shadow: var(--ft-shadow-card);
 }
 .profile-page__group h2 {
-  font: 20px var(--ft-font-family-title);
-  margin: 0 0 14px;
+  font: 700 16px/1.3 var(--ft-font-family-title);
+  margin: 0 0 10px;
+  padding: 0 2px;
 }
 .profile-page__entries {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .profile-page__entries a {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 8px;
   padding: 10px 2px;
-  min-height: 76px;
-  font-size: 14px;
+  min-height: 74px;
+  font-size: 13px;
   text-align: center;
   border-radius: 12px;
+  transition: background var(--ft-transition-fast);
 }
 .profile-page__entries svg {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   flex: none;
   color: var(--ft-color-primary);
 }
 .profile-page__entries a:hover {
-  background: var(--ft-color-bg-soft);
+  background: var(--zine-paper-card);
 }
 .profile-page__group--list .profile-page__entries {
   grid-template-columns: 1fr;
@@ -355,33 +375,49 @@ async function logout() {
 }
 .profile-page__group--list a {
   flex-direction: row;
-  gap: 14px;
-  min-height: 52px;
-  padding: 8px;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 6px;
   text-align: left;
+  border-bottom: 1px solid var(--ft-border-subtle);
+  border-radius: 0;
+}
+.profile-page__group--list a:last-child {
+  border-bottom: 0;
 }
 .profile-page__group--list svg {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
+  color: var(--ft-color-text);
 }
 .profile-page__chevron {
   margin-left: auto;
   color: var(--ft-color-text-muted);
 }
+.profile-page__account-details {
+  margin-bottom: 10px;
+  padding: 0 14px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-card);
+  background: var(--zine-paper-card-alt);
+}
 .profile-page__account-details summary {
   display: flex;
   align-items: center;
-  min-height: 48px;
+  min-height: 46px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
 }
 .profile-page__account-details p {
-  font-size: 14px;
+  font-size: 13px;
+  color: var(--ft-color-text-muted);
 }
 .profile-page__logout {
-  margin-top: 20px;
+  margin-top: 14px;
   width: 100%;
   color: var(--ft-color-danger);
-  border-color: var(--ft-color-border);
+  border-color: var(--ft-border-control);
 }
 @media (max-width: 360px) {
   .profile-page__entries {

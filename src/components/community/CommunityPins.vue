@@ -22,11 +22,14 @@ defineEmits(['open']);
 .community-pins {
   margin: 8px 0 18px;
   padding: 12px 14px;
-  border: 1px solid var(--ft-color-border);
-  background: var(--zine-paper-card);
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-card);
+  background: var(--zine-paper-card-alt);
+  box-shadow: var(--ft-shadow-card);
 }
 h2 {
-  font-size: 16px;
+  font-size: 14px;
+  color: var(--ft-color-text-muted);
   margin: 0 0 6px;
 }
 ol {
@@ -35,41 +38,48 @@ ol {
   margin: 0;
 }
 li + li {
-  border-top: 1px dashed var(--ft-color-border);
+  border-top: 1px solid var(--ft-border-subtle);
 }
 button {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  min-height: 52px;
-  padding: 8px 0;
+  min-height: 48px;
+  padding: 8px 4px;
   border: 0;
+  border-radius: 10px;
   background: transparent;
   color: inherit;
   text-align: left;
   font: inherit;
   cursor: pointer;
+  transition: background var(--ft-transition-fast);
+}
+button:hover {
+  background: var(--ft-color-bg-soft);
 }
 .community-pins__stamp {
   flex: none;
-  padding: 2px 5px;
-  border: 1px solid var(--ft-color-primary);
+  padding: 2px 8px;
+  border-radius: var(--ft-radius-pill);
+  background: var(--zine-stamp-red-soft);
   color: var(--ft-color-primary);
-  font-size: 0.75rem;
+  font-size: 11px;
+  font-weight: 700;
 }
 .community-pins__copy {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 2px;
 }
 strong {
-  font-size: 1rem;
+  font-size: 15px;
   overflow-wrap: anywhere;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 small {
   color: var(--ft-color-text-muted);
-  font-size: 0.8rem;
+  font-size: 12px;
 }
 </style>

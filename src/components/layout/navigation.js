@@ -1,14 +1,33 @@
 export const navigationItems = [
-  { name: 'home', label: '首页', icon: '⌂', code: '00' },
-  { name: 'canteenList', label: '食堂', icon: '▤', code: '01' },
-  { name: 'community', label: '社区', icon: '✦', code: '02' },
-  { name: 'profile', label: '我的', icon: '◯', code: '04' },
+  { name: 'home', label: '首页', icon: '⌂', iconName: 'home', code: '00' },
+  {
+    name: 'canteenList',
+    label: '食堂',
+    icon: '▤',
+    iconName: 'canteen',
+    code: '01',
+  },
+  {
+    name: 'community',
+    label: '社区',
+    icon: '✦',
+    iconName: 'community',
+    code: '02',
+  },
+  {
+    name: 'profile',
+    label: '我的',
+    icon: '◯',
+    iconName: 'profile',
+    code: '04',
+  },
 ];
 
 const managementItem = {
   name: 'adminAudit',
   label: '管理',
   icon: '◇',
+  iconName: 'shield',
   code: '03',
 };
 

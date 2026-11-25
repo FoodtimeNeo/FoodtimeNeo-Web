@@ -5,6 +5,7 @@ import SearchHighlight from '@/components/base/SearchHighlight.vue';
 
 const props = defineProps({
   keyword: { type: String, default: '' },
+  venueTag: { type: String, default: '' },
   post: {
     type: Object,
     required: true,
@@ -18,6 +19,12 @@ const coverImage = computed(() => {
     return props.post.images[0].url || '';
   }
   return '';
+});
+
+const textExcerpt = computed(() => {
+  const raw = String(props.post.content || '').trim();
+  if (!raw) return '';
+  return raw.length > 72 ? `${raw.slice(0, 72)}…` : raw;
 });
 
 // 计算宽高比样式，防止图片加载过程布局跳动
@@ -58,7 +65,10 @@ function handleClick() {
         loading="lazy"
       />
       <div v-else class="community-post-card__image-placeholder">
-        <span>🍲 美食记录</span>
+        <p v-if="textExcerpt" class="community-post-card__note-excerpt">
+          {{ textExcerpt }}
+        </p>
+        <span v-else>🍲 美食记录</span>
       </div>
 
       <!-- 多图小标识（右上角） -->
@@ -83,9 +93,18 @@ function handleClick() {
       <h2 class="community-post-card__title">
         <SearchHighlight :text="post.title" :keyword="keyword" />
       </h2>
+      <p v-if="venueTag" class="community-post-card__venue">
+        {{ venueTag }}
+      </p>
       <div v-if="post.author" class="community-post-card__author-info">
         <span class="community-post-card__author-name">
           @{{ post.author.name || '校园干饭人' }}
+        </span>
+        <span
+          v-if="typeof post.likeCount === 'number' && post.likeCount > 0"
+          class="community-post-card__likes"
+        >
+          ♡ {{ post.likeCount }}
         </span>
       </div>
     </div>
@@ -97,23 +116,24 @@ function handleClick() {
   display: flex;
   flex-direction: column;
   background: var(--zine-paper-card);
-  border: 1px solid var(--ft-color-secondary, #3a2418);
-  border-radius: 0;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-card);
   overflow: hidden;
-  box-shadow: 3px 3px 0 rgb(58 36 24 / 14%);
+  box-shadow: var(--ft-shadow-card);
   cursor: pointer;
   transition:
     transform var(--ft-transition-fast, 180ms ease),
-    box-shadow var(--ft-transition-fast, 180ms ease);
+    box-shadow var(--ft-transition-fast, 180ms ease),
+    border-color var(--ft-transition-fast, 180ms ease);
   outline: none;
   margin-bottom: var(--ft-space-2, 16px);
   break-inside: avoid;
 
   &:hover,
   &:focus-visible {
-    transform: translate(-2px, -2px);
-    box-shadow: 5px 5px 0 rgb(58 36 24 / 22%);
-    border-color: var(--ft-color-secondary-soft, #6a4b3a);
+    transform: translateY(-2px);
+    box-shadow: var(--ft-shadow-card-hover);
+    border-color: var(--ft-border-control);
   }
 
   &__cover-wrap {
@@ -134,31 +154,48 @@ function handleClick() {
   }
 
   &:hover &__image {
-    transform: scale(1.02);
+    transform: scale(1.03);
   }
 
   &__image-placeholder {
     width: 100%;
     height: 100%;
-    min-height: 140px;
+    min-height: 136px;
+    padding: 16px 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--ft-color-text-muted, #6e5547);
     font-size: var(--ft-font-size-sm, 14px);
-    background: var(--zine-paper-card-alt);
+    background: linear-gradient(
+      145deg,
+      var(--zine-paper-card-alt),
+      var(--ft-color-bg-soft)
+    );
+  }
+
+  &__note-excerpt {
+    margin: 0;
+    color: var(--ft-color-text);
+    font-size: 13px;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   &__multi-badge {
     position: absolute;
     top: 8px;
     right: 8px;
-    padding: 2px 7px;
-    background: rgb(58 36 24 / 78%);
-    color: var(--zine-paper-card);
+    padding: 2px 8px;
+    border-radius: var(--ft-radius-pill);
+    background: rgb(28 20 15 / 72%);
+    backdrop-filter: blur(4px);
+    color: #fff;
     font-size: 11px;
     font-weight: 600;
-    border: 1px solid var(--zine-paper-card);
   }
 
   &__pending-badge {
@@ -166,16 +203,15 @@ function handleClick() {
     top: 8px;
     left: 8px;
     padding: 2px 8px;
-    background: var(--zine-stamp-red, #b72f1c);
-    color: var(--zine-paper-card);
+    border-radius: var(--ft-radius-pill);
+    background: var(--ft-color-primary);
+    color: #fff8f5;
     font-size: 11px;
     font-weight: 700;
-    border: 1px solid var(--ft-color-secondary);
-    box-shadow: 2px 2px 0 rgb(58 36 24 / 18%);
   }
 
   &__body {
-    padding: var(--ft-space-1) var(--ft-space-2) var(--ft-space-2);
+    padding: 10px 12px 12px;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -195,10 +231,27 @@ function handleClick() {
     word-break: break-word;
   }
 
+  &__venue {
+    margin: 0;
+    display: inline-flex;
+    align-self: flex-start;
+    max-width: 100%;
+    padding: 2px 8px;
+    border-radius: var(--ft-radius-pill);
+    background: var(--zine-paper-card-alt);
+    color: var(--ft-color-text-muted);
+    font-size: 11px;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   &__author-info {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 6px;
     font-size: 12px;
     color: var(--ft-color-text-muted, #6e5547);
   }
@@ -207,6 +260,12 @@ function handleClick() {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  &__likes {
+    flex: none;
+    font-size: 11px;
+    color: var(--ft-color-text-muted);
   }
 }
 

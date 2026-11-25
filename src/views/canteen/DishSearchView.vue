@@ -585,17 +585,22 @@ onUnmounted(() => {
           />
         </div>
         <div v-else class="unified-search__notes">
-          <article v-for="item in state.data.value.items" :key="item.post.id">
+          <div
+            v-for="item in state.data.value.items"
+            :key="item.post.id"
+            class="unified-search__note-item"
+          >
             <CommunityPostCard
               :post="item.post"
               :keyword="state.data.value.query.q"
+              :venue-tag="
+                [item.diningHallName, distanceLabel(item.distanceMeters)]
+                  .filter(Boolean)
+                  .join(' · ')
+              "
               @click="showPost"
             />
-            <p v-if="item.diningHallName">
-              {{ item.diningHallName }}
-              <span>{{ distanceLabel(item.distanceMeters) }}</span>
-            </p>
-          </article>
+          </div>
         </div>
         <PaginationControls
           v-if="

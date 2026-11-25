@@ -44,6 +44,7 @@ defineEmits(['update:modelValue']);
         type="button"
         class="auth-field__reveal"
         :disabled="disabled"
+        :aria-pressed="revealed"
         :aria-label="`${revealed ? '隐藏' : '显示'}${label}`"
         @click.prevent="revealed = !revealed"
       >
@@ -64,7 +65,7 @@ defineEmits(['update:modelValue']);
 .auth-field {
   display: flex;
   flex-direction: column;
-  gap: var(--ft-space-1);
+  gap: 6px;
   &__control {
     position: relative;
   }
@@ -76,14 +77,22 @@ defineEmits(['update:modelValue']);
   }
   &__reveal {
     position: absolute;
-    right: 2px;
-    top: 1px;
-    min-width: 56px;
-    min-height: 44px;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-width: 52px;
+    min-height: 40px;
     border: 0;
+    border-radius: var(--ft-radius-sm);
     background: transparent;
     color: var(--ft-color-primary);
+    font-size: var(--ft-font-size-sm);
+    font-weight: 600;
     cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--zine-stamp-red-soft);
+    }
   }
 
   &__label {
@@ -93,27 +102,38 @@ defineEmits(['update:modelValue']);
   }
 
   &__input {
-    min-height: 46px;
-    padding: 10px var(--ft-space-2);
-    border: 1px solid var(--ft-color-secondary);
-    border-radius: 0;
-    background: var(--zine-paper-card);
-    box-shadow: 2px 2px 0 rgb(58 36 24 / 18%);
+    min-height: 48px;
+    padding: 10px 14px;
+    border: 1px solid var(--ft-border-control);
+    border-radius: var(--ft-radius-control);
+    background: var(--ft-color-surface);
+    color: var(--ft-color-text);
+    font-size: max(1rem, 1em);
+    transition:
+      border-color var(--ft-transition-fast),
+      box-shadow var(--ft-transition-fast),
+      background var(--ft-transition-fast);
 
     &:focus {
       border-color: var(--ft-color-primary);
-      box-shadow: 3px 3px 0 rgb(183 47 28 / 20%);
+      background: var(--zine-paper-card);
+      box-shadow: 0 0 0 3px rgb(201 52 30 / 16%);
       outline: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ft-color-primary);
+      outline-offset: 2px;
     }
 
     &.is-invalid {
       border-color: var(--ft-color-danger);
-      box-shadow: 2px 2px 0 var(--ft-color-danger);
+      box-shadow: 0 0 0 3px rgb(201 52 30 / 14%);
     }
   }
 
   &__error {
-    font-size: 14px;
+    font-size: 13px;
     color: var(--ft-color-danger);
   }
 }

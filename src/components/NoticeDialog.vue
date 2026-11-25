@@ -126,12 +126,22 @@ async function confirm() {
 }
 .notice-dialog__confirm {
   min-height: 44px;
-  min-width: 88px;
-  padding: 8px 20px;
-  border: 1px solid var(--ft-color-text);
+  min-width: 96px;
+  padding: 8px 22px;
+  border: 1px solid var(--ft-color-primary);
+  border-radius: var(--ft-radius-control);
   background: var(--ft-color-primary);
-  color: #fff;
+  box-shadow: 0 2px 8px rgb(201 52 30 / 22%);
+  color: #fff8f5;
+  font-weight: 700;
   cursor: pointer;
+  transition:
+    background var(--ft-transition-fast),
+    transform var(--ft-transition-fast);
+}
+.notice-dialog__confirm:hover:not(:disabled) {
+  background: var(--ft-color-primary-strong);
+  transform: translateY(-1px);
 }
 .notice-dialog__confirm:focus-visible,
 .notice-dialog__choice input:focus-visible {

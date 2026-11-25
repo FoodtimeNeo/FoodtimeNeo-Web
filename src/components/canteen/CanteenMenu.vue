@@ -7,6 +7,15 @@ const formatUnitPrice = (price, unit) =>
   price === null || price === undefined
     ? '价格未知'
     : `${formatPrice(price)}${unit && unit !== 'unspecified' && PRICE_UNITS[unit] ? '/' + PRICE_UNITS[unit] : ''}`;
+const splitUnitPrice = (price, unit) => {
+  const full = formatUnitPrice(price, unit);
+  if (!full.startsWith('¥')) return { symbol: '', integer: full, tail: '' };
+  const body = full.slice(1);
+  const dot = body.indexOf('.');
+  const slash = body.indexOf('/');
+  const cut = dot >= 0 ? dot : slash >= 0 ? slash : body.length;
+  return { symbol: '¥', integer: body.slice(0, cut), tail: body.slice(cut) };
+};
 import MediaImage from '@/components/base/MediaImage.vue';
 const props = defineProps({
   canteenId: { type: String, required: true },
@@ -226,22 +235,39 @@ onBeforeUnmount(() => {
         >
           <MediaImage
             compact
-            fit="contain"
+            fit="cover"
             :src="dish.coverImageUrl || ''"
             alt=""
             empty=""
           />
-          <div>
+          <div class="canteen-menu__dish-copy">
             <h3>{{ dish.name }}</h3>
             <p v-if="dish.description" class="canteen-menu__description">
               {{ dish.description }}
             </p>
-            <small>{{
-              dish.averageScore == null
-                ? '暂无评分'
-                : Number(dish.averageScore).toFixed(1) + ' 分'
-            }}</small
-            ><strong>{{ formatUnitPrice(dish.price, dish.priceUnit) }}</strong>
+            <small
+              class="canteen-menu__rating"
+              :class="{ 'is-rated': dish.averageScore != null }"
+              >{{
+                dish.averageScore == null
+                  ? '暂无评分'
+                  : '★ ' + Number(dish.averageScore).toFixed(1) + ' 分'
+              }}</small
+            >
+            <strong class="canteen-menu__price"
+              ><span
+                v-if="splitUnitPrice(dish.price, dish.priceUnit).symbol"
+                class="canteen-menu__price-symbol"
+                >{{ splitUnitPrice(dish.price, dish.priceUnit).symbol }}</span
+              ><span class="canteen-menu__price-int">{{
+                splitUnitPrice(dish.price, dish.priceUnit).integer
+              }}</span
+              ><span
+                v-if="splitUnitPrice(dish.price, dish.priceUnit).tail"
+                class="canteen-menu__price-tail"
+                >{{ splitUnitPrice(dish.price, dish.priceUnit).tail }}</span
+              ></strong
+            >
           </div>
         </RouterLink>
       </section>
@@ -251,38 +277,50 @@ onBeforeUnmount(() => {
 <style scoped>
 .canteen-menu {
   display: grid;
-  grid-template-columns: clamp(84px, 23%, 170px) minmax(0, 1fr);
+  grid-template-columns: clamp(88px, 23%, 176px) minmax(0, 1fr);
   height: min(760px, calc(100svh - 154px));
   min-height: 300px;
-  border-top: 1px solid var(--ft-color-border);
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-card);
+  overflow: hidden;
   background: var(--zine-paper-card);
+  box-shadow: var(--ft-shadow-card);
 }
 .canteen-menu__nav {
   position: relative;
   overflow-y: auto;
-  background: var(--ft-color-bg-soft);
+  background: var(--zine-paper-card-alt);
+  border-right: 1px solid var(--ft-border-subtle);
   overscroll-behavior: contain;
 }
 .canteen-menu__nav button {
+  position: relative;
   display: block;
   width: 100%;
-  min-height: 58px;
-  padding: 16px 10px;
+  min-height: 54px;
+  padding: 14px 10px 14px 12px;
   border: 0;
   border-left: 3px solid transparent;
   background: transparent;
   color: var(--ft-color-text-muted);
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.35;
   overflow-wrap: anywhere;
   cursor: pointer;
   text-align: left;
+  transition:
+    background var(--ft-transition-fast),
+    color var(--ft-transition-fast);
+}
+.canteen-menu__nav button:hover {
+  color: var(--ft-color-text);
 }
 .canteen-menu__nav button[aria-current] {
   border-left-color: var(--ft-color-primary);
   color: var(--ft-color-primary);
   background: var(--zine-paper-card);
-  font-weight: bold;
+  font-weight: 700;
 }
 .canteen-menu__dishes {
   position: relative;
@@ -291,52 +329,72 @@ onBeforeUnmount(() => {
   min-width: 0;
 }
 .canteen-menu__section {
-  padding: 0 12px;
+  padding: 0 14px 6px;
 }
 .canteen-menu__section > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 14px 0 6px;
+  padding: 12px 0 8px;
+  background: rgb(var(--ft-overlay-paper-rgb) / 94%);
+  backdrop-filter: blur(8px);
 }
 .canteen-menu h2 {
-  font: 20px var(--ft-font-family-title);
+  font: 700 17px/1.3 var(--ft-font-family-title);
   margin: 0;
   overflow-wrap: anywhere;
 }
 .canteen-menu header a {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: var(--ft-radius-pill);
+  background: var(--zine-paper-card-alt);
   flex: none;
   color: var(--ft-color-text-muted);
   font-size: 12px;
+  font-weight: 600;
+}
+.canteen-menu header a:hover {
+  color: var(--ft-color-primary);
+  background: var(--zine-stamp-red-soft);
 }
 .canteen-menu__dish {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 0;
-  min-height: 112px;
-  border-bottom: 1px dashed var(--ft-color-border);
+  gap: 12px;
+  padding: 12px 6px;
+  min-height: 108px;
+  border-bottom: 1px solid var(--ft-border-subtle);
+  border-radius: 10px;
+  transition: background var(--ft-transition-fast);
+}
+.canteen-menu__dish:hover {
+  background: var(--ft-color-bg-soft);
 }
 .canteen-menu__dish :deep(.media-image) {
-  width: clamp(64px, 20vw, 110px);
-  height: clamp(64px, 20vw, 110px);
+  width: clamp(72px, 21vw, 100px);
+  height: clamp(72px, 21vw, 100px);
   min-height: 0;
   flex: none;
   border-radius: 10px;
   overflow: hidden;
-  background: var(--ft-color-bg-soft);
+  background: var(--zine-paper-card-alt);
 }
-.canteen-menu__dish > div:not(.media-image) {
+.canteen-menu__dish-copy {
   flex: 1;
   min-width: 0;
 }
 .canteen-menu h3 {
-  margin: 0 0 6px;
-  font-size: 16px;
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
   overflow-wrap: anywhere;
 }
 .canteen-menu__description {
@@ -344,20 +402,38 @@ onBeforeUnmount(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin: 0 0 6px;
+  margin: 0 0 5px;
+  color: var(--ft-color-text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.canteen-menu__rating {
+  display: inline-block;
   color: var(--ft-color-text-muted);
   font-size: 12px;
 }
-.canteen-menu small {
-  color: var(--ft-color-text-muted);
-  font-size: 12px;
+.canteen-menu__rating.is-rated {
+  color: var(--zine-foil-gold);
+  font-weight: 700;
 }
-.canteen-menu strong {
+.canteen-menu__price {
   display: block;
-  margin-top: 8px;
+  margin-top: 6px;
   color: var(--ft-color-primary);
-  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.15;
   overflow-wrap: anywhere;
+}
+.canteen-menu__price-symbol {
+  font-size: 13px;
+  font-weight: 700;
+}
+.canteen-menu__price-int {
+  font-size: 19px;
+}
+.canteen-menu__price-tail {
+  font-size: 12px;
+  font-weight: 600;
 }
 .canteen-menu__state {
   min-height: 100px;
@@ -366,17 +442,22 @@ onBeforeUnmount(() => {
   padding: 16px 0;
 }
 .canteen-menu__state button {
-  min-height: 44px;
-  padding: 8px 16px;
+  min-height: 40px;
+  padding: 6px 16px;
   font: inherit;
+  border-radius: var(--ft-radius-control);
   background: transparent;
-  border: 1px solid var(--ft-color-border);
+  border: 1px solid var(--ft-border-control);
   cursor: pointer;
 }
 @media (max-width: 768px) {
   .canteen-menu {
-    height: calc(100svh - 330px);
+    height: calc(100svh - 270px);
     min-height: 280px;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
   }
 }
 </style>
