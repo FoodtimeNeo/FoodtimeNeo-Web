@@ -103,8 +103,23 @@ function handleClick() {
         <span
           v-if="typeof post.likeCount === 'number' && post.likeCount > 0"
           class="community-post-card__likes"
+          :class="{ 'is-liked': post.likedByMe }"
         >
-          ♡ {{ post.likeCount }}
+          <svg
+            class="community-post-card__heart"
+            viewBox="0 0 24 24"
+            :fill="post.likedByMe ? 'currentColor' : 'none'"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+            />
+          </svg>
+          <span>{{ post.likeCount }}</span>
         </span>
       </div>
     </div>
@@ -264,8 +279,21 @@ function handleClick() {
 
   &__likes {
     flex: none;
-    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
     color: var(--ft-color-text-muted);
+
+    &.is-liked {
+      color: var(--ft-color-primary);
+    }
+  }
+
+  &__heart {
+    width: 14px;
+    height: 14px;
+    flex: none;
   }
 }
 
