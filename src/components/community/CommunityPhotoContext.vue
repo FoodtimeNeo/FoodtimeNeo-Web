@@ -7,6 +7,11 @@ defineProps({
   likeBusy: Boolean,
 });
 defineEmits(['post', 'comment', 'share', 'like']);
+
+function formatCount(value) {
+  const n = Number(value) || 0;
+  return n > 99 ? '99+' : String(Math.max(0, n));
+}
 </script>
 
 <template>
@@ -54,7 +59,7 @@ defineEmits(['post', 'comment', 'share', 'like']);
             d="M21 6v10a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z"
           />
         </svg>
-        <span>评论 {{ post.commentCount || 0 }}</span>
+        <span>评论 {{ formatCount(post.commentCount) }}</span>
       </button>
       <button
         type="button"
@@ -74,7 +79,7 @@ defineEmits(['post', 'comment', 'share', 'like']);
         </svg>
         <span
           >{{ post.likedByMe ? '已赞' : '点赞' }}
-          {{ post.likeCount || 0 }}</span
+          {{ formatCount(post.likeCount) }}</span
         >
       </button>
     </div>
@@ -89,37 +94,45 @@ defineEmits(['post', 'comment', 'share', 'like']);
 .photo-context__author {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding-inline-end: 54px;
+  gap: 8px;
+  min-height: 36px;
+  padding-inline-end: 46px;
 }
 .photo-context__author .media-image,
 .photo-context__fallback {
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
 }
 .photo-context__fallback {
   display: grid;
   place-items: center;
   background: #313131;
+  font-size: 12px;
 }
 .photo-context__author strong,
 .photo-context__author time {
   display: block;
   overflow-wrap: anywhere;
 }
+.photo-context__author strong {
+  font-size: 14px;
+  line-height: 1.25;
+}
 .photo-context__author time {
-  color: #c0c0c0;
-  font-size: 12px;
+  color: rgb(255 255 255 / 72%);
+  font-size: 11px;
 }
 .photo-context__summary {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgb(255 255 255 / 90%);
   overflow-wrap: anywhere;
 }
 .photo-context button {
@@ -135,42 +148,47 @@ defineEmits(['post', 'comment', 'share', 'like']);
   outline: 2px solid #fff;
 }
 .photo-context__post {
-  color: #abd9f3 !important;
-  padding: 0;
+  min-height: 32px;
+  color: #9fd2f4 !important;
+  font-size: 13px;
+  padding: 4px 8px 4px 0;
+  margin-bottom: 4px;
 }
 .photo-context__actions {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 .photo-context .photo-context__actions button {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 76px;
+  min-height: 44px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 8px;
-  border-radius: var(--ft-radius-lg);
-  background: #242424cc;
-  font-size: max(1rem, 16px);
-  line-height: 1.35;
+  padding: 0 12px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  background: rgb(34 34 34 / 72%);
+  backdrop-filter: blur(8px);
+  font-size: 13px;
+  line-height: 1.2;
   text-align: center;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 .photo-context__actions svg {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .photo-context__actions button[aria-pressed='true'] {
-  color: #ff999c;
+  color: #ff8a90;
 }
 @media (max-height: 450px) {
   .photo-context__summary {

@@ -790,22 +790,44 @@ async function removePost() {
                       :aria-label="`点赞 ${post.likeCount || 0}`"
                       @click="toggleLike"
                     >
-                      <span class="icon-emoji">{{
-                        isLiked ? '❤️' : '🤍'
-                      }}</span>
+                      <svg
+                        class="action-svg"
+                        viewBox="0 0 24 24"
+                        :fill="isLiked ? 'currentColor' : 'none'"
+                        stroke="currentColor"
+                        stroke-width="1.9"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+                        />
+                      </svg>
                       <span class="icon-count">{{ post.likeCount || 0 }}</span>
                     </button>
                     <button
                       type="button"
                       class="action-icon-btn post-favorite"
-                      :class="{ 'is-active': isFavorited }"
+                      :class="{ 'is-active is-favorite': isFavorited }"
                       :aria-pressed="isFavorited"
                       :aria-label="`收藏 ${post.favoriteCount || 0}`"
                       @click="toggleFavorite"
                     >
-                      <span class="icon-emoji">{{
-                        isFavorited ? '⭐' : '☆'
-                      }}</span>
+                      <svg
+                        class="action-svg"
+                        viewBox="0 0 24 24"
+                        :fill="isFavorited ? 'currentColor' : 'none'"
+                        stroke="currentColor"
+                        stroke-width="1.9"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="m12 3.2 2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17.1 6.6 20l1-6.1-4.4-4.3 6.1-.9L12 3.2Z"
+                        />
+                      </svg>
                       <span class="icon-count">{{
                         post.favoriteCount || 0
                       }}</span>
@@ -813,7 +835,7 @@ async function removePost() {
                     <button
                       v-if="isFavorited"
                       type="button"
-                      class="action-icon-btn"
+                      class="action-icon-btn action-group-chip"
                       aria-label="设置收藏分组"
                       @click="openGroups"
                     >
@@ -825,7 +847,20 @@ async function removePost() {
                       :aria-label="`评论 ${post.commentCount || 0}`"
                       @click="focusCommentInput"
                     >
-                      <span class="icon-emoji">💬</span>
+                      <svg
+                        class="action-svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.9"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M21 6v10a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z"
+                        />
+                      </svg>
                       <span class="icon-count">{{
                         post.commentCount || 0
                       }}</span>
@@ -836,7 +871,18 @@ async function removePost() {
                       aria-label="分享"
                       @click="handleShare"
                     >
-                      <span class="icon-emoji">↗</span>
+                      <svg
+                        class="action-svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.9"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="m7 17 10-10M7 7h10v10" />
+                      </svg>
                     </button>
                   </div>
                 </footer>
@@ -878,23 +924,49 @@ async function removePost() {
                   :aria-label="`点赞 ${post.likeCount || 0}`"
                   @click="toggleLike"
                 >
-                  <span class="icon-emoji">{{ isLiked ? '❤️' : '🤍' }}</span>
+                  <svg
+                    class="action-svg"
+                    viewBox="0 0 24 24"
+                    :fill="isLiked ? 'currentColor' : 'none'"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+                    />
+                  </svg>
                   <span class="icon-count">{{ post.likeCount || 0 }}</span>
                 </button>
                 <button
                   type="button"
                   class="action-icon-btn"
-                  :class="{ 'is-active': isFavorited }"
+                  :class="{ 'is-active is-favorite': isFavorited }"
                   :aria-label="`收藏 ${post.favoriteCount || 0}`"
                   @click="toggleFavorite"
                 >
-                  <span class="icon-emoji">{{ isFavorited ? '⭐' : '☆' }}</span>
+                  <svg
+                    class="action-svg"
+                    viewBox="0 0 24 24"
+                    :fill="isFavorited ? 'currentColor' : 'none'"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="m12 3.2 2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17.1 6.6 20l1-6.1-4.4-4.3 6.1-.9L12 3.2Z"
+                    />
+                  </svg>
                   <span class="icon-count">{{ post.favoriteCount || 0 }}</span>
                 </button>
                 <button
                   v-if="isFavorited"
                   type="button"
-                  class="action-icon-btn"
+                  class="action-icon-btn action-group-chip"
                   aria-label="设置收藏分组"
                   @click="openGroups"
                 >
@@ -906,7 +978,20 @@ async function removePost() {
                   :aria-label="`评论 ${post.commentCount || 0}`"
                   @click="focusCommentInput"
                 >
-                  <span class="icon-emoji">💬</span>
+                  <svg
+                    class="action-svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M21 6v10a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3Z"
+                    />
+                  </svg>
                   <span class="icon-count">{{ post.commentCount || 0 }}</span>
                 </button>
                 <button
@@ -915,7 +1000,18 @@ async function removePost() {
                   aria-label="分享"
                   @click="handleShare"
                 >
-                  <span class="icon-emoji">↗</span>
+                  <svg
+                    class="action-svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.9"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m7 17 10-10M7 7h10v10" />
+                  </svg>
                 </button>
               </div>
             </footer>
@@ -1168,7 +1264,7 @@ async function removePost() {
   background: var(--zine-paper-card);
   display: flex;
   flex-direction: column;
-  border-left: 1px solid #f0eee8;
+  border-left: 1px solid var(--ft-border-subtle);
 }
 
 .redbook-author-bar {
@@ -1178,7 +1274,7 @@ async function removePost() {
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #f5f2eb;
+  border-bottom: 1px solid var(--ft-border-subtle);
 
   .redbook-author-avatar-wrap {
     width: 42px;
@@ -1325,7 +1421,7 @@ async function removePost() {
   color: var(--ft-color-text-muted);
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #f2eee9;
+  border-bottom: 1px solid var(--ft-border-subtle);
 }
 
 .redbook-comments-section {
@@ -1457,7 +1553,7 @@ async function removePost() {
 .redbook-bottom-bar {
   flex: none;
   padding: 12px 18px;
-  border-top: 1px solid #f0eee8;
+  border-top: 1px solid var(--ft-border-subtle);
   background: var(--zine-paper-card);
   display: flex;
   align-items: center;
@@ -1506,32 +1602,49 @@ async function removePost() {
   .redbook-action-icons {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
   }
 
   .action-icon-btn {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     border: 0;
     background: none;
     cursor: pointer;
     padding: 4px;
     color: var(--ft-color-text);
-    font-size: 13px;
-    transition: transform 140ms ease;
+    font-size: 14px;
+    transition:
+      transform 140ms ease,
+      color 140ms ease;
 
     &:hover {
-      transform: scale(1.1);
+      transform: scale(1.06);
     }
 
-    .icon-emoji {
-      font-size: 17px;
+    .action-svg {
+      width: 21px;
+      height: 21px;
+      flex: none;
     }
 
     &.is-active {
       color: var(--ft-color-primary, #e60026);
       font-weight: 700;
+    }
+
+    &.is-favorite {
+      color: var(--ft-color-warning, #d49428);
+    }
+
+    &.action-group-chip {
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--ft-border-subtle);
+      background: var(--zine-paper-card-alt);
+      color: var(--ft-color-text-muted);
+      font-size: 12px;
     }
   }
 }
@@ -1582,7 +1695,7 @@ async function removePost() {
     align-items: center;
     justify-content: space-between;
     background: var(--zine-paper-card);
-    border-bottom: 1px solid #f0eee8;
+    border-bottom: 1px solid var(--ft-border-subtle);
     z-index: 10;
 
     .mobile-header-btn {
@@ -1718,7 +1831,7 @@ async function removePost() {
     z-index: 100;
     background: rgb(var(--ft-overlay-surface-rgb) / 0.98);
     backdrop-filter: blur(8px);
-    border-top: 1px solid #f0eee8;
+    border-top: 1px solid var(--ft-border-subtle);
     padding: 8px 14px max(10px, env(safe-area-inset-bottom));
     box-shadow: 0 -3px 12px rgb(0 0 0 / 8%);
   }
