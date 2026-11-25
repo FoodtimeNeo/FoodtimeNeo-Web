@@ -179,48 +179,65 @@ async function handleSubmit() {
 <style scoped lang="scss">
 .auth-view {
   position: relative;
-  width: min(calc(100% - 32px), 420px);
-  margin: 10vh auto;
-  padding: var(--ft-space-4);
-  border: 1px solid var(--ft-color-text);
+  width: min(calc(100% - 32px), 440px);
+  margin: 8vh auto;
+  padding: 28px 32px 32px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-lg);
   background: var(--zine-paper-card);
-  box-shadow: 8px 10px 0 rgb(58 36 24 / 24%);
-  transform: rotate(-0.7deg);
+  box-shadow: var(--ft-shadow-card-hover);
+
+  .sticker {
+    border-color: var(--ft-border-subtle);
+    border-radius: var(--ft-radius-pill);
+    background: var(--zine-paper-card-alt);
+    box-shadow: none;
+    color: var(--ft-color-text-muted);
+    transform: none;
+  }
 }
 h1 {
-  margin: 0 0 var(--ft-space-3);
+  margin: 12px 0 var(--ft-space-3);
   font-family: var(--ft-font-family-title);
-  font-size: 40px;
+  font-size: 36px;
+  line-height: 1.2;
 
   span {
     display: block;
+    margin-bottom: 2px;
     color: var(--ft-color-primary);
     font-family: var(--ft-font-family-note);
-    font-size: 22px;
+    font-size: 21px;
     font-weight: 400;
   }
 }
 .auth-view__stamp-decor {
   position: absolute;
-  top: 16px;
-  right: 18px;
-  width: 76px;
+  top: 20px;
+  right: 22px;
+  width: 68px;
   height: auto;
-  opacity: 0.86;
-  transform: rotate(10deg);
+  opacity: 0.78;
+  transform: rotate(8deg);
   pointer-events: none;
-  filter: drop-shadow(1px 2px 2px rgba(58, 36, 24, 0.12));
+  filter: drop-shadow(0 2px 4px rgb(58 36 24 / 12%));
 }
 form {
   display: flex;
   flex-direction: column;
-  gap: var(--ft-space-2);
+  gap: 14px;
 }
 .auth-view form :deep(.button-ink) {
   width: 100%;
 }
 .auth-view__error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgb(201 52 30 / 28%);
+  border-radius: var(--ft-radius-md);
+  background: var(--zine-stamp-red-soft);
   color: var(--ft-color-danger);
+  font-size: var(--ft-font-size-sm);
   overflow-wrap: anywhere;
 }
 .auth-view__captcha {
@@ -228,21 +245,30 @@ form {
   flex-direction: column;
   gap: var(--ft-space-1);
   align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-md);
+  background: var(--zine-paper-card-alt);
 
   img {
-    border: 1px solid var(--ft-color-secondary);
+    border: 1px solid var(--ft-border-control);
+    border-radius: var(--ft-radius-sm);
     background: var(--ft-color-surface);
   }
 }
 .auth-view__captcha-refresh {
   border: 0;
+  padding: 4px 0;
   background: transparent;
   color: var(--ft-color-primary);
+  font-size: var(--ft-font-size-sm);
+  font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
 }
 a {
   color: var(--ft-color-primary);
+  font-weight: 600;
 }
 
 .auth-view__top-nav {
@@ -252,19 +278,21 @@ a {
 .auth-view__portal-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: var(--ft-font-size-sm);
   font-weight: 700;
-  color: var(--ft-color-secondary);
+  color: var(--ft-color-text-muted);
   text-decoration: none;
-  padding: 4px 10px;
-  border-radius: var(--ft-radius-sm);
-  background: rgb(58 36 24 / 6%);
+  padding: 5px 12px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-pill);
+  background: var(--zine-paper-card-alt);
   transition: all var(--ft-transition-fast);
 
   &:hover {
     color: var(--ft-color-primary);
-    background: rgb(201 52 30 / 10%);
+    border-color: var(--ft-color-primary);
+    background: var(--zine-stamp-red-soft);
     transform: translateX(-2px);
   }
 }
@@ -280,7 +308,7 @@ a {
   &::after {
     content: '';
     flex: 1;
-    border-bottom: 1px dashed var(--ft-color-border);
+    border-bottom: 1px solid var(--ft-border-subtle);
   }
 
   span {
@@ -302,6 +330,8 @@ a {
     gap: 8px;
     text-decoration: none;
     padding: 10px 16px;
+    font-family: var(--ft-font-family);
+    font-size: var(--ft-font-size-sm);
     font-weight: 700;
 
     .btn-icon {
@@ -317,11 +347,10 @@ a {
 
 @media (max-width: 520px) {
   .auth-view {
-    width: 100%;
-    margin: 0;
-    padding: var(--app-mobile-card-padding);
-    box-shadow: var(--app-mobile-shadow);
-    transform: none;
+    width: calc(100% - 24px);
+    margin: 20px auto;
+    padding: 22px 18px 24px;
+    box-shadow: var(--ft-shadow-card);
   }
 }
 </style>

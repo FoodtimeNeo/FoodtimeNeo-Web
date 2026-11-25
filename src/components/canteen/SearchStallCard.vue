@@ -114,6 +114,7 @@ const dishRoute = (stall, dish) => ({
       }}</small>
     </header>
     <ul
+      :class="{ 'is-single': dishes.length === 1 && total <= 1 }"
       :style="{ '--columns': columns }"
       aria-label="匹配菜品"
       tabindex="0"
@@ -126,19 +127,21 @@ const dishRoute = (stall, dish) => ({
             :src="dish.imageUrl"
             :alt="dish.name"
             compact
-            fit="contain"
+            fit="cover"
           />
-          <h3 :title="dish.name">
-            <SearchHighlight :text="dish.name" :keyword="query.q" />
-          </h3>
-          <p class="search-stall__metrics">
-            <span class="search-stall__price">{{
-              recordedPrice(dish.price, dish.priceUnit)
-            }}</span
-            ><small v-if="dish.averageScore != null"
-              >{{ Number(dish.averageScore).toFixed(1) }}分</small
-            >
-          </p>
+          <div class="search-stall__dish-copy">
+            <h3 :title="dish.name">
+              <SearchHighlight :text="dish.name" :keyword="query.q" />
+            </h3>
+            <p class="search-stall__metrics">
+              <span class="search-stall__price">{{
+                recordedPrice(dish.price, dish.priceUnit)
+              }}</span
+              ><small v-if="dish.averageScore != null"
+                >★ {{ Number(dish.averageScore).toFixed(1) }}分</small
+              >
+            </p>
+          </div>
         </RouterLink>
       </li>
     </ul>
@@ -147,18 +150,22 @@ const dishRoute = (stall, dish) => ({
 </template>
 <style scoped lang="scss">
 .search-stall {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--ft-color-border);
+  padding: 14px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-card);
+  background: var(--zine-paper-card);
+  box-shadow: var(--ft-shadow-card);
   header {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   &__identity {
     display: flex;
     min-width: 0;
-    gap: 8px;
+    gap: 10px;
     flex: 1;
     align-items: center;
     text-decoration: none;
@@ -168,14 +175,15 @@ const dishRoute = (stall, dish) => ({
       height: 44px;
       min-height: 0;
       flex: none;
-      border-radius: 8px;
+      border-radius: 10px;
+      overflow: hidden;
     }
     > div {
       min-width: 0;
     }
   }
   h2 {
-    font: 600 15px/1.4 var(--ft-font-family-body);
+    font: 700 15px/1.35 var(--ft-font-family-body);
     margin: 0;
     white-space: nowrap;
     overflow: hidden;
@@ -186,11 +194,11 @@ const dishRoute = (stall, dish) => ({
   }
   p {
     font-size: 12px;
-    line-height: 1.5;
+    line-height: 1.45;
     color: var(--ft-color-text-muted);
     margin: 2px 0 0;
     strong {
-      color: var(--ft-color-primary);
+      color: var(--zine-foil-gold);
     }
   }
   header small {
@@ -207,9 +215,39 @@ const dishRoute = (stall, dish) => ({
     gap: 8px;
     overflow-x: auto;
     list-style: none;
-    padding: 0 0 4px;
+    padding: 0 0 2px;
     margin: 0;
     scroll-snap-type: x proximity;
+  }
+  ul.is-single {
+    display: block;
+    overflow: visible;
+    li a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 10px;
+      background: var(--zine-paper-card-alt);
+    }
+    li :deep(.media-image) {
+      width: 72px;
+      height: 72px;
+      flex: none;
+      aspect-ratio: 1;
+    }
+    .search-stall__dish-copy {
+      flex: 1;
+      min-width: 0;
+    }
+    h3 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .search-stall__price {
+      font-size: 15px;
+    }
   }
   li {
     min-width: 0;
@@ -224,12 +262,17 @@ const dishRoute = (stall, dish) => ({
       height: auto;
       min-height: 0;
       aspect-ratio: 1;
-      border-radius: 7px;
+      border-radius: 9px;
+      overflow: hidden;
+      background: var(--zine-paper-card-alt);
     }
   }
+  &__dish-copy {
+    min-width: 0;
+  }
   h3 {
-    margin: 3px 0 1px;
-    font: 500 13px/1.3 var(--ft-font-family-body);
+    margin: 5px 0 2px;
+    font: 600 13px/1.3 var(--ft-font-family-body);
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -237,7 +280,8 @@ const dishRoute = (stall, dish) => ({
   &__metrics {
     display: flex;
     flex-wrap: wrap;
-    gap: 0 4px;
+    align-items: baseline;
+    gap: 0 6px;
     margin: 0 !important;
     line-height: 1.25;
     overflow-wrap: anywhere;
@@ -245,11 +289,12 @@ const dishRoute = (stall, dish) => ({
   &__price {
     color: var(--ft-color-primary);
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
   }
   small {
     font-size: 11px;
-    color: var(--ft-color-text-muted);
+    color: var(--zine-foil-gold);
+    font-weight: 600;
   }
   button {
     min-height: 36px;

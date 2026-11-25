@@ -402,10 +402,10 @@ const defaultIllustration = computed(() => {
     display: grid;
     grid-template-columns: 1.05fr 0.95fr;
     overflow: hidden;
-    border: 1.5px solid var(--ft-color-secondary);
-    background: var(--ft-color-surface);
-    box-shadow: 6px 6px 0 var(--ft-color-secondary);
-    border-radius: var(--ft-radius-sm, 2px);
+    border: 1px solid var(--ft-border-subtle);
+    background: var(--zine-paper-card);
+    box-shadow: var(--ft-shadow-card);
+    border-radius: var(--ft-radius-lg);
   }
 
   /* 紧凑 4:3 左侧图片展示区 */
@@ -415,7 +415,7 @@ const defaultIllustration = computed(() => {
     aspect-ratio: 4 / 3;
     overflow: hidden;
     background: var(--zine-paper-card-alt);
-    border-right: 1.5px solid var(--ft-color-secondary);
+    border-right: 1px solid var(--ft-border-subtle);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -441,22 +441,22 @@ const defaultIllustration = computed(() => {
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: rgb(var(--ft-overlay-surface-rgb) / 0.92);
-    border: 1px solid var(--ft-color-secondary);
-    border-radius: var(--ft-radius-sm, 3px);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.9);
+    border: 1px solid var(--ft-border-control);
+    border-radius: var(--ft-radius-pill);
     font-size: 13px;
     font-weight: 700;
-    color: var(--ft-color-secondary);
+    color: var(--ft-color-text);
     text-decoration: none;
-    box-shadow: 2px 2px 0 rgba(58, 36, 24, 0.18);
-    backdrop-filter: blur(4px);
+    box-shadow: var(--ft-shadow-card);
+    backdrop-filter: blur(8px);
     transition: all var(--ft-transition-fast);
     z-index: 2;
 
     &:hover {
       background: var(--zine-paper-card);
       transform: translateY(-1px);
-      box-shadow: 3px 3px 0 rgba(58, 36, 24, 0.25);
+      box-shadow: var(--ft-shadow-card-hover);
       color: var(--ft-color-primary);
     }
   }
@@ -466,14 +466,15 @@ const defaultIllustration = computed(() => {
     position: absolute;
     top: 12px;
     right: 12px;
-    padding: 4px 10px;
+    padding: 5px 12px;
     background: rgb(var(--ft-overlay-surface-rgb) / 0.88);
-    border: 1px solid var(--ft-color-secondary);
-    border-radius: var(--ft-radius-sm, 2px);
+    border: 1px solid var(--ft-border-control);
+    border-radius: var(--ft-radius-pill);
     font-size: 12px;
     font-weight: 700;
-    color: var(--ft-color-secondary);
+    color: var(--ft-color-text);
     text-decoration: none;
+    backdrop-filter: blur(8px);
     z-index: 2;
     transition: all var(--ft-transition-fast);
 
@@ -509,7 +510,7 @@ const defaultIllustration = computed(() => {
     background: radial-gradient(
       circle at center,
       rgb(var(--ft-overlay-paper-rgb) / 0.72) 0%,
-      rgba(247, 239, 217, 0.88) 100%
+      rgb(var(--ft-overlay-paper-rgb) / 0.9) 100%
     );
     display: flex;
     flex-direction: column;
@@ -523,17 +524,16 @@ const defaultIllustration = computed(() => {
     font-size: 13px;
     font-family: var(--ft-font-family-note);
     color: var(--ft-color-text-muted);
-    background: rgb(var(--ft-overlay-surface-rgb) / 0.8);
-    padding: 2px 10px;
-    border-radius: 999px;
-    border: 1px dashed rgba(58, 36, 24, 0.25);
+    background: rgb(var(--ft-overlay-surface-rgb) / 0.85);
+    padding: 3px 12px;
+    border-radius: var(--ft-radius-pill);
+    border: 1px solid var(--ft-border-subtle);
   }
 
   &__contribute-btn {
     font-size: 14px;
     padding: 8px 18px;
     text-decoration: none;
-    box-shadow: 3px 3px 0 var(--ft-color-primary-strong, #ab1f0b);
   }
 
   /* 右侧信息区 */
@@ -620,7 +620,7 @@ const defaultIllustration = computed(() => {
   }
 
   .action-divider {
-    color: rgba(58, 36, 24, 0.25);
+    color: var(--ft-border-control);
     font-size: 12px;
   }
 
@@ -636,10 +636,10 @@ const defaultIllustration = computed(() => {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 10px 14px;
+    padding: 12px 16px;
     background: var(--zine-paper-card-alt);
-    border: 1px dashed rgba(58, 36, 24, 0.28);
-    border-radius: var(--ft-radius-sm, 2px);
+    border: 1px solid var(--ft-border-subtle);
+    border-radius: var(--ft-radius-md);
     margin: 4px 0 8px;
   }
 
@@ -673,14 +673,14 @@ const defaultIllustration = computed(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border: 1.5px solid var(--zine-stamp-red);
     color: var(--zine-stamp-red);
     font-weight: 900;
     font-size: 15px;
     font-family: var(--ft-font-family-title);
-    transform: rotate(-4deg);
+    transform: none;
     border-radius: 50%;
   }
 
@@ -736,9 +736,9 @@ const defaultIllustration = computed(() => {
       color: var(--ft-color-text-muted);
       font-weight: 700;
       background: var(--zine-paper-card-alt);
-      padding: 2px 8px;
-      border-radius: var(--ft-radius-sm, 2px);
-      border: 1px solid rgba(58, 36, 24, 0.15);
+      padding: 3px 10px;
+      border-radius: var(--ft-radius-pill);
+      border: 1px solid var(--ft-border-subtle);
     }
 
     .dish-reviews__decor-heart {
@@ -754,16 +754,16 @@ const defaultIllustration = computed(() => {
       font-weight: 700;
       color: var(--ft-color-primary);
       text-decoration: none;
-      padding: 6px 14px;
-      border: 1px dashed var(--ft-color-primary);
-      border-radius: var(--ft-radius-sm, 2px);
-      background: rgba(201, 52, 30, 0.04);
+      padding: 7px 16px;
+      border: 1px solid rgb(201 52 30 / 32%);
+      border-radius: var(--ft-radius-pill);
+      background: var(--zine-stamp-red-soft);
       transition: all var(--ft-transition-fast);
 
       &:hover {
         background: var(--ft-color-primary);
         color: #fff;
-        border-style: solid;
+        border-color: var(--ft-color-primary);
       }
     }
   }
@@ -776,9 +776,9 @@ const defaultIllustration = computed(() => {
     gap: 28px;
     padding: 36px 24px;
     background: var(--zine-paper-card);
-    border: 1.5px dashed var(--ft-color-secondary);
-    border-radius: var(--ft-radius-sm, 3px);
-    box-shadow: 4px 4px 0 rgba(58, 36, 24, 0.08);
+    border: 1px dashed var(--ft-border-control);
+    border-radius: var(--ft-radius-lg);
+    box-shadow: var(--ft-shadow-card);
     margin: var(--ft-space-3) 0;
 
     .dish-reviews__empty-sketch {
@@ -830,7 +830,7 @@ const defaultIllustration = computed(() => {
 
     &__hero-box {
       border-right: none;
-      border-bottom: 1.5px solid var(--ft-color-secondary);
+      border-bottom: 1px solid var(--ft-border-subtle);
     }
 
     &__content {
