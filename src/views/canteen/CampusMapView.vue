@@ -306,7 +306,7 @@ function selectGpsStart() {
 }
 function enableMapPick() {
   pickStartMode.value = true;
-  locationNotice.value = '请在上方地图上点击任意出发位置';
+  locationNotice.value = '点击地图选择起点';
 }
 async function locateMe() {
   locationNotice.value = '';
@@ -333,7 +333,7 @@ async function locateMe() {
     const km = (
       projection.distanceToCampusCenter(fix.latitude, fix.longitude) / 1000
     ).toFixed(1);
-    locationNotice.value = `当前距学校约 ${km}km，已切换为校门起点预览校内路线`;
+    locationNotice.value = `当前不在校内（距校约 ${km}km），可切换校门出发`;
   }
 }
 
@@ -453,11 +453,8 @@ onBeforeUnmount(() => {
         >
       </div>
     </header>
-    <p class="campus-map__hint">
-      双指/滚轮缩放 · 点选建筑地标查看食堂与校内步行路线
-    </p>
     <div v-if="pickStartMode" class="campus-map__banner" role="status">
-      <span>请在下方地图上点击任意出发位置</span>
+      <span>点击地图选择起点</span>
       <button type="button" @click="pickStartMode = false">取消</button>
     </div>
     <p v-else-if="locationNotice" class="campus-map__notice" role="status">
@@ -626,7 +623,7 @@ onBeforeUnmount(() => {
           class="button-ink is-primary"
           @click="startNavigation"
         >
-          {{ navigating ? '重新聚焦路线' : '校内步行导航' }}
+          {{ navigating ? '查看路线' : '开始导航' }}
         </button>
         <a
           v-if="userFix && !userOnCampus && externalMapUrl"
@@ -635,7 +632,7 @@ onBeforeUnmount(() => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          外部地图导航 ↗
+          外部地图 ↗
         </a>
       </div>
 
@@ -663,8 +660,8 @@ onBeforeUnmount(() => {
         <p v-if="!userOnCampus" class="campus-map__nav-fallback">
           {{
             userFix
-              ? '当前不在校园内，已切换为校内起点预览路线（可使用上方外部地图到校）。'
-              : '未开启定位，已默认从校门规划路线；点击地图“定位”或下方切换起点。'
+              ? '当前不在校内，已从校门出发'
+              : '默认从校门出发，可切换起点'
           }}
         </p>
         <div class="campus-map__start-chips" role="group" aria-label="切换起点">
@@ -690,7 +687,7 @@ onBeforeUnmount(() => {
             :aria-pressed="effectiveStartMode === 'custom' || pickStartMode"
             @click="enableMapPick"
           >
-            图上选起点
+            图上选点
           </button>
         </div>
         <div v-if="routePlan.steps.length" class="campus-map__steps">
@@ -705,8 +702,8 @@ onBeforeUnmount(() => {
           >
             {{
               stepsExpanded
-                ? '收起完整路线步骤 ⌃'
-                : `展开全部 ${routePlan.steps.length} 步指引 ⌄`
+                ? '收起步骤 ⌃'
+                : `展开全部 ${routePlan.steps.length} 步 ⌄`
             }}
           </button>
           <ol v-if="stepsExpanded" class="campus-map__step-list">
@@ -723,8 +720,8 @@ onBeforeUnmount(() => {
 
       <p v-if="loading">正在读取食堂入口…</p>
       <template v-else-if="error">
-        <p role="alert">食堂入口暂时无法读取，地图与步行导航仍可使用。</p>
-        <button class="button-ink" type="button" @click="load">重新读取</button>
+        <p role="alert">食堂入口读取失败</p>
+        <button class="button-ink" type="button" @click="load">重试</button>
       </template>
       <div v-else-if="destinations.length" class="campus-map__destinations">
         <RouterLink
@@ -735,14 +732,8 @@ onBeforeUnmount(() => {
           >{{ hall.name }} →</RouterLink
         >
       </div>
-      <p v-else class="campus-map__empty-note">
-        此餐厅暂未录入档口菜单，后续将陆续补充。
-      </p>
+      <p v-else class="campus-map__empty-note">暂未录入档口菜单</p>
     </article>
-
-    <p class="campus-map__hint">
-      北京交通大学手绘校园地图 · 2023 年版 · 校内离线步行导航
-    </p>
   </section>
 </template>
 

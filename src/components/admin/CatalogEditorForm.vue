@@ -201,14 +201,14 @@ async function submit() {
     <template v-if="type !== 'dishes'">
       <div v-if="type === 'dining-halls'" class="coord-grid">
         <label
-          >纬度（WGS84，可选）<input
+          >纬度（可选）<input
             v-model="form.latitude"
             inputmode="decimal"
             placeholder="例如 39.951828"
             :disabled="writing"
         /></label>
         <label
-          >经度（WGS84，可选）<input
+          >经度（可选）<input
             v-model="form.longitude"
             inputmode="decimal"
             placeholder="例如 116.337199"

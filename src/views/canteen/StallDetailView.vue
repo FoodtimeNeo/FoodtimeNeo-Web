@@ -100,7 +100,7 @@ const sortedDishes = computed(() =>
               name: 'campusMap',
               query: { hall: canteenId, navigate: '1' },
             }"
-            >去这里（步行导航） ›</RouterLink
+            >去这里 ›</RouterLink
           >
           <RouterLink
             class="button-ink"

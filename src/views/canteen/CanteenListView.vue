@@ -89,7 +89,7 @@ const displayedCanteens = computed(() => {
             ? '定位中…'
             : sortByDistance && userFix
               ? '按距离 ✓'
-              : '按距离排序'
+              : '按距离'
         }}
       </button>
     </div>
