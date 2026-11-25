@@ -476,6 +476,25 @@ samp {
   white-space: nowrap;
 }
 
+.el-dialog,
+.el-message-box {
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-lg);
+  background: var(--zine-paper-card);
+  box-shadow: 0 18px 46px rgb(24 14 8 / 20%);
+}
+
+.el-dialog__title,
+.el-message-box__title {
+  color: var(--ft-color-text);
+  font-family: var(--ft-font-family-title);
+  font-weight: 800;
+}
+
+.el-overlay {
+  backdrop-filter: blur(3px);
+}
+
 @media (max-width: 768px) {
   html,
   body {
@@ -552,6 +571,10 @@ html[data-theme='dark'] {
   }
   .button-ink:hover:not(:disabled) {
     box-shadow: 0 4px 12px rgb(0 0 0 / 38%);
+  }
+  .el-dialog,
+  .el-message-box {
+    box-shadow: 0 20px 52px rgb(0 0 0 / 56%);
   }
   input,
   textarea,

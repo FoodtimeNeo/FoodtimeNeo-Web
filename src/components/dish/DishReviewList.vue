@@ -61,10 +61,11 @@ defineProps({
 
   &__item {
     overflow-wrap: anywhere;
-    padding: var(--ft-space-2);
-    border: 2px solid var(--ft-color-text);
+    padding: 16px 18px;
+    border: 1px solid var(--ft-border-subtle);
+    border-radius: var(--ft-radius-card);
     background: var(--zine-paper-card);
-    box-shadow: 3px 3px 0 var(--ft-color-text);
+    box-shadow: var(--ft-shadow-card);
   }
 
   &__head {
@@ -81,11 +82,19 @@ defineProps({
 
   .zine-rating-stamp {
     flex-shrink: 0;
+    width: auto;
+    height: auto;
+    padding: 3px 10px;
+    border: 1px solid rgb(201 52 30 / 28%);
+    border-radius: var(--ft-radius-pill);
+    font-size: 13px;
+    transform: none;
     white-space: nowrap;
   }
 
   &__comment {
-    margin: var(--ft-space-1) 0 0;
+    margin: 10px 0 0;
+    line-height: 1.65;
     white-space: pre-wrap;
   }
 
@@ -94,6 +103,8 @@ defineProps({
     max-width: 100%;
     height: 120px;
     margin-top: var(--ft-space-2);
+    border-radius: var(--ft-radius-md);
+    overflow: hidden;
   }
 
   &__time {

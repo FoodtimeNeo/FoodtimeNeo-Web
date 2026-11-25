@@ -257,51 +257,81 @@ async function submit() {
 
 <style scoped lang="scss">
 .recovery-view {
-  width: min(calc(100% - 32px), 440px);
-  margin: 8vh auto;
-  padding: var(--ft-space-4);
-  border: 1px solid var(--ft-color-text);
+  width: min(calc(100% - 32px), 460px);
+  margin: 7vh auto;
+  padding: 28px 32px 32px;
+  border: 1px solid var(--ft-border-subtle);
+  border-radius: var(--ft-radius-lg);
   background: var(--zine-paper-card);
-  box-shadow: 8px 10px 0 rgb(58 36 24 / 24%);
+  box-shadow: var(--ft-shadow-card-hover);
 }
 .sticker {
   display: table;
-  margin: 24px 0 12px;
+  margin: 18px 0 10px;
+  border-color: var(--ft-border-subtle);
+  border-radius: var(--ft-radius-pill);
+  background: var(--zine-paper-card-alt);
+  box-shadow: none;
+  color: var(--ft-color-text-muted);
 }
 h1 {
+  margin: 0 0 14px;
   font-family: var(--ft-font-family-title);
-  font-size: 36px;
+  font-size: 32px;
+  line-height: 1.2;
 }
 form {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 .steps {
   display: flex;
-  gap: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px dashed var(--ft-color-border);
+  gap: 10px;
+  margin: 0 0 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ft-border-subtle);
   color: var(--ft-color-text-muted);
   font-size: 13px;
+
+  strong {
+    padding: 4px 12px;
+    border-radius: var(--ft-radius-pill);
+    background: var(--zine-paper-card-alt);
+    font-weight: 600;
+  }
+
+  strong.active {
+    background: var(--zine-stamp-red-soft);
+    color: var(--ft-color-primary);
+    font-weight: 700;
+  }
 }
 .active,
 a {
   color: var(--ft-color-primary);
+  font-weight: 600;
 }
 .error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgb(201 52 30 / 28%);
+  border-radius: var(--ft-radius-md);
+  background: var(--zine-stamp-red-soft);
   color: var(--ft-color-danger);
+  font-size: var(--ft-font-size-sm);
   overflow-wrap: anywhere;
 }
 .hint {
-  font-size: 14px;
+  margin: 0;
+  font-size: 13px;
   color: var(--ft-color-text-muted);
 }
 @media (max-width: 520px) {
   .recovery-view {
-    width: 100%;
-    margin: 0;
-    padding: var(--app-mobile-card-padding);
-    box-shadow: var(--app-mobile-shadow);
+    width: calc(100% - 24px);
+    margin: 20px auto;
+    padding: 22px 18px 24px;
+    box-shadow: var(--ft-shadow-card);
   }
 }
 </style>
