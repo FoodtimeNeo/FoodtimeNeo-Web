@@ -1,7 +1,13 @@
 <script setup>
+import { computed, ref } from 'vue';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
 import { useCatalogSearch } from '@/composables/useCatalogSearch.js';
+import { useCampusLocation } from '@/composables/useCampusLocation.js';
+import {
+  formatWalkSummary,
+  hallDistanceMeters,
+} from '@/utils/campusProjection.js';
 import CatalogSearch from '@/components/canteen/CatalogSearch.vue';
 import CanteenEntryCard from '@/components/home/CanteenEntryCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -22,6 +28,37 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
   canteens,
   'canteens',
 );
+const {
+  position: userFix,
+  locating,
+  error: locationError,
+  locateOnce,
+} = useCampusLocation();
+const sortByDistance = ref(false);
+
+async function toggleDistanceSort() {
+  if (sortByDistance.value && userFix.value) {
+    sortByDistance.value = false;
+    return;
+  }
+  const fix = await locateOnce();
+  if (fix) sortByDistance.value = true;
+}
+
+const displayedCanteens = computed(() => {
+  const list = filteredCanteens.value;
+  if (!sortByDistance.value || !userFix.value) return list;
+  return [...list].sort((a, b) => {
+    const da = hallDistanceMeters(a, userFix.value) ?? Infinity;
+    const db = hallDistanceMeters(b, userFix.value) ?? Infinity;
+    return da - db;
+  });
+});
+
+function canteenDistanceText(canteen) {
+  const m = hallDistanceMeters(canteen, userFix.value);
+  return m === null ? '' : formatWalkSummary(m);
+}
 </script>
 
 <template>
@@ -42,11 +79,31 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
       />
     </div>
 
-    <RouterLink
-      class="button-ink canteen-list__map-link"
-      :to="{ name: 'campusMap' }"
-      >食堂地图</RouterLink
-    >
+    <div class="canteen-list__toolbar">
+      <RouterLink
+        class="button-ink canteen-list__map-link"
+        :to="{ name: 'campusMap' }"
+        >食堂地图</RouterLink
+      >
+      <button
+        type="button"
+        class="button-ink canteen-list__sort-btn"
+        :class="{ 'is-primary': sortByDistance && userFix }"
+        :disabled="locating"
+        @click="toggleDistanceSort"
+      >
+        {{
+          locating
+            ? '定位中…'
+            : sortByDistance && userFix
+              ? '按距离 ✓'
+              : '按距离排序'
+        }}
+      </button>
+    </div>
+    <p v-if="locationError" class="canteen-list__loc-error" role="status">
+      {{ locationError }}
+    </p>
 
     <LoadingState v-if="loading" message="正在翻开食堂手账…" />
     <ErrorState v-else-if="error" :description="error.message" @retry="load" />
@@ -70,8 +127,11 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
         </button>
       </EmptyState>
       <ul v-else class="canteen-list__grid">
-        <li v-for="canteen in filteredCanteens" :key="canteen.id">
-          <CanteenEntryCard :canteen="canteen" />
+        <li v-for="canteen in displayedCanteens" :key="canteen.id">
+          <CanteenEntryCard
+            :canteen="canteen"
+            :distance-text="canteenDistanceText(canteen)"
+          />
         </li>
       </ul>
     </template>
@@ -79,8 +139,17 @@ const { query, matches: filteredCanteens } = useCatalogSearch(
 </template>
 
 <style scoped lang="scss">
-.canteen-list__map-link {
-  margin: 8px 0 8px 12px;
+.canteen-list__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+.canteen-list__loc-error {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ft-color-text-muted);
 }
 .canteen-list {
   width: min(calc(100% - var(--zine-page-padding) * 2), var(--page-max-width));

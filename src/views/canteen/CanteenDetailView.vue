@@ -11,12 +11,22 @@ import ErrorState from '@/components/base/ErrorState.vue';
 import MediaImage from '@/components/base/MediaImage.vue';
 import CatalogQuickActions from '@/components/admin/CatalogQuickActions.vue';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import { useCampusLocation } from '@/composables/useCampusLocation.js';
+import {
+  formatWalkSummary,
+  hallDistanceMeters,
+} from '@/utils/campusProjection.js';
 const auth = useAuthStore();
 const route = useRoute();
+const { position: userFix } = useCampusLocation();
 const canteenId = computed(() => String(route.params.canteenId));
 const hall = useAsyncData((options) => fetchCanteen(canteenId.value, options), {
   cacheKey: () => `canteen:${canteenId.value}`,
   ttl: 0,
+});
+const distanceSummary = computed(() => {
+  const m = hallDistanceMeters(hall.data.value, userFix.value);
+  return m === null ? '' : formatWalkSummary(m);
 });
 const list = useAsyncData((options) => fetchStalls(canteenId.value, options), {
   initial: [],
@@ -56,16 +66,29 @@ watch(canteenId, () => {
           <h1>{{ hall.data.value.name }}</h1>
           <p v-if="!list.loading.value && !list.error.value">
             {{ list.data.value.length }} 个档口
+            <template v-if="distanceSummary">
+              · 步行 {{ distanceSummary }}</template
+            >
           </p>
         </div>
-        <RouterLink
-          class="canteen-detail__review"
-          :to="{
-            name: 'venueReviews',
-            params: { type: 'hall', targetId: canteenId },
-          }"
-          >评价 ›</RouterLink
-        >
+        <div class="canteen-detail__hero-actions">
+          <RouterLink
+            class="canteen-detail__nav"
+            :to="{
+              name: 'campusMap',
+              query: { hall: canteenId, navigate: '1' },
+            }"
+            >去这里 ›</RouterLink
+          >
+          <RouterLink
+            class="canteen-detail__review"
+            :to="{
+              name: 'venueReviews',
+              params: { type: 'hall', targetId: canteenId },
+            }"
+            >评价 ›</RouterLink
+          >
+        </div>
       </header>
       <details class="canteen-detail__info">
         <summary>食堂信息</summary>
@@ -147,6 +170,14 @@ watch(canteenId, () => {
   border-radius: 12px;
   overflow: hidden;
 }
+.canteen-detail__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.canteen-detail__nav,
 .canteen-detail__review {
   flex: none;
   min-height: 36px;
@@ -154,14 +185,22 @@ watch(canteenId, () => {
   display: inline-flex;
   align-items: center;
   border-radius: var(--ft-radius-pill);
-  background: var(--zine-stamp-red-soft);
-  color: var(--ft-color-primary);
   font-size: 13px;
   font-weight: 700;
   transition:
     background var(--ft-transition-fast),
     transform var(--ft-transition-fast);
 }
+.canteen-detail__nav {
+  background: var(--zine-paper-card);
+  border: 1px solid var(--ft-border-control);
+  color: var(--ft-color-text);
+}
+.canteen-detail__review {
+  background: var(--zine-stamp-red-soft);
+  color: var(--ft-color-primary);
+}
+.canteen-detail__nav:hover,
 .canteen-detail__review:hover {
   transform: translateY(-1px);
 }

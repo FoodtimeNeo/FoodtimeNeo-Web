@@ -29,6 +29,14 @@ const form = reactive({
   priceUnit: props.item?.priceUnit || 'unspecified',
   status: props.item?.status || 'active',
   sortOrder: String(props.item?.sortOrder ?? 0),
+  latitude:
+    props.item?.latitude === null || props.item?.latitude === undefined
+      ? ''
+      : String(props.item.latitude),
+  longitude:
+    props.item?.longitude === null || props.item?.longitude === undefined
+      ? ''
+      : String(props.item.longitude),
 });
 const file = ref(null);
 const removeCover = ref(false);
@@ -80,6 +88,40 @@ async function submit() {
     error.value = '排序值须为 32 位整数';
     return;
   }
+  let latitude;
+  let longitude;
+  let clearCoordinates;
+  if (props.type === 'dining-halls') {
+    const latStr = String(form.latitude ?? '').trim();
+    const lngStr = String(form.longitude ?? '').trim();
+    if (latStr || lngStr) {
+      if (!latStr || !lngStr) {
+        error.value = '经纬度需同时填写或同时留空';
+        return;
+      }
+      const parsedLat = Number(latStr);
+      const parsedLng = Number(lngStr);
+      if (
+        !Number.isFinite(parsedLat) ||
+        !Number.isFinite(parsedLng) ||
+        parsedLat < -90 ||
+        parsedLat > 90 ||
+        parsedLng < -180 ||
+        parsedLng > 180
+      ) {
+        error.value = '请输入合法的 WGS84 经纬度坐标';
+        return;
+      }
+      latitude = parsedLat;
+      longitude = parsedLng;
+    } else if (
+      props.item &&
+      ((props.item.latitude !== null && props.item.latitude !== undefined) ||
+        (props.item.longitude !== null && props.item.longitude !== undefined))
+    ) {
+      clearCoordinates = true;
+    }
+  }
   const actor = auth.user?.id;
   writing.value = true;
   try {
@@ -92,6 +134,9 @@ async function submit() {
       description: form.description || null,
       price: props.type === 'dishes' ? Number(form.price) : undefined,
       sortOrder: Number(form.sortOrder),
+      latitude,
+      longitude,
+      clearCoordinates,
       coverImageUrl: removeCover.value
         ? null
         : reference || props.item?.coverImageUrl || null,
@@ -154,6 +199,22 @@ async function submit() {
       </select></label
     >
     <template v-if="type !== 'dishes'">
+      <div v-if="type === 'dining-halls'" class="coord-grid">
+        <label
+          >纬度（WGS84，可选）<input
+            v-model="form.latitude"
+            inputmode="decimal"
+            placeholder="例如 39.951828"
+            :disabled="writing"
+        /></label>
+        <label
+          >经度（WGS84，可选）<input
+            v-model="form.longitude"
+            inputmode="decimal"
+            placeholder="例如 116.337199"
+            :disabled="writing"
+        /></label>
+      </div>
       <label
         >排序值（数值越小越靠前）<input
           v-model="form.sortOrder"
@@ -224,6 +285,11 @@ button {
 button {
   margin-right: 12px;
   cursor: pointer;
+}
+.coord-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 .cover {
   width: min(100%, 480px);
