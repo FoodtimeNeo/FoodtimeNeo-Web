@@ -66,7 +66,21 @@ async function like() {
           :disabled="acting"
           @click="like"
         >
-          {{ item.likedByMe ? '♥' : '♡' }} {{ item.likeCount || 0 }}
+          <svg
+            class="comment-like-icon"
+            viewBox="0 0 24 24"
+            :fill="item.likedByMe ? 'currentColor' : 'none'"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path
+              d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
+            />
+          </svg>
+          <span>{{ item.likeCount || 0 }}</span>
         </button>
         <time>{{
           new Date(item.createdAt).toLocaleString('zh-CN', {
@@ -188,6 +202,11 @@ button {
   &:hover {
     color: var(--ft-color-primary, #e60026);
   }
+}
+.comment-like-icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
 }
 .comment-like[aria-pressed='true'] {
   color: var(--ft-color-primary, #e60026);
