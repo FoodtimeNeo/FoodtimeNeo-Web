@@ -124,6 +124,13 @@ defineProps({
     line-height: 1.3;
   }
 
+  &__distance {
+    margin: 0;
+    color: var(--ft-color-primary) !important;
+    font-size: 12px !important;
+    font-weight: 700;
+  }
+
   &__link {
     display: inline-flex;
     align-items: center;

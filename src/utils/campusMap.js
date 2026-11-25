@@ -28,3 +28,46 @@ export function availableMapHalls(region, halls) {
       ids.has(hall.id) && hall.active !== false && hall.status !== 'inactive',
   );
 }
+
+export function findMapRegion(regions, idOrHallId) {
+  if (!idOrHallId) return null;
+  return (
+    regions.find(
+      (r) =>
+        r.id === idOrHallId ||
+        (Array.isArray(r.diningHallIds) &&
+          r.diningHallIds.includes(idOrHallId)),
+    ) || null
+  );
+}
+
+export function focusPointTransform(point, targetZoom, width, height) {
+  const zoom = Math.max(1, Math.min(6, targetZoom));
+  return clampMapTransform(
+    {
+      zoom,
+      x: width / 2 - point.x * zoom,
+      y: height / 2 - point.y * zoom,
+    },
+    width,
+    height,
+  );
+}
+
+export function focusBoundsTransform(bounds, width, height) {
+  const spanX = Math.max(460, (bounds.maxX - bounds.minX) * 1.45);
+  const spanY = Math.max(360, (bounds.maxY - bounds.minY) * 1.45);
+  const zoom = Math.max(
+    1,
+    Math.min(4.2, Math.min(width / spanX, height / spanY)),
+  );
+  return focusPointTransform(
+    {
+      x: (bounds.minX + bounds.maxX) / 2,
+      y: (bounds.minY + bounds.maxY) / 2,
+    },
+    zoom,
+    width,
+    height,
+  );
+}
