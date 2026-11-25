@@ -9,10 +9,6 @@ defineProps({
     type: Object,
     required: true,
   },
-  distanceText: {
-    type: String,
-    default: '',
-  },
 });
 </script>
 
@@ -41,9 +37,6 @@ defineProps({
             ? '暂无评分'
             : `★ ${Number(canteen.averageScore).toFixed(1)} · ${canteen.reviewCount} 条评价`
         }}
-      </p>
-      <p v-if="distanceText" class="canteen-entry__distance">
-        步行 {{ distanceText }}
       </p>
       <span class="canteen-entry__link handwrite">翻开看看 →</span>
     </div>

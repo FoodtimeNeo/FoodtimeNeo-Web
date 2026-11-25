@@ -4,10 +4,7 @@ import { useAsyncData } from '@/composables/useAsyncData.js';
 import { fetchCanteens } from '@/api/canteen.api.js';
 import { useCatalogSearch } from '@/composables/useCatalogSearch.js';
 import { useCampusLocation } from '@/composables/useCampusLocation.js';
-import {
-  formatWalkSummary,
-  hallDistanceMeters,
-} from '@/utils/campusProjection.js';
+import { hallDistanceMeters } from '@/utils/campusProjection.js';
 import CatalogSearch from '@/components/canteen/CatalogSearch.vue';
 import CanteenEntryCard from '@/components/home/CanteenEntryCard.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -54,11 +51,6 @@ const displayedCanteens = computed(() => {
     return da - db;
   });
 });
-
-function canteenDistanceText(canteen) {
-  const m = hallDistanceMeters(canteen, userFix.value);
-  return m === null ? '' : formatWalkSummary(m);
-}
 </script>
 
 <template>
@@ -128,10 +120,7 @@ function canteenDistanceText(canteen) {
       </EmptyState>
       <ul v-else class="canteen-list__grid">
         <li v-for="canteen in displayedCanteens" :key="canteen.id">
-          <CanteenEntryCard
-            :canteen="canteen"
-            :distance-text="canteenDistanceText(canteen)"
-          />
+          <CanteenEntryCard :canteen="canteen" />
         </li>
       </ul>
     </template>

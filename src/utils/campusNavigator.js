@@ -110,15 +110,17 @@ export function createCampusNavigator(graph) {
       let ex = first.x2;
       let ey = first.y2;
       let j = i + 1;
-      while (
-        j < segments.length &&
-        segments[j].roadName === road &&
-        !segments[j].note &&
-        !note
-      ) {
-        dist += segments[j].distanceMeters;
-        ex = segments[j].x2;
-        ey = segments[j].y2;
+      while (j < segments.length && !segments[j].note && !note) {
+        const nxt = segments[j];
+        const sameRoad = nxt.roadName === road;
+        const microStraight =
+          nxt.distanceMeters < 32 &&
+          turnWord(ex - sx, ey - sy, nxt.x2 - nxt.x1, nxt.y2 - nxt.y1) ===
+            '直行';
+        if (!sameRoad && !microStraight) break;
+        dist += nxt.distanceMeters;
+        ex = nxt.x2;
+        ey = nxt.y2;
         j++;
       }
       const curDx = ex - sx;
