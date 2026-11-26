@@ -8,14 +8,17 @@ import {
 } from 'vue';
 
 const asyncDataCache = new Map();
-let cacheGeneration = 0;
+const keyGenerations = new Map();
+let globalGeneration = 0;
 
 export function clearAsyncDataCache(key) {
-  cacheGeneration += 1;
   if (key) {
     asyncDataCache.delete(key);
+    keyGenerations.set(key, (keyGenerations.get(key) || 0) + 1);
   } else {
+    globalGeneration += 1;
     asyncDataCache.clear();
+    keyGenerations.clear();
   }
 }
 
@@ -38,8 +41,15 @@ export function useAsyncData(
   async function load() {
     if (!active) return;
     const current = ++generation;
-    const cacheVersion = cacheGeneration;
+    const globalVersion = globalGeneration;
     const requestCacheKey = cacheKey ? toValue(cacheKey) : null;
+    const keyVersion = requestCacheKey
+      ? keyGenerations.get(requestCacheKey) || 0
+      : 0;
+    const isFreshGeneration = () =>
+      globalVersion === globalGeneration &&
+      (!requestCacheKey ||
+        keyVersion === (keyGenerations.get(requestCacheKey) || 0));
     controller?.abort();
     controller = new AbortController();
 
@@ -48,11 +58,7 @@ export function useAsyncData(
 
     try {
       const result = await loader({ signal: controller.signal });
-      if (
-        active &&
-        current === generation &&
-        cacheVersion === cacheGeneration
-      ) {
+      if (active && current === generation && isFreshGeneration()) {
         data.value = result;
         hasLoaded.value = true;
         if (requestCacheKey) {
@@ -66,7 +72,7 @@ export function useAsyncData(
       if (
         active &&
         current === generation &&
-        cacheVersion === cacheGeneration &&
+        isFreshGeneration() &&
         failure.code !== 'CANCELLED' &&
         failure.name !== 'AbortError'
       ) {

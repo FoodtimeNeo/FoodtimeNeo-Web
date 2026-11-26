@@ -29,6 +29,17 @@ export function catalogPayload(type, input) {
   } else {
     body.coverImageUrl = input.coverImageUrl;
     body.sortOrder = input.sortOrder;
+    if (type === 'dining-halls') {
+      if (input.clearCoordinates) {
+        body.clearCoordinates = true;
+      } else if (
+        input.latitude !== undefined &&
+        input.longitude !== undefined
+      ) {
+        body.latitude = input.latitude;
+        body.longitude = input.longitude;
+      }
+    }
   }
   return body;
 }

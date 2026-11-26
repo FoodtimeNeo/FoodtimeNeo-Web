@@ -11,6 +11,7 @@ import {
 import { uploadImage } from '@/api/submission.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { validateImageFile } from '@/utils/submissionValidation.js';
 import BackLink from '@/components/base/BackLink.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -61,7 +62,7 @@ function threadFor(report) {
 async function toggleThread(report) {
   const thread = threadFor(report);
   thread.open = !thread.open;
-  if (!thread.open || thread.items.length) return;
+  if (!thread.open || thread.items.length || thread.loading) return;
   thread.loading = true;
   thread.error = '';
   try {
@@ -77,10 +78,18 @@ async function toggleThread(report) {
 async function addEvidence(state, event) {
   const files = Array.from(event.target.files || []);
   event.target.value = '';
-  if (!files.length) return;
+  if (!files.length || state.uploading || state.submitting || state.loading)
+    return;
   if (state.evidence.length + files.length > 3) {
     state.error = '证据图片最多3张';
     return;
+  }
+  for (const file of files) {
+    const issue = validateImageFile(file);
+    if (issue) {
+      state.error = issue;
+      return;
+    }
   }
   state.uploading = true;
   state.error = '';
@@ -102,6 +111,7 @@ function removeEvidence(state, index) {
 
 async function sendFollowUp(report) {
   const thread = threadFor(report);
+  if (thread.loading || thread.uploading) return;
   if (!thread.content.trim()) {
     thread.error = '请填写追问内容';
     return;
@@ -141,10 +151,17 @@ function appealFor(decision) {
 async function loadActions(decision) {
   const key = decision.decisionId;
   if (actionLists[key]) {
-    actionLists[key].open = !actionLists[key].open;
-    return;
+    if (actionLists[key].loading) return;
+    if (!actionLists[key].error) {
+      actionLists[key].open = !actionLists[key].open;
+      return;
+    }
+    actionLists[key].open = true;
+    actionLists[key].loading = true;
+    actionLists[key].error = '';
+  } else {
+    actionLists[key] = { open: true, loading: true, items: [], error: '' };
   }
-  actionLists[key] = { open: true, loading: true, items: [], error: '' };
   try {
     actionLists[key].items = await fetchDecisionActions(key);
   } catch (error) {
@@ -162,6 +179,7 @@ function canAppeal(decision) {
 
 async function sendAppeal(decision) {
   const draft = appealFor(decision);
+  if (draft.submitting || draft.uploading) return;
   if (!draft.content.trim()) {
     draft.error = '请填写申诉内容';
     return;

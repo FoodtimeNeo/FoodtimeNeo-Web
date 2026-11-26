@@ -7,6 +7,8 @@ export const mediaRevision = ref(0);
 const pending = new Map();
 // 浏览器负责磁盘缓存，内存中的地址只在同一会话内复用。
 const displayCache = new Map();
+// 未进入展示缓存的临时 blob URL（no-store 或超单图上限）按引用计数回收。
+const ephemeralUrls = new Map();
 const DISPLAY_TTL = 5 * 60 * 1000;
 // 条数 + 字节双重上限：缩略图很小，但灯箱/画廊的 full 图最大 10MB。
 const DISPLAY_MAX = 64;
@@ -35,6 +37,8 @@ export function invalidateMedia() {
   }
   for (const entry of displayCache.values()) URL.revokeObjectURL(entry.url);
   displayCache.clear();
+  for (const url of ephemeralUrls.keys()) URL.revokeObjectURL(url);
+  ephemeralUrls.clear();
   displayBytes = 0;
   revalidating = new Set();
   mediaRevision.value += 1;
@@ -42,7 +46,7 @@ export function invalidateMedia() {
 
 function remember(source, url, bytes, headers) {
   // 单张过大的原图不进入展示缓存，避免一次加载占满预算。
-  if (bytes > DISPLAY_SINGLE_MAX) return;
+  if (bytes > DISPLAY_SINGLE_MAX) return false;
   const existing = displayCache.get(source);
   if (existing) {
     displayBytes -= existing.bytes;
@@ -73,6 +77,7 @@ function remember(source, url, bytes, headers) {
     displayBytes -= entry.bytes;
     setTimeout(() => URL.revokeObjectURL(entry.url), 30000);
   }
+  return true;
 }
 
 /** 同步读取仍可展示的图片，让组件挂载时直接有内容，不再先白屏。 */
@@ -122,7 +127,11 @@ function revalidate(source) {
       }
       const blob = await response.blob();
       if (generation !== mediaRevision.value) return;
-      remember(source, URL.createObjectURL(blob), blob.size, response.headers);
+      if (blob.size > DISPLAY_SINGLE_MAX) return;
+      const objectUrl = URL.createObjectURL(blob);
+      if (!remember(source, objectUrl, blob.size, response.headers)) {
+        URL.revokeObjectURL(objectUrl);
+      }
     })
     .catch(() => {
       /* 后台校验失败时保留已展示的内容，等下次真正加载时再处理 */
@@ -197,9 +206,14 @@ export function acquireMedia(value) {
         )
           throw new Error('图片请求已失效');
         task.url = URL.createObjectURL(blob);
-        // no-store 预览（待审/暂存）不能被后续展示复用。
-        if (!/no-store/i.test(policy))
+        // no-store 预览（待审/暂存）和超单图上限的原图不进展示缓存，释放时立即回收。
+        const cachedInDisplay =
+          !/no-store/i.test(policy) &&
           remember(source, task.url, blob.size, response.headers);
+        if (!cachedInDisplay) {
+          task.ephemeral = true;
+          ephemeralUrls.set(task.url, task.count);
+        }
         return task.url;
       } finally {
         task.settled = true;
@@ -209,12 +223,24 @@ export function acquireMedia(value) {
     })();
   }
   task.count += 1;
+  if (task.ephemeral && task.url && ephemeralUrls.has(task.url)) {
+    ephemeralUrls.set(task.url, ephemeralUrls.get(task.url) + 1);
+  }
   let released = false;
   return {
     promise: task.promise,
     release() {
       if (released) return;
       released = true;
+      if (task.ephemeral && task.url) {
+        const remaining = (ephemeralUrls.get(task.url) || 1) - 1;
+        if (remaining <= 0) {
+          ephemeralUrls.delete(task.url);
+          URL.revokeObjectURL(task.url);
+        } else {
+          ephemeralUrls.set(task.url, remaining);
+        }
+      }
       if (--task.count === 0) {
         task.controller.abort();
         if (pending.get(source) === task) pending.delete(source);

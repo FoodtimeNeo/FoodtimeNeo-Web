@@ -347,6 +347,10 @@ function addFiles(files) {
       ElMessage.warning(`文件 ${file.name} 不是支持的图片格式`);
       continue;
     }
+    if (file.size <= 0) {
+      ElMessage.warning(`图片 ${file.name} 为空文件`);
+      continue;
+    }
     if (file.size > 50 * 1024 * 1024) {
       ElMessage.warning(`图片 ${file.name} 超过 50MB 限制`);
       continue;

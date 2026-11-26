@@ -3,6 +3,7 @@ import { PRICE_UNITS } from '@/utils/priceHistory.js';
 import { fetchMyCatalogCorrections } from '@/api/correction.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { safeMediaUrl } from '@/utils/mediaUrl.js';
 import BackLink from '@/components/base/BackLink.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -96,9 +97,12 @@ function price(value) {
         </dl>
         <div v-if="item.evidenceUrls.length" class="my-corrections__evidence">
           <img
-            v-for="url in item.evidenceUrls"
+            v-for="url in item.evidenceUrls
+              .map((u) => safeMediaUrl(u))
+              .filter(Boolean)"
             :key="url"
             :src="url"
+            referrerpolicy="no-referrer"
             alt="纠错证据"
           />
         </div>

@@ -4,6 +4,10 @@ import { PRICE_UNITS } from '@/utils/priceHistory.js';
 import { ElDialog, ElMessage } from 'element-plus';
 import { uploadImage } from '@/api/submission.api.js';
 import { createCatalogCorrection } from '@/api/correction.api.js';
+import {
+  validateImageFile,
+  validatePrice,
+} from '@/utils/submissionValidation.js';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -73,20 +77,28 @@ function changedFields() {
 async function addEvidence(event) {
   const files = Array.from(event.target.files || []);
   event.target.value = '';
-  if (!files.length) return;
+  if (!files.length || uploading.value || submitting.value) return;
   if (evidence.value.length + files.length > 3) {
     error.value = '证据图片最多3张';
     return;
+  }
+  for (const file of files) {
+    const issue = validateImageFile(file);
+    if (issue) {
+      error.value = issue;
+      return;
+    }
   }
   uploading.value = true;
   error.value = '';
   try {
     for (const file of files) {
       const uploaded = await uploadImage(file);
+      if (!props.modelValue) return;
       evidence.value.push({ url: uploaded.imageUrl, name: file.name });
     }
   } catch (uploadError) {
-    error.value = uploadError.message || '证据上传失败';
+    if (props.modelValue) error.value = uploadError.message || '证据上传失败';
   } finally {
     uploading.value = false;
   }
@@ -102,10 +114,23 @@ function newKey() {
 }
 
 async function submit() {
+  if (submitting.value || uploading.value) return;
   const fields = changedFields();
   if (!fields.length) {
     error.value = '请至少勾选一个要更正的字段';
     return;
+  }
+  if (selected.name && !values.name.trim()) {
+    error.value = '名称不能为空';
+    return;
+  }
+  if (selected.price) {
+    const priceText = String(values.price ?? '').trim();
+    const priceIssue = validatePrice(priceText);
+    if (priceIssue) {
+      error.value = priceIssue;
+      return;
+    }
   }
   if (!reason.value.trim()) {
     error.value = '请填写更正理由';
@@ -127,8 +152,10 @@ async function submit() {
   if (selected.priceUnit) payload.priceUnit = values.priceUnit;
   if (selected.name) payload.name = values.name.trim();
   if (selected.description) payload.description = values.description.trim();
-  if (selected.price)
-    payload.price = values.price === '' ? null : Number(values.price);
+  if (selected.price) {
+    const priceText = String(values.price ?? '').trim();
+    payload.price = priceText === '' ? null : Number(priceText);
+  }
   submitting.value = true;
   error.value = '';
   try {
