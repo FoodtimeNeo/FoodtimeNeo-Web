@@ -9,6 +9,7 @@ import {
 } from '@/api/safety.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { safeMediaUrl } from '@/utils/mediaUrl.js';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -34,27 +35,33 @@ const labels = {
   target: '被举报人',
 };
 
+let openSeq = 0;
+
 watch(status, () => {
-  state.page.value = 1;
-  state.load();
+  if (state.page.value !== 1) state.page.value = 1;
+  else state.load();
 });
 
 async function open(row) {
+  const seq = ++openSeq;
   loadingDetail.value = true;
   error.value = '';
   note.value = row.publicReason || '';
   outcome.value = row.outcome || 'upheld';
   try {
-    detail.value = await fetchAdminAppeal(row.id);
+    const loaded = await fetchAdminAppeal(row.id);
+    if (seq !== openSeq) return;
+    detail.value = loaded;
   } catch (failure) {
+    if (seq !== openSeq) return;
     error.value = failure.message || '无法读取申诉';
   } finally {
-    loadingDetail.value = false;
+    if (seq === openSeq) loadingDetail.value = false;
   }
 }
 
 async function start() {
-  if (!detail.value) return;
+  if (!detail.value || acting.value) return;
   acting.value = true;
   error.value = '';
   try {
@@ -72,7 +79,7 @@ async function start() {
 }
 
 async function resolve() {
-  if (!detail.value) return;
+  if (!detail.value || acting.value) return;
   if (!note.value.trim()) {
     error.value = '请填写公开理由';
     return;
@@ -149,13 +156,15 @@ async function resolve() {
       <p v-if="detail.internalNote">内部备注：{{ detail.internalNote }}</p>
       <div v-if="detail.evidenceUrls.length">
         <a
-          v-for="url in detail.evidenceUrls"
+          v-for="url in detail.evidenceUrls
+            .map((u) => safeMediaUrl(u))
+            .filter(Boolean)"
           :key="url"
           :href="url"
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
         >
-          <img :src="url" alt="申诉证据" />
+          <img :src="url" referrerpolicy="no-referrer" alt="申诉证据" />
         </a>
       </div>
       <div v-if="detail.status === 'submitted'">

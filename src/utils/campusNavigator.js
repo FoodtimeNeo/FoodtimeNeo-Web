@@ -386,10 +386,12 @@ export function createCampusNavigator(graph) {
         bestT = t;
       }
     }
-    if (totalPx < 1) return 0;
+    const metersPerPx = totalPx > 1 ? plan.totalMeters / totalPx : 0.35;
+    const offRoadMeters = Math.sqrt(bestDist2) * metersPerPx;
+    if (totalPx < 1) return Math.max(0, offRoadMeters);
     let remPx = segPx[bestIdx] * (1 - bestT);
     for (let i = bestIdx + 1; i < segPx.length; i++) remPx += segPx[i];
-    return Math.max(0, plan.totalMeters * (remPx / totalPx));
+    return Math.max(0, plan.totalMeters * (remPx / totalPx) + offRoadMeters);
   }
 
   function activeStepIndex(plan, currentX, currentY) {

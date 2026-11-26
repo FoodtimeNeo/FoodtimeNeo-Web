@@ -24,6 +24,14 @@ export const useBrowsingHistoryStore = defineStore('browsingHistory', {
       kind === 'dish' ? state.dishEpoch : state.postEpoch,
   },
   actions: {
+    reset() {
+      this.enabled = true;
+      this.revision = 0;
+      this.dishEpoch = 0;
+      this.postEpoch = 0;
+      this.loaded = false;
+      this.loading = null;
+    },
     apply(settings) {
       this.enabled = Boolean(settings.enabled);
       this.revision = Number(settings.revision) || 0;
@@ -67,7 +75,7 @@ export const useBrowsingHistoryStore = defineStore('browsingHistory', {
         try {
           await recordBrowsingHistory(kind, targetId, body);
         } catch (error) {
-          if (error?.code !== 'HISTORY_EPOCH_STALE') return;
+          if (error?.bizCode !== 'HISTORY_EPOCH_STALE') return;
           await this.refresh();
           if (!this.enabled) return;
           await recordBrowsingHistory(kind, targetId, {

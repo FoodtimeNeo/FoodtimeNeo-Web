@@ -70,20 +70,24 @@ async function focusComment() {
 /** 深链可能指向未加载的楼层或回复：按需再翻页，找到后由 focusComment 定位。 */
 async function ensureFocusedLoaded(id) {
   const rootId = props.focusRootId;
+  const version = epoch;
   if (!rootId) return;
   if (!roots.value.length) {
     const page = await fetchRootComments(props.postId);
+    if (version !== epoch) return;
     roots.value = page.items;
     cursor.value = page.nextCursor;
     hasMore.value = page.hasMore;
     await Promise.all(
       page.items
         .filter((root) => root.status === 'approved')
-        .map((root) => replies(root, false, epoch)),
+        .map((root) => replies(root, false, version)),
     );
+    if (version !== epoch) return;
   }
   let guard = 0;
   while (
+    version === epoch &&
     !roots.value.some((root) => root.id === rootId) &&
     hasMore.value &&
     guard++ < 10
@@ -91,27 +95,29 @@ async function ensureFocusedLoaded(id) {
     const page = await fetchRootComments(props.postId, {
       cursor: cursor.value,
     });
+    if (version !== epoch) return;
     roots.value = [...roots.value, ...page.items];
     cursor.value = page.nextCursor;
     hasMore.value = page.hasMore;
     await Promise.all(
       page.items
         .filter((root) => root.status === 'approved')
-        .map((root) => replies(root, false, epoch)),
+        .map((root) => replies(root, false, version)),
     );
   }
-  if (id === rootId) return;
+  if (version !== epoch || id === rootId) return;
   const root = roots.value.find((item) => item.id === rootId);
   if (!root) return;
   guard = 0;
   while (
+    version === epoch &&
     !(threads.value[rootId]?.items || []).some(
       (comment) => comment.id === id,
     ) &&
     threads.value[rootId]?.hasMore &&
     guard++ < 20
   ) {
-    await replies(root, true, epoch);
+    await replies(root, true, version);
   }
 }
 
@@ -314,12 +320,17 @@ async function remove(item) {
     if (version === epoch) error.value = e.message || '删除失败';
   }
 }
+const loadingReplyRoots = new Set();
 async function moreReplies(root) {
+  if (loadingReplyRoots.has(root.id)) return;
+  loadingReplyRoots.add(root.id);
   const version = epoch;
   try {
-    await replies(root, true);
+    await replies(root, true, version);
   } catch (e) {
     if (version === epoch) error.value = e.message || '回复加载失败';
+  } finally {
+    loadingReplyRoots.delete(root.id);
   }
 }
 

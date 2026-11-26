@@ -10,6 +10,7 @@ import {
 import { useAuthStore } from '@/store/useAuthStore.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { safeMediaUrl } from '@/utils/mediaUrl.js';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -32,26 +33,32 @@ const detailError = ref('');
 const note = ref('');
 const deciding = ref(false);
 
+let openSeq = 0;
+
 watch(status, () => {
-  state.page.value = 1;
-  state.load();
+  if (state.page.value !== 1) state.page.value = 1;
+  else state.load();
 });
 
 async function open(item) {
+  const seq = ++openSeq;
   detailLoading.value = true;
   detailError.value = '';
   note.value = item.correction.reviewNote || '';
   try {
-    detail.value = await fetchAdminCatalogCorrection(item.correction.id);
+    const loaded = await fetchAdminCatalogCorrection(item.correction.id);
+    if (seq !== openSeq) return;
+    detail.value = loaded;
   } catch (error) {
+    if (seq !== openSeq) return;
     detailError.value = error.message || '无法读取提案';
   } finally {
-    detailLoading.value = false;
+    if (seq === openSeq) detailLoading.value = false;
   }
 }
 
 async function decide(decision) {
-  if (!detail.value) return;
+  if (!detail.value || deciding.value) return;
   deciding.value = true;
   detailError.value = '';
   try {
@@ -169,13 +176,15 @@ function price(value) {
         </dl>
         <div v-if="detail.correction.evidenceUrls.length">
           <a
-            v-for="url in detail.correction.evidenceUrls"
+            v-for="url in detail.correction.evidenceUrls
+              .map((u) => safeMediaUrl(u))
+              .filter(Boolean)"
             :key="url"
             :href="url"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
           >
-            <img :src="url" alt="纠错证据" />
+            <img :src="url" referrerpolicy="no-referrer" alt="纠错证据" />
           </a>
         </div>
         <p v-if="detail.correction.status !== 'pending'">

@@ -48,7 +48,7 @@ const displayedCanteens = computed(() => {
   return [...list].sort((a, b) => {
     const da = hallDistanceMeters(a, userFix.value) ?? Infinity;
     const db = hallDistanceMeters(b, userFix.value) ?? Infinity;
-    return da - db;
+    return da === db ? 0 : da - db;
   });
 });
 </script>

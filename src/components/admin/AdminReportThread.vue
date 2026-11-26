@@ -8,6 +8,7 @@ import { uploadImage } from '@/api/submission.api.js';
 import { usePagedData } from '@/composables/usePagedData.js';
 import { validateImageFile } from '@/utils/submissionValidation.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { safeMediaUrl } from '@/utils/mediaUrl.js';
 import PaginationControls from '@/components/base/PaginationControls.vue';
 
 const props = defineProps({ reportId: { type: String, required: true } });
@@ -145,12 +146,14 @@ onBeforeUnmount(() => controller.abort());
           </p>
           <div v-if="item.evidenceUrls?.length" class="report-thread__evidence">
             <a
-              v-for="url in item.evidenceUrls"
+              v-for="url in item.evidenceUrls
+                .map((u) => safeMediaUrl(u))
+                .filter(Boolean)"
               :key="url"
               :href="url"
               target="_blank"
               rel="noopener noreferrer"
-              ><img :src="url" alt="追问证据图片"
+              ><img :src="url" referrerpolicy="no-referrer" alt="追问证据图片"
             /></a>
           </div>
           <small>{{ formatTime(item.createdAt) }}</small>

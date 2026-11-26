@@ -139,6 +139,8 @@ function formatDateLabel(day) {
 }
 function formatUpdatedAt(value) {
   if (!value) return '尚未更新';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '尚未更新';
   return new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
     year: 'numeric',
@@ -146,7 +148,7 @@ function formatUpdatedAt(value) {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-  }).format(new Date(value));
+  }).format(date);
 }
 const metricCards = computed(() => {
   if (!data.value) return [];
@@ -224,7 +226,12 @@ const yTicks = computed(() =>
   })),
 );
 const xTickIndices = computed(() => {
-  const count = chartWidth.value < 500 ? 3 : activeDays.value === 7 ? 7 : 6;
+  if (!trend.value.length) return [];
+  if (trend.value.length === 1) return [0];
+  const count = Math.min(
+    trend.value.length,
+    chartWidth.value < 500 ? 3 : activeDays.value === 7 ? 7 : 6,
+  );
   return Array.from({ length: count }, (_, index) =>
     Math.round((index * (trend.value.length - 1)) / (count - 1)),
   );
@@ -232,10 +239,12 @@ const xTickIndices = computed(() => {
 const chartPoints = computed(() =>
   trend.value.map((point, index) => {
     const val = getPointValue(point);
+    const ratio =
+      trend.value.length <= 1 ? 0.5 : index / (trend.value.length - 1);
     return {
       day: point.day,
       val,
-      x: PADDING.left + (index / (trend.value.length - 1)) * plotWidth.value,
+      x: PADDING.left + ratio * plotWidth.value,
       y:
         PADDING.top +
         ((chartScale.value.max - val) /
@@ -482,7 +491,11 @@ const selectedPoint = computed(
                       : 'middle'
                 "
               >
-                {{ formatDateLabel(chartPoints[index].day) }}
+                {{
+                  chartPoints[index]
+                    ? formatDateLabel(chartPoints[index].day)
+                    : ''
+                }}
               </text>
               <text
                 :x="chartWidth - PADDING.right"
@@ -494,7 +507,7 @@ const selectedPoint = computed(
               </text>
             </svg>
           </div>
-          <p class="chart-caption" aria-live="polite">
+          <p v-if="selectedPoint" class="chart-caption" aria-live="polite">
             {{ selectedPoint.day.replaceAll('-', '/') }} · {{ metric.label }}
             {{ formatNumber(selectedPoint.val) }} {{ metric.unit }}
           </p>
@@ -506,7 +519,9 @@ const selectedPoint = computed(
       <section class="section-block" aria-labelledby="activity-title">
         <div class="section-header">
           <h3 id="activity-title">新增汇总</h3>
-          <span class="muted">截至 {{ todayPoint.day }}，按北京时间统计</span>
+          <span class="muted"
+            >截至 {{ todayPoint?.day || '—' }}，按北京时间统计</span
+          >
         </div>
         <div class="activity-table-wrapper">
           <table

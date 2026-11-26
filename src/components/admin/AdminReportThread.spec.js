@@ -84,7 +84,10 @@ it('超过20条的历史能翻页，并保留公开证据与仅管理端备注',
           authorRole: 'staff',
           content: '第21条回复',
           internalNote: '管理备注',
-          evidenceUrls: ['/api/v1/media/evidence'],
+          evidenceUrls: [
+            '/api/v1/media/00000000-0000-4000-8000-000000000001',
+            'javascript:alert(1)',
+          ],
         },
       ],
       21,
@@ -99,8 +102,10 @@ it('超过20条的历史能翻页，并保留公开证据与仅管理端备注',
   );
   expect(wrapper.text()).toContain('第21条回复');
   expect(wrapper.text()).toContain('内部备注（不公开）：管理备注');
-  expect(wrapper.get('.report-thread__messages img').attributes('src')).toBe(
-    '/api/v1/media/evidence',
+  const images = wrapper.findAll('.report-thread__messages img');
+  expect(images).toHaveLength(1);
+  expect(images[0].attributes('src')).toBe(
+    '/api/v1/media/00000000-0000-4000-8000-000000000001',
   );
 });
 

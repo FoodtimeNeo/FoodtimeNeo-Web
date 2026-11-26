@@ -173,7 +173,12 @@ const activeStepIdx = computed(() => {
   );
 });
 const externalMapUrl = computed(() => {
-  if (!selected.value || !Number.isFinite(selected.value.lat)) return '';
+  if (
+    !selected.value ||
+    !Number.isFinite(selected.value.lat) ||
+    !Number.isFinite(selected.value.lng)
+  )
+    return '';
   const name = encodeURIComponent(`北京交通大学${selected.value.name}`);
   return `https://uri.amap.com/marker?position=${selected.value.lng},${selected.value.lat}&name=${name}`;
 });
@@ -211,10 +216,14 @@ function pinStyle(region) {
 function position(event) {
   const matrix = svg.value?.getScreenCTM();
   if (!matrix) return { x: 0, y: 0 };
-  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(
-    matrix.inverse(),
-  );
-  return { x: point.x, y: point.y };
+  try {
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+      matrix.inverse(),
+    );
+    return { x: point.x, y: point.y };
+  } catch {
+    return { x: 0, y: 0 };
+  }
 }
 function toMapCoords(svgPoint) {
   return {
@@ -308,14 +317,23 @@ function enableMapPick() {
   pickStartMode.value = true;
   locationNotice.value = '点击地图选择起点';
 }
+let watchSubscribed = false;
+let disposed = false;
+
+function ensureWatching() {
+  if (disposed || watchSubscribed) return;
+  if (startWatching()) watchSubscribed = true;
+}
+
 async function locateMe() {
   locationNotice.value = '';
   const fix = await locateOnce({ force: true });
+  if (disposed) return;
   if (!fix) {
     locationNotice.value = locationError.value || '暂时无法获取位置';
     return;
   }
-  startWatching();
+  ensureWatching();
   if (userPixel.value) {
     setState(
       focusPointTransform(
@@ -418,6 +436,16 @@ function wheel(event) {
   zoom(event.deltaY < 0 ? 1.15 : 1 / 1.15, position(event));
 }
 
+watch(
+  () => route.query.hall,
+  (hallQuery) => {
+    const region = findMapRegion(model.regions, String(hallQuery || ''));
+    if (region && region.id !== selectedId.value) {
+      selectedId.value = region.id;
+    }
+  },
+);
+
 watch(routePlan, (plan, prev) => {
   if (plan && !prev && navigating.value) {
     focusRoute(plan);
@@ -431,12 +459,16 @@ onMounted(() => {
     focusRegion(selected.value);
   }
   if (userFix.value) {
-    startWatching();
+    ensureWatching();
   }
 });
 onBeforeUnmount(() => {
+  disposed = true;
   pointers.clear();
-  stopWatching();
+  if (watchSubscribed) {
+    watchSubscribed = false;
+    stopWatching();
+  }
 });
 </script>
 
