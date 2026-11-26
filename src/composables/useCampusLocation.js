@@ -15,7 +15,10 @@ function isFresh(fix) {
 function acceptCoords(coords) {
   const { latitude, longitude, accuracy } = coords || {};
   if (![latitude, longitude].every(Number.isFinite)) return false;
-  if (Number.isFinite(accuracy) && accuracy > 1000) return false;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
+    return false;
+  if (Number.isFinite(accuracy) && (accuracy < 0 || accuracy > 1000))
+    return false;
   position.value = {
     latitude,
     longitude,

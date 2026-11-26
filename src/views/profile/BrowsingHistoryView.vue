@@ -9,6 +9,7 @@ import {
 } from '@/api/browsingHistory.api.js';
 import { useBrowsingHistoryStore } from '@/store/useBrowsingHistoryStore.js';
 import { formatTime } from '@/utils/recordLabels.js';
+import { safeMediaUrl } from '@/utils/mediaUrl.js';
 import BackLink from '@/components/base/BackLink.vue';
 import EmptyState from '@/components/base/EmptyState.vue';
 import ErrorState from '@/components/base/ErrorState.vue';
@@ -26,8 +27,11 @@ const loading = ref(false);
 const error = ref('');
 const settingsError = ref('');
 const saving = ref(false);
+const mutating = ref(false);
+let loadSeq = 0;
 
 async function load() {
+  const seq = ++loadSeq;
   loading.value = true;
   error.value = '';
   try {
@@ -35,12 +39,14 @@ async function load() {
       page: page.value,
       size: size.value,
     });
+    if (seq !== loadSeq) return;
     items.value = data.items;
     total.value = data.total;
   } catch (requestError) {
+    if (seq !== loadSeq) return;
     error.value = requestError.message || '无法读取浏览历史';
   } finally {
-    loading.value = false;
+    if (seq === loadSeq) loading.value = false;
   }
 }
 
@@ -68,6 +74,7 @@ async function toggleEnabled(event) {
 }
 
 async function remove(item) {
+  if (mutating.value) return;
   if (
     !window.confirm(
       item.available
@@ -76,16 +83,20 @@ async function remove(item) {
     )
   )
     return;
+  mutating.value = true;
   try {
     await deleteBrowsingHistory(kind.value, item.targetId);
     await loadSettings();
     await load();
   } catch (requestError) {
     error.value = requestError.message || '删除失败';
+  } finally {
+    mutating.value = false;
   }
 }
 
 async function clearKind() {
+  if (mutating.value) return;
   try {
     await ElMessageBox.confirm(
       `清空全部${kind.value === 'dish' ? '菜品' : '帖子'}浏览历史？另一类不受影响。`,
@@ -95,12 +106,15 @@ async function clearKind() {
   } catch {
     return;
   }
+  mutating.value = true;
   try {
     await clearBrowsingHistory(kind.value);
     await loadSettings();
     await load();
   } catch (requestError) {
     error.value = requestError.message || '清空失败';
+  } finally {
+    mutating.value = false;
   }
 }
 
@@ -172,7 +186,12 @@ onMounted(() => {
     <ul v-else class="browsing-history__list">
       <li v-for="item in items" :key="`${item.kind}:${item.targetId}`">
         <button type="button" :disabled="!item.available" @click="open(item)">
-          <img v-if="item.imageUrl" :src="item.imageUrl" alt="" />
+          <img
+            v-if="safeMediaUrl(item.imageUrl)"
+            :src="safeMediaUrl(item.imageUrl)"
+            referrerpolicy="no-referrer"
+            alt=""
+          />
           <span class="browsing-history__body">
             <strong>{{ item.available ? item.title : '内容已失效' }}</strong>
             <small>{{

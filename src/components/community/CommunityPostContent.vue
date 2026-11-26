@@ -25,6 +25,7 @@ import DishLink from '@/components/canteen/DishLink.vue';
 import CommunityPinManager from './CommunityPinManager.vue';
 import CommunityPostEdit from './CommunityPostEdit.vue';
 import { shareCommunityPost } from '@/composables/usePostShare.js';
+import { safeMediaUrl } from '@/utils/mediaUrl.js';
 
 const props = defineProps({
   postId: {
@@ -313,9 +314,10 @@ function formatPostTime(isoString) {
         </button>
         <div class="mobile-header-author">
           <img
-            v-if="post.author?.avatar"
-            :src="post.author.avatar"
+            v-if="safeMediaUrl(post.author?.avatar)"
+            :src="safeMediaUrl(post.author.avatar)"
             :alt="post.author.name"
+            referrerpolicy="no-referrer"
             class="mobile-author-avatar"
           />
           <span v-else class="mobile-author-fallback">
@@ -407,9 +409,10 @@ function formatPostTime(isoString) {
         <header class="redbook-author-bar">
           <div class="author-avatar-wrap">
             <img
-              v-if="post.author?.avatar"
-              :src="post.author.avatar"
+              v-if="safeMediaUrl(post.author?.avatar)"
+              :src="safeMediaUrl(post.author.avatar)"
               :alt="post.author.name"
+              referrerpolicy="no-referrer"
               class="author-avatar"
             />
             <span v-else class="author-avatar-fallback">
@@ -546,7 +549,7 @@ function formatPostTime(isoString) {
               class="pill-input"
               maxlength="500"
               :disabled="isSubmittingComment"
-              @keydown.enter="handleSendQuickComment"
+              @keydown.enter="!$event.isComposing && handleSendQuickComment()"
             />
             <button
               v-if="quickDraft.trim()"

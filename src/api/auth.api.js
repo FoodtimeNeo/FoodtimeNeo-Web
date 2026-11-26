@@ -50,7 +50,10 @@ export const register = ({
     password,
     verificationCode,
   };
-  const code = typeof invitationCode === 'string' ? invitationCode.trim() : '';
+  const code =
+    typeof invitationCode === 'string'
+      ? invitationCode.trim().toUpperCase()
+      : '';
   if (code) payload.invitationCode = code;
   return http.post('/auth/register', payload);
 };
@@ -59,13 +62,13 @@ export const sendVerificationCode = (email) =>
 export const sendPasswordResetCode = (email) =>
   http.post(
     '/auth/password-reset/email-code',
-    { email: email.trim().toLowerCase() },
+    { email: normalizeLoginId(email).toLowerCase() },
     { skipUnauthorized: true },
   );
 export const verifyPasswordResetCode = (email, verificationCode) =>
   http.post(
     '/auth/password-reset/verify',
-    { email: email.trim().toLowerCase(), verificationCode },
+    { email: normalizeLoginId(email).toLowerCase(), verificationCode },
     { skipUnauthorized: true },
   );
 export async function resetPassword(resetToken, newPassword) {

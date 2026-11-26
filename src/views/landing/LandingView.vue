@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import TestingApkDownload from '@/components/common/TestingApkDownload.vue';
@@ -32,6 +32,10 @@ function handleDownloadTrigger() {
     showDownloadToast.value = false;
   }, 4000);
 }
+
+onBeforeUnmount(() => {
+  if (toastTimer) clearTimeout(toastTimer);
+});
 
 // 安装说明弹窗状态
 const showInstallGuide = ref(false);

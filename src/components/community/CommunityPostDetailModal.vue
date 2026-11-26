@@ -27,6 +27,7 @@ import DishLink from '@/components/canteen/DishLink.vue';
 import CommunityPinManager from './CommunityPinManager.vue';
 import CommunityPostEdit from './CommunityPostEdit.vue';
 import { shareCommunityPost } from '@/composables/usePostShare.js';
+import { safeMediaUrl } from '@/utils/mediaUrl.js';
 import CommunityImageViewer from './CommunityImageViewer.vue';
 import CommunityPhotoContext from './CommunityPhotoContext.vue';
 import LoadingState from '@/components/base/LoadingState.vue';
@@ -118,18 +119,21 @@ const groupError = ref('');
 const newGroupName = ref('');
 
 async function openGroups() {
-  if (!post.value?.id) return;
+  const targetId = post.value?.id;
+  if (!targetId) return;
   groupDialogOpen.value = true;
   groupLoading.value = true;
   groupError.value = '';
   try {
     const [groups, membership] = await Promise.all([
       fetchFavoriteGroups('post'),
-      fetchFavoriteGroupMemberships('post', post.value.id),
+      fetchFavoriteGroupMemberships('post', targetId),
     ]);
+    if (post.value?.id !== targetId) return;
     postGroups.value = groups;
     postGroupIds.value = membership.groupIds || [];
   } catch (error) {
+    if (post.value?.id !== targetId) return;
     groupError.value = error.message || '无法读取收藏分组';
   } finally {
     groupLoading.value = false;
@@ -344,35 +348,60 @@ onUnmounted(() => {
   }
 });
 
+const liking = ref(false);
+const favoriting = ref(false);
+
 async function toggleLike() {
-  if (!post.value || loading.value || post.value.status !== 'approved') return;
+  if (
+    !post.value ||
+    loading.value ||
+    liking.value ||
+    post.value.status !== 'approved'
+  )
+    return;
+  const targetId = post.value.id;
   const next = !isLiked.value;
+  liking.value = true;
   isLiked.value = next;
   try {
-    const res = await setPostLike(post.value.id, next);
+    const res = await setPostLike(targetId, next);
+    if (!post.value || post.value.id !== targetId) return;
     post.value.likeCount = res.likeCount;
     post.value.likedByMe = res.liked;
     ElMessage.success(next ? '点赞成功' : '已取消点赞');
     emit('postUpdated', post.value);
   } catch (e) {
-    isLiked.value = !next;
+    if (post.value?.id === targetId) isLiked.value = !next;
     ElMessage.error(e.message || '操作失败');
+  } finally {
+    liking.value = false;
   }
 }
 
 async function toggleFavorite() {
-  if (!post.value || loading.value || post.value.status !== 'approved') return;
+  if (
+    !post.value ||
+    loading.value ||
+    favoriting.value ||
+    post.value.status !== 'approved'
+  )
+    return;
+  const targetId = post.value.id;
   const next = !isFavorited.value;
+  favoriting.value = true;
   isFavorited.value = next;
   try {
-    const res = await setPostFavorite(post.value.id, next);
+    const res = await setPostFavorite(targetId, next);
+    if (!post.value || post.value.id !== targetId) return;
     post.value.favoriteCount = res.favoriteCount;
     post.value.favoritedByMe = res.favorited;
     ElMessage.success(next ? '收藏成功' : '已取消收藏');
     emit('postUpdated', post.value);
   } catch (e) {
-    isFavorited.value = !next;
+    if (post.value?.id === targetId) isFavorited.value = !next;
     ElMessage.error(e.message || '操作失败');
+  } finally {
+    favoriting.value = false;
   }
 }
 
@@ -390,6 +419,7 @@ async function toggleFollow() {
     const state = isFollowing.value
       ? await unfollowUser(authorId)
       : await followUser(authorId);
+    if (post.value?.author?.id !== authorId) return;
     isFollowing.value = state.followed;
     emit('followUpdated');
     ElMessage.success(state.followed ? '已关注作者' : '已取消关注');
@@ -498,9 +528,10 @@ async function removePost() {
               </button>
               <div class="mobile-header-author">
                 <img
-                  v-if="post.author?.avatar"
-                  :src="post.author.avatar"
+                  v-if="safeMediaUrl(post.author?.avatar)"
+                  :src="safeMediaUrl(post.author.avatar)"
                   :alt="post.author.name"
+                  referrerpolicy="no-referrer"
                   class="mobile-author-avatar"
                 />
                 <span v-else class="mobile-author-fallback">{{
@@ -592,9 +623,10 @@ async function removePost() {
                 <header class="redbook-author-bar">
                   <div class="redbook-author-avatar-wrap">
                     <img
-                      v-if="post.author?.avatar"
-                      :src="post.author.avatar"
+                      v-if="safeMediaUrl(post.author?.avatar)"
+                      :src="safeMediaUrl(post.author.avatar)"
                       :alt="post.author.name"
+                      referrerpolicy="no-referrer"
                       class="redbook-author-avatar"
                     />
                     <div v-else class="redbook-author-fallback">
@@ -768,7 +800,9 @@ async function removePost() {
                       class="pill-input"
                       maxlength="300"
                       :disabled="isSubmittingComment"
-                      @keydown.enter="handleSendComment"
+                      @keydown.enter="
+                        !$event.isComposing && handleSendComment()
+                      "
                     />
                     <button
                       v-if="quickCommentText.trim()"

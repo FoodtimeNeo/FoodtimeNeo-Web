@@ -161,7 +161,13 @@ http.interceptors.request.use(async (config) => {
     config.url
       .split(/[?#]/)[0]
       .split('/')
-      .some((part) => decodeURIComponent(part) === '..')
+      .some((part) => {
+        try {
+          return decodeURIComponent(part) === '..';
+        } catch {
+          return true;
+        }
+      })
   ) {
     throw new ApiError('禁止向接口代理之外发送会话请求', {
       code: 'UNSAFE_URL',
@@ -170,25 +176,30 @@ http.interceptors.request.use(async (config) => {
   config.withCredentials = true;
   config.headers.delete('Authorization');
   config.headers.set('X-Foodtime-Web-Build', CLIENT_BUILD);
-  if (
-    !['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())
-  ) {
+  const isWrite = !['get', 'head', 'options'].includes(
+    (config.method || 'get').toLowerCase(),
+  );
+  if (isWrite) {
     config.finishPageWrite = holdPageUpdate();
-    try {
+  }
+  try {
+    if (isWrite) {
       const token = await getCsrf();
       if (requestSession !== sessionVersion)
         throw new ApiError('会话已变化，请确认身份后重试', {
           code: 'SESSION_CHANGED',
         });
       config.headers.set(token.headerName, token.token);
-    } catch (error) {
-      config.finishPageWrite();
-      throw error;
     }
+    await prepareCatalogRequest(config, http.getUri(config));
+    if (requestSession !== sessionVersion)
+      throw new ApiError('会话已变化，请刷新后重试', {
+        code: 'SESSION_CHANGED',
+      });
+  } catch (error) {
+    config.finishPageWrite?.();
+    throw error;
   }
-  await prepareCatalogRequest(config, http.getUri(config));
-  if (requestSession !== sessionVersion)
-    throw new ApiError('会话已变化，请刷新后重试', { code: 'SESSION_CHANGED' });
   config.sessionVersion = requestSession;
   return config;
 });
