@@ -153,8 +153,15 @@ export function getCleanCanteenChips(canteen) {
   if (meta?.floor) {
     chips.push(meta.floor);
   }
-  if (canteen.stallsCount && Number(canteen.stallsCount) > 0) {
-    chips.push(`${canteen.stallsCount}个档口`);
+  const rawStallCount = canteen.stallCount ?? canteen.stallsCount;
+  if (
+    rawStallCount !== undefined &&
+    rawStallCount !== null &&
+    rawStallCount !== '' &&
+    Number.isFinite(Number(rawStallCount)) &&
+    Number(rawStallCount) >= 0
+  ) {
+    chips.push(`${Number(rawStallCount)}个档口`);
   } else if (meta?.feature) {
     chips.push(meta.feature);
   }
