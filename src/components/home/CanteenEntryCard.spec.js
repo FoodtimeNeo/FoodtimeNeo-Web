@@ -33,4 +33,12 @@ describe('CanteenEntryCard', () => {
       params: { canteenId: 'c1' },
     });
   });
+
+  it('存在真实档口数量时展示档口数', () => {
+    const wrapper = mount(CanteenEntryCard, {
+      props: { canteen: { ...canteen, stallCount: 4 } },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    });
+    expect(wrapper.text()).toContain('4 个档口');
+  });
 });

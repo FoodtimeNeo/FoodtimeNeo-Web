@@ -48,6 +48,31 @@ const {
 const communityPosts = ref([]);
 const communityLoading = ref(false);
 const communityTotal = ref(0);
+
+const hallCountDisplay = computed(() =>
+  canteens.value.length > 0 ? String(canteens.value.length) : '—',
+);
+const stallCountDisplay = computed(() => {
+  let hasKnown = false;
+  let total = 0;
+  for (const canteen of canteens.value) {
+    const raw = canteen?.stallCount ?? canteen?.stallsCount;
+    if (
+      raw !== undefined &&
+      raw !== null &&
+      raw !== '' &&
+      Number.isFinite(Number(raw)) &&
+      Number(raw) >= 0
+    ) {
+      hasKnown = true;
+      total += Number(raw);
+    }
+  }
+  return hasKnown ? String(total) : '—';
+});
+const postCountDisplay = computed(() =>
+  communityTotal.value > 0 ? String(communityTotal.value) : '—',
+);
 const isCreateModalOpen = ref(false);
 const activePostId = ref('');
 const isDetailModalOpen = ref(false);
@@ -156,18 +181,18 @@ onUnmounted(() => {
         <!-- 证明数据纸条 (Proof Points) -->
         <div class="home-page__proof-ribbon hero-stagger-3">
           <div class="proof-item">
-            <span class="proof-num">7</span>
-            <span class="proof-label">所食堂全覆盖</span>
+            <span class="proof-num">{{ hallCountDisplay }}</span>
+            <span class="proof-label">所食堂收录</span>
           </div>
           <span class="proof-divider" aria-hidden="true">/</span>
           <div class="proof-item">
-            <span class="proof-num">130+</span>
-            <span class="proof-label">档口收录</span>
+            <span class="proof-num">{{ stallCountDisplay }}</span>
+            <span class="proof-label">个档口收录</span>
           </div>
           <span class="proof-divider" aria-hidden="true">/</span>
           <div class="proof-item">
-            <span class="proof-num">3k+</span>
-            <span class="proof-label">实吃手账笔记</span>
+            <span class="proof-num">{{ postCountDisplay }}</span>
+            <span class="proof-label">篇实吃手账笔记</span>
           </div>
         </div>
 
