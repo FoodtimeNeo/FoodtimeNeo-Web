@@ -1,33 +1,33 @@
 {
-  "versionCode": 36,
-  "versionName": "2.1.10",
+  "versionCode": 37,
+  "versionName": "2.1.11",
   "channel": "stable",
   "prerelease": false,
-  "sourceCommit": "1940cb58bb22659f8b775985d0dc5609a1823463",
+  "sourceCommit": "cb5c48d699db21e904898776a52edc36bd6fea46",
   "sourceRef": "refs/heads/main",
   "apk": {
     "url": "https://bjtufoodtime.top/downloads/FoodtimeNeo-Android.apk",
-    "sha256": "5f67fabe46e6814e185ad046a084d2a8073c70365bcbabf02565ee7de9f67029",
-    "size": 26221307
+    "sha256": "c358a0d1a98ae53a35fd652b44bb8a14c66f95d6c8813dc14f0464fd8721d896",
+    "size": 26222407
   },
   "patches": [
     {
+      "baseVersionCode": 36,
+      "url": "https://bjtufoodtime.top/downloads/app-release-36-37.patch",
+      "sha256": "d397e94b503676f7de5d3d9ef5eb38ea0eef346f94869a491bc76a576629926e",
+      "size": 2176801
+    },
+    {
       "baseVersionCode": 35,
-      "url": "https://bjtufoodtime.top/downloads/app-release-35-36.patch",
-      "sha256": "488b012ff8ee62dbb15b3efaf5774e7eea76c99d72329797ac3391b27bf956e5",
-      "size": 2172705
+      "url": "https://bjtufoodtime.top/downloads/app-release-35-37.patch",
+      "sha256": "e1ee64b1f4db0d44012c6df521774626e499755512a40e7cddfcd07ca69f4877",
+      "size": 2186325
     },
     {
       "baseVersionCode": 34,
-      "url": "https://bjtufoodtime.top/downloads/app-release-34-36.patch",
-      "sha256": "46f532fb2ac1cc34a27644b71ff7790ca66f843718a25eb34ce242da57d39d8a",
-      "size": 2191432
-    },
-    {
-      "baseVersionCode": 33,
-      "url": "https://bjtufoodtime.top/downloads/app-release-33-36.patch",
-      "sha256": "e7cad5e713fcf089f9458fb031a52085266ab410253182e62ee4e4c7027574f8",
-      "size": 2212838
+      "url": "https://bjtufoodtime.top/downloads/app-release-34-37.patch",
+      "sha256": "534f866d4a40b732906286360a3ca9497af52fa4a05a5c91fed5907f922c3900",
+      "size": 2194263
     }
   ]
 }
