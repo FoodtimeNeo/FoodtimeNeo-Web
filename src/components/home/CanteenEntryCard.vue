@@ -36,7 +36,16 @@ defineProps({
           canteen.averageScore == null
             ? '暂无评分'
             : `★ ${Number(canteen.averageScore).toFixed(1)} · ${canteen.reviewCount} 条评价`
-        }}
+        }}<template
+          v-if="
+            canteen.stallCount !== undefined &&
+            canteen.stallCount !== null &&
+            Number.isFinite(Number(canteen.stallCount)) &&
+            Number(canteen.stallCount) >= 0
+          "
+        >
+          · {{ Number(canteen.stallCount) }} 个档口</template
+        >
       </p>
       <span class="canteen-entry__link handwrite">翻开看看 →</span>
     </div>

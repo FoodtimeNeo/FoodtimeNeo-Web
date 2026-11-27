@@ -70,7 +70,7 @@ describe('HomeView', () => {
 
   it('展示 Hero 拼贴图集、01 今日推荐、02 食堂手账与 03 社区动态，且社区采用紧凑瀑布流渲染', async () => {
     fetchCanteens.mockResolvedValue([
-      { id: 'c1', name: '学一餐厅', description: '老牌食堂' },
+      { id: 'c1', name: '学一餐厅', description: '老牌食堂', stallCount: 5 },
     ]);
     fetchCommunityPosts.mockResolvedValue({
       items: [
@@ -93,11 +93,11 @@ describe('HomeView', () => {
     const wrapper = mountHome();
     await flushPromises();
 
-    // Hero 区域验证
+    // Hero 区域验证（真实统计数据）
     expect(wrapper.text()).toContain('北交干饭吧');
-    expect(wrapper.text()).toContain('7所食堂全覆盖');
-    expect(wrapper.text()).toContain('130+档口收录');
-    expect(wrapper.text()).toContain('3k+实吃手账笔记');
+    expect(wrapper.text()).toContain('1所食堂收录');
+    expect(wrapper.text()).toContain('5个档口收录');
+    expect(wrapper.text()).toContain('2篇实吃手账笔记');
     expect(wrapper.text()).toContain('明湖招牌拌饭');
     expect(wrapper.text()).toContain('东区热干面');
 

@@ -57,7 +57,7 @@ describe('homeVisuals utility', () => {
     const chips = getCleanCanteenChips({
       name: '明湖餐厅2楼',
       rating: 4.8,
-      stallsCount: 11,
+      stallCount: 11,
       avgPrice: 16,
     });
     expect(chips).toContain('超高口碑');
@@ -66,6 +66,12 @@ describe('homeVisuals utility', () => {
     expect(chips).toContain('¥16/人');
     expect(chips).not.toContain('校园招牌');
     expect(chips).not.toContain('打卡推荐');
+
+    const zeroStallChips = getCleanCanteenChips({
+      name: '留园食堂',
+      stallCount: 0,
+    });
+    expect(zeroStallChips).toContain('0个档口');
   });
 
   it('清洗菜品文案并过滤“发现更多菜品”', () => {
