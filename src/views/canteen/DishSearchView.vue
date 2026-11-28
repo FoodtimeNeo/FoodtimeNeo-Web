@@ -1346,7 +1346,7 @@ onUnmounted(() => {
     &.is-exclude.is-active {
       background: var(--ft-color-secondary);
       border-color: var(--ft-color-secondary);
-      color: #fff;
+      color: var(--zine-paper-card);
     }
   }
   &__prices {

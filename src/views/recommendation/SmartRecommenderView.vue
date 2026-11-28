@@ -928,25 +928,33 @@ onUnmounted(() => {
   &__chip--exclude.is-active {
     background: var(--ft-color-secondary);
     border-color: var(--ft-color-secondary);
-    color: #fff;
+    color: var(--zine-paper-card);
   }
 
   &__price-inputs {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 8px;
+    max-width: 340px;
 
     label {
       display: inline-flex;
       align-items: center;
       gap: 6px;
+      min-width: 0;
       font-size: 13px;
       color: var(--ft-color-text-muted);
+
+      span {
+        flex: none;
+      }
     }
 
     input {
-      width: 96px;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
       min-height: 38px;
       padding: 6px 10px;
       border-radius: 8px;
@@ -1038,13 +1046,14 @@ onUnmounted(() => {
     flex-wrap: wrap;
     padding: 14px 18px;
     border-radius: var(--ft-radius-md);
-    border: 1px solid rgb(217 119 6 / 38%);
-    background: rgb(254 243 199 / 55%);
-    color: var(--ft-color-secondary);
+    border: 1px solid rgb(217 119 6 / 45%);
+    background: rgb(217 119 6 / 14%);
+    color: var(--ft-color-text);
 
     strong {
       display: block;
       font-size: 14px;
+      color: var(--zine-foil-gold);
       margin-bottom: 6px;
     }
 
@@ -1177,8 +1186,9 @@ onUnmounted(() => {
     font-weight: 700;
     padding: 3px 10px;
     border-radius: var(--ft-radius-pill);
-    background: rgb(254 243 199 / 80%);
-    color: #92400e;
+    background: rgb(217 119 6 / 18%);
+    border: 1px solid rgb(217 119 6 / 35%);
+    color: var(--zine-foil-gold);
   }
 
   &__spotlight-cta {
@@ -1320,7 +1330,7 @@ onUnmounted(() => {
   &__card-miss {
     margin: 0;
     font-size: 11px;
-    color: #92400e;
+    color: var(--zine-foil-gold);
     font-weight: 600;
   }
 }
