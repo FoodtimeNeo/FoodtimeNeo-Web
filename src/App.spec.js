@@ -184,3 +184,31 @@ it('阅读第一条期间第二条到期或停用后不再弹出', async () => {
   expect(popup(wrapper).props('modelValue')).toBe(false);
   wrapper.unmount();
 });
+
+it('登录后将未读数同步至主屏幕应用角标，退出时清零', async () => {
+  const setAppBadge = vi.fn().mockResolvedValue(undefined);
+  const clearAppBadge = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'setAppBadge', {
+    configurable: true,
+    value: setAppBadge,
+  });
+  Object.defineProperty(navigator, 'clearAppBadge', {
+    configurable: true,
+    value: clearAppBadge,
+  });
+  api.fetchCurrentNotices.mockResolvedValue([]);
+  api.fetchUnreadNoticeCount.mockResolvedValue({ unreadCount: 3 });
+
+  const wrapper = mountApp();
+  login();
+  await flushPromises();
+  expect(setAppBadge).toHaveBeenCalledWith(3);
+
+  useAuthStore().clear();
+  await flushPromises();
+  expect(clearAppBadge).toHaveBeenCalled();
+
+  delete navigator.setAppBadge;
+  delete navigator.clearAppBadge;
+  wrapper.unmount();
+});

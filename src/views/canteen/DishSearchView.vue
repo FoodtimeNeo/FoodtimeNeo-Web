@@ -743,7 +743,7 @@ onUnmounted(() => {
     top: 0;
     z-index: 8;
     background: var(--ft-color-bg);
-    padding: 6px 0 0;
+    padding: calc(6px + var(--app-mobile-safe-top)) 0 0;
   }
   &__bar {
     display: flex;
@@ -792,7 +792,7 @@ onUnmounted(() => {
       padding: 4px 0;
       line-height: 1.5;
       font: inherit;
-      font-size: 15px;
+      font-size: 16px;
       border: 0;
       background: transparent;
       color: inherit;

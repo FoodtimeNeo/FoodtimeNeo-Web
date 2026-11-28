@@ -153,7 +153,7 @@ export const routes = [
     name: 'landing',
     component: () => import('@/views/landing/LandingView.vue'),
     meta: {
-      title: '官网 · 下载安卓客户端',
+      title: '官网 · 客户端下载与苹果桌面安装',
       layout: 'blank',
       requiresAuth: false,
     },

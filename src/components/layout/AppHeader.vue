@@ -17,14 +17,54 @@ const auth = useAuthStore();
 const inbox = useInboxStore();
 const navigationItems = computed(() => getNavigationItems(auth.isAdmin));
 const activeName = computed(() => resolveActiveNavigation(route));
+const ROOT_TABS = new Set([
+  'home',
+  'canteenList',
+  'community',
+  'profile',
+  'adminAudit',
+]);
+const canGoBack = computed(
+  () => Boolean(route.name) && !ROOT_TABS.has(String(route.name)),
+);
+function goBack() {
+  if (typeof window !== 'undefined' && window.history.state?.back) {
+    router.back();
+    return;
+  }
+  const fallback =
+    activeName.value && router.hasRoute(activeName.value)
+      ? activeName.value
+      : 'home';
+  router.push({ name: fallback });
+}
 </script>
 
 <template>
   <header class="app-header">
     <div class="app-header__inner">
-      <RouterLink class="app-header__brand" :to="{ name: 'home' }">
-        <strong>北交干饭吧</strong>
-      </RouterLink>
+      <div class="app-header__start">
+        <button
+          v-if="canGoBack"
+          type="button"
+          class="app-header__back"
+          aria-label="返回上一页"
+          data-testid="mobile-header-back"
+          @click="goBack"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path d="m15 6-6 6 6 6" />
+          </svg>
+        </button>
+        <RouterLink class="app-header__brand" :to="{ name: 'home' }">
+          <strong>北交干饭吧</strong>
+        </RouterLink>
+      </div>
 
       <nav class="app-header__nav" aria-label="主导航">
         <RouterLink
@@ -84,11 +124,53 @@ const activeName = computed(() => resolveActiveNavigation(route));
   position: sticky;
   z-index: 20;
   top: 0;
-  min-height: 68px;
+  min-height: calc(68px + var(--app-mobile-safe-top));
+  padding-top: var(--app-mobile-safe-top);
+  padding-right: var(--app-mobile-safe-right);
+  padding-left: var(--app-mobile-safe-left);
   border-bottom: 1px solid var(--ft-border-subtle);
   background: rgb(var(--ft-overlay-paper-rgb) / 92%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.app-header__start {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.app-header__back {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ft-radius-pill);
+  background: transparent;
+  color: var(--ft-color-text);
+  cursor: pointer;
+  flex: none;
+}
+
+.app-header__back svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app-header__back:active {
+  background: var(--ft-color-surface-ink);
+  transform: scale(0.94);
 }
 
 .app-header__inner {
@@ -236,9 +318,16 @@ const activeName = computed(() => resolveActiveNavigation(route));
 }
 
 @media (max-width: 768px) {
-  .app-header,
+  .app-header {
+    min-height: calc(54px + var(--app-mobile-safe-top));
+  }
+
   .app-header__inner {
     min-height: 54px;
+  }
+
+  .app-header__back {
+    display: inline-flex;
   }
 
   .app-header__inner {

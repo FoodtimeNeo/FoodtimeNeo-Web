@@ -13,6 +13,7 @@ import { useLoginNotice } from '@/composables/useLoginNotice.js';
 import { fetchUnreadNoticeCount } from '@/api/notice.api.js';
 import { fetchUnreadMessageCount } from '@/api/message.api.js';
 import { fetchConversationUnread } from '@/api/directMessage.api.js';
+import { syncAppBadge } from '@/utils/iosPwa.js';
 
 const auth = useAuthStore();
 const inbox = useInboxStore();
@@ -67,6 +68,14 @@ watch(
   },
   { immediate: true, flush: 'sync' },
 );
+watch(
+  () => (auth.isAuthenticated ? inbox.unreadCount : 0),
+  (count) => {
+    void syncAppBadge(count);
+  },
+  { immediate: true },
+);
+const actorKey = computed(() => `${auth.user?.id || 'guest'}:${auth.role}`);
 const popupOpen = computed(() => Boolean(loginNotice.notice.value));
 function closePopup(visible) {
   if (!visible) loginNotice.close();
@@ -77,16 +86,16 @@ function closePopup(visible) {
   <VersionUpdateStatus />
   <RouterView v-slot="{ Component, route }">
     <component :is="layouts[route.meta.layout] ?? DefaultLayout">
-      <component
-        :is="Component"
-        :key="
-          pageIdentity(route) +
-          ':' +
-          (auth.user?.id || 'guest') +
-          ':' +
-          auth.role
-        "
-      />
+      <KeepAlive
+        :key="actorKey"
+        :include="['HomeView', 'CanteenListView']"
+        :max="2"
+      >
+        <component
+          :is="Component"
+          :key="pageIdentity(route) + ':' + actorKey"
+        />
+      </KeepAlive>
     </component>
   </RouterView>
   <aside

@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import AppHeader from '@/components/layout/AppHeader.vue';
 import AppFooter from '@/components/layout/AppFooter.vue';
 import MobileTabBar from '@/components/layout/MobileTabBar.vue';
+import IosInstallBanner from '@/components/common/IosInstallBanner.vue';
 import { resolveBreadcrumbs } from '@/components/layout/navigation.js';
 
 const route = useRoute();
@@ -49,6 +50,7 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
       </main>
     </div>
     <AppFooter />
+    <IosInstallBanner />
     <MobileTabBar />
   </div>
 </template>
@@ -66,6 +68,7 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
 .default-layout {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   isolation: isolate;
 }
 
@@ -221,6 +224,7 @@ const breadcrumbs = computed(() => resolveBreadcrumbs(route));
   .default-layout__paper {
     width: 100%;
     min-height: calc(100vh - 64px);
+    min-height: calc(100dvh - 54px - var(--app-mobile-safe-top));
     margin: 0;
     border: 0;
     box-shadow: none;

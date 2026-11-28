@@ -104,4 +104,50 @@ describe('LandingView (Zine Collage Style matching reference)', () => {
     await enterWebBtn.trigger('click');
     expect(push).toHaveBeenCalledWith({ name: 'login' });
   });
+
+  it('按钮组内提供“苹果保存到桌面”按钮与免手动更新说明，并可直达苹果安装教程与切换标签', async () => {
+    const wrapper = mount(LandingView);
+    const iosBtn = wrapper.find('[data-testid="ios-save-btn"]');
+    expect(iosBtn.exists()).toBe(true);
+    expect(iosBtn.text()).toContain('苹果保存到桌面');
+    expect(
+      wrapper.get('[data-testid="ios-auto-update-note"]').text(),
+    ).toContain('免手动更新');
+
+    await iosBtn.trigger('click');
+    expect(wrapper.find('.guide-modal-overlay').exists()).toBe(true);
+    expect(wrapper.text()).toContain('苹果添加到主屏幕说明');
+    expect(wrapper.text()).toContain('点击 Safari 底部「分享」按钮');
+
+    await wrapper.get('[data-testid="guide-tab-android"]').trigger('click');
+    expect(wrapper.text()).toContain('安卓安装简明说明');
+  });
+
+  it('在苹果设备访问时高亮“苹果保存到桌面”按钮，支持原生安装提示时直接唤起安装', async () => {
+    vi.stubGlobal('navigator', {
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1',
+      standalone: false,
+    });
+    try {
+      const wrapper = mount(LandingView);
+      const iosBtn = wrapper.get('[data-testid="ios-save-btn"]');
+      expect(iosBtn.classes()).toContain('is-highlighted');
+      expect(
+        wrapper.get('[data-testid="ios-auto-update-note"]').text(),
+      ).toContain('已识别苹果设备');
+
+      const prompt = vi.fn().mockResolvedValue(undefined);
+      const installEvent = new Event('beforeinstallprompt');
+      installEvent.prompt = prompt;
+      installEvent.userChoice = Promise.resolve({ outcome: 'accepted' });
+      window.dispatchEvent(installEvent);
+
+      await iosBtn.trigger('click');
+      expect(prompt).toHaveBeenCalledTimes(1);
+      expect(wrapper.find('.guide-modal-overlay').exists()).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
