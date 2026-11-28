@@ -42,7 +42,6 @@ async function fill(wrapper, values = []) {
   const inputs = wrapper.findAll('input');
   const defaults = [
     '20260001@bjtu.edu.cn',
-    '',
     '012345',
     'Foodtime2026!',
     'Foodtime2026!',
@@ -64,14 +63,13 @@ describe('注册策略与确认密码', () => {
     await fill(wrapper, [
       undefined,
       undefined,
-      undefined,
       'Foodtime2026!',
       'Another2026!',
     ]);
     await wrapper.find('form').trigger('submit');
     expect(register).not.toHaveBeenCalled();
     expect(wrapper.text()).toContain('两次输入的密码不一致');
-    await wrapper.findAll('input')[4].setValue('Foodtime2026!');
+    await wrapper.findAll('input')[3].setValue('Foodtime2026!');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
     expect(register).toHaveBeenCalledWith({
@@ -79,32 +77,31 @@ describe('注册策略与确认密码', () => {
       password: 'Foodtime2026!',
       verificationCode: '012345',
     });
-    expect(wrapper.findAll('input')[4].element.value).toBe('');
+    expect(wrapper.findAll('input')[3].element.value).toBe('');
     expect(replace).toHaveBeenCalledWith({ name: 'login' });
     wrapper.unmount();
   });
 
-  it('邀请模式显示必填邀请码并随注册透传', async () => {
-    const wrapper = await mountView(invitationPolicy);
-    expect(wrapper.text()).toContain('邀请码（必填）');
-    await fill(wrapper, [undefined, 'ABCD2345EFGH']);
+  it('开放注册不显示邀请码并提交其他字段', async () => {
+    const wrapper = await mountView();
+    expect(wrapper.text()).not.toContain('邀请码');
+    await fill(wrapper);
     await wrapper.find('form').trigger('submit');
     await flushPromises();
     expect(register).toHaveBeenCalledWith({
       email: '20260001@bjtu.edu.cn',
       password: 'Foodtime2026!',
       verificationCode: '012345',
-      invitationCode: 'ABCD2345EFGH',
     });
     wrapper.unmount();
   });
 
-  it('邀请模式缺少邀请码时不提交', async () => {
+  it('服务端要求邀请码时提示不可注册且不发送验证码', async () => {
     const wrapper = await mountView(invitationPolicy);
-    await fill(wrapper);
-    await wrapper.find('form').trigger('submit');
+    expect(wrapper.find('form').exists()).toBe(false);
     expect(register).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain('当前注册需要邀请码');
+    expect(wrapper.text()).toContain('当前无法通过此页面注册');
+    expect(wrapper.text()).not.toContain('邀请码');
     wrapper.unmount();
   });
 

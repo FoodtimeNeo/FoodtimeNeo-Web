@@ -18,7 +18,6 @@ import AuthField from '@/components/auth/AuthField.vue';
 import InkButton from '@/components/base/InkButton.vue';
 import {
   validateEmail,
-  validateInvitationCode,
   validatePassword,
   validateVerificationCode,
 } from '@/utils/authValidators.js';
@@ -26,14 +25,12 @@ const router = useRouter();
 const auth = useAuthStore();
 const form = reactive({
   email: '',
-  invitationCode: '',
   password: '',
   confirmPassword: '',
   verificationCode: '',
 });
 const errors = reactive({
   email: '',
-  invitationCode: '',
   password: '',
   confirmPassword: '',
   verificationCode: '',
@@ -45,15 +42,14 @@ const policyReady = computed(
   () => Boolean(policy.value) && !policyLoading.value && !policyError.value,
 );
 const closed = computed(() => policy.value?.mode === 'closed');
-const invitationRequired = computed(
-  () => policy.value?.invitationRequired === true,
+const unavailable = computed(
+  () => closed.value || policy.value?.invitationRequired === true,
 );
-const showInvitation = computed(() => Boolean(policy.value) && !closed.value);
 const canSendEmailCode = computed(
-  () => policyReady.value && policy.value?.canSendEmailCode === true,
-);
-const invitationLabel = computed(() =>
-  invitationRequired.value ? '邀请码（必填）' : '邀请码（可选）',
+  () =>
+    policyReady.value &&
+    !unavailable.value &&
+    policy.value?.canSendEmailCode === true,
 );
 let policyRequest = 0;
 async function loadPolicy() {
@@ -126,12 +122,8 @@ async function handleSendCode() {
   }
 }
 async function handleSubmit() {
-  if (submitting.value || !policyReady.value || closed.value) return;
+  if (submitting.value || !policyReady.value || unavailable.value) return;
   errors.email = validateEmail(form.email);
-  errors.invitationCode = validateInvitationCode(
-    form.invitationCode,
-    invitationRequired.value,
-  );
   errors.password = validatePassword(form.password, { isNew: true });
   errors.confirmPassword = confirmationError();
   errors.verificationCode = validateVerificationCode(form.verificationCode);
@@ -148,13 +140,10 @@ async function handleSubmit() {
       password: form.password,
       verificationCode: form.verificationCode,
     };
-    const invitationCode = form.invitationCode.trim();
-    if (invitationCode) payload.invitationCode = invitationCode;
     await auth.register(payload);
     form.password = '';
     form.confirmPassword = '';
     form.verificationCode = '';
-    form.invitationCode = '';
     await router.replace({ name: 'login' });
   } catch (error) {
     serverError.value = error.message || '注册失败';
@@ -184,9 +173,15 @@ async function handleSubmit() {
         重试
       </button>
     </p>
-    <section v-if="closed" class="auth-view__closed" role="alert">
+    <section v-if="unavailable" class="auth-view__closed" role="alert">
       <h2>注册暂未开放</h2>
-      <p>当前部署已关闭注册与邮箱验证码发送，请稍后再试。</p>
+      <p>
+        {{
+          closed
+            ? '当前部署已关闭注册与邮箱验证码发送，请稍后再试。'
+            : '当前无法通过此页面注册，请联系管理员。'
+        }}
+      </p>
     </section>
     <form v-else ref="formElement" novalidate @submit.prevent="handleSubmit">
       <p v-if="serverError" role="alert" class="auth-view__error">
@@ -202,18 +197,6 @@ async function handleSubmit() {
         :error="errors.email"
         :disabled="!policyReady"
       />
-      <AuthField
-        v-if="showInvitation"
-        v-model="form.invitationCode"
-        :label="invitationLabel"
-        autocomplete="off"
-        :maxlength="12"
-        :error="errors.invitationCode"
-        :disabled="!policyReady"
-      />
-      <p v-if="invitationRequired" class="auth-view__hint">
-        当前注册需要平台发放的 12 位邀请码；大小写均可。
-      </p>
       <AuthField
         v-model="form.verificationCode"
         label="邮箱验证码"
