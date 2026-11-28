@@ -903,14 +903,14 @@ $c-tape-yellow: #f5e8b4;
     }
   }
 
-  // 苹果保存到桌面按钮（纸白黑边手账撞色，与深红、纯黑构成三色组合）
+  // 苹果保存到桌面按钮（纸白黑边手账撞色，适配浅/深色模式高对比度）
   .zine-ios-save-btn {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     background: rgb(var(--ft-overlay-paper-rgb) / 0.96);
-    color: $c-ink-dark-btn;
-    border: 2px solid $c-ink-dark-btn;
+    color: var(--ft-color-text);
+    border: 2px solid var(--ft-color-text);
     padding: 18px 28px;
     border-radius: 16px;
     font-size: 19px;
@@ -935,14 +935,14 @@ $c-tape-yellow: #f5e8b4;
     }
 
     &.is-highlighted {
-      border-color: $c-ink-red;
-      color: $c-ink-red;
+      border-color: var(--ft-color-primary);
+      color: var(--ft-color-primary);
       box-shadow: 0 8px 22px rgba(201, 52, 30, 0.2);
     }
 
     &:hover {
-      border-color: $c-ink-red;
-      color: $c-ink-red;
+      border-color: var(--ft-color-primary);
+      color: var(--ft-color-primary);
       background: var(--zine-paper-card);
       transform: translateY(-3px);
       box-shadow: 0 10px 24px rgba(201, 52, 30, 0.2);
@@ -996,7 +996,7 @@ $c-tape-yellow: #f5e8b4;
   }
 
   .apk-meta-ios {
-    color: #5c4535;
+    color: var(--ft-color-text);
     font-weight: 600;
   }
 }
