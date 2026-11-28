@@ -13,11 +13,30 @@ function stored() {
     return 'system';
   }
 }
+const THEME_COLORS = {
+  light: '#faf7f0',
+  dark: '#1a1613',
+};
+
+function syncThemeColorMeta(dark) {
+  if (typeof document === 'undefined') return;
+  let meta = document.querySelector('meta[name="theme-color"]');
+  if (!meta && document.head) {
+    meta = document.createElement('meta');
+    meta.setAttribute('name', 'theme-color');
+    document.head.appendChild(meta);
+  }
+  if (meta) {
+    meta.setAttribute('content', dark ? THEME_COLORS.dark : THEME_COLORS.light);
+  }
+}
+
 function apply() {
   const dark =
     mode.value === 'dark' || (mode.value === 'system' && media?.matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  syncThemeColorMeta(dark);
 }
 export function installAppearance() {
   if (installed) return;

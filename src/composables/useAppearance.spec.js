@@ -23,9 +23,15 @@ it('defaults to system, follows live changes and ignores them with an explicit c
   const { appearance, setAppearance } = useAppearance();
   expect(appearance.value).toBe('system');
   expect(document.documentElement.dataset.theme).toBe('dark');
+  expect(
+    document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+  ).toBe('#1a1613');
   media.matches = false;
   listener();
   expect(document.documentElement.dataset.theme).toBe('light');
+  expect(
+    document.querySelector('meta[name="theme-color"]')?.getAttribute('content'),
+  ).toBe('#faf7f0');
   setAppearance('dark');
   expect(localStorage.getItem('foodtime-appearance')).toBe('dark');
   listener();

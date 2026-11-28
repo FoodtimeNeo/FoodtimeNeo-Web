@@ -14,6 +14,14 @@ const router = useRouter();
 const auth = useAuthStore();
 const navigationItems = computed(() => getNavigationItems(auth.isAdmin));
 const activeName = computed(() => resolveActiveNavigation(route));
+
+function handleTabClick(item) {
+  if (typeof window === 'undefined' || route.name !== item.name) return;
+  const reduced = window.matchMedia?.(
+    '(prefers-reduced-motion: reduce)',
+  ).matches;
+  window.scrollTo?.({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+}
 </script>
 
 <template>
@@ -25,6 +33,7 @@ const activeName = computed(() => resolveActiveNavigation(route));
         :to="navigationTarget(item, route)"
         :class="{ 'is-active': activeName === item.name }"
         :aria-current="activeName === item.name ? 'location' : undefined"
+        @click="handleTabClick(item)"
       >
         <span class="mobile-tab-bar__icon" aria-hidden="true">
           <AppIcon :name="item.iconName || 'home'" />
@@ -70,6 +79,8 @@ const activeName = computed(() => resolveActiveNavigation(route));
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     box-shadow: 0 -2px 12px rgb(58 36 24 / 6%);
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   .mobile-tab-bar__item {
@@ -113,8 +124,13 @@ const activeName = computed(() => resolveActiveNavigation(route));
     place-items: center;
     border-radius: var(--ft-radius-pill);
     transition:
+      transform var(--ft-transition-fast),
       background var(--ft-transition-fast),
       color var(--ft-transition-fast);
+  }
+
+  .mobile-tab-bar__item:active .mobile-tab-bar__icon {
+    transform: scale(0.92);
   }
 
   .mobile-tab-bar__icon svg {

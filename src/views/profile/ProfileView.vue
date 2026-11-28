@@ -12,9 +12,12 @@ import InkButton from '@/components/base/InkButton.vue';
 import ProfileEditor from './ProfileEditor.vue';
 import AppIcon from '@/components/base/AppIcon.vue';
 import AppearancePicker from '@/components/base/AppearancePicker.vue';
+import IosInstallSteps from '@/components/common/IosInstallSteps.vue';
 import SchoolEmailBinder from '@/components/profile/SchoolEmailBinder.vue';
+import { isIosDevice, isStandaloneMode } from '@/utils/iosPwa.js';
 const auth = useAuthStore();
 const router = useRouter();
+const showIosHomeGuide = isIosDevice() && !isStandaloneMode();
 const {
   data: profile,
   error,
@@ -198,6 +201,10 @@ async function logout() {
         <AppearancePicker v-if="group.id === 'account'" />
       </section>
     </nav>
+    <details v-if="showIosHomeGuide" class="profile-page__account-details">
+      <summary>添加到主屏幕（苹果全屏 App 体验）</summary>
+      <IosInstallSteps compact />
+    </details>
     <details v-if="profile" class="profile-page__account-details">
       <summary>账号信息</summary>
       <p>{{ profile.email }}</p>

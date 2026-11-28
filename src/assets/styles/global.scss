@@ -1,6 +1,5 @@
 @use './tokens.scss';
 @use './emoji.scss';
-@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@700;900&display=swap');
 
 *,
 *::before,
@@ -19,6 +18,18 @@ body,
 html {
   color-scheme: light;
   -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(64px + var(--app-mobile-safe-top));
+}
+
+a,
+button,
+input,
+select,
+textarea,
+summary,
+[role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -496,6 +507,12 @@ samp {
 }
 
 @media (max-width: 768px) {
+  html {
+    scroll-padding-bottom: calc(
+      var(--app-mobile-tabbar-height) + var(--app-mobile-safe-bottom) + 12px
+    );
+  }
+
   html,
   body {
     width: 100%;
@@ -507,6 +524,15 @@ samp {
     line-height: 1.58;
     letter-spacing: 0;
     text-wrap: auto;
+  }
+
+  /* 避免 iOS Safari 聚焦小于 16px 的输入框时强制放大整个页面。 */
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select,
+  .el-input__inner,
+  .el-textarea__inner {
+    font-size: max(16px, 1em);
   }
 
   body::after {
@@ -533,11 +559,24 @@ samp {
 
   .button-ink {
     box-shadow: var(--app-mobile-shadow);
+    user-select: none;
+    -webkit-touch-callout: none;
   }
 
   .button-ink:hover:not(:disabled) {
     box-shadow: var(--app-mobile-shadow);
     transform: none;
+  }
+
+  .button-ink:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+@media (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior-y: none;
   }
 }
 

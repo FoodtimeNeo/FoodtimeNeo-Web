@@ -17,6 +17,7 @@
   position: relative;
   display: grid;
   min-height: 100vh;
+  min-height: 100dvh;
   place-items: center;
   overflow: hidden;
   padding: var(--ft-space-4) var(--zine-page-padding);
@@ -63,7 +64,10 @@
 
 @media (max-width: 768px) {
   .blank-layout {
-    padding: var(--zine-page-padding-mobile);
+    padding: max(var(--zine-page-padding-mobile), var(--app-mobile-safe-top))
+      max(var(--zine-page-padding-mobile), var(--app-mobile-safe-right))
+      max(var(--zine-page-padding-mobile), var(--app-mobile-safe-bottom))
+      max(var(--zine-page-padding-mobile), var(--app-mobile-safe-left));
   }
 
   .blank-layout::before,
