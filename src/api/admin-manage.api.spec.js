@@ -77,3 +77,26 @@ it('计价单位只进入菜品负载，省略单位的旧调用不重置已有�
     catalogPayload('stalls', { name: '档口', priceUnit: 'kg' }),
   ).not.toHaveProperty('priceUnit');
 });
+
+it('菜品标签与恢复自动识别只进入菜品负载，省略时不覆盖已有人工标签', () => {
+  expect(
+    catalogPayload('dishes', {
+      name: '清蒸鱼',
+      price: 18,
+      tags: ['seafood', 'steamed'],
+    }),
+  ).toMatchObject({ tags: ['seafood', 'steamed'] });
+  expect(
+    catalogPayload('dishes', {
+      name: '清蒸鱼',
+      price: 18,
+      resetAutoTags: true,
+    }),
+  ).toMatchObject({ resetAutoTags: true });
+  expect(
+    catalogPayload('dishes', { name: '旧调用', price: 18 }),
+  ).not.toHaveProperty('tags');
+  expect(
+    catalogPayload('stalls', { name: '档口', tags: ['rice'] }),
+  ).not.toHaveProperty('tags');
+});

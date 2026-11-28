@@ -12,9 +12,15 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElDialog } from 'element-plus';
 import { fetchCanteens } from '@/api/canteen.api.js';
 import { searchStalls, searchNotes } from '@/api/search.api.js';
+import { fetchDishTags } from '@/api/smartRecommend.api.js';
 import { useAsyncData } from '@/composables/useAsyncData.js';
 import { useSearchLocation } from '@/composables/useSearchLocation.js';
 import { useAuthStore } from '@/store/useAuthStore.js';
+import {
+  DEFAULT_DISH_TAGS,
+  dishTagLabel,
+  groupDishTags,
+} from '@/utils/dishTags.js';
 import { previewColumns, distanceLabel } from '@/utils/searchPresentation.js';
 import {
   readSearchHistory,
@@ -45,6 +51,9 @@ const hasSearch = computed(() =>
     'halls',
     'minPrice',
     'maxPrice',
+    'portionOnly',
+    'tags',
+    'excludeTags',
     'minRating',
     'sort',
     'type',
@@ -125,6 +134,8 @@ const editingHistory = ref(false);
 const clearingHistory = ref(false);
 const halls = ref([]);
 const hallsError = ref('');
+const tagCatalog = ref([...DEFAULT_DISH_TAGS]);
+const tagGroups = computed(() => groupDishTags(tagCatalog.value));
 const validation = ref('');
 const panel = ref('');
 const results = ref(null);
@@ -134,6 +145,9 @@ const filters = reactive({
   halls: [],
   minPrice: '',
   maxPrice: '',
+  portionOnly: false,
+  tags: [],
+  excludeTags: [],
   minRating: '',
   type: 'all',
 });
@@ -147,6 +161,8 @@ const sections = computed(() =>
     : [
         ['halls', '食堂'],
         ['price', '价格'],
+        ['tags', '品类/标签'],
+        ['excludeTags', '忌口排除'],
         ['rating', '评分'],
       ],
 );
@@ -178,11 +194,31 @@ const pageNumber = computed(() =>
     ? Number(route.query.page)
     : 1,
 );
+const isPortionOnlyQuery = computed(
+  () =>
+    route.query.portionOnly === '1' ||
+    route.query.portionOnly === 'true' ||
+    route.query.portionOnly === true,
+);
 const filterCount = computed(
   () =>
     list(route.query.halls).length +
     ['minPrice', 'maxPrice', 'minRating'].filter((k) => route.query[k]).length +
+    (tab.value === 'dishes'
+      ? (isPortionOnlyQuery.value ? 1 : 0) +
+        list(route.query.tags).length +
+        list(route.query.excludeTags).length
+      : 0) +
     (route.query.type && route.query.type !== 'all' ? 1 : 0),
+);
+const canRelaxEmptyDishes = computed(
+  () =>
+    tab.value === 'dishes' &&
+    (isPortionOnlyQuery.value ||
+      Boolean(route.query.maxPrice) ||
+      Boolean(route.query.minPrice) ||
+      Boolean(route.query.minRating) ||
+      list(route.query.tags).length > 0),
 );
 function payload() {
   const sort = route.query.sort || 'relevance';
@@ -197,6 +233,11 @@ function payload() {
   if (tab.value === 'dishes') {
     for (const key of ['minPrice', 'maxPrice', 'minRating'])
       if (route.query[key]) body[key] = route.query[key];
+    if (isPortionOnlyQuery.value) body.portionOnly = true;
+    const selectedTags = list(route.query.tags);
+    if (selectedTags.length) body.tags = selectedTags;
+    const excludedTags = list(route.query.excludeTags);
+    if (excludedTags.length) body.excludeTags = excludedTags;
   } else body.type = route.query.type || 'all';
   if (sort === 'distance') {
     const point = location.position.value;
@@ -271,6 +312,9 @@ function openFilters() {
   filters.halls = [...list(route.query.halls)];
   for (const key of ['minPrice', 'maxPrice', 'minRating'])
     filters[key] = route.query[key] || '';
+  filters.portionOnly = isPortionOnlyQuery.value;
+  filters.tags = [...list(route.query.tags)];
+  filters.excludeTags = [...list(route.query.excludeTags)];
   filters.type = route.query.type || 'all';
   filterSection.value = 'halls';
   validation.value = '';
@@ -281,10 +325,50 @@ function resetFilters() {
     halls: [],
     minPrice: '',
     maxPrice: '',
+    portionOnly: false,
+    tags: [],
+    excludeTags: [],
     minRating: '',
     type: 'all',
   });
   validation.value = '';
+}
+function toggleFilterTag(code) {
+  const idx = filters.tags.indexOf(code);
+  if (idx >= 0) {
+    filters.tags.splice(idx, 1);
+  } else {
+    filters.tags.push(code);
+    const exIdx = filters.excludeTags.indexOf(code);
+    if (exIdx >= 0) filters.excludeTags.splice(exIdx, 1);
+  }
+}
+function toggleFilterExcludeTag(code) {
+  const idx = filters.excludeTags.indexOf(code);
+  if (idx >= 0) {
+    filters.excludeTags.splice(idx, 1);
+  } else {
+    filters.excludeTags.push(code);
+    const inIdx = filters.tags.indexOf(code);
+    if (inIdx >= 0) filters.tags.splice(inIdx, 1);
+  }
+}
+function relaxSearchFilters() {
+  const query = { ...route.query, browse: '1' };
+  delete query.page;
+  if (query.portionOnly) delete query.portionOnly;
+  if (query.minPrice) delete query.minPrice;
+  if (query.minRating) delete query.minRating;
+  if (query.maxPrice) {
+    const bumped = Math.ceil(Number(query.maxPrice) * 1.3);
+    if (Number.isFinite(bumped) && bumped > Number(query.maxPrice))
+      query.maxPrice = String(bumped);
+    else delete query.maxPrice;
+  }
+  const currentTags = list(query.tags);
+  if (currentTags.length > 1) query.tags = [currentTags[0]];
+  else if (currentTags.length === 1 && !query.maxPrice) delete query.tags;
+  void navigate(query);
 }
 function applyFilters() {
   const values = [filters.minPrice, filters.maxPrice];
@@ -302,12 +386,25 @@ function applyFilters() {
   }
   const query = { ...route.query, browse: '1' };
   delete query.page;
-  for (const key of ['halls', 'minPrice', 'maxPrice', 'minRating', 'type'])
+  for (const key of [
+    'halls',
+    'minPrice',
+    'maxPrice',
+    'portionOnly',
+    'tags',
+    'excludeTags',
+    'minRating',
+    'type',
+  ])
     delete query[key];
   if (filters.halls.length) query.halls = [...filters.halls];
   if (tab.value === 'dishes') {
     for (const key of ['minPrice', 'maxPrice', 'minRating'])
       if (filters[key] !== '') query[key] = String(filters[key]);
+    if (filters.portionOnly) query.portionOnly = '1';
+    if (filters.tags.length) query.tags = [...filters.tags];
+    if (filters.excludeTags.length)
+      query.excludeTags = [...filters.excludeTags];
   } else if (filters.type !== 'all') query.type = filters.type;
   panel.value = '';
   validation.value = '';
@@ -399,6 +496,14 @@ onMounted(async () => {
     halls.value = await fetchCanteens();
   } catch (error) {
     hallsError.value = error.message || '食堂列表加载失败';
+  }
+  try {
+    const loadedTags = await fetchDishTags();
+    if (Array.isArray(loadedTags) && loadedTags.length) {
+      tagCatalog.value = loadedTags;
+    }
+  } catch {
+    // Keep DEFAULT_DISH_TAGS fallback
   }
 });
 onUnmounted(() => {
@@ -556,6 +661,12 @@ onUnmounted(() => {
           >
         </div>
       </section>
+      <div v-if="tab === 'dishes'" class="unified-search__smart-banner">
+        <span>按单份预算 + 菜类/肉类/做法/忌口自由选餐</span>
+        <RouterLink :to="{ name: 'smartRecommend' }">
+          精准选餐 / 帮我抽一道 →
+        </RouterLink>
+      </div>
       <SearchDiscovery :owner-id="auth.user?.id || ''" />
     </template>
     <template v-else>
@@ -566,15 +677,62 @@ onUnmounted(() => {
         @retry="load"
       />
       <template v-if="state.hasLoaded.value">
+        <div
+          v-if="
+            tab === 'dishes' &&
+            (isPortionOnlyQuery ||
+              list(route.query.tags).length ||
+              list(route.query.excludeTags).length)
+          "
+          class="unified-search__active-tags"
+          aria-label="当前已选标签条件"
+        >
+          <span v-if="isPortionOnlyQuery" class="unified-search__badge"
+            >仅按份/碗计价</span
+          >
+          <span
+            v-for="code in list(route.query.tags)"
+            :key="`in-${code}`"
+            class="unified-search__badge"
+            >{{ dishTagLabel(code, tagCatalog) }}</span
+          >
+          <span
+            v-for="code in list(route.query.excludeTags)"
+            :key="`ex-${code}`"
+            class="unified-search__badge is-exclude"
+            >排除：{{ dishTagLabel(code, tagCatalog) }}</span
+          >
+        </div>
         <p class="unified-search__count" aria-live="polite">
           {{ state.data.value.total }} {{ tab === 'notes' ? '篇笔记' : '个档口'
           }}<small v-if="state.loading.value"> · 正在刷新…</small>
         </p>
-        <EmptyState
+        <div
           v-if="!state.data.value.items.length"
-          title="没有匹配结果"
-          description="换个关键词或调整筛选试试"
-        />
+          class="unified-search__empty-wrap"
+        >
+          <EmptyState
+            title="没有匹配结果"
+            description="换个关键词或调整筛选试试"
+          />
+          <div class="unified-search__empty-actions">
+            <button
+              v-if="canRelaxEmptyDishes"
+              type="button"
+              class="button-ink"
+              @click="relaxSearchFilters"
+            >
+              放宽筛选条件重试
+            </button>
+            <RouterLink
+              v-if="tab === 'dishes'"
+              class="button-ink is-primary"
+              :to="{ name: 'smartRecommend' }"
+            >
+              去精准选餐看看近似推荐
+            </RouterLink>
+          </div>
+        </div>
         <div v-else-if="tab === 'dishes'" class="unified-search__stalls">
           <SearchStallCard
             v-for="stall in state.data.value.items"
@@ -662,6 +820,22 @@ onUnmounted(() => {
             </fieldset>
             <fieldset v-if="filterSection === 'price'">
               <legend>价格</legend>
+              <div class="search-filter__presets">
+                <button
+                  v-for="preset in ['10', '15', '20']"
+                  :key="preset"
+                  type="button"
+                  :aria-pressed="
+                    !filters.minPrice && filters.maxPrice === preset
+                  "
+                  @click="
+                    filters.minPrice = '';
+                    filters.maxPrice = preset;
+                  "
+                >
+                  ¥{{ preset }}以内
+                </button>
+              </div>
               <div class="search-filter__prices">
                 <label
                   >最低价<input
@@ -681,6 +855,55 @@ onUnmounted(() => {
                     inputmode="decimal"
                     placeholder="不限"
                 /></label>
+              </div>
+              <label class="search-filter__portion">
+                <input v-model="filters.portionOnly" type="checkbox" />
+                <span>仅看按份或碗计价（排除称重与未知价格）</span>
+              </label>
+            </fieldset>
+            <fieldset v-if="filterSection === 'tags'">
+              <legend>
+                品类 / 肉类 / 做法 / 偏向（同组任选，跨组同时满足）
+              </legend>
+              <div
+                v-for="group in tagGroups"
+                :key="group.dimension"
+                class="search-filter__tag-group"
+              >
+                <span class="search-filter__tag-title">{{
+                  group.dimensionLabel
+                }}</span>
+                <div class="search-filter__tag-chips">
+                  <button
+                    v-for="tag in group.items"
+                    :key="tag.code"
+                    type="button"
+                    class="search-filter__tag-btn"
+                    :class="{ 'is-active': filters.tags.includes(tag.code) }"
+                    :aria-pressed="filters.tags.includes(tag.code)"
+                    @click="toggleFilterTag(tag.code)"
+                  >
+                    {{ tag.label }}
+                  </button>
+                </div>
+              </div>
+            </fieldset>
+            <fieldset v-if="filterSection === 'excludeTags'">
+              <legend>忌口 / 排除（绝不出现包含以下标签的菜品）</legend>
+              <div class="search-filter__tag-chips">
+                <button
+                  v-for="tag in tagCatalog"
+                  :key="tag.code"
+                  type="button"
+                  class="search-filter__tag-btn is-exclude"
+                  :class="{
+                    'is-active': filters.excludeTags.includes(tag.code),
+                  }"
+                  :aria-pressed="filters.excludeTags.includes(tag.code)"
+                  @click="toggleFilterExcludeTag(tag.code)"
+                >
+                  ✕ {{ tag.label }}
+                </button>
               </div>
             </fieldset>
             <fieldset v-if="filterSection === 'rating'">
@@ -875,6 +1098,56 @@ onUnmounted(() => {
     color: var(--ft-color-text-muted);
     margin: 8px 0 0;
   }
+  &__smart-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px dashed var(--ft-border-control);
+    background: var(--zine-paper-card);
+    font-size: 13px;
+    color: var(--ft-color-text-muted);
+    a {
+      color: var(--ft-color-primary);
+      font-weight: 700;
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  &__active-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  &__badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--zine-stamp-red-soft);
+    color: var(--ft-color-primary);
+    &.is-exclude {
+      background: var(--ft-color-bg-soft);
+      color: var(--ft-color-secondary);
+    }
+  }
+  &__empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+    a {
+      text-decoration: none;
+    }
+  }
   &__history {
     margin: 16px 0;
     header {
@@ -1013,6 +1286,68 @@ onUnmounted(() => {
   input[type='checkbox'],
   input[type='radio'] {
     accent-color: var(--ft-color-primary);
+  }
+  &__presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+    button {
+      min-height: 34px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--ft-color-border);
+      background: var(--zine-paper-card-alt);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    [aria-pressed='true'] {
+      background: var(--ft-color-primary);
+      border-color: var(--ft-color-primary);
+      color: #fff;
+    }
+  }
+  &__portion {
+    display: flex !important;
+    margin-top: 10px;
+    margin-right: 0 !important;
+    font-size: 13px !important;
+  }
+  &__tag-group {
+    margin-bottom: 10px;
+  }
+  &__tag-title {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ft-color-text-muted);
+    margin-bottom: 6px;
+  }
+  &__tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  &__tag-btn {
+    min-height: 34px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--ft-color-border);
+    background: var(--zine-paper-card-alt);
+    color: var(--ft-color-text);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    &.is-active {
+      background: var(--ft-color-primary);
+      border-color: var(--ft-color-primary);
+      color: #fff;
+    }
+    &.is-exclude.is-active {
+      background: var(--ft-color-secondary);
+      border-color: var(--ft-color-secondary);
+      color: var(--zine-paper-card);
+    }
   }
   &__prices {
     display: flex;

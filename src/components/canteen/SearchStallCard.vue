@@ -2,6 +2,7 @@
 import { ref, watch, onUnmounted } from 'vue';
 import { searchStallDishes } from '@/api/search.api.js';
 import { recordedPrice } from '@/utils/priceHistory.js';
+import { dishTagBadges } from '@/utils/dishTags.js';
 import { distanceLabel } from '@/utils/searchPresentation.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import SearchHighlight from '@/components/base/SearchHighlight.vue';
@@ -141,6 +142,13 @@ const dishRoute = (stall, dish) => ({
                 >★ {{ Number(dish.averageScore).toFixed(1) }}分</small
               >
             </p>
+            <div v-if="dish.tags?.length" class="search-stall__tags">
+              <span
+                v-for="badge in dishTagBadges(dish.tags, undefined, 2)"
+                :key="badge.code"
+                >{{ badge.label }}</span
+              >
+            </div>
           </div>
         </RouterLink>
       </li>
@@ -295,6 +303,20 @@ const dishRoute = (stall, dish) => ({
     font-size: 11px;
     color: var(--zine-foil-gold);
     font-weight: 600;
+  }
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 3px;
+    span {
+      font-size: 10px;
+      line-height: 1.3;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: var(--zine-paper-card-alt);
+      color: var(--ft-color-text-muted);
+    }
   }
   button {
     min-height: 36px;

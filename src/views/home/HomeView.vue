@@ -204,6 +204,12 @@ onUnmounted(() => {
             翻开食堂手账
           </RouterLink>
           <RouterLink
+            class="button-ink hero-smart-pick-link"
+            :to="{ name: 'smartRecommend' }"
+          >
+            今天吃什么 · 精准选餐
+          </RouterLink>
+          <RouterLink
             class="button-ink hero-secondary-link"
             :to="{ name: 'community' }"
           >

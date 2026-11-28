@@ -15,6 +15,9 @@ const api = vi.hoisted(() => ({
   saveManagedItem: vi.fn(),
 }));
 vi.mock('@/api/admin-manage.api.js', () => api);
+vi.mock('@/api/smartRecommend.api.js', () => ({
+  fetchDishTags: vi.fn().mockResolvedValue([]),
+}));
 vi.mock('@/store/useAuthStore.js', () => ({
   useAuthStore: () => ({ user: { id: 'admin' } }),
 }));
