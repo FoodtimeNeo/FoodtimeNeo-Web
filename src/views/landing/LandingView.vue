@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import TestingApkDownload from '@/components/common/TestingApkDownload.vue';
@@ -37,6 +37,9 @@ function handleDownloadTrigger() {
 
 onBeforeUnmount(() => {
   if (toastTimer) clearTimeout(toastTimer);
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+  }
 });
 
 // 安装说明弹窗状态（支持安卓 APK 与苹果添加到主屏幕两栏切换）
@@ -44,10 +47,37 @@ const showInstallGuide = ref(false);
 const guideTab = ref('android');
 const isIos = isIosDevice();
 const inStandalone = isStandaloneMode();
+const deferredInstallPrompt = ref(null);
+
+function onBeforeInstallPrompt(event) {
+  event.preventDefault();
+  deferredInstallPrompt.value = event;
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
+  }
+});
 
 function openInstallGuide(tab = 'android') {
   guideTab.value = tab;
   showInstallGuide.value = true;
+}
+
+async function handleSaveToDesktop() {
+  const promptEvent = deferredInstallPrompt.value;
+  if (promptEvent && typeof promptEvent.prompt === 'function') {
+    deferredInstallPrompt.value = null;
+    try {
+      await promptEvent.prompt();
+      await promptEvent.userChoice;
+      return;
+    } catch {
+      /* Fallback to visual guide modal below. */
+    }
+  }
+  openInstallGuide('ios');
 }
 
 // 快速跳转网页版
@@ -133,7 +163,7 @@ function goToWeb() {
             是一个专注于校园食堂的美食指南、菜品点评与 UGC 社区平台。
           </p>
 
-          <!-- 核心操作区：深红超大下载按钮（带扫光动效） + 右侧纯黑按键“进入网页端” -->
+          <!-- 核心操作区：深红下载按钮 + 网页端 / 苹果保存到桌面并列按钮 -->
           <div class="card-action-flex">
             <div class="action-btn-group">
               <!-- 主深红按钮：下载安卓安装包 -->
@@ -154,16 +184,44 @@ function goToWeb() {
                 <span class="btn-text">下载安卓安装包 · 正式版 ➔</span>
               </a>
 
-              <!-- 右侧小黑色按键：进入网页端（放大至协调比例） -->
-              <button
-                type="button"
-                class="zine-dark-web-btn"
-                data-testid="enter-web-btn"
-                @click="goToWeb"
-              >
-                <span>进入网页端</span>
-                <span class="btn-arrow" aria-hidden="true">→</span>
-              </button>
+              <div class="action-secondary-group">
+                <!-- 纯黑按键：进入网页端 -->
+                <button
+                  type="button"
+                  class="zine-dark-web-btn"
+                  data-testid="enter-web-btn"
+                  @click="goToWeb"
+                >
+                  <span>进入网页端</span>
+                  <span class="btn-arrow" aria-hidden="true">→</span>
+                </button>
+
+                <!-- 苹果保存到桌面（Web App）按键 -->
+                <button
+                  type="button"
+                  class="zine-ios-save-btn"
+                  :class="{ 'is-highlighted': isIos }"
+                  data-testid="ios-save-btn"
+                  @click="handleSaveToDesktop"
+                >
+                  <span class="apple-svg-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path
+                        d="M16.37 12.43c-.02-2.21 1.81-3.28 1.89-3.33-1.03-1.51-2.64-1.71-3.21-1.73-1.35-.14-2.66.81-3.35.81-.7 0-1.76-.79-2.9-.77-1.48.02-2.86.87-3.62 2.2-1.56 2.7-.4 6.69 1.11 8.88.74 1.07 1.62 2.27 2.78 2.23 1.12-.05 1.54-.72 2.89-.72 1.35 0 1.73.72 2.91.69 1.2-.02 1.96-1.08 2.69-2.16.86-1.24 1.21-2.45 1.23-2.51-.03-.01-2.4-.92-2.42-3.59zM14.17 5.83c.62-.75 1.04-1.79.92-2.83-.89.04-1.97.59-2.6 1.34-.57.65-1.07 1.71-.93 2.73.99.08 2-.5 2.61-1.24z"
+                      />
+                    </svg>
+                  </span>
+                  <span>{{
+                    inStandalone ? '已保存至主屏幕 ✓' : '苹果保存到桌面'
+                  }}</span>
+                  <span
+                    v-if="!inStandalone"
+                    class="btn-arrow"
+                    aria-hidden="true"
+                    >→</span
+                  >
+                </button>
+              </div>
             </div>
 
             <!-- 安装说明小链接（放大字号，增加舒展留白） -->
@@ -175,61 +233,17 @@ function goToWeb() {
               查看安装说明 ➔
             </button>
           </div>
-          <p class="apk-meta-line">正式版 {{ APK_VERSION }} · {{ APK_SIZE }}</p>
-
-          <!-- 苹果 iPhone / iPad 保存到主屏幕手账卡片 -->
-          <div
-            class="ios-pwa-card"
-            :class="{ 'is-highlighted': isIos }"
-            data-testid="ios-pwa-card"
-          >
-            <div class="ios-pwa-card__head">
-              <span class="ios-pwa-card__title">
-                <svg
-                  class="ios-pwa-card__icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
-                  <path d="M10.5 18.5h3" />
-                </svg>
-                <strong>iPhone / iPad · 保存到桌面</strong>
-              </span>
-              <span class="ios-pwa-card__tag">
-                {{
-                  inStandalone
-                    ? '已全屏运行'
-                    : isIos
-                      ? '检测到苹果设备'
-                      : '免 App Store'
-                }}
-              </span>
-            </div>
-            <p class="ios-pwa-card__desc">
-              苹果用户无需下载安装包，用 Safari
-              打开网页版并「添加到主屏幕」，即可像原生 App
-              一样全屏使用、实时同步全部新功能。
-            </p>
-            <div class="ios-pwa-card__actions">
-              <button
-                type="button"
-                class="ios-pwa-card__btn"
-                data-testid="ios-guide-btn"
-                @click="openInstallGuide('ios')"
-              >
-                查看苹果添加教程 ➔
-              </button>
-              <button
-                type="button"
-                class="ios-pwa-card__web-btn"
-                @click="goToWeb"
-              >
-                打开网页版
-              </button>
-            </div>
-          </div>
+          <p class="apk-meta-line">
+            <span>正式版 {{ APK_VERSION }} · {{ APK_SIZE }}</span>
+            <span class="apk-meta-divider" aria-hidden="true">｜</span>
+            <span class="apk-meta-ios" data-testid="ios-auto-update-note">
+              {{
+                isIos && !inStandalone
+                  ? '已识别苹果设备 · 添加到主屏幕免手动更新，打开自动同步最新版'
+                  : '苹果添加到桌面即可全屏使用，免手动更新，打开自动同步最新版'
+              }}
+            </span>
+          </p>
 
           <TestingApkDownload />
         </section>
@@ -776,12 +790,19 @@ $c-tape-yellow: #f5e8b4;
     gap: 22px;
   }
 
-  // 按钮组（整体放大加粗）
+  // 按钮组（第一排深红安卓主按钮，第二排网页端与苹果保存到桌面并列）
   .action-btn-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .action-secondary-group {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 20px;
+    gap: 14px;
   }
 
   // 主深红下载大按钮（超大饱满，立体感强，带高能扫光动效）
@@ -882,6 +903,60 @@ $c-tape-yellow: #f5e8b4;
     }
   }
 
+  // 苹果保存到桌面按钮（纸白黑边手账撞色，与深红、纯黑构成三色组合）
+  .zine-ios-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgb(var(--ft-overlay-paper-rgb) / 0.96);
+    color: $c-ink-dark-btn;
+    border: 2px solid $c-ink-dark-btn;
+    padding: 18px 28px;
+    border-radius: 16px;
+    font-size: 19px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(22, 18, 16, 0.12);
+    transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    .apple-svg-icon {
+      display: inline-flex;
+      align-items: center;
+
+      svg {
+        width: 21px;
+        height: 21px;
+      }
+    }
+
+    .btn-arrow {
+      font-size: 20px;
+      transition: transform 0.22s ease;
+    }
+
+    &.is-highlighted {
+      border-color: $c-ink-red;
+      color: $c-ink-red;
+      box-shadow: 0 8px 22px rgba(201, 52, 30, 0.2);
+    }
+
+    &:hover {
+      border-color: $c-ink-red;
+      color: $c-ink-red;
+      background: var(--zine-paper-card);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(201, 52, 30, 0.2);
+
+      .btn-arrow {
+        transform: translateX(4px);
+      }
+    }
+
+    &:active {
+      transform: translateY(1px) scale(0.98);
+    }
+  }
+
   // 安装说明手写链接（放大字号，增加舒展感）
   .install-guide-link {
     background: none;
@@ -906,114 +981,23 @@ $c-tape-yellow: #f5e8b4;
   }
 
   .apk-meta-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
     margin: 12px 0 14px;
-    font-size: 14px;
+    font-size: 13.5px;
+    line-height: 1.55;
     color: var(--ft-color-text-muted);
   }
 
-  // 苹果 iOS 保存到主屏幕手账卡片
-  .ios-pwa-card {
-    max-width: 600px;
-    margin: 4px 0 14px;
-    padding: 14px 16px;
-    background: rgb(var(--ft-overlay-paper-rgb) / 0.92);
-    border: 1.5px dashed rgba(58, 36, 24, 0.28);
-    border-radius: 12px;
-    box-shadow: 0 4px 14px rgba(58, 36, 24, 0.06);
+  .apk-meta-divider {
+    opacity: 0.45;
+  }
 
-    &.is-highlighted {
-      border-color: $c-ink-red;
-      background: rgb(var(--ft-overlay-paper-rgb) / 0.98);
-      box-shadow: 0 6px 20px rgba(201, 52, 30, 0.14);
-    }
-
-    &__head {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    &__title {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 15.5px;
-      color: var(--ft-color-text);
-    }
-
-    &__icon {
-      width: 18px;
-      height: 18px;
-      flex: none;
-      color: $c-ink-red;
-      stroke-width: 1.9;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    &__tag {
-      padding: 2px 9px;
-      border-radius: 999px;
-      background: var(--zine-stamp-red-soft);
-      color: var(--zine-stamp-red);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    &__desc {
-      margin: 0 0 12px;
-      font-size: 13.5px;
-      line-height: 1.6;
-      color: var(--ft-color-text-muted);
-    }
-
-    &__actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-    }
-
-    &__btn {
-      min-height: 40px;
-      padding: 7px 16px;
-      border: 1.5px solid $c-ink-red;
-      border-radius: 999px;
-      background: var(--zine-paper-card);
-      color: $c-ink-red;
-      font-size: 13.5px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: $c-ink-red;
-        color: #fff;
-      }
-
-      &:active {
-        transform: scale(0.98);
-      }
-    }
-
-    &__web-btn {
-      min-height: 40px;
-      padding: 7px 14px;
-      border: 1px solid var(--ft-border-control);
-      border-radius: 999px;
-      background: transparent;
-      color: var(--ft-color-text);
-      font-size: 13.5px;
-      font-weight: 600;
-      cursor: pointer;
-
-      &:hover {
-        border-color: var(--ft-color-text);
-      }
-    }
+  .apk-meta-ios {
+    color: #5c4535;
+    font-weight: 600;
   }
 }
 
@@ -1613,8 +1597,15 @@ $c-tape-yellow: #f5e8b4;
     // 按钮紧凑化与大拇指舒适触达
     .action-btn-group {
       flex-direction: column;
+      align-items: stretch;
       gap: 12px;
       width: 100%;
+
+      .action-secondary-group {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
 
       .zine-primary-download-btn {
         width: 100%;
@@ -1629,13 +1620,29 @@ $c-tape-yellow: #f5e8b4;
         }
       }
 
-      .zine-dark-web-btn {
+      .zine-dark-web-btn,
+      .zine-ios-save-btn {
         width: 100%;
         padding: 12px 20px;
         font-size: 15px;
         border-radius: 12px;
         justify-content: center;
       }
+
+      .zine-ios-save-btn .apple-svg-icon svg {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .apk-meta-line {
+      justify-content: center;
+      text-align: center;
+      font-size: 12.5px;
+    }
+
+    .apk-meta-divider {
+      display: none;
     }
 
     .install-guide-link {
