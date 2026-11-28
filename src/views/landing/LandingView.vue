@@ -235,7 +235,6 @@ function goToWeb() {
           </div>
           <p class="apk-meta-line">
             <span>正式版 {{ APK_VERSION }} · {{ APK_SIZE }}</span>
-            <span class="apk-meta-divider" aria-hidden="true">｜</span>
             <span class="apk-meta-ios" data-testid="ios-auto-update-note">
               {{
                 isIos && !inStandalone
@@ -466,7 +465,22 @@ $c-tape-yellow: #f5e8b4;
 }
 
 // ---------------- 整体视口：底图全屏铺满 ----------------
+// 宣发页使用固定浅色手账插画底图，锁定纸面深墨变量，避免系统深色模式下浅字落在白纸上隐身。
 .zine-landing-viewport {
+  --ft-color-text: #3a2418;
+  --ft-color-text-muted: #5c4535;
+  --ft-color-surface: #f8f5ee;
+  --ft-color-bg-soft: #faf7f0;
+  --ft-color-border: #d5ccbc;
+  --ft-border-subtle: rgb(58 36 24 / 12%);
+  --ft-border-control: rgb(58 36 24 / 22%);
+  --ft-overlay-surface-rgb: 255 255 255;
+  --ft-overlay-paper-rgb: 255 250 240;
+  --zine-paper-card: #fffaf0;
+  --ft-color-primary: #c9341e;
+  --zine-stamp-red: #b72f1c;
+  --zine-stamp-red-soft: rgb(183 47 28 / 14%);
+
   position: relative;
   min-height: 100vh;
   min-height: 100dvh;
@@ -867,24 +881,25 @@ $c-tape-yellow: #f5e8b4;
     }
   }
 
-  // 小黑色按键：“进入网页端”（等高放大，黑红经典撞色）
+  // 小黑色按键：“进入网页端”（与苹果保存到桌面并排，红黑纸白经典撞色）
   .zine-dark-web-btn {
     display: inline-flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: $c-ink-dark-btn;
     color: #f7f4ee;
     border: none;
-    padding: 20px 36px;
-    border-radius: 16px;
-    font-size: 19px;
+    padding: 16px 26px;
+    border-radius: 14px;
+    font-size: 17px;
     font-weight: 700;
+    white-space: nowrap;
     cursor: pointer;
     box-shadow: 0 6px 20px rgba(22, 18, 16, 0.32);
     transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     .btn-arrow {
-      font-size: 20px;
+      font-size: 18px;
       transition: transform 0.22s ease;
     }
 
@@ -903,18 +918,19 @@ $c-tape-yellow: #f5e8b4;
     }
   }
 
-  // 苹果保存到桌面按钮（纸白黑边手账撞色，适配浅/深色模式高对比度）
+  // 苹果保存到桌面按钮（暖纸黑边手账撞色，与进入网页端并排展示）
   .zine-ios-save-btn {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     background: rgb(var(--ft-overlay-paper-rgb) / 0.96);
-    color: var(--ft-color-text);
-    border: 2px solid var(--ft-color-text);
-    padding: 18px 28px;
-    border-radius: 16px;
-    font-size: 19px;
+    color: $c-ink-dark-btn;
+    border: 2px solid $c-ink-dark-btn;
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-size: 17px;
     font-weight: 700;
+    white-space: nowrap;
     cursor: pointer;
     box-shadow: 0 6px 18px rgba(22, 18, 16, 0.12);
     transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -924,13 +940,13 @@ $c-tape-yellow: #f5e8b4;
       align-items: center;
 
       svg {
-        width: 21px;
-        height: 21px;
+        width: 20px;
+        height: 20px;
       }
     }
 
     .btn-arrow {
-      font-size: 20px;
+      font-size: 18px;
       transition: transform 0.22s ease;
     }
 
@@ -982,17 +998,13 @@ $c-tape-yellow: #f5e8b4;
 
   .apk-meta-line {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     margin: 12px 0 14px;
     font-size: 13.5px;
     line-height: 1.55;
     color: var(--ft-color-text-muted);
-  }
-
-  .apk-meta-divider {
-    opacity: 0.45;
   }
 
   .apk-meta-ios {
@@ -1332,7 +1344,8 @@ $c-tape-yellow: #f5e8b4;
 
   .guide-steps-list {
     margin: 0 0 24px;
-    padding-left: 20px;
+    padding-left: 0;
+    list-style: none;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1636,13 +1649,9 @@ $c-tape-yellow: #f5e8b4;
     }
 
     .apk-meta-line {
-      justify-content: center;
+      align-items: center;
       text-align: center;
       font-size: 12.5px;
-    }
-
-    .apk-meta-divider {
-      display: none;
     }
 
     .install-guide-link {
