@@ -44,6 +44,7 @@ docs/
 |                                      | [社区内容管理](modules/community-management.md)     | 帖子/评论删除、敏感内容处理与个人资料（头像/昵称）管理      |
 |                                      | [点评与社交互动](modules/review-interactions.md)    | 菜品点评点赞、二级回复、回复点赞与审核流联动                |
 |                                      | [媒体资源缓存](modules/media-cache.md)              | 图片加载策略、骨架屏体验与客户端缓存优化                    |
+|                                      | [精准选餐与多维搜菜](modules/smart-recommender.md)  | `/recommend` 精准选餐、单份预算检索、忌口排除与后台标签维护 |
 |                                      | [社区验收交接](modules/handover-community.md)       | 社区三端集成与真实端到端验收记录                            |
 | **版本与交付记录** (`releases/`)     | [v1.0.0 发布说明](releases/release-1.0.0.md)        | 基础框架与食堂核心数据首发                                  |
 |                                      | [v1.1.1 发布说明](releases/release-1.1.1.md)        | 增强型点评与安全修复                                        |

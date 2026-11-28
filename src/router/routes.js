@@ -429,6 +429,17 @@ export const routes = [
     },
   },
   {
+    path: '/recommend',
+    name: 'smartRecommend',
+    component: () => import('@/views/recommendation/SmartRecommenderView.vue'),
+    meta: {
+      title: '精准选餐',
+      layout: 'default',
+      requiresAuth: true,
+      nav: 'canteenList',
+    },
+  },
+  {
     path: '/canteens/:canteenId',
     name: 'canteenDetail',
     component: () => import('@/views/canteen/CanteenDetailView.vue'),

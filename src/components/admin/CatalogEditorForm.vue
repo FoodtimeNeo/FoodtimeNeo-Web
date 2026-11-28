@@ -1,6 +1,8 @@
 <script setup>
-import { onUnmounted, reactive, ref } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { PRICE_UNITS } from '@/utils/priceHistory.js';
+import { DEFAULT_DISH_TAGS, groupDishTags } from '@/utils/dishTags.js';
+import { fetchDishTags } from '@/api/smartRecommend.api.js';
 import { saveManagedItem, fetchManagedItems } from '@/api/admin-manage.api.js';
 import { uploadImage } from '@/api/submission.api.js';
 import { validatePrice } from '@/utils/submissionValidation.js';
@@ -42,8 +44,33 @@ const file = ref(null);
 const removeCover = ref(false);
 const writing = ref(false);
 const error = ref('');
+const tagCatalog = ref([...DEFAULT_DISH_TAGS]);
+const tagGroups = computed(() => groupDishTags(tagCatalog.value));
+const selectedTags = ref(
+  Array.isArray(props.item?.tags) ? [...props.item.tags] : [],
+);
+const tagsDirty = ref(false);
+const resetAutoTags = ref(false);
 let reference = '';
 let active = true;
+onMounted(async () => {
+  if (props.type !== 'dishes') return;
+  try {
+    const loaded = await fetchDishTags();
+    if (active && Array.isArray(loaded) && loaded.length) {
+      tagCatalog.value = loaded;
+    }
+  } catch {
+    // Fallback to DEFAULT_DISH_TAGS
+  }
+});
+function toggleDishTag(code) {
+  resetAutoTags.value = false;
+  tagsDirty.value = true;
+  const idx = selectedTags.value.indexOf(code);
+  if (idx >= 0) selectedTags.value.splice(idx, 1);
+  else selectedTags.value.push(code);
+}
 onUnmounted(() => {
   active = false;
   file.value = null;
@@ -133,6 +160,12 @@ async function submit() {
       name: form.name.trim(),
       description: form.description || null,
       price: props.type === 'dishes' ? Number(form.price) : undefined,
+      tags:
+        props.type === 'dishes' && tagsDirty.value && !resetAutoTags.value
+          ? [...selectedTags.value]
+          : undefined,
+      resetAutoTags:
+        props.type === 'dishes' && resetAutoTags.value ? true : undefined,
       sortOrder: Number(form.sortOrder),
       latitude,
       longitude,
@@ -198,6 +231,44 @@ async function submit() {
         </option>
       </select></label
     >
+    <fieldset v-if="type === 'dishes'" class="dish-tags-fieldset">
+      <legend>
+        菜品标签（{{
+          resetAutoTags
+            ? '保存后恢复自动识别'
+            : tagsDirty || item?.tagsCustomized
+              ? '人工覆写'
+              : '自动识别'
+        }}）
+      </legend>
+      <div
+        v-for="group in tagGroups"
+        :key="group.dimension"
+        class="dish-tags-group"
+      >
+        <span class="dish-tags-group__title">{{ group.dimensionLabel }}</span>
+        <div class="dish-tags-chips">
+          <button
+            v-for="tag in group.items"
+            :key="tag.code"
+            type="button"
+            class="dish-tag-chip"
+            :class="{
+              'is-active': !resetAutoTags && selectedTags.includes(tag.code),
+            }"
+            :aria-pressed="!resetAutoTags && selectedTags.includes(tag.code)"
+            :disabled="writing"
+            @click="toggleDishTag(tag.code)"
+          >
+            {{ tag.label }}
+          </button>
+        </div>
+      </div>
+      <label v-if="item?.tagsCustomized" class="dish-tags-reset">
+        <input v-model="resetAutoTags" type="checkbox" :disabled="writing" />
+        <span>恢复系统自动识别标签</span>
+      </label>
+    </fieldset>
     <template v-if="type !== 'dishes'">
       <div v-if="type === 'dining-halls'" class="coord-grid">
         <label
@@ -297,5 +368,53 @@ button {
 }
 [role='alert'] {
   color: var(--ft-color-danger);
+}
+.dish-tags-fieldset {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  margin: 0;
+  border: 1px dashed var(--ft-border-control);
+}
+.dish-tags-fieldset legend {
+  font-weight: 700;
+  font-size: 13px;
+  padding: 0 4px;
+}
+.dish-tags-group {
+  display: grid;
+  gap: 6px;
+}
+.dish-tags-group__title {
+  font-size: 12px;
+  color: var(--ft-color-text-muted);
+}
+.dish-tags-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dish-tag-chip {
+  min-height: 34px;
+  margin-right: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+}
+.dish-tag-chip.is-active {
+  background: var(--ft-color-primary);
+  border-color: var(--ft-color-primary);
+  color: #fff;
+}
+.dish-tags-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.dish-tags-reset input {
+  min-height: 18px;
+  width: 18px;
+  padding: 0;
 }
 </style>

@@ -21,6 +21,9 @@ vi.mock('@/api/canteen.api.js', () => ({ fetchCanteens: vi.fn() }));
 vi.mock('@/api/recommendation.api.js', () => ({
   fetchDailyRecommendations: vi.fn().mockResolvedValue([]),
 }));
+vi.mock('@/api/smartRecommend.api.js', () => ({
+  fetchDishTags: vi.fn().mockResolvedValue([]),
+}));
 const dish = {
   id: 'dish',
   name: '鸡腿饭',
@@ -48,6 +51,7 @@ async function render(query = {}) {
     routes: [
       { path: '/', name: 'home', component: stub },
       { path: '/search', name: 'dishSearch', component: DishSearchView },
+      { path: '/recommend', name: 'smartRecommend', component: stub },
       {
         path: '/h/:canteenId/s/:stallId',
         name: 'stallDetail',
@@ -304,3 +308,47 @@ it.each(['deleted', 'postEdited'])(
     expect(wrapper.get('.unified-search__count').text()).toContain('0 篇笔记');
   },
 );
+
+it('支持按份/碗计价、多维标签与忌口排除筛选，且零命中时可一键放宽重试', async () => {
+  await render({ browse: '1' });
+  await wrapper.get('button[aria-label="筛选"]').trigger('click');
+  await flushPromises();
+  await click('价格');
+  await click('¥15以内');
+  await wrapper.get('.search-filter__portion input').setValue(true);
+  await click('品类/标签');
+  await click('米饭/盖饭');
+  await click('忌口排除');
+  await click('✕ 香辣/麻辣');
+  await click('完成');
+
+  expect(searchStalls.mock.calls.at(-1)[0]).toMatchObject({
+    maxPrice: '15',
+    portionOnly: true,
+    tags: ['rice'],
+    excludeTags: ['spicy'],
+  });
+
+  // Zero match shows relax button and keeps excludeTags while relaxing portionOnly/budget
+  searchStalls.mockResolvedValueOnce({
+    items: [],
+    total: 0,
+    page: 1,
+    size: 10,
+  });
+  await render({
+    browse: '1',
+    maxPrice: '10',
+    portionOnly: '1',
+    tags: ['rice', 'healthy'],
+    excludeTags: ['spicy'],
+  });
+  expect(wrapper.text()).toContain('放宽筛选条件重试');
+  await click('放宽筛选条件重试');
+  expect(searchStalls.mock.calls.at(-1)[0]).toMatchObject({
+    maxPrice: '13',
+    tags: ['rice'],
+    excludeTags: ['spicy'],
+  });
+  expect(searchStalls.mock.calls.at(-1)[0]).not.toHaveProperty('portionOnly');
+});

@@ -26,6 +26,8 @@ export function catalogPayload(type, input) {
   if (type === 'dishes') {
     body.price = input.price;
     if (input.priceUnit !== undefined) body.priceUnit = input.priceUnit;
+    if (Array.isArray(input.tags)) body.tags = [...input.tags];
+    if (input.resetAutoTags === true) body.resetAutoTags = true;
   } else {
     body.coverImageUrl = input.coverImageUrl;
     body.sortOrder = input.sortOrder;

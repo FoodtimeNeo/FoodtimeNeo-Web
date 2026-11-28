@@ -13,6 +13,7 @@ import {
 import { ApiError } from '@/api/http.js';
 import * as reviewActions from '@/api/review.api.js';
 import { recordedPrice } from '@/utils/priceHistory.js';
+import { dishTagBadges } from '@/utils/dishTags.js';
 import { getDishCoverImage } from '@/utils/homeVisuals.js';
 import MediaImage from '@/components/base/MediaImage.vue';
 import PaginationControls from '@/components/base/PaginationControls.vue';
@@ -214,6 +215,20 @@ const defaultIllustration = computed(() => {
           <p class="dish-detail__meta">
             {{ data.dish.diningHallName }} · {{ data.dish.stallName }}
           </p>
+
+          <div
+            v-if="data.dish.tags?.length"
+            class="dish-detail__tags"
+            aria-label="菜品标签"
+          >
+            <span
+              v-for="badge in dishTagBadges(data.dish.tags, undefined, 8)"
+              :key="badge.code"
+              class="dish-detail__tag"
+            >
+              {{ badge.label }}
+            </span>
+          </div>
 
           <!-- 价格栏与轻量辅助操作（纠错与价格走势降级为轻量文字图标链接） -->
           <div class="dish-detail__price-bar">
@@ -565,6 +580,24 @@ const defaultIllustration = computed(() => {
     margin: 0;
     color: var(--ft-color-text-muted);
     font-size: 14px;
+  }
+
+  &__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--ft-radius-pill);
+    background: var(--zine-paper-card-alt);
+    border: 1px solid var(--ft-border-subtle);
+    color: var(--ft-color-secondary);
+    font-size: 12px;
+    font-weight: 700;
   }
 
   /* 价格栏与轻量文字图标链接 */
