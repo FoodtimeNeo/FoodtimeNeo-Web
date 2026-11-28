@@ -104,4 +104,36 @@ describe('LandingView (Zine Collage Style matching reference)', () => {
     await enterWebBtn.trigger('click');
     expect(push).toHaveBeenCalledWith({ name: 'login' });
   });
+
+  it('展示苹果用户保存到桌面说明卡片，并可直达苹果主屏幕安装教程与切换标签', async () => {
+    const wrapper = mount(LandingView);
+    const iosCard = wrapper.find('[data-testid="ios-pwa-card"]');
+    expect(iosCard.exists()).toBe(true);
+    expect(iosCard.text()).toContain('iPhone / iPad');
+    expect(iosCard.text()).toContain('添加到主屏幕');
+
+    await wrapper.get('[data-testid="ios-guide-btn"]').trigger('click');
+    expect(wrapper.find('.guide-modal-overlay').exists()).toBe(true);
+    expect(wrapper.text()).toContain('苹果添加到主屏幕说明');
+    expect(wrapper.text()).toContain('点击 Safari 底部「分享」按钮');
+
+    await wrapper.get('[data-testid="guide-tab-android"]').trigger('click');
+    expect(wrapper.text()).toContain('安卓安装简明说明');
+  });
+
+  it('在苹果设备访问时高亮提示“检测到苹果设备”', () => {
+    vi.stubGlobal('navigator', {
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1',
+      standalone: false,
+    });
+    try {
+      const wrapper = mount(LandingView);
+      const iosCard = wrapper.get('[data-testid="ios-pwa-card"]');
+      expect(iosCard.classes()).toContain('is-highlighted');
+      expect(iosCard.text()).toContain('检测到苹果设备');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

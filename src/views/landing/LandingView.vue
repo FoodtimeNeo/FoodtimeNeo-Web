@@ -3,6 +3,8 @@ import { onBeforeUnmount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/useAuthStore.js';
 import TestingApkDownload from '@/components/common/TestingApkDownload.vue';
+import IosInstallSteps from '@/components/common/IosInstallSteps.vue';
+import { isIosDevice, isStandaloneMode } from '@/utils/iosPwa.js';
 
 // 引入放大左上角 70% 的专属高清底图与合成真实截图的手机 Mockup
 import bgTopLeft70 from '@/assets/images/decoration02/bg-topleft-70.jpg';
@@ -37,8 +39,16 @@ onBeforeUnmount(() => {
   if (toastTimer) clearTimeout(toastTimer);
 });
 
-// 安装说明弹窗状态
+// 安装说明弹窗状态（支持安卓 APK 与苹果添加到主屏幕两栏切换）
 const showInstallGuide = ref(false);
+const guideTab = ref('android');
+const isIos = isIosDevice();
+const inStandalone = isStandaloneMode();
+
+function openInstallGuide(tab = 'android') {
+  guideTab.value = tab;
+  showInstallGuide.value = true;
+}
 
 // 快速跳转网页版
 function goToWeb() {
@@ -160,12 +170,67 @@ function goToWeb() {
             <button
               type="button"
               class="install-guide-link handwrite"
-              @click="showInstallGuide = true"
+              @click="openInstallGuide('android')"
             >
               查看安装说明 ➔
             </button>
           </div>
-          <p>正式版 {{ APK_VERSION }} · {{ APK_SIZE }}</p>
+          <p class="apk-meta-line">正式版 {{ APK_VERSION }} · {{ APK_SIZE }}</p>
+
+          <!-- 苹果 iPhone / iPad 保存到主屏幕手账卡片 -->
+          <div
+            class="ios-pwa-card"
+            :class="{ 'is-highlighted': isIos }"
+            data-testid="ios-pwa-card"
+          >
+            <div class="ios-pwa-card__head">
+              <span class="ios-pwa-card__title">
+                <svg
+                  class="ios-pwa-card__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <rect x="6" y="2.5" width="12" height="19" rx="2.5" />
+                  <path d="M10.5 18.5h3" />
+                </svg>
+                <strong>iPhone / iPad · 保存到桌面</strong>
+              </span>
+              <span class="ios-pwa-card__tag">
+                {{
+                  inStandalone
+                    ? '已全屏运行'
+                    : isIos
+                      ? '检测到苹果设备'
+                      : '免 App Store'
+                }}
+              </span>
+            </div>
+            <p class="ios-pwa-card__desc">
+              苹果用户无需下载安装包，用 Safari
+              打开网页版并「添加到主屏幕」，即可像原生 App
+              一样全屏使用、实时同步全部新功能。
+            </p>
+            <div class="ios-pwa-card__actions">
+              <button
+                type="button"
+                class="ios-pwa-card__btn"
+                data-testid="ios-guide-btn"
+                @click="openInstallGuide('ios')"
+              >
+                查看苹果添加教程 ➔
+              </button>
+              <button
+                type="button"
+                class="ios-pwa-card__web-btn"
+                @click="goToWeb"
+              >
+                打开网页版
+              </button>
+            </div>
+          </div>
+
           <TestingApkDownload />
         </section>
 
@@ -258,24 +323,69 @@ function goToWeb() {
           aria-labelledby="guide-title"
         >
           <div class="guide-tape-decor" aria-hidden="true"></div>
-          <h3 id="guide-title" class="guide-modal-title handwrite">
-            安卓安装简明说明
-          </h3>
-          <ol class="guide-steps-list">
-            <li>
-              <strong>1. 点击下载</strong>：下载官方原生安装包
-              <code>{{ APK_FILE_NAME }} ({{ APK_SIZE }})</code>。
-            </li>
-            <li>
-              <strong>2. 允许安装</strong
-              >：若系统弹出“未知来源应用”安全警示，点击【设置/继续安装】并勾选【允许来自此来源的应用】。
-            </li>
-            <li>
-              <strong>3. 开箱干饭</strong
-              >：安装完成后桌面点击图标，免复杂设置直接使用！
-            </li>
-          </ol>
+          <div class="guide-tabs" role="tablist" aria-label="选择设备安装说明">
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="guideTab === 'android'"
+              class="guide-tab-btn"
+              :class="{ 'is-active': guideTab === 'android' }"
+              data-testid="guide-tab-android"
+              @click="guideTab = 'android'"
+            >
+              安卓安装包
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="guideTab === 'ios'"
+              class="guide-tab-btn"
+              :class="{ 'is-active': guideTab === 'ios' }"
+              data-testid="guide-tab-ios"
+              @click="guideTab = 'ios'"
+            >
+              苹果添加到主屏幕
+            </button>
+          </div>
+          <template v-if="guideTab === 'android'">
+            <h3 id="guide-title" class="guide-modal-title handwrite">
+              安卓安装简明说明
+            </h3>
+            <ol class="guide-steps-list">
+              <li>
+                <strong>1. 点击下载</strong>：下载官方原生安装包
+                <code>{{ APK_FILE_NAME }} ({{ APK_SIZE }})</code>。
+              </li>
+              <li>
+                <strong>2. 允许安装</strong
+                >：若系统弹出“未知来源应用”安全警示，点击【设置/继续安装】并勾选【允许来自此来源的应用】。
+              </li>
+              <li>
+                <strong>3. 开箱干饭</strong
+                >：安装完成后桌面点击图标，免复杂设置直接使用！
+              </li>
+            </ol>
+          </template>
+          <template v-else>
+            <h3 id="guide-title" class="guide-modal-title handwrite">
+              苹果添加到主屏幕说明
+            </h3>
+            <div class="guide-ios-body">
+              <IosInstallSteps />
+            </div>
+          </template>
           <div class="guide-modal-actions">
+            <button
+              v-if="guideTab === 'ios'"
+              type="button"
+              class="guide-secondary-btn"
+              @click="
+                showInstallGuide = false;
+                goToWeb();
+              "
+            >
+              立即进入网页版
+            </button>
             <button
               type="button"
               class="guide-close-btn"
@@ -345,6 +455,7 @@ $c-tape-yellow: #f5e8b4;
 .zine-landing-viewport {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 100vw;
   display: flex;
@@ -421,6 +532,7 @@ $c-tape-yellow: #f5e8b4;
   top: 0;
   z-index: 50;
   width: 100%;
+  padding-top: var(--app-mobile-safe-top);
   background: rgb(var(--ft-overlay-surface-rgb) / 0.78);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(220, 205, 185, 0.45);
@@ -792,6 +904,117 @@ $c-tape-yellow: #f5e8b4;
       transform: translateX(3px);
     }
   }
+
+  .apk-meta-line {
+    margin: 12px 0 14px;
+    font-size: 14px;
+    color: var(--ft-color-text-muted);
+  }
+
+  // 苹果 iOS 保存到主屏幕手账卡片
+  .ios-pwa-card {
+    max-width: 600px;
+    margin: 4px 0 14px;
+    padding: 14px 16px;
+    background: rgb(var(--ft-overlay-paper-rgb) / 0.92);
+    border: 1.5px dashed rgba(58, 36, 24, 0.28);
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(58, 36, 24, 0.06);
+
+    &.is-highlighted {
+      border-color: $c-ink-red;
+      background: rgb(var(--ft-overlay-paper-rgb) / 0.98);
+      box-shadow: 0 6px 20px rgba(201, 52, 30, 0.14);
+    }
+
+    &__head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    &__title {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15.5px;
+      color: var(--ft-color-text);
+    }
+
+    &__icon {
+      width: 18px;
+      height: 18px;
+      flex: none;
+      color: $c-ink-red;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    &__tag {
+      padding: 2px 9px;
+      border-radius: 999px;
+      background: var(--zine-stamp-red-soft);
+      color: var(--zine-stamp-red);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    &__desc {
+      margin: 0 0 12px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: var(--ft-color-text-muted);
+    }
+
+    &__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    &__btn {
+      min-height: 40px;
+      padding: 7px 16px;
+      border: 1.5px solid $c-ink-red;
+      border-radius: 999px;
+      background: var(--zine-paper-card);
+      color: $c-ink-red;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: $c-ink-red;
+        color: #fff;
+      }
+
+      &:active {
+        transform: scale(0.98);
+      }
+    }
+
+    &__web-btn {
+      min-height: 40px;
+      padding: 7px 14px;
+      border: 1px solid var(--ft-border-control);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--ft-color-text);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--ft-color-text);
+      }
+    }
+  }
 }
 
 // ---------------- 中间真机手机呈现：整体右移，恢复斜向放置 (-3.5deg)，带3D悬浮呼吸浮动 ----------------
@@ -900,7 +1123,7 @@ $c-tape-yellow: #f5e8b4;
   z-index: 25;
   width: 100%;
   margin-top: 24px;
-  padding: 12px 32px 18px;
+  padding: 12px 32px max(18px, var(--app-mobile-safe-bottom));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1088,6 +1311,41 @@ $c-tape-yellow: #f5e8b4;
     text-align: center;
   }
 
+  .guide-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 4px;
+    margin-bottom: 16px;
+    border: 1px solid var(--ft-border-subtle);
+    border-radius: 999px;
+    background: var(--ft-color-bg-soft);
+  }
+
+  .guide-tab-btn {
+    min-height: 40px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ft-color-text-muted);
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease;
+
+    &.is-active {
+      background: var(--ft-color-primary);
+      color: #fff;
+    }
+  }
+
+  .guide-ios-body {
+    margin-bottom: 20px;
+  }
+
   .guide-steps-list {
     margin: 0 0 24px;
     padding-left: 20px;
@@ -1109,7 +1367,21 @@ $c-tape-yellow: #f5e8b4;
 
   .guide-modal-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
+    gap: 10px;
+
+    .guide-secondary-btn {
+      min-height: 42px;
+      padding: 9px 18px;
+      border: 1px solid var(--ft-border-control);
+      border-radius: 20px;
+      background: var(--ft-color-surface);
+      color: var(--ft-color-text);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
     .guide-close-btn {
       background: linear-gradient(180deg, #c9341e 0%, #aa200d 100%);
