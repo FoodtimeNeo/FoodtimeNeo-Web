@@ -56,7 +56,7 @@ const form = reactive({
   diningHallIds: [],
   minPrice: '',
   maxPrice: '',
-  portionOnly: true,
+  portionOnly: false,
   minRating: '',
   includeTags: [],
   excludeTags: [],
@@ -197,7 +197,7 @@ function resetAll() {
   form.diningHallIds = [];
   form.minPrice = '';
   form.maxPrice = '';
-  form.portionOnly = true;
+  form.portionOnly = false;
   form.minRating = '';
   form.includeTags = [];
   form.excludeTags = [];

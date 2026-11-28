@@ -106,6 +106,7 @@ describe('SmartRecommenderView', () => {
     expect(querySmartDishRecommendations).toHaveBeenCalledTimes(1);
 
     await clickButton('¥15 以内');
+    await wrapper.get('.smart-rec__toggle input').setValue(true);
     await clickButton('留园');
     await clickButton('米饭/盖饭');
     await clickButton('香辣/麻辣');
